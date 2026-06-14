@@ -61,6 +61,13 @@ local SUISettings = require("sui_store")
 local VROOT     = "\u{E257}"
 local VROOT_SEP = "/" .. VROOT   -- pre-built; avoids alloc on every _findVroot
 
+-- Slashes inside tag/series/author values would be misread as path separators.
+-- We encode them as U+2215 DIVISION SLASH (∕) — visually identical, never a
+-- real path separator — and decode on the way out.
+local PATH_SEP_ESC = "\u{2215}"
+local function _encVal(v) return v:gsub("/", PATH_SEP_ESC) end
+local function _decVal(v) return v:gsub(PATH_SEP_ESC, "/") end
+
 local SYM_AUTHOR = "\u{F2C0}"
 local SYM_SERIES = "\u{ECD7}"
 local SYM_TAGS   = "\u{F02B}"
@@ -157,7 +164,7 @@ local function _parseVirtualPath(path)
         if parts[2] == NULL_MARKER then
             filter_value = false
         else
-            filter_value = parts[2]
+            filter_value = _decVal(parts[2])
         end
     end
 
@@ -192,7 +199,7 @@ local function _dimPath(base_dir, dim_key)
 end
 
 local function _leafPath(base_dir, dim_key, value)
-    local v_enc = (value == false or value == nil) and NULL_MARKER or value
+    local v_enc = (value == false or value == nil) and NULL_MARKER or _encVal(value)
     return base_dir .. VROOT_SEP .. "/" .. DIMS[dim_key].symbol .. "/" .. v_enc
 end
 
