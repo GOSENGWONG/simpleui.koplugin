@@ -1180,8 +1180,25 @@ end
 -- ---------------------------------------------------------------------------
 
 function M.patchUIManagerShow(plugin)
+    -- Guard: only install one wrapper per session. The wrapper lives on the
+    -- UIManager global; subsequent installAll calls (triggered by FM recreation
+    -- after returning from the reader) must not stack a second wrapper on top.
+    --
+    -- On re-entry we update the shared plugin slot so the single live wrapper
+    -- always resolves plugin references through the current FM instance.
+    if UIManager._simpleui_show_patched then
+        UIManager._simpleui_show_plugin = plugin
+        -- Give the new plugin instance a back-reference to the original so
+        -- teardownAll can restore UIManager.show correctly.
+        plugin._orig_uimanager_show = UIManager._simpleui_show_orig
+        return
+    end
+    UIManager._simpleui_show_patched = true
+    UIManager._simpleui_show_plugin  = plugin
+
     local orig_show = UIManager.show
-    plugin._orig_uimanager_show = orig_show
+    UIManager._simpleui_show_orig = orig_show
+    plugin._orig_uimanager_show   = orig_show
     local _show_depth = 0
 
     -- Widgets that receive navbar injection by name (in addition to those
@@ -1573,8 +1590,31 @@ end
 -- ---------------------------------------------------------------------------
 
 function M.patchUIManagerClose(plugin)
+    -- Guard: only install one wrapper per session. The wrapper lives on the
+    -- UIManager global; subsequent installAll calls (triggered by FM recreation
+    -- after returning from the reader) must not stack a second wrapper on top.
+    --
+    -- Without this guard, each FM lifecycle creates a new wrapper that captures
+    -- a stale plugin/FM reference, producing a chain of N wrappers after N cycles.
+    -- The old wrappers fire on every UIManager:close() and incorrectly enter the
+    -- homescreen-restore block because their plugin.ui no longer matches the
+    -- widget being closed (FM mismatch → widget_is_fm=false).
+    --
+    -- On re-entry we update the shared plugin slot so the single live wrapper
+    -- always uses the current FM instance for all comparisons.
+    if UIManager._simpleui_close_patched then
+        UIManager._simpleui_close_plugin = plugin
+        -- Give the new plugin instance a back-reference to the original so
+        -- teardownAll can restore UIManager.close correctly.
+        plugin._orig_uimanager_close = UIManager._simpleui_close_orig
+        return
+    end
+    UIManager._simpleui_close_patched = true
+    UIManager._simpleui_close_plugin  = plugin
+
     local orig_close = UIManager.close
-    plugin._orig_uimanager_close = orig_close
+    UIManager._simpleui_close_orig = orig_close
+    plugin._orig_uimanager_close   = orig_close
 
     -- Show the homescreen after any fullscreen widget closes, if conditions allow.
     -- Defined once at patch-install time so it is not recreated on every close().
@@ -1611,8 +1651,14 @@ function M.patchUIManagerClose(plugin)
             return orig_close(um_self, widget, ...)
         end
 
+        -- Resolve the active plugin reference at call time, not from the
+        -- upvalue captured at install time.  The shared slot is updated on
+        -- every installAll cycle so this always points to the current plugin
+        -- instance (and therefore the current FM via .ui).
+        local active_plugin = UIManager._simpleui_close_plugin
+
         -- Identify a closing FM by identity (FM has no .name at class level).
-        local widget_is_fm = (widget == plugin.ui)
+        local widget_is_fm = (widget == active_plugin.ui)
 
         -- Restore the active tab when an injected widget closes normally.
         -- Clear _navbar_injected immediately so a second close() is a no-op.
@@ -1656,12 +1702,12 @@ function M.patchUIManagerClose(plugin)
                             and M._resolveTabForPath(fm.file_chooser.path, t))
                             or t[1] or "home"
                     end
-                    plugin.active_action = restored
+                    active_plugin.active_action = restored
                     Bottombar.replaceBar(fm, Bottombar.buildBarWidget(restored, t), t)
                     UIManager:setDirty(fm, "ui")
                 end
             else
-                plugin:_restoreTabInFM(nil, widget._navbar_prev_action)
+                active_plugin:_restoreTabInFM(nil, widget._navbar_prev_action)
             end
 
             -- Restore _fm_path_base from the FM's current folder so the
@@ -1680,7 +1726,7 @@ function M.patchUIManagerClose(plugin)
         -- so this fires correctly even when BI.unregister() was called meanwhile.
         local _bi_close_desc = widget._sui_bi_desc
         if _bi_close_desc and type(_bi_close_desc.on_close) == "function" then
-            pcall(_bi_close_desc.on_close, widget, { plugin = plugin })
+            pcall(_bi_close_desc.on_close, widget, { plugin = active_plugin })
         end
         -- ────────────────────────────────────────────────────────────────────
 
@@ -1747,10 +1793,10 @@ function M.patchUIManagerClose(plugin)
                     if not widget.tearing_down then
                         local return_to_folder = SUISettings:isTrue("simpleui_hs_return_to_book_folder")
                         if not return_to_folder then
-                            local prev_action = plugin.active_action
+                            local prev_action = active_plugin.active_action
                             local _ao2 = { bookmark_browser=true, wifi_toggle=true, frontlight=true, power=true }
-                            if plugin.active_action == nil or not _ao2[plugin.active_action] then
-                                plugin.active_action = "homescreen"
+                            if active_plugin.active_action == nil or not _ao2[active_plugin.active_action] then
+                                active_plugin.active_action = "homescreen"
                             end
                             local fm_ref = liveFM()
                             if fm_ref then fm_ref._sui_lazy_refresh_path = true end
@@ -1761,10 +1807,10 @@ function M.patchUIManagerClose(plugin)
                                 if not liveFM() then return end
                                 local RUI2 = package.loaded["apps/reader/readerui"]
                                 if RUI2 and RUI2.instance then return end
-                                if _raiseHSFromStack(plugin, prev_action) then return end
+                                if _raiseHSFromStack(active_plugin, prev_action) then return end
                                 local HS2 = liveHS()
                                 if not (HS2 and not HS2._instance) then return end
-                                _showHSCold(plugin, HS2, prev_action)
+                                _showHSCold(active_plugin, HS2, prev_action)
                             end)
                         else
                             UIManager:scheduleIn(0, function()
@@ -1782,7 +1828,7 @@ function M.patchUIManagerClose(plugin)
                         if not fm2 then return end  -- FM gone = app is exiting
                         local RUI = package.loaded["apps/reader/readerui"]
                         if RUI and RUI.instance then return end
-                        _doShowHS(fm2, plugin)
+                        _doShowHS(fm2, active_plugin)
                     end)
                 end
             end
@@ -3390,13 +3436,21 @@ function M.teardownAll(plugin)
     end
 
     -- Restore UIManager patches first (highest call frequency).
+    -- Also clear the session-guard flags so a re-enable cycle reinstalls
+    -- the wrappers cleanly without hitting the early-return branches.
     if plugin._orig_uimanager_show then
-        UIManager.show              = plugin._orig_uimanager_show
-        plugin._orig_uimanager_show = nil
+        UIManager.show                   = plugin._orig_uimanager_show
+        plugin._orig_uimanager_show      = nil
+        UIManager._simpleui_show_patched = nil
+        UIManager._simpleui_show_plugin  = nil
+        UIManager._simpleui_show_orig    = nil
     end
     if plugin._orig_uimanager_close then
-        UIManager.close              = plugin._orig_uimanager_close
-        plugin._orig_uimanager_close = nil
+        UIManager.close                   = plugin._orig_uimanager_close
+        plugin._orig_uimanager_close      = nil
+        UIManager._simpleui_close_patched = nil
+        UIManager._simpleui_close_plugin  = nil
+        UIManager._simpleui_close_orig    = nil
     end
 
     -- Restore widget class patches via package.loaded.
