@@ -2526,6 +2526,18 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 },
             },
             {
+                text           = _("Statistics Loading Notice"),
+                help_text      = _("Show a brief \"Loading statistics\xe2\x80\xa6\" notice when opening a statistics window, preventing accidental double-taps while e-ink refreshes."),
+                checked_func   = function()
+                    return SUISettings:nilOrTrue("simpleui_stats_loading_notice")
+                end,
+                keep_menu_open = true,
+                callback       = function()
+                    local on = SUISettings:nilOrTrue("simpleui_stats_loading_notice")
+                    SUISettings:saveSetting("simpleui_stats_loading_notice", not on)
+                end,
+            },
+            {
                 text           = _("Overflow Warning"),
                 help_text      = _("Warn when modules on a page exceed the available screen height."),
                 checked_func   = function()

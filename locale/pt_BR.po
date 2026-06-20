@@ -610,6 +610,9 @@ msgstr "Aviso ao Fechar Livro"
 msgid "Closing book…"
 msgstr "Fechando o livro…"
 
+msgid "Loading statistics…"
+msgstr "Carregando estatísticas…"
+
 #: sui_quickactions.lua:1315
 msgid "Codepoint out of valid Unicode range (0–10FFFF)."
 msgstr "Codepoint fora do intervalo Unicode válido (0–10FFFF)."
@@ -2909,6 +2912,9 @@ msgstr ""
 "Mostra um breve aviso \"Fechando livro…\" ao fechar um livro, evitando "
 "toques duplos acidentais enquanto a tela de e-ink atualiza."
 
+msgid "Show a brief \"Loading statistics…\" notice when opening a statistics window, preventing accidental double-taps while e-ink refreshes."
+msgstr "Mostra um breve aviso \"Carregando estatísticas…\" ao abrir uma janela de estatísticas, evitando toques duplos acidentais enquanto a tela de e-ink atualiza."
+
 #: desktop_modules/module_recent.lua:397
 #: desktop_modules/module_coverdeck.lua:1038
 msgid "Show finished books"
@@ -3120,6 +3126,9 @@ msgstr "Comece com um layout pronto. Você pode mudar tudo depois."
 #: sui_stats_windows.lua:136
 msgid "Statistics database library not available."
 msgstr "Estatísticas do banco de dados de estatísticas indisponível."
+
+msgid "Statistics Loading Notice"
+msgstr "Aviso ao Carregar Estatísticas"
 
 #: sui_quickactions.lua:373
 msgid "Statistics plugin not available."

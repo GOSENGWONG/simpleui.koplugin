@@ -2162,6 +2162,27 @@ end
 -- remembered, but is not written to LuaSettings (ephemeral preference).
 local _ri_mode_key = "days"  -- "days" | "hours"
 
+--- Shows a brief "Loading statistics…" toast and flushes it to the e-ink
+--- screen immediately, so there is visible feedback before the (potentially
+--- slow) SQLite queries run.
+---
+--- Controlled by the "simpleui_stats_loading_notice" setting (default on).
+--- Callers must invoke this *before* any blocking work so the notice reaches
+--- the screen while the homescreen/library dialog is still the background.
+function StatsWindows.showLoadingNotice()
+    local ok_ss, SUISettings = pcall(require, "sui_settings")
+    if ok_ss and SUISettings and not SUISettings:nilOrTrue("simpleui_stats_loading_notice") then
+        return
+    end
+    local ok_im, InfoMessage = pcall(require, "ui/widget/infomessage")
+    if not ok_im or not InfoMessage then return end
+    UIManager:show(InfoMessage:new{
+        text    = _("Loading statistics\xe2\x80\xa6"),
+        timeout = 0.0,
+    })
+    UIManager:forceRePaint()
+end
+
 --- Opens the Reading Insights window.
 --- Can be called from module_reading_stats (streak card tap) or any other
 --- SimpleUI touch-point.

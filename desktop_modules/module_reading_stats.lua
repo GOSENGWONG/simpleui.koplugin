@@ -261,6 +261,7 @@ end
 local function openReadingInsights()
     local ok, SW = pcall(require, "sui_stats_windows")
     if ok and SW and SW.showReadingInsightsWindow then
+        if SW.showLoadingNotice then SW.showLoadingNotice() end
         SW.showReadingInsightsWindow()
     else
         -- Fallback: open the built-in stats plugin if sui_stats_windows is unavailable.

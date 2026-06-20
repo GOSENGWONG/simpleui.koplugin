@@ -624,6 +624,7 @@ function M.build(w, ctx)
                     function()
                         local ok, SW = pcall(require, "sui_stats_windows")
                         if ok and SW and SW.showFinishedBooksDialog then
+                            if SW.showLoadingNotice then SW.showLoadingNotice() end
                             SW.showFinishedBooksDialog()
                         end
                     end, cd, CLR_TEXT_SUB_EFF, CLR_TEXT_BLK_EFF)
@@ -677,6 +678,7 @@ function M.build(w, ctx)
                     function()
                         local ok, SW = pcall(require, "sui_stats_windows")
                         if ok and SW and SW.showFinishedBooksDialog then
+                            if SW.showLoadingNotice then SW.showLoadingNotice() end
                             SW.showFinishedBooksDialog()
                         end
                     end, d, CLR_TEXT_SUB_EFF, CLR_TEXT_BLK_EFF)

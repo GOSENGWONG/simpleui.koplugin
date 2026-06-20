@@ -1028,7 +1028,10 @@ function SimpleUIPlugin:init()
                         callback = function()
                             if close_cb then close_cb() end
                             local ok_sw, SW = pcall(require, "sui_stats_windows")
-                            if ok_sw and SW then SW.showBookStatsFromFile(file) end
+                            if ok_sw and SW then
+                                if SW.showLoadingNotice then SW.showLoadingNotice() end
+                                SW.showBookStatsFromFile(file)
+                            end
                         end,
                     }}
                 end
