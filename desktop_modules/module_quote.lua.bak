@@ -101,9 +101,6 @@ local MAX_POOL_HIGHLIGHTS = 100
 local SETTING_SOURCE      = "simpleui_quote_source"
 local SETTING_CUSTOM_FILE = "simpleui_quote_custom_file"
 local SETTING_ALIGN       = "simpleui_quote_align"
-local SETTING_FIXED_H     = "simpleui_quote_fixed_height"
-
-local _FIXED_LINES = 3  -- number of quote-body lines when fixed height is active
 
 -- ---------------------------------------------------------------------------
 -- Alignment setting helpers  (mirrors module_action_list)
@@ -124,17 +121,6 @@ local function alignLabel(align)
     if align == "left"  then return _("Left")  end
     if align == "right" then return _("Right") end
     return _("Center")
-end
-
--- ---------------------------------------------------------------------------
--- Fixed-height setting helpers
--- ---------------------------------------------------------------------------
-local function isFixedHeight(pfx)
-    return SUISettings:readSetting((pfx or "") .. SETTING_FIXED_H) == true
-end
-
-local function setFixedHeight(pfx, val)
-    SUISettings:saveSetting((pfx or "") .. SETTING_FIXED_H, val and true or false)
 end
 
 
@@ -1140,17 +1126,6 @@ function M.build(w, ctx)
     end
     local frame = VerticalGroup:new{ align = "center", pad_span, inner_row_aligned, pad2_span }
 
-    -- When fixed height is active, pin the frame to exactly getHeight() so the
-    -- homescreen layout is stable regardless of how many lines the quote wraps to.
-    local fixed = isFixedHeight(ctx and ctx.pfx)
-    if fixed then
-        local Geom2 = require("ui/geometry")
-        frame = CenterContainer:new{
-            dimen = Geom2:new{ w = w, h = M.getHeight(ctx) },
-            frame,
-        }
-    end
-
     local open_fn = ctx and ctx.open_fn
 
     if hl_filepath and open_fn then
@@ -1237,10 +1212,7 @@ function M.getHeight(_ctx)
 
     local attr_h     = math.max(6, math.floor(_BASE_QUOTE_ATTR_H * scale))
 
-    local fixed = isFixedHeight(_ctx and _ctx.pfx)
-    local lines = fixed and _FIXED_LINES or 4  -- 4 is the dynamic estimate
-
-    return PAD + quote_fs * lines + quote_gap + attr_h + PAD2
+    return PAD + quote_fs * 4 + quote_gap + attr_h + PAD2
 
 end
 
@@ -1434,15 +1406,6 @@ function M.getMenuItems(ctx_menu)
                     callback       = function() setAlignment(pfx, "right");  refresh() end,
                 },
             },
-        },
-
-        {
-            text         = _lc("Fixed Height"),
-            checked_func = function() return isFixedHeight(pfx) end,
-            callback     = function()
-                setFixedHeight(pfx, not isFixedHeight(pfx))
-                refresh()
-            end,
         },
 
     }
