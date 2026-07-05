@@ -109,6 +109,17 @@ msgstr ""
 "\n"
 "Reiniciar agora?"
 
+#: sui_menu.lua:4249
+msgid ""
+"A restart is required to apply the new text size everywhere.\n"
+"\n"
+"Restart now?"
+msgstr ""
+"É necessário reiniciar para aplicar o novo tamanho do texto em todo o "
+"lado.\n"
+"\n"
+"Reiniciar agora?"
+
 #: sui_stats_windows.lua:2418
 msgid "ALL TIME"
 msgstr "TOTAL"
@@ -226,6 +237,10 @@ msgstr "Todos os itens já foram adicionados."
 #: sui_settings_window.lua:611
 msgid "All modules have already been added."
 msgstr "Todos os módulos já foram adicionados."
+
+#: sui_quickactions.lua:3046
+msgid "All recent books are finished."
+msgstr "Todos os livros recentes estão concluídos."
 
 #: desktop_modules/module_reading_stats.lua:92
 msgid "All time — Books"
@@ -1253,6 +1268,11 @@ msgstr "Luz frontal não disponível neste dispositivo."
 msgid "Gesture Only"
 msgstr "Só por Gesto"
 
+#: sui_menu.lua:4229
+#: sui_menu.lua:4236
+msgid "Global Text Size"
+msgstr "Tamanho Global do Texto"
+
 #: sui_settings_window.lua:283
 msgid "Global custom quick actions"
 msgstr "Ações rápidas globais personalizadas"
@@ -1260,6 +1280,20 @@ msgstr "Ações rápidas globais personalizadas"
 #: sui_settings_window.lua:284
 msgid "Global custom quick actions  (%d/%d)"
 msgstr "Ações rápidas globais personalizadas  (%d/%d)"
+
+#: sui_menu.lua:4237
+msgid ""
+"Global scale applied to all of KOReader's interface text — menus, "
+"dialogs, titles, and Simple UI. It does not change the book's reading "
+"font size, which has its own setting.\n"
+"100% is the default size. Useful when a chosen UI font (see UI Font "
+"above) renders smaller or larger than usual."
+msgstr ""
+"Escala global aplicada a todo o texto de interface do KOReader — menus, "
+"diálogos, títulos e Simple UI. Não altera o tamanho da letra do livro "
+"durante a leitura, que tem a sua própria definição.\n"
+"100% é o tamanho predefinido. Útil quando o tipo de letra da interface "
+"escolhido (ver acima) fica mais pequeno ou maior do que o habitual."
 
 #: sui_menu.lua:2410
 msgid ""
@@ -2072,6 +2106,10 @@ msgstr "Nenhuma predefinição encontrada."
 msgid "No quotes found."
 msgstr "Nenhuma citação encontrada."
 
+#: sui_quickactions.lua:3028
+msgid "No recent books."
+msgstr "Sem livros recentes."
+
 #: sui_stats_windows.lua:142 sui_stats_windows.lua:177
 #: sui_stats_windows.lua:2527
 msgid "No statistics found for this book."
@@ -2543,6 +2581,12 @@ msgstr "Estatísticas de Leitura"
 #: sui_quickactions.lua:410
 msgid "Reboot"
 msgstr "Reiniciar"
+
+#: sui_quickactions.lua:634
+#: sui_quickactions.lua:3089
+#: sui_config.lua:119
+msgid "Recent"
+msgstr "Recentes"
 
 #: sui_presets.lua:137 sui_presets.lua:172 sui_presets.lua:230
 #: desktop_modules/module_recent.lua:69 desktop_modules/module_recent.lua:70
@@ -3067,6 +3111,10 @@ msgstr "Simple UI: Ir para o Ecrã Inicial"
 #: main.lua:875
 msgid "Simple UI: Go to Library"
 msgstr "Simple UI: Ir para a Biblioteca"
+
+#: main.lua:893
+msgid "Simple UI: Recent"
+msgstr "Simple UI: Recentes"
 
 #: main.lua:887
 msgid "Simple UI: Settings"

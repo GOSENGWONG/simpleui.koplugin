@@ -2640,6 +2640,51 @@ function M.unpatchResetSettingsButton(plugin)
 end
 
 -- ---------------------------------------------------------------------------
+-- Global Text Size (Style ▸ Global Text Size)
+-- Patches ui/font.lua's Font:getFace() so Config.getFontScalePct() scales
+-- EVERY KOReader UI text size drawn through it — native menus, dialogs,
+-- titlebars, file browser AND SimpleUI's own FS_* widgets — from one choke
+-- point, since Font:getFace() is what the UI Font picker's Font.fontmap
+-- swap already flows through for every one of those surfaces. It does NOT
+-- touch the actual e-book reading font size: that's rendered by crengine
+-- via its own font-size setting, entirely separate from ui/font.lua.
+--
+-- No-op (never wraps getFace) when the setting is at its 100% default, so
+-- users who never touch it pay zero extra cost on this very hot path.
+-- Like the UI Font picker itself, a change only takes full effect after a
+-- restart — the scale is captured once, at install time.
+-- ---------------------------------------------------------------------------
+
+function M.patchFontGetFace(plugin)
+    local Font = require("ui/font")
+    if Font._simpleui_getface_patched then return end
+
+    local scale = Config.getFontScalePct() / 100
+    if scale == 1 then return end  -- default: leave getFace fully untouched
+
+    Font._simpleui_getface_patched = true
+    local orig_getFace   = Font.getFace
+    plugin._orig_font_getface = orig_getFace
+
+    Font.getFace = function(self, font, size, faceindex)
+        if not size then size = self.sizemap[font] end
+        if size then size = math.max(1, math.floor(size * scale)) end
+        return orig_getFace(self, font, size, faceindex)
+    end
+end
+
+function M.unpatchFontGetFace(plugin)
+    local Font = package.loaded["ui/font"]
+    if not Font or not Font._simpleui_getface_patched then return end
+
+    if plugin._orig_font_getface then
+        Font.getFace              = plugin._orig_font_getface
+        plugin._orig_font_getface = nil
+    end
+    Font._simpleui_getface_patched = nil
+end
+
+-- ---------------------------------------------------------------------------
 -- installAll / teardownAll
 -- ---------------------------------------------------------------------------
 
@@ -3700,6 +3745,7 @@ function M.installAll(plugin)
     M.patchBookInfoNavigation(plugin)
     M.patchStatusButtons(plugin)
     M.patchResetSettingsButton(plugin)
+    M.patchFontGetFace(plugin)
     -- Install the FM tab icon patch so system icon overrides survive menu rebuilds.
     local ok_ss, SUIStyle = pcall(require, "sui_style")
     if ok_ss and SUIStyle then
@@ -3899,6 +3945,7 @@ function M.teardownAll(plugin)
     end
     M.unpatchStatusButtons(plugin)
     M.unpatchResetSettingsButton(plugin)
+    M.unpatchFontGetFace(plugin)
 
     local FMH = package.loaded["apps/filemanager/filemanagerhistory"]
     if FMH and FMH._sui_onMenuHold_patched then

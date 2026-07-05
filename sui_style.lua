@@ -1130,7 +1130,15 @@ end
 --  multiply that factor on top, e.g.:
 --      math.floor(SUIStyle.FS_TITLE * _getTopbarScale())
 --
---  _FS_SCALE is reserved for a future global "UI density" user setting.
+--  The Style ▸ Global Text Size setting (Config.getFontScalePct()) is NOT
+--  applied here. It patches ui/font.lua's Font:getFace() directly (see
+--  sui_patches.lua patchFontGetFace), so it scales every KOReader UI text
+--  size — native menus/dialogs AND SimpleUI's own FS_* widgets alike —
+--  from a single choke point. Baking it into FS_* here too would double
+--  the scale for every SimpleUI-drawn string.
+--
+--  _FS_SCALE is reserved for a possible future *SimpleUI-only* density
+--  knob, layered independently on top of the global Font:getFace scale.
 
 local _FS_SCALE = 1.0
 

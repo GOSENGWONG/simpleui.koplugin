@@ -4215,6 +4215,49 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     return items
                 end,
             },
+            -- ── Global Text Size ──────────────────────────────────────────
+            -- Global scale applied to every KOReader UI text size, via a
+            -- patch on ui/font.lua's Font:getFace() (sui_patches.lua
+            -- patchFontGetFace) — covers native menus/dialogs AND
+            -- SimpleUI's own widgets alike, not just Simple UI. Does not
+            -- affect the book's reading font size (crengine, separate
+            -- system). Like the UI Font picker above, a restart is needed
+            -- to fully apply it everywhere (the scale is captured once, at
+            -- plugin-init patch time).
+            {
+                text_func = function()
+                    return _("Global Text Size")
+                end,
+                value_func = function() return Config.getFontScalePct() .. "%" end,
+                keep_menu_open = true,
+                callback = function()
+                    local SpinWidget = require("ui/widget/spinwidget")
+                    UIManager:show(SpinWidget:new{
+                        title_text    = _("Global Text Size"),
+                        info_text     = _("Global scale applied to all of KOReader's interface text — menus, dialogs, titles, and Simple UI. It does not change the book's reading font size, which has its own setting.\n100% is the default size. Useful when a chosen UI font (see UI Font above) renders smaller or larger than usual."),
+                        value         = Config.getFontScalePct(),
+                        value_min     = Config.FONT_SCALE_MIN,
+                        value_max     = Config.FONT_SCALE_MAX,
+                        value_step    = Config.FONT_SCALE_STEP,
+                        unit          = "%",
+                        ok_text       = _("Apply"),
+                        cancel_text   = _("Cancel"),
+                        default_value = Config.FONT_SCALE_DEF,
+                        callback      = function(spin)
+                            Config.setFontScalePct(spin.value)
+                            UIManager:show(ConfirmBox():new{
+                                text       = _("A restart is required to apply the new text size everywhere.\n\nRestart now?"),
+                                ok_text    = _("Restart"),
+                                cancel_text = _("Later"),
+                                ok_callback = function()
+                                    SUISettings:flush()
+                                    UIManager:restartKOReader()
+                                end,
+                            })
+                        end,
+                    })
+                end,
+            },
             {
                 text = _("Progress Bar Type"),
                 sub_item_table = {
