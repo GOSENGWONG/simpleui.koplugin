@@ -352,11 +352,91 @@ local function buildTBRFps(ctx)
     return fps
 end
 
+local function buildCollectionFps(coll_name, ctx)
+    local ok_rc, rc = pcall(require, "readcollection")
+    if not (ok_rc and rc) then return {} end
+    if rc._read then
+        pcall(function() rc:_read() end)
+    end
+    local coll = rc.coll and rc.coll[coll_name]
+    if not coll then return {} end
+
+    local show_fin = showFinished(ctx.pfx or "")
+    local list = {}
+    local lfs = require("libs/libkoreader-lfs")
+    for fp, info in pairs(coll) do
+        local exists = false
+        local ok_attr, attr = pcall(lfs.attributes, fp, "mode")
+        if ok_attr and attr == "file" then
+            exists = true
+        end
+        if exists then
+            local is_done = false
+            if not show_fin then
+                local pd      = ctx.prefetched and ctx.prefetched[fp]
+                local pct     = pd and pd.percent or 0
+                is_done       = (pct >= 1.0) or
+                                (type(pd) == "table" and type(pd.summary) == "table"
+                                 and pd.summary.status == "complete")
+            end
+            if show_fin or not is_done then
+                list[#list + 1] = {
+                    filepath = fp,
+                    order = (type(info) == "table" and info.order) or 9999
+                }
+            end
+        end
+    end
+    table.sort(list, function(a, b) return (a.order or 9999) < (b.order or 9999) end)
+
+    local raw_fps = {}
+    for i = 1, #list do
+        raw_fps[i] = list[i].filepath
+    end
+
+    -- Put current book in first position if it is in the collection
+    if not (ctx.current_fp and #raw_fps > 0) then return raw_fps end
+    local found = false
+    for _, fp in ipairs(raw_fps) do
+        if fp == ctx.current_fp then found = true; break end
+    end
+    if not found then return raw_fps end
+    local fps = { ctx.current_fp }
+    for _, fp in ipairs(raw_fps) do
+        if fp ~= ctx.current_fp then fps[#fps + 1] = fp end
+    end
+    return fps
+end
+
+local function buildFavoritesFps(ctx)
+    local ok_rc, rc = pcall(require, "readcollection")
+    local fav_name = (ok_rc and rc and rc.default_collection_name) or "favorites"
+    return buildCollectionFps(fav_name, ctx)
+end
+
 local function getFps(source, ctx)
-    local fps = source == "tbr" and buildTBRFps(ctx) or buildRecentFps(ctx)
+    local fps
+    if source == "tbr" then
+        fps = buildTBRFps(ctx)
+    elseif source == "favorites" then
+        fps = buildFavoritesFps(ctx)
+    elseif source:match("^collection:") then
+        local coll_name = source:sub(12)
+        fps = buildCollectionFps(coll_name, ctx)
+    else
+        fps = buildRecentFps(ctx)
+    end
     -- Fallback: if chosen source is empty, try the other.
     if not fps or #fps == 0 then
-        fps = source == "tbr" and buildRecentFps(ctx) or buildTBRFps(ctx)
+        if source ~= "recent" then
+            fps = buildRecentFps(ctx)
+        end
+        if (not fps or #fps == 0) and source ~= "tbr" then
+            fps = buildTBRFps(ctx)
+        end
+        if (not fps or #fps == 0) and source ~= "favorites" then
+            fps = buildFavoritesFps(ctx)
+        end
     end
     return fps
 end
@@ -1031,28 +1111,108 @@ function M.getMenuItems(ctx_menu)
         }),
     }
 
+    local function makeCollectionsSubMenu()
+        local submenu = {}
+        local ok_rc, rc = pcall(require, "readcollection")
+        if ok_rc and rc then
+            if rc._read then pcall(function() rc:_read() end) end
+            local coll_set = {}
+            if rc.coll then for n in pairs(rc.coll) do coll_set[n] = true end end
+            if rc.coll_folders then for n in pairs(rc.coll_folders) do coll_set[n] = true end end
+
+            -- Remove favorites and TBR from this list as they have dedicated top-level options
+            local fav = rc.default_collection_name or "favorites"
+            coll_set[fav] = nil
+            local TBR = package.loaded["desktop_modules/module_tbr"]
+            local tbr_name = TBR and TBR.TBR_COLL_NAME or "To Be Read"
+            coll_set[tbr_name] = nil
+
+            local coll_names = {}
+            for name in pairs(coll_set) do
+                coll_names[#coll_names + 1] = name
+            end
+            table.sort(coll_names, function(a, b) return a:lower() < b:lower() end)
+
+            for _, name in ipairs(coll_names) do
+                local c_name = name
+                submenu[#submenu + 1] = {
+                    text         = c_name, radio = true,
+                    checked_func = function() return getSource(pfx) == "collection:" .. c_name end,
+                    keep_menu_open = true,
+                    callback     = function()
+                        SUISettings:saveSetting(pfx .. SETTING_SOURCE, "collection:" .. c_name)
+                        refresh()
+                    end,
+                }
+            end
+        end
+        if #submenu == 0 then
+            submenu[#submenu + 1] = {
+                text         = _lc("No collections found"),
+                enabled_func = function() return false end,
+            }
+        end
+        return submenu
+    end
+
     local source_item = {
-        text = _lc("Source"),
-        sub_item_table = {
-            {
-                text         = _lc("Recent Books"), radio = true,
-                checked_func = function() return getSource(pfx) == "recent" end,
-                keep_menu_open = true,
-                callback     = function()
-                    SUISettings:saveSetting(pfx .. SETTING_SOURCE, "recent")
-                    refresh()
-                end,
-            },
-            {
-                text         = _lc("To Be Read"), radio = true,
-                checked_func = function() return getSource(pfx) == "tbr" end,
-                keep_menu_open = true,
-                callback     = function()
-                    SUISettings:saveSetting(pfx .. SETTING_SOURCE, "tbr")
-                    refresh()
-                end,
-            },
-        },
+        text_func = function()
+            local src = getSource(pfx)
+            local display_src
+            if src == "recent" then
+                display_src = _lc("Recent Books")
+            elseif src == "tbr" then
+                display_src = _lc("To Be Read")
+            elseif src == "favorites" then
+                display_src = _lc("Favorites")
+            elseif src:match("^collection:") then
+                display_src = src:sub(12)
+            else
+                display_src = src
+            end
+            return string.format("%s: %s", _lc("Source"), display_src)
+        end,
+        sub_item_table_func = function()
+            local items = {
+                {
+                    text         = _lc("Recent Books"), radio = true,
+                    checked_func = function() return getSource(pfx) == "recent" end,
+                    keep_menu_open = true,
+                    callback     = function()
+                        SUISettings:saveSetting(pfx .. SETTING_SOURCE, "recent")
+                        refresh()
+                    end,
+                },
+                {
+                    text         = _lc("To Be Read"), radio = true,
+                    checked_func = function() return getSource(pfx) == "tbr" end,
+                    keep_menu_open = true,
+                    callback     = function()
+                        SUISettings:saveSetting(pfx .. SETTING_SOURCE, "tbr")
+                        refresh()
+                    end,
+                },
+                {
+                    text         = _lc("Favorites"), radio = true,
+                    checked_func = function() return getSource(pfx) == "favorites" end,
+                    keep_menu_open = true,
+                    callback     = function()
+                        SUISettings:saveSetting(pfx .. SETTING_SOURCE, "favorites")
+                        refresh()
+                    end,
+                },
+            }
+
+            local ok_rc, rc = pcall(require, "readcollection")
+            if ok_rc and rc then
+                items[#items + 1] = {
+                    text                = _lc("Collections"),
+                    sub_item_table_func = makeCollectionsSubMenu,
+                }
+            end
+
+            return items
+        end,
     }
 
     -- Pushes the nested "Statistics" arrange screen (percent / days / time /
@@ -1279,6 +1439,15 @@ function M.getMenuItems(ctx_menu)
     menu[#menu+1] = source_item
     menu[#menu+1] = items_item
     for _i, item in ipairs(scale_items) do menu[#menu+1] = item end
+    menu[#menu+1] = {
+        text           = _lc("Progress bar"),
+        checked_func   = function() return _showElem(pfx, "progress") end,
+        keep_menu_open = true,
+        callback       = function()
+            _toggleElem(pfx, "progress")
+            refresh()
+        end,
+    }
     menu[#menu+1] = {
         text           = _lc("Show finished books"),
         checked_func   = function() return showFinished(pfx) end,
