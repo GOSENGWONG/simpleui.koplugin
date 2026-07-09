@@ -196,20 +196,32 @@ end
 -- today_str, week_date, month_date, year_date are ISO-8601 strings
 -- pre-computed by SP.get from its single os.date("*t") call — zero os.date
 -- calls happen inside here.
+--
+-- rolling7_date is a SEPARATE ISO-8601 string: today minus 6 full days.
+-- week_date (Monday of the current calendar week) feeds week_secs/week_pages,
+-- shown on the "This week" card — that figure is intentionally calendar-
+-- anchored. rolling7_date feeds avg_secs/avg_pages, shown on the "avg 7 days"
+-- card, which must be a true trailing 7-day window so it matches the Reading
+-- Stats window's _riGetLastWeekStats(). Before this fix both cards derived
+-- from week_secs, so early in the calendar week (e.g. Mon/Tue) "avg 7 days"
+-- was silently averaging only 1-2 days of data over a fixed /7 divisor,
+-- reading far lower than the Reading Stats window's rolling figure.
 -- ---------------------------------------------------------------------------
 local function fetchTimeSeries(conn, start_today, week_start, month_start, year_start,
-                               today_str, week_date, month_date, year_date)
+                               today_str, week_date, month_date, year_date, rolling7_date)
     local r = {
-        today_secs  = 0,
-        today_pages = 0,
-        week_secs   = 0,
-        week_pages  = 0,
-        avg_secs    = 0,
-        avg_pages   = 0,
-        month_secs  = 0,
-        month_pages = 0,
-        year_secs   = 0,
-        total_secs  = 0,
+        today_secs     = 0,
+        today_pages    = 0,
+        week_secs      = 0,
+        week_pages     = 0,
+        rolling7_secs  = 0,
+        rolling7_pages = 0,
+        avg_secs       = 0,
+        avg_pages      = 0,
+        month_secs     = 0,
+        month_pages    = 0,
+        year_secs      = 0,
+        total_secs     = 0,
     }
 
     local ok, err = pcall(function()
@@ -243,7 +255,10 @@ local function fetchTimeSeries(conn, start_today, week_start, month_start, year_
                 -- today: exact date match on the 'd' column
                 COALESCE(sum(CASE WHEN d = '%s' THEN sd ELSE 0 END), 0),
                 COALESCE(sum(CASE WHEN d = '%s' THEN pg ELSE 0 END), 0),
-                -- 7-day window: d >= week_date
+                -- calendar week (Monday-anchored): d >= week_date
+                COALESCE(sum(CASE WHEN d >= '%s' THEN sd ELSE 0 END), 0),
+                COALESCE(sum(CASE WHEN d >= '%s' THEN pg ELSE 0 END), 0),
+                -- rolling 7-day window (today - 6 days): d >= rolling7_date
                 COALESCE(sum(CASE WHEN d >= '%s' THEN sd ELSE 0 END), 0),
                 COALESCE(sum(CASE WHEN d >= '%s' THEN pg ELSE 0 END), 0),
                 -- month: d >= month_date
@@ -255,28 +270,29 @@ local function fetchTimeSeries(conn, start_today, week_start, month_start, year_
                 COALESCE(sum(sd), 0)
             FROM day_buckets;
         ]], window_start,
-            today_str, today_str,
-            week_date,  week_date,
-            month_date, month_date,
+            today_str,    today_str,
+            week_date,    week_date,
+            rolling7_date, rolling7_date,
+            month_date,   month_date,
             year_date)
 
         local rw = conn:exec(sql)
         if rw and rw[1] and rw[1][1] then
-            r.today_secs  = rownum(rw[1][1])
-            r.today_pages = rownum(rw[2] and rw[2][1])
-            r.week_secs   = rownum(rw[3] and rw[3][1])
-            r.week_pages  = rownum(rw[4] and rw[4][1])
-            -- avg over a fixed 7-day window: divide by 7 unconditionally.
-            -- The original counted non-zero days (nd) to compute the average,
-            -- which produced a "days with reading" average rather than a true
-            -- calendar average.  Dividing by 7 matches the fork behaviour and
-            -- is the value users intuitively expect from "daily avg (7 days)".
-            r.avg_secs    = math.floor(r.week_secs  / 7)
-            r.avg_pages   = math.floor(r.week_pages / 7)
-            r.month_secs  = rownum(rw[5] and rw[5][1])
-            r.month_pages = rownum(rw[6] and rw[6][1])
-            r.year_secs   = rownum(rw[7] and rw[7][1])
-            r.total_secs  = rownum(rw[8] and rw[8][1])
+            r.today_secs     = rownum(rw[1][1])
+            r.today_pages    = rownum(rw[2] and rw[2][1])
+            r.week_secs      = rownum(rw[3] and rw[3][1])
+            r.week_pages     = rownum(rw[4] and rw[4][1])
+            r.rolling7_secs  = rownum(rw[5] and rw[5][1])
+            r.rolling7_pages = rownum(rw[6] and rw[6][1])
+            -- avg over a TRUE rolling 7-day window (today - 6 days), divided
+            -- by 7 unconditionally. Must NOT be derived from week_secs
+            -- (calendar week) — see the fetchTimeSeries doc comment above.
+            r.avg_secs    = math.floor(r.rolling7_secs  / 7)
+            r.avg_pages   = math.floor(r.rolling7_pages / 7)
+            r.month_secs  = rownum(rw[7] and rw[7][1])
+            r.month_pages = rownum(rw[8] and rw[8][1])
+            r.year_secs   = rownum(rw[9] and rw[9][1])
+            r.total_secs  = rownum(rw[10] and rw[10][1])
         end
     end)
     if not ok then
@@ -602,9 +618,15 @@ function SP.get(db_conn, year_str, needs_books)
 
     -- Compute timestamps once — shared by all sub-queries.
     local start_today = now - (t.hour * 3600 + t.min * 60 + t.sec)
-    -- Calendar week: Monday of the current week.
+    -- Calendar week: Monday of the current week. Feeds week_secs/week_pages,
+    -- shown on the "This week" card (intentionally calendar-anchored).
     -- t.wday: 1=Sunday, 2=Monday, ..., 7=Saturday → days since Monday = (t.wday - 2) % 7
-    local week_start  = start_today - ((t.wday - 2) % 7) * 86400
+    local week_start    = start_today - ((t.wday - 2) % 7) * 86400
+    -- Rolling 7-day window: today minus 6 full days, regardless of weekday.
+    -- Feeds avg_secs/avg_pages, shown on the "avg 7 days" card — must match
+    -- the Reading Stats window's rolling _riGetLastWeekStats(), NOT the
+    -- calendar-week total above.
+    local rolling7_start = start_today - 6 * 86400
     local month_start = os.time{ year = t.year, month = t.month, day = 1,
                                   hour = 0,     min  = 0,  sec = 0 }
     local year_start  = os.time{ year = t.year, month = 1, day = 1,
@@ -613,12 +635,14 @@ function SP.get(db_conn, year_str, needs_books)
     -- Pre-compute ISO-8601 date strings once using string.format (faster than
     -- os.date per-string) and share them across fetchTimeSeries and the sidecar
     -- scan — avoids redundant os.date calls inside fetchTimeSeries.
-    local t_week  = os.date("*t", week_start)
-    local t_month = os.date("*t", month_start)
-    local t_year  = os.date("*t", year_start)
-    local week_date  = string.format("%04d-%02d-%02d", t_week.year,  t_week.month,  t_week.day)
-    local month_date = string.format("%04d-%02d-%02d", t_month.year, t_month.month, t_month.day)
-    local year_date  = string.format("%04d-%02d-%02d", t_year.year,  t_year.month,  t_year.day)
+    local t_week     = os.date("*t", week_start)
+    local t_rolling7 = os.date("*t", rolling7_start)
+    local t_month    = os.date("*t", month_start)
+    local t_year     = os.date("*t", year_start)
+    local week_date     = string.format("%04d-%02d-%02d", t_week.year,     t_week.month,     t_week.day)
+    local rolling7_date = string.format("%04d-%02d-%02d", t_rolling7.year, t_rolling7.month, t_rolling7.day)
+    local month_date    = string.format("%04d-%02d-%02d", t_month.year,    t_month.month,    t_month.day)
+    local year_date     = string.format("%04d-%02d-%02d", t_year.year,     t_year.month,     t_year.day)
 
     -- _changed: tells consumers which categories of data were re-fetched so
     -- that updateStats() can skip cards/rows whose underlying fields did not
@@ -655,7 +679,7 @@ function SP.get(db_conn, year_str, needs_books)
     -- ── DB queries ────────────────────────────────────────────────────────
     if db_conn then
         local ts, ts_err = fetchTimeSeries(db_conn, start_today, week_start, month_start, year_start,
-                                           today_str, week_date, month_date, year_date)
+                                           today_str, week_date, month_date, year_date, rolling7_date)
         result.today_secs  = ts.today_secs
         result.today_pages = ts.today_pages
         result.week_secs   = ts.week_secs

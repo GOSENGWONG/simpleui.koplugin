@@ -445,6 +445,21 @@ function M.patchFileManagerClass(plugin)
 
         orig_setupLayout(fm_self)
 
+        -- cur_w/cur_h computed here (rather than immediately before the guard
+        -- block below, where they used to live) so the diagnostic log below
+        -- can reference them; the guard block further down reuses these same
+        -- locals instead of recomputing them. Purely a reordering, no
+        -- behaviour change.
+        local cur_w = Screen:getWidth()
+        local cur_h = Screen:getHeight()
+        logger.dbg("simpleui[rotation]: setupLayout call",
+            "cur_w=", cur_w, "cur_h=", cur_h,
+            "cached_w=", fm_self._navbar_layout_w,
+            "cached_h=", fm_self._navbar_layout_h,
+            "will_reuse_navbar_inner=", (fm_self._navbar_inner ~= nil
+                and fm_self._navbar_layout_w == cur_w
+                and fm_self._navbar_layout_h == cur_h))
+
         -- Re-apply title-bar customisations to the fresh TitleBar instance that
         -- orig_setupLayout just created.  We must use reapply (restore + apply)
         -- rather than apply alone: apply guards itself with _titlebar_patched so
@@ -458,17 +473,38 @@ function M.patchFileManagerClass(plugin)
         -- screen dimensions change (rotation), drop the cached widget so the
         -- fresh FileChooser built by orig_setupLayout with the new dimensions
         -- is used instead.
-        local cur_w = Screen:getWidth()
-        local cur_h = Screen:getHeight()
+        --
+        -- HIPÓTESE NÃO CONFIRMADA (bug #2 — navbar duplicada na Library após
+        -- duas rotações em sequência): usar apenas W x H como proxy para
+        -- "nada mudou, pode reaproveitar _navbar_inner" pode falhar quando há
+        -- múltiplas chamadas de setupLayout em rajada que acabam por aterrar
+        -- em dimensões já vistas antes — nesse caso o fm_self[1] que
+        -- orig_setupLayout acabou de construir NESTA chamada seria descartado
+        -- e voltaríamos a reaproveitar um widget antigo. Comparamos também a
+        -- geração de rotação (UI.getRotationGeneration(), incrementada por
+        -- HomescreenWidget:onSetRotationMode em sui_homescreen.lua a cada
+        -- SetRotationMode genuíno) e não só W x H. A comparação de W x H é
+        -- mantida como verificação adicional, não removida. Ainda não
+        -- confirmado por log de runtime — reverter é remover a comparação de
+        -- _navbar_layout_gen e a linha que a atualiza, deixando W x H como
+        -- única condição (como era antes).
+        local cur_gen = UI.getRotationGeneration()
         if fm_self._navbar_inner
-                and (fm_self._navbar_layout_w ~= cur_w
+                and (fm_self._navbar_layout_gen ~= cur_gen
+                     or fm_self._navbar_layout_w ~= cur_w
                      or fm_self._navbar_layout_h ~= cur_h) then
             fm_self._navbar_inner = nil
         end
+        -- ALTERNATIVA MAIS SIMPLES (não ativa por defeito): em vez do
+        -- contador de gerações, remover por completo o cache _navbar_inner
+        -- neste bloco e usar sempre fm_self[1] fresco em toda e qualquer
+        -- chamada de setupLayout:
+        --   local inner_widget = fm_self[1]
         local inner_widget = fm_self._navbar_inner or fm_self[1]
-        fm_self._navbar_inner    = inner_widget
-        fm_self._navbar_layout_w = cur_w
-        fm_self._navbar_layout_h = cur_h
+        fm_self._navbar_inner      = inner_widget
+        fm_self._navbar_layout_w   = cur_w
+        fm_self._navbar_layout_h   = cur_h
+        fm_self._navbar_layout_gen = cur_gen
 
         local tabs = Config.loadTabConfig()
         -- Recalculate the correct indicator from the FC path before wrapping.

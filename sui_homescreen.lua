@@ -3119,9 +3119,15 @@ function HomescreenWidget:onResume()
 end
 
 function HomescreenWidget:onSetRotationMode(mode)
+    logger.dbg("simpleui[rotation]: HS onSetRotationMode",
+        "mode=", mode, "current_mode=", Screen:getRotationMode())
+
     -- Ignore rotation events originating inside an open ReaderUI.
     local RUI = package.loaded["apps/reader/readerui"]
-    if RUI and RUI.instance then return end
+    if RUI and RUI.instance then
+        logger.dbg("simpleui[rotation]: HS ignoring, ReaderUI open")
+        return
+    end
 
     -- HomescreenWidget is on top of the UIManager stack, so broadcastEvent
     -- delivers SetRotationMode here *before* FileManager:onSetRotationMode runs.
@@ -3136,10 +3142,32 @@ function HomescreenWidget:onSetRotationMode(mode)
     -- Same-family flips (e.g. 0 <-> 180 portrait inversion) leave dimensions
     -- unchanged, so they don't need a rebuild.
     local current_mode = Screen:getRotationMode()
-    if mode == current_mode then return end
+    if mode == current_mode then
+        logger.dbg("simpleui[rotation]: HS mode unchanged")
+        return
+    end
+
+    -- HIPÓTESE NÃO CONFIRMADA (bug #2): regista que uma rotação genuína
+    -- aconteceu, para o guard de setupLayout em sui_patches.lua (ver
+    -- UI.bumpRotationGeneration / UI.getRotationGeneration em sui_core.lua).
+    -- Reversível: remover esta chamada não afeta o resto desta função.
+    UI.bumpRotationGeneration()
+
     local current_is_landscape = (current_mode % 2) == 1
     local new_is_landscape     = (mode      % 2) == 1
-    if current_is_landscape == new_is_landscape then return end
+    if current_is_landscape == new_is_landscape then
+        -- BUG 1 FIX: same-family flip (e.g. upright <-> upside-down). Screen
+        -- dimensions are unchanged so no rebuild is needed, but cached visual
+        -- content (wallpaper, dim cache) was drawn assuming the old
+        -- orientation and is now shown over a framebuffer that has already
+        -- physically rotated 180° — invalidate those caches and force a full
+        -- repaint of this widget before returning.
+        _styleFreeBgCache()
+        UI.invalidateDimCache()
+        UIManager:setDirty(self, "full")
+        logger.dbg("simpleui[rotation]: HS same-family, skipping rebuild")
+        return
+    end
 
     -- Free the wallpaper cache now, before closing. The new HomescreenWidget
     -- created by the rotation-reopen path will call _styleGetBgWidget() with

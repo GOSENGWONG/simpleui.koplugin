@@ -28,6 +28,18 @@ local function _TB() _Topbar    = _Topbar    or require("sui_topbar");    return
 local M   = {}
 local _dim = {}
 
+-- HIPÓTESE NÃO CONFIRMADA (bug #2 — navbar duplicada após rotações em rajada):
+-- Contador incrementado a cada evento SetRotationMode genuíno (mode ~=
+-- current_mode) recebido por HomescreenWidget:onSetRotationMode. Serve como
+-- fonte de verdade partilhada entre sui_homescreen.lua e sui_patches.lua
+-- (ambos requerem este módulo, logo partilham a mesma tabela M) para que o
+-- guard de setupLayout em sui_patches.lua saiba que uma rotação aconteceu
+-- desde a última vez que a navbar foi envolvida, mesmo que a comparação de
+-- W x H não seja suficiente (rotações em rajada / dimensões repetidas).
+-- Reversível: remover este bloco e as chamadas a bumpRotationGeneration /
+-- getRotationGeneration não afeta mais nada no módulo.
+local _rotation_generation = 0
+
 -- ---------------------------------------------------------------------------
 -- Shared layout constants — single source of truth for all desktop modules.
 --
@@ -193,6 +205,20 @@ function M.invalidateDimCache()
     -- Clear the section-label widget cache: labels embed inner_w in their key
     -- and must be rebuilt after a screen rotation changes inner_w (fix #6).
     if hs and hs.invalidateLabelCache then hs.invalidateLabelCache() end
+end
+
+-- ---------------------------------------------------------------------------
+-- HIPÓTESE NÃO CONFIRMADA (bug #2) — geração de rotação partilhada.
+-- Ver comentário junto à declaração de _rotation_generation acima.
+-- ---------------------------------------------------------------------------
+
+function M.bumpRotationGeneration()
+    _rotation_generation = _rotation_generation + 1
+    return _rotation_generation
+end
+
+function M.getRotationGeneration()
+    return _rotation_generation
 end
 
 -- ---------------------------------------------------------------------------
