@@ -453,16 +453,46 @@ function M.patchFileManagerClass(plugin)
         local cur_w = Screen:getWidth()
         local cur_h = Screen:getHeight()
         local cur_gen = UI.getRotationGeneration()
+
+        -- CORREÇÃO (bottom bar "estranha" -- confirmado por leitura de código,
+        -- ver crash__5_.log e sui_bottombar.lua linhas ~170-183, ~219): existe
+        -- uma SEGUNDA cache de dimensões, separada de _navbar_inner --
+        -- BAR_H()/ICON_SZ()/etc. em sui_bottombar.lua (e o equivalente em
+        -- sui_topbar.lua) são calculados uma única vez via
+        -- Screen:scaleBySize(...) e guardados em _dim, só limpos por
+        -- UI.invalidateDimCache(). Essa chamada só existia em
+        -- sui_homescreen.lua (HomescreenWidget:onSetRotationMode) -- nunca
+        -- aqui no setupLayout patchado, que é o caminho que corre quando o
+        -- FileManager (core) trata uma rotação diretamente, com a Library em
+        -- primeiro plano. Resultado: depois de uma rotação retrato<->paisagem
+        -- real enquanto se navega na Library, a bottom bar continuava a usar
+        -- a altura/tamanho de ícone calculados para a MRIMEIRA orientação
+        -- desta sessão, nunca recalculados -- daí o layout "estranho".
+        -- Invalidamos aqui sempre que as dimensões mudaram desde a última
+        -- chamada (mesmo critério já usado no log/diagnóstico abaixo).
+        -- Reversível: remover este bloco if.
+        if fm_self._navbar_layout_w ~= cur_w or fm_self._navbar_layout_h ~= cur_h then
+            UI.invalidateDimCache()
+            logger.dbg("simpleui[rotation]: setupLayout invalidating dim cache",
+                "old_w=", fm_self._navbar_layout_w, "old_h=", fm_self._navbar_layout_h,
+                "new_w=", cur_w, "new_h=", cur_h)
+        end
+
+        -- NOTA: os campos would_have_reused_* abaixo são só diagnóstico
+        -- histórico (o que a cache _navbar_inner teria decidido) -- desde a
+        -- ativação da "alternativa mais simples" mais abaixo nesta função,
+        -- fm_self[1] fresco é SEMPRE usado, por isso estes campos já não
+        -- refletem a decisão real tomada.
         logger.dbg("simpleui[rotation]: setupLayout call",
             "cur_w=", cur_w, "cur_h=", cur_h,
             "cached_w=", fm_self._navbar_layout_w,
             "cached_h=", fm_self._navbar_layout_h,
             "cur_gen=", cur_gen,
             "cached_gen=", fm_self._navbar_layout_gen,
-            "will_reuse_navbar_inner_wh_only=", (fm_self._navbar_inner ~= nil
+            "would_have_reused_wh_only=", (fm_self._navbar_inner ~= nil
                 and fm_self._navbar_layout_w == cur_w
                 and fm_self._navbar_layout_h == cur_h),
-            "will_reuse_navbar_inner_actual=", (fm_self._navbar_inner ~= nil
+            "would_have_reused_with_gen=", (fm_self._navbar_inner ~= nil
                 and fm_self._navbar_layout_gen == cur_gen
                 and fm_self._navbar_layout_w == cur_w
                 and fm_self._navbar_layout_h == cur_h))
