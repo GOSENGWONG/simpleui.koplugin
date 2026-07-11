@@ -453,6 +453,7 @@ function M.patchFileManagerClass(plugin)
         local cur_w = Screen:getWidth()
         local cur_h = Screen:getHeight()
         local cur_gen = UI.getRotationGeneration()
+        local _dims_changed = (fm_self._navbar_layout_w ~= cur_w or fm_self._navbar_layout_h ~= cur_h)
 
         -- CORREÇÃO (bottom bar "estranha" -- confirmado por leitura de código,
         -- ver crash__5_.log e sui_bottombar.lua linhas ~170-183, ~219): existe
@@ -471,7 +472,7 @@ function M.patchFileManagerClass(plugin)
         -- Invalidamos aqui sempre que as dimensões mudaram desde a última
         -- chamada (mesmo critério já usado no log/diagnóstico abaixo).
         -- Reversível: remover este bloco if.
-        if fm_self._navbar_layout_w ~= cur_w or fm_self._navbar_layout_h ~= cur_h then
+        if _dims_changed then
             UI.invalidateDimCache()
             logger.dbg("simpleui[rotation]: setupLayout invalidating dim cache",
                 "old_w=", fm_self._navbar_layout_w, "old_h=", fm_self._navbar_layout_h,
@@ -592,6 +593,30 @@ function M.patchFileManagerClass(plugin)
         -- onShow only fires on the first push to the UIManager stack, so without
         -- this the buttons keep their default KOReader size after a rotation.
         Bottombar.resizePaginationButtons(fm_self.file_chooser or fm_self, Bottombar.getPaginationIconSize())
+
+        -- CORREÇÃO (bottom bar "estranha", 2ª causa -- confirmado por log real,
+        -- crash__6_.log 23:58:55: "triggering refresh {region=1680x1030+0+0}"
+        -- em paisagem (screen_h=1264) e "region=1264x1446+0+0" em retrato
+        -- (screen_h=1680) -- em ambos falta exatamente ~234px no fundo do
+        -- ecrã, a área da bottom bar). fc_self.height é propositadamente
+        -- encolhido a UI.getContentHeight() (linha ~312, acima) para deixar
+        -- espaço à navbar -- o Menu (FileChooser) sabe disso e o seu próprio
+        -- "setDirty via a func" (mergeTitleBarIntoLayout/FocusManager) só
+        -- cobre o seu próprio self.dimen (a área de conteúdo), corretamente,
+        -- já que a bottom bar não faz parte da árvore do Menu. Mas ninguém
+        -- mais pede explicitamente o repaint da faixa da bottom bar depois de
+        -- um reinit por rotação: onShow (que trataria disto na primeira
+        -- abertura) não corre outra vez num reinit, como o comentário acima
+        -- sobre resizePaginationButtons já reconhece para os botões -- o
+        -- mesmo problema aplica-se ao repaint. Os pixels novos da bottom bar
+        -- são compostos corretamente em memória (buildBarWidget corre sempre
+        -- de novo) mas nunca chegam a ser fisicamente atualizados no ecrã.
+        -- Forçamos aqui um repaint de ecrã inteiro sempre que uma rotação real
+        -- aconteceu (mesmo _dims_changed do bloco de invalidação da cache,
+        -- acima). Reversível: remover este bloco if.
+        if _dims_changed then
+            UIManager:setDirty(fm_self, "ui")
+        end
 
         plugin:_updateFMHomeIcon()
 
