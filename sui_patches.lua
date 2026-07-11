@@ -453,7 +453,18 @@ function M.patchFileManagerClass(plugin)
         local cur_w = Screen:getWidth()
         local cur_h = Screen:getHeight()
         local cur_gen = UI.getRotationGeneration()
-        local _dims_changed = (fm_self._navbar_layout_w ~= cur_w or fm_self._navbar_layout_h ~= cur_h)
+        -- CORREÇÃO (confirmado por log real, crash__7_.log 07:21:03): um flip
+        -- same-family de 180° (upright <-> upside-down) NUNCA muda W x H --
+        -- por isso uma condição baseada só em W x H nunca deteta que uma
+        -- rotação real aconteceu enquanto a Library estava em segundo plano
+        -- (Home em primeiro plano, gen incrementado de 0 para 2 por dois
+        -- flips 180°, mas cached_w/h continuam iguais quando se volta à
+        -- Library). Resultado: nem a cache de dimensões da bottom bar nem o
+        -- repaint completo abaixo disparavam, e a bottom bar ficava com
+        -- conteúdo desenhado antes dos flips. Comparamos também cur_gen.
+        local _dims_changed = (fm_self._navbar_layout_w ~= cur_w
+            or fm_self._navbar_layout_h ~= cur_h
+            or fm_self._navbar_layout_gen ~= cur_gen)
 
         -- CORREÇÃO (bottom bar "estranha" -- confirmado por leitura de código,
         -- ver crash__5_.log e sui_bottombar.lua linhas ~170-183, ~219): existe
@@ -476,7 +487,8 @@ function M.patchFileManagerClass(plugin)
             UI.invalidateDimCache()
             logger.dbg("simpleui[rotation]: setupLayout invalidating dim cache",
                 "old_w=", fm_self._navbar_layout_w, "old_h=", fm_self._navbar_layout_h,
-                "new_w=", cur_w, "new_h=", cur_h)
+                "new_w=", cur_w, "new_h=", cur_h,
+                "old_gen=", fm_self._navbar_layout_gen, "new_gen=", cur_gen)
         end
 
         -- NOTA: os campos would_have_reused_* abaixo são só diagnóstico
