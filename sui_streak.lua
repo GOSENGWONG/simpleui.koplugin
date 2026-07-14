@@ -118,7 +118,7 @@ end
 --   simpleui_streak_freezes_available    — int, freezes banked and unspent
 --   simpleui_streak_frozen_dates         — array of "YYYY-MM-DD" strings
 --   simpleui_streak_freeze_time_secs     — int, cumulative seconds toward
---                                           the next time-based freeze (mod 7200)
+--                                           the next time-based freeze (mod FREEZE_TIME_THRESHOLD_SECS)
 --   simpleui_streak_freeze_watermark     — int, highest streak length already
 --                                           rewarded a day-based freeze
 --
@@ -140,7 +140,7 @@ local KEY_TIME_PROGRESS   = "simpleui_streak_freeze_time_secs"
 local KEY_WATERMARK       = "simpleui_streak_freeze_watermark"
 local KEY_LAST_TOTAL_SECS = "simpleui_streak_freeze_last_total_secs"
 
-local FREEZE_TIME_THRESHOLD_SECS = 7200  -- 2 hours
+local FREEZE_TIME_THRESHOLD_SECS = 500 * 60  -- 500 minutes
 local FREEZE_DAY_INTERVAL        = 5     -- +1 freeze every 5 consecutive days
 
 -- Exposed read-only so callers (e.g. the Streak Manager window's progress
@@ -245,7 +245,7 @@ function M.getFrozenDatesInRange(start_str, end_str)
 end
 
 -- ---------------------------------------------------------------------------
--- Time-based earning (+1 freeze / 2h cumulative reading time)
+-- Time-based earning (+1 freeze / 500min cumulative reading time)
 -- ---------------------------------------------------------------------------
 
 --- Current progress in seconds toward the next time-based freeze (always
@@ -257,7 +257,7 @@ function M.getFreezeTimeProgress()
 end
 
 --- Add `secs` of reading time toward the next time-based freeze. Every time
---- the running total crosses FREEZE_TIME_THRESHOLD_SECS (7200s / 2h), grants
+--- the running total crosses FREEZE_TIME_THRESHOLD_SECS (500min), grants
 --- one freeze and subtracts the threshold (not a reset to 0), so a single
 --- long session can grant more than one freeze at once. No-op when freeze
 --- mode is off or secs <= 0. Returns the number of freezes granted (0+).

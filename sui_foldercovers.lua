@@ -84,6 +84,19 @@ local M = {}
 local function _getFlag(key)    return SUISettings:readSetting(key) ~= false end
 local function _setFlag(key, v) SUISettings:saveSetting(key, v)              end
 
+-- Filename "p(<n>)" token → page count, e.g. "Caliban's War - p(624).epub".
+-- A publisher/preferred page count for books SimpleUI can't page-count yet
+-- (unopened reflowable formats with no BookInfoManager entry, pagemap or
+-- stats). Matched case-insensitively on the basename only — used ONLY as a
+-- last resort below, after bi.pages, so a real rendered/stable count always
+-- wins. Inert (nil) for filenames without the token.
+local function _pageCountFromFilename(filepath)
+    if type(filepath) ~= "string" then return nil end
+    local base = filepath:match("([^/]+)$") or filepath
+    local n = base:match("[Pp]%((%d+)%)")
+    return n and tonumber(n) or nil
+end
+
 function M.isEnabled()   return SUISettings:isTrue(SK.enabled)  end
 function M.setEnabled(v) SUISettings:saveSetting(SK.enabled, v) end
 
@@ -328,6 +341,19 @@ local _BADGE_MARGIN_BASE  = Screen:scaleBySize(8)
 local _BADGE_MARGIN_R_BASE = Screen:scaleBySize(4)
 
 local _LABEL_ALPHA = 0.75
+
+-- Same ratio KOReader's stock listmenu.lua uses to convert a "nominal"
+-- (64px-reference) font size into an actual scaled size. Keeping this
+-- identical means folder names in the list-with-covers view end up the
+-- same size as book titles, matching stock behaviour.
+local _LM_SCALE_BY_SIZE = Screen:scaleBySize(1000000) * (1/1000000)
+local function _lmFontSize(dimen_h, nominal, max)
+    local font_size = math.floor(nominal * dimen_h * (1/64) / _LM_SCALE_BY_SIZE)
+    if max and font_size >= max then
+        return max
+    end
+    return font_size
+end
 
 -- Set by M.install() to the strip height for this session; 0 when both
 -- title and author strips are disabled.  Read by _computeCellGeometry.
@@ -2366,6 +2392,12 @@ function M.install()
                     self._fc_series_index = bi.series_index
                 end
             end
+            -- Last-resort fallback: BIM has no rendered/stable count for this
+            -- book (typically an unopened EPUB) — try the "p(<n>)" filename
+            -- token before giving up on the badge entirely.
+            if not self._fc_pages then
+                self._fc_pages = _pageCountFromFilename(self.filepath)
+            end
 
             self._fc_underline_color  = M.getHideUnderline()
                 and Blitbuffer.COLOR_WHITE or Blitbuffer.COLOR_BLACK
@@ -3373,7 +3405,10 @@ function M.install()
 
             local pad       = _LATERAL_PAD
             local main_w    = dimen.w - img_size - pad * 2
-            local font_size = (self.menu and self.menu.font_size) or 20
+            -- Match stock: same formula as book title font size
+            -- (listmenu.lua's fontsize_title = _fontSize(20, 24)), so folder
+            -- names render at the same size as individual book titles.
+            local font_size = _lmFontSize(dimen.h, 20, 24)
             local info_size = math.max(10, font_size - 4)
 
             local wname = TextBoxWidget:new{

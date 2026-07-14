@@ -1333,8 +1333,8 @@ function SimpleUIPlugin:onSimpleUIRecentWindow()
 end
 
 -- onCloseWidget fires on the plugin when the FM (self.ui) closes.
--- We use this — mirroring the Bookshelf plugin pattern — to close the
--- homescreen whenever the FM shuts down for a real exit.
+-- We use this to close the homescreen whenever the FM shuts down for a
+-- real exit.
 -- The discriminator is self.ui.tearing_down: KOReader sets it to true on the
 -- FM only when the reader is about to open (filemanager.lua:onShowingReader /
 -- onSetupShowReader). On a real exit the FM closes via onClose() directly,
