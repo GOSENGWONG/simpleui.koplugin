@@ -1857,7 +1857,14 @@ function M.patchUIManagerShow(plugin)
             -- entirely optional and off by default. Uses orig_show (the
             -- pristine UIManager.show) so the cover widget itself never goes
             -- through the navbar-injection path below.
-            if CoverTransition.isOpenEnabled() then
+            --
+            -- Guarded against _reload_in_progress same as the other trigger
+            -- point in patchReaderShowCoroutine: this is a second, independent
+            -- place CoverTransition gets engaged from, and without this check
+            -- it would show the cover during a reformat reload whenever the
+            -- user has Cover Transition enabled — exactly the flash the
+            -- reload blocker (patchUIManagerClose) is there to avoid.
+            if not plugin._reload_in_progress and CoverTransition.isOpenEnabled() then
                 if CoverTransition.isShowing() then
                     -- Already showing (put up earlier by the notice
                     -- substitution above) — just push the auto-close out
