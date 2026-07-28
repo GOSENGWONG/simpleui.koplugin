@@ -3336,6 +3336,10 @@ end
 -- users who never touch it pay zero extra cost on this very hot path.
 -- Like the UI Font picker itself, a change only takes full effect after a
 -- restart — the scale is captured once, at install time.
+--
+-- The wrapper scales on the way in and restores face.orig_size on the way
+-- out, so the scaling stays invisible to callers — see the comment in
+-- Font.getFace below for why that write-back is load-bearing.
 -- ---------------------------------------------------------------------------
 
 function M.patchFontGetFace(plugin)
@@ -3351,8 +3355,29 @@ function M.patchFontGetFace(plugin)
 
     Font.getFace = function(self, font, size, faceindex)
         if not size then size = self.sizemap[font] end
-        if size then size = math.max(1, math.floor(size * scale)) end
-        return orig_getFace(self, font, size, faceindex)
+        if not size then
+            -- Nothing to scale; let ui/font.lua handle it as it always has.
+            return orig_getFace(self, font, size, faceindex)
+        end
+        local requested = size
+        local face = orig_getFace(self, font,
+            math.max(1, math.floor(size * scale)), faceindex)
+        if face then
+            -- Report the size the caller asked for, not the scaled one.
+            -- Widgets treat face.orig_size as "the size I requested" and feed
+            -- it straight back into Font:getFace() to step one size up or down
+            -- (Button, VirtualKeyboard, ConfirmBox and InfoMessage all shrink
+            -- text that way; BookMapWidget, TitleBar, TouchMenu and
+            -- NumberPickerWidget derive sibling sizes from it). Those calls
+            -- re-enter this wrapper, so handing back the scaled size puts them
+            -- in the wrong unit and they re-scale a value that was already
+            -- scaled. At scale > 100% that turns every "one size smaller" loop
+            -- into unbounded growth, instantiating an ever-larger FreeType face
+            -- per pass until KOReader is OOM-killed.
+            -- ui/font.lua does the same write-back itself on a cache hit.
+            face.orig_size = requested
+        end
+        return face
     end
 end
 
