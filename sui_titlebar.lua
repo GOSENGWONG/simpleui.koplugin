@@ -923,8 +923,15 @@ function M.apply(fm_self)
                     local dslot     = s.slot > up_slot2 and s.slot - 1 or s.slot
                     local compact_x = _buttonX("left", dslot, iw, pad, gap, sw)
                     fm_self._simpleui_search_x_compact = compact_x
-                    -- If already at root on first apply, shift to compact position now.
-                    if show_up and _isAtRoot(fm_self.file_chooser) then
+                    -- Shift to the compact (flush left) position whenever the up/back
+                    -- button is not actually occupying its slot: either it is disabled
+                    -- entirely (not show_up), or it is enabled but hidden because we
+                    -- are already at root on first apply (show_up and _isAtRoot(...)).
+                    -- The old "show_up and _isAtRoot(...)" condition never applied the
+                    -- compact position when the up button was disabled entirely, so
+                    -- search sat one slot too far right, as if the missing button were
+                    -- still there.
+                    if (not show_up) or _isAtRoot(fm_self.file_chooser) then
                         search_btn.overlap_offset = { compact_x, 0 }
                     end
                 end
@@ -1026,8 +1033,12 @@ function M.apply(fm_self)
                     local dslot_b   = s.slot > up_slot_b and s.slot - 1 or s.slot
                     local compact_x_b = _buttonX("left", dslot_b, iw, pad, gap, sw)
                     fm_self._simpleui_browse_x_compact = compact_x_b
-                    -- If already at root on first apply, shift to compact position now.
-                    if show_up and _isAtRoot(fm_self.file_chooser) then
+                    -- Shift to the compact (flush left) position whenever the up/back
+                    -- button is not actually occupying its slot: either it is disabled
+                    -- entirely (not show_up), or it is enabled but hidden because we
+                    -- are already at root on first apply (show_up and _isAtRoot(...)).
+                    -- Same fix as the search button above.
+                    if (not show_up) or _isAtRoot(fm_self.file_chooser) then
                         browse_btn.overlap_offset = { compact_x_b, 0 }
                     end
                 end

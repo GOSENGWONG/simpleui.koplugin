@@ -1388,6 +1388,23 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
     -- Title Bar menu builder
     -- -----------------------------------------------------------------------
 
+    -- Forward-declare _reapplyAllTitlebars here so it is in scope for
+    -- makeTitleBarItemsForCtx and makeTitleBarArrangeMenu below. Both call
+    -- it from closures defined before the old declaration site further down
+    -- this file. A Lua local is only visible to code that lexically follows
+    -- its declaration, so those closures used to resolve the name as a
+    -- nonexistent global and crash with "attempt to call global
+    -- '_reapplyAllTitlebars' (a nil value)" on any Titlebar Buttons change.
+    local _reapplyAllTitlebars
+    _reapplyAllTitlebars = function()
+        local Titlebar = require("sui_titlebar")
+        local FM = package.loaded["apps/filemanager/filemanager"]
+        local fm = FM and FM.instance
+        local stack = require("sui_core").getWindowStack()
+        Titlebar.reapplyAll(fm, stack)
+        if fm then UIManager:setDirty(fm[1], "ui") end
+    end
+
     -- Builds a visibility toggle list for one context ("fm" or "inj").
     local function makeTitleBarItemsForCtx(ctx)
         local Titlebar = require("sui_titlebar")
@@ -1436,8 +1453,15 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         sort_items[#sort_items + 1] = {
             text = _("Left"):upper(), orig_item = SEP_LEFT, is_divider = true, pin_top = true,
         }
+        -- Only list currently visible items here. Hidden items are preserved
+        -- separately by the "preserve hidden items" step in on_save() below,
+        -- which appends them from cfg.order_left/order_right every time it
+        -- runs. Listing them here too meant every on_save() call (each drag
+        -- reorder fires one, plus one more on close) re-appended a hidden
+        -- item on top of the copies already carried over from the previous
+        -- save, so the hidden item count kept doubling with every use.
         for _i, id in ipairs(cfg.order_left) do
-            if labels[id] then
+            if labels[id] and Titlebar.isItemVisible(id) then
                 sort_items[#sort_items + 1] = { text = labels[id](), orig_item = id }
             end
         end
@@ -1445,7 +1469,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
             text = _("Right"):upper(), orig_item = SEP_RIGHT, is_divider = true,
         }
         for _i, id in ipairs(cfg.order_right) do
-            if labels[id] then
+            if labels[id] and Titlebar.isItemVisible(id) then
                 sort_items[#sort_items + 1] = { text = labels[id](), orig_item = id }
             end
         end
@@ -1480,12 +1504,26 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         cfg.side[item.orig_item]   = "right"
                     end
                 end
-                -- Preserve hidden items at the end of each order list.
+                -- Preserve hidden items at the end of each order list. seen_left and
+                -- seen_right guard against re-adding an id already placed above. With
+                -- the sort_items visibility filter above, that should not happen, but
+                -- this also defends against order_left/order_right that already have a
+                -- duplicate saved from before this fix (repeated use of this menu could
+                -- accumulate duplicates without it).
+                local seen_left, seen_right = {}, {}
+                for _i, id in ipairs(new_left)  do seen_left[id]  = true end
+                for _i, id in ipairs(new_right) do seen_right[id] = true end
                 for _i, id in ipairs(cfg.order_left)  do
-                    if not Titlebar.isItemVisible(id) then new_left[#new_left + 1]   = id end
+                    if not Titlebar.isItemVisible(id) and not seen_left[id] then
+                        new_left[#new_left + 1] = id
+                        seen_left[id] = true
+                    end
                 end
                 for _i, id in ipairs(cfg.order_right) do
-                    if not Titlebar.isItemVisible(id) then new_right[#new_right + 1] = id end
+                    if not Titlebar.isItemVisible(id) and not seen_right[id] then
+                        new_right[#new_right + 1] = id
+                        seen_right[id] = true
+                    end
                 end
                 cfg.order_left  = new_left
                 cfg.order_right = new_right
@@ -1509,18 +1547,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 callback          = on_save,
             })
         end
-    end
-
-    -- Forward-declare _reapplyAllTitlebars so it is locally available inside
-    -- the arrange closures without triggering strict.lua global-access errors.
-    local _reapplyAllTitlebars
-    _reapplyAllTitlebars = function()
-        local Titlebar = require("sui_titlebar")
-        local FM = package.loaded["apps/filemanager/filemanager"]
-        local fm = FM and FM.instance
-        local stack = require("sui_core").getWindowStack()
-        Titlebar.reapplyAll(fm, stack)
-        if fm then UIManager:setDirty(fm[1], "ui") end
     end
 
     local function makeTitleBarSUIBuild(ctx_menu, title_str, tb_ctx, cfg_getter, cfg_saver)
