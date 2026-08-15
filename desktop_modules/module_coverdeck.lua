@@ -109,8 +109,20 @@ local function _showElem(pfx, key)
     return SUISettings:nilOrTrue(pfx .. "coverdeck_show_" .. key)
 end
 
+-- Mark HS._cfg_cache and HS._instance._cfg_cache dirty so the next
+-- _buildCtx() rebuilds ctx.cfg.coverdeck.*.  No-op when the homescreen
+-- is closed (HS._instance == nil).
+local function _invalidateHsCfgCache(pfx)
+    local ok, HS = pcall(require, "sui_homescreen")
+    if not ok or not HS then return end
+    if HS._cfg_cache ~= nil then HS._cfg_cache = nil end
+    local inst = HS._instance
+    if inst and inst._cfg_cache ~= nil then inst._cfg_cache = nil end
+end
+
 local function _toggleElem(pfx, key)
     SUISettings:saveSetting(pfx .. "coverdeck_show_" .. key, not _showElem(pfx, key))
+    _invalidateHsCfgCache(pfx)
 end
 
 local function _getElemOrder(pfx)
@@ -755,12 +767,11 @@ function M.build(w, ctx)
         local author_fs   = math.floor(SUIStyle.FS_SUBTITLE * scale * lbl_scale)
         local face_author = Font:getFace(SUIStyle.FACE_REGULAR, math.max(8, author_fs))
         author_widget = UI.makeColoredText{
-            text            = bd.authors,
-            face            = face_author,
-            fgcolor         = CLR_TEXT_SUB_EFF,
-            width           = inner_w,
-            alignment       = "center",
-            truncation_char = "…",
+            text      = truncateTitle(bd.authors, 20),
+            face      = face_author,
+            fgcolor   = CLR_TEXT_SUB_EFF,
+            width     = inner_w,
+            alignment = "center",
         }
     end
 
@@ -911,6 +922,17 @@ function M.build(w, ctx)
     result._cover_slots = cover_slots
     result._cd_update_funcs = _cd_update_funcs
     result._center_fp = fps[curIdx]
+
+    -- Snapshot of layout-shaping settings at build() time, used by
+    -- M.updateStats() to decide between in-place patch and full rebuild.
+    result._cd_vis_f = {
+        title    = show_title,
+        author   = show_author,
+        progress = show_progress,
+        stats    = show_stats,
+        main     = table.concat(main_order, ","),
+        stats_o  = table.concat(stats_order, ","),
+    }
     return result
 end
 
@@ -937,9 +959,50 @@ function M.updateStats(widget, ctx)
     local actual_widget = (widget._cd_update_funcs) and widget
                           or (widget[1] and widget[1]._cd_update_funcs and widget[1])
     if not actual_widget or not actual_widget._cd_update_funcs then return false end
-    
+
     local fp = actual_widget._center_fp
     if not fp then return false end
+
+    -- Detect when any layout-shaping setting has changed since the widget
+    -- was built and return false so the deferred-async refresh path
+    -- rebuilds the widget tree instead of doing an in-place stats patch.
+    -- Mirrors module_recent.updateStats()'s identity-check pattern but
+    -- covers the bundle's layout fields too.
+    do
+        local c      = ctx.cfg and ctx.cfg.coverdeck
+        local stored = actual_widget._cd_vis_f
+        local cur_f
+        if c and c.show then
+            cur_f = {
+                title    = c.show.title,
+                author   = c.show.author,
+                progress = c.show.progress,
+                stats    = c.show.stats,
+                main     = (type(c.main_order) == "table") and table.concat(c.main_order, ",") or "",
+                stats_o  = (type(c.elem_order)  == "table") and table.concat(c.elem_order,  ",") or "",
+            }
+        else
+            -- Fallback to direct SUISettings reads — mirrors build()'s else branch.
+            local cur_vis = getVisibleElements(ctx.pfx)
+            cur_f = {
+                title    = cur_vis.show_title,
+                author   = cur_vis.show_author,
+                progress = cur_vis.progress,
+                stats    = cur_vis.show_stats,
+                main     = table.concat(_getMainOrder(ctx.pfx), ","),
+                stats_o  = table.concat(cur_vis.stats_order, ","),
+            }
+        end
+        if not stored
+           or stored.title    ~= cur_f.title
+           or stored.author   ~= cur_f.author
+           or stored.progress ~= cur_f.progress
+           or stored.stats    ~= cur_f.stats
+           or stored.main     ~= cur_f.main
+           or stored.stats_o  ~= cur_f.stats_o then
+            return false
+        end
+    end
 
     -- BUGFIX: the widget only carries data for the carousel's centre book
     -- at the time it was built (_center_fp). The underlying list/order can
@@ -1333,6 +1396,7 @@ function M.getMenuItems(ctx_menu)
             if not active_set[k] then new_order[#new_order+1] = k end
         end
         SUISettings:saveSetting(pfx .. MAIN_ORDER_KEY, new_order)
+        _invalidateHsCfgCache(pfx)
         refresh()
     end
 
@@ -1423,6 +1487,7 @@ function M.getMenuItems(ctx_menu)
                                             end
                                             new_order[#new_order + 1] = _key
                                             SUISettings:saveSetting(pfx .. MAIN_ORDER_KEY, new_order)
+                                            _invalidateHsCfgCache(pfx)
                                             refresh()
                                             picker_ctx.pop()
                                             ctx2.repaint()
