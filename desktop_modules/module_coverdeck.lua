@@ -65,6 +65,70 @@ local function truncateTitle(s, max_chars)
 end
 
 -- ---------------------------------------------------------------------------
+-- Author rendering helpers
+-- ---------------------------------------------------------------------------
+-- Author strings arrive as a single comma-separated string ("A, B, C").
+-- 1. keep ≤5 authors; concatenate with ", "; 
+-- 2. if the running total exceeds the budget, drop the last name and append " et al.";
+-- 3. if even "Name1 et al." doesn't fit, fall back to a single-name truncation.
+
+local function _utf8len(s)
+    if not s then return 0 end
+    local count, i = 0, 1
+    while i <= #s do
+        local b = s:byte(i)
+        local len
+        if     b >= 240 then len = 4
+        elseif b >= 224 then len = 3
+        elseif b >= 192 then len = 2
+        else                     len = 1
+        end
+        count = count + 1
+        i = i + len
+    end
+    return count
+end
+
+local function _splitAuthors(s)
+    local out = {}
+    if not s then return out end
+    for token in s:gmatch("([^,]+)") do
+        local trimmed = token:gsub("^%s+", ""):gsub("%s+$", "")
+        if trimmed ~= "" then
+            out[#out + 1] = trimmed
+        end
+    end
+    return out
+end
+
+local function _renderAuthors(authors_str, max_chars)
+    if not authors_str or authors_str == "" then return "" end
+    local list = _splitAuthors(authors_str)
+    local n = #list
+
+    if n == 0 then return _("Unknown Author") end
+    if n == 1 then
+        return truncateTitle(list[1], max_chars)
+    end
+    if n > 5 then
+        list = { list[1], list[2], list[3], list[4], list[5] }
+        n = 5
+    end
+
+    for keep = n, 1, -1 do
+        local head = table.concat(list, ", ", 1, keep)
+        if _utf8len(head) <= max_chars then
+            if keep < n then
+                return head .. _(" et al.")
+            end
+            return head
+        end
+    end
+
+    return truncateTitle(list[1], max_chars)
+end
+
+-- ---------------------------------------------------------------------------
 -- Settings keys
 -- ---------------------------------------------------------------------------
 
@@ -767,7 +831,7 @@ function M.build(w, ctx)
         local author_fs   = math.floor(SUIStyle.FS_SUBTITLE * scale * lbl_scale)
         local face_author = Font:getFace(SUIStyle.FACE_REGULAR, math.max(8, author_fs))
         author_widget = UI.makeColoredText{
-            text      = truncateTitle(bd.authors, 20),
+            text      = _renderAuthors(bd.authors, 20),
             face      = face_author,
             fgcolor   = CLR_TEXT_SUB_EFF,
             width     = inner_w,
