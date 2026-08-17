@@ -186,7 +186,17 @@ simpleui.koplugin/
 ├── sui_i18n.lua              — translation loader
 ├── sui_quickactions.lua      — custom quick-action CRUD and icon picker
 ├── sui_titlebar.lua          — custom title bar
-├── sui_browsemeta.lua        — folder covers and browse metadata
+├── features/library/
+│   ├── sui_foldercovers.lua    — folder cover settings + MosaicMenuItem/ListMenuItem paint patch
+│   ├── sui_library_browse.lua  — virtual author/series/tags browser
+│   ├── sui_series_grouping.lua — inline series grouping inside real folders
+│   ├── sui_cover_widgets.lua   — pure cover/badge rendering (no settings, no patches)
+│   ├── sui_filter_state.lua    — composable filter trail (author/series/tags)
+│   ├── sui_virtual_path.lua    — virtual browse-path encode/decode
+│   ├── sui_metadata_source.lua — SQL + Calibre metadata query layer (cached)
+│   ├── sui_cover_overrides.lua — user-picked cover storage (shared)
+│   ├── sui_group_actions.lua   — shared cover-picker / create-collection dialogs
+│   └── sui_cover_finder.lua    — on-disk folder cover discovery
 ├── sui_updater.lua           — OTA update checker and installer
 ├── desktop_modules/
 │   ├── moduleregistry.lua    — module registry and ordering

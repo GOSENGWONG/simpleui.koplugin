@@ -11,6 +11,16 @@ import datetime
 import pathlib
 from collections import defaultdict
 
+# Plugin root (the .koplugin directory), resolved from this script's own
+# location rather than assumed from the current working directory. This is
+# what lets the script be run from anywhere — `python3 extract_strings.py`
+# from inside scripts/, `python3 scripts/extract_strings.py` from the plugin
+# root, an absolute path from a Makefile, etc. — and still find every .lua
+# file and write locale/simpleui.pot in the right place, instead of silently
+# scanning/writing relative to whatever directory the caller happened to be
+# in.
+PLUGIN_ROOT = pathlib.Path(__file__).resolve().parent.parent
+
 def extract_strings():
     """Extract translatable strings from Lua files."""
     regular_strings = defaultdict(list)  # string -> [(file, line), ...]
@@ -20,7 +30,7 @@ def extract_strings():
     regular_pattern = re.compile(r'(?<!\w)(?:_|_lc)\s*\(\s*"((?:[^"\\]|\\.)*)"')
     plural_pattern = re.compile(r'(?<!\w)(?:N_|N_lc)\s*\(\s*"((?:[^"\\]|\\.)*)"\s*,\s*"((?:[^"\\]|\\.)*)"')
 
-    for lua_file in pathlib.Path('.').rglob('*.lua'):
+    for lua_file in PLUGIN_ROOT.rglob('*.lua'):
         if lua_file.name.startswith('.'):  # Skip hidden files
             continue
 
@@ -30,12 +40,18 @@ def extract_strings():
             print(f"Warning: Could not read {lua_file}: {e}")
             continue
 
+        # #: locations in the .pot are plugin-root-relative (e.g.
+        # "modules/module_recent.lua:42"), regardless of where the script
+        # was invoked from — keeps the file stable across machines/checkouts
+        # and matches the existing convention in locale/simpleui.pot.
+        rel_path = lua_file.relative_to(PLUGIN_ROOT)
+
         lines = content.splitlines()
         for line_num, line in enumerate(lines, 1):
             # Check for regular strings
             for match in regular_pattern.finditer(line):
                 string = match.group(1)
-                regular_strings[string].append((str(lua_file), line_num))
+                regular_strings[string].append((str(rel_path), line_num))
 
         # Check for plural strings on the whole content (may span lines)
         for match in plural_pattern.finditer(content):
@@ -43,7 +59,7 @@ def extract_strings():
             plural = match.group(2)
             # Calculate line number from match position
             line_num = content[:match.start()].count('\n') + 1
-            plural_strings[(singular, plural)].append((str(lua_file), line_num))
+            plural_strings[(singular, plural)].append((str(rel_path), line_num))
 
     return regular_strings, plural_strings
 
@@ -99,7 +115,7 @@ def main():
 
     pot_content = generate_pot(regular_strings, plural_strings)
 
-    pot_path = pathlib.Path('locale/simpleui.pot')
+    pot_path = PLUGIN_ROOT / 'locale' / 'simpleui.pot'
     pot_path.write_text(pot_content, encoding='utf-8')
 
     print(f"{total_strings} strings written to {pot_path}")
