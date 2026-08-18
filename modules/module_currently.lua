@@ -426,7 +426,8 @@ function M.build(w, ctx)
     local c = ctx.cfg and ctx.cfg.currently
     local pfx         = ctx.pfx
     local lf          = ctx.landscape_factor or 1
-    local scale       = (c and c.scale       or Config.getModuleScale("currently", pfx)) * lf
+    local raw_scale   = c and c.scale       or Config.getModuleScale("currently", pfx)
+    local scale       = raw_scale * lf
     local raw_thumb_scale = c and c.thumb_scale or Config.getThumbScale("currently", pfx)
     local lbl_scale   = (c and c.lbl_scale   or Config.getItemLabelScale("currently", pfx)) * lf
     local bar_style   = c and c.bar_style   or getBarStyle(pfx)
@@ -453,7 +454,7 @@ function M.build(w, ctx)
     -- module's covers keep the same proportions as module_recent/book grid.
     local _cover_ratio = SH.getDims(1.0, 1.0).COVER_H / SH.getDims(1.0, 1.0).COVER_W
     local D = {}
-    D.COVER_W, D.COVER_H = _computeCoverDims(w, raw_thumb_scale, _cover_ratio)
+    D.COVER_W, D.COVER_H = _computeCoverDims(w, raw_thumb_scale * raw_scale, _cover_ratio)
 
     -- Scale gaps and font sizes (layout scale × text scale where applicable).
     -- See _scaledLayoutDims for the shared formulas (also used by getHeight()).
@@ -1139,7 +1140,8 @@ function M.getHeight(_ctx)
     -- lf again would apply the landscape reduction twice.
     local c           = _ctx and _ctx.cfg and _ctx.cfg.currently
     local lf          = (_ctx and _ctx.landscape_factor) or (UI.isLandscape() and UI.getLandscapeFactor() or 1)
-    local scale       = (c and c.scale       or Config.getModuleScale("currently", pfx)) * lf
+    local raw_scale   = c and c.scale       or Config.getModuleScale("currently", pfx)
+    local scale       = raw_scale * lf
     local lbl_scale   = (c and c.lbl_scale   or Config.getItemLabelScale("currently", pfx)) * lf
     local raw_thumb_scale = c and c.thumb_scale or Config.getThumbScale("currently", pfx)
 
@@ -1152,7 +1154,7 @@ function M.getHeight(_ctx)
     local w_estimate = (_ctx and (_ctx.col_w or _ctx.inner_w))
                         or (Screen:getWidth() - UI.SIDE_PAD * 2)
     local _cover_ratio = SH.getDims(1.0, 1.0).COVER_H / SH.getDims(1.0, 1.0).COVER_W
-    local cover_w, cover_h = _computeCoverDims(w_estimate, raw_thumb_scale, _cover_ratio)
+    local cover_w, cover_h = _computeCoverDims(w_estimate, raw_thumb_scale * raw_scale, _cover_ratio)
     local D = { COVER_W = cover_w, COVER_H = cover_h }
 
     local stats_style = c and c.stats_style or getStatsStyle(pfx)
