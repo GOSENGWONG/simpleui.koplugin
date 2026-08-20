@@ -2504,7 +2504,8 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                     col_body[#col_body+1] = self:_vspan(mod_gaps[mod.id] or MOD_GAP)
                 end
                 if mod.label then
-                    col_body[#col_body+1] = sectionLabel(mod.label, col_w, pageIndicatorFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
+                    local label_text = (type(mod.label_func) == "function" and mod.label_func(ctx)) or mod.label
+                    col_body[#col_body+1] = sectionLabel(label_text, col_w, pageIndicatorFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
                     if mod.is_book_mod then
                         self._book_mod_label_slots[mod.id] = {
                             parent = col_body,
@@ -2620,7 +2621,8 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                     body[#body+1] = self:_vspan(gap_px)
                 end
                 if mod.label then
-                    body[#body+1] = sectionLabel(mod.label, inner_w, pageIndicatorFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
+                    local label_text = (type(mod.label_func) == "function" and mod.label_func(ctx)) or mod.label
+                    body[#body+1] = sectionLabel(label_text, inner_w, pageIndicatorFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
                     if mod.is_book_mod then
                         self._book_mod_label_slots[mod.id] = {
                             parent = body,
