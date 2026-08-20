@@ -2594,6 +2594,16 @@ end
 --   on_tap       function|nil
 --   on_hold      function|nil
 --   margin_v     number|nil    — vertical gap above (default: 8 px)
+--   dim          bool|nil      — visually mutes the whole row (title,
+--                                subtitle, frame border, and every icon
+--                                button in it), e.g. an item excluded from
+--                                a listing; does not disable any action
+--   on_toggle    function|nil  — icon button, independent of on_delete; unlike
+--                                on_delete, it never implies row removal —
+--                                use it for in-place state flips (e.g. a
+--                                show/hide eye toggle that keeps the item in
+--                                the list, dimmed, instead of dropping it).
+--   toggle_icon  string|nil    — SUIStyle icon key for on_toggle; default "hide"
 --
 -- @return VerticalGroup
 
@@ -2605,27 +2615,30 @@ local function _CardBase(opts)
     local has_delete = opts.on_delete ~= nil
     local has_edit   = opts.on_edit ~= nil
     local has_update = opts.on_update ~= nil
+    local has_toggle = opts.on_toggle ~= nil
     local has_more   = opts.on_more ~= nil or (type(opts.more_items) == "table" and #opts.more_items > 0)
     local has_move   = opts.on_move_up ~= nil or opts.on_move_down ~= nil or opts.arrange_mode
     local has_move_page = opts.on_move_page ~= nil
     local margin_v   = opts.margin_v or SZ(Screen:scaleBySize(8))
     local h_pad      = SZ(Size.padding.large)
     local v_pad      = SZ(Screen:scaleBySize(12))
+    local fg_color   = (opts.dim == true) and Blitbuffer.gray(0.45) or _clrPrimary()
 
-    local del_w  = has_delete and (_CHEVRON_W() * 2) or 0
-    local edit_w = has_edit and (_CHEVRON_W() * 2) or 0
-    local upd_w  = has_update and (_CHEVRON_W() * 2) or 0
-    local more_w = has_more   and (_CHEVRON_W() * 2) or 0
-    local chev_w = show_chev  and _CHEVRON_W() or 0
-    local move_w = has_move   and (_CHEVRON_W() * 4) or 0
+    local del_w    = has_delete and (_CHEVRON_W() * 2) or 0
+    local edit_w   = has_edit and (_CHEVRON_W() * 2) or 0
+    local upd_w    = has_update and (_CHEVRON_W() * 2) or 0
+    local toggle_w = has_toggle and (_CHEVRON_W() * 2) or 0
+    local more_w   = has_more   and (_CHEVRON_W() * 2) or 0
+    local chev_w   = show_chev  and _CHEVRON_W() or 0
+    local move_w   = has_move   and (_CHEVRON_W() * 4) or 0
     local move_page_w = has_move_page and (_CHEVRON_W() * 2) or 0
-    local left_w = math.max(1, inner_w - del_w - edit_w - upd_w - more_w - chev_w - move_w - move_page_w - 2 * h_pad)
+    local left_w = math.max(1, inner_w - del_w - edit_w - upd_w - toggle_w - more_w - chev_w - move_w - move_page_w - 2 * h_pad)
 
     local left_vg = VerticalGroup:new{ align = "left" }
     table.insert(left_vg, TextWidget:new{
         text      = opts.title or "",
         face      = _facePrimary(),
-        fgcolor   = _clrPrimary(),
+        fgcolor   = fg_color,
         bold      = true,
         max_width = left_w,
     })
@@ -2635,7 +2648,7 @@ local function _CardBase(opts)
         table.insert(left_vg, TextWidget:new{
             text                   = sub,
             face                   = _faceSecondary(),
-            fgcolor                = _clrPrimary(),
+            fgcolor                = fg_color,
             max_width              = left_w,
             truncate_with_ellipsis = true,
         })
@@ -2651,7 +2664,7 @@ local function _CardBase(opts)
         },
     }
 
-    if has_delete or has_edit or has_update or has_more or show_chev or has_move or has_move_page then
+    if has_delete or has_edit or has_update or has_toggle or has_more or show_chev or has_move or has_move_page then
         local right_hg = HorizontalGroup:new{ align = "center" }
 
         if opts.on_move_page then
@@ -2659,7 +2672,7 @@ local function _CardBase(opts)
                 icon   = "move_page",
                 w      = _CHEVRON_W() * 2,
                 h      = left_h,
-                color  = _clrPrimary(),
+                color  = fg_color,
                 on_tap = opts.on_move_page,
             })
         end
@@ -2685,7 +2698,7 @@ local function _CardBase(opts)
                     icon   = "arrow_up",
                     w      = _CHEVRON_W() * 2,
                     h      = left_h,
-                    color  = _clrPrimary(),
+                    color  = fg_color,
                     on_tap = opts.on_move_up,
                 })
             end
@@ -2694,7 +2707,7 @@ local function _CardBase(opts)
                     icon   = "arrow_down",
                     w      = _CHEVRON_W() * 2,
                     h      = left_h,
-                    color  = _clrPrimary(),
+                    color  = fg_color,
                     on_tap = opts.on_move_down,
                 })
             end
@@ -2705,6 +2718,7 @@ local function _CardBase(opts)
                 icon   = "update",
                 w      = _CHEVRON_W() * 2,
                 h      = left_h,
+                color  = fg_color,
                 on_tap = opts.on_update,
             })
         end
@@ -2714,7 +2728,18 @@ local function _CardBase(opts)
                 icon   = "edit",
                 w      = _CHEVRON_W() * 2,
                 h      = left_h,
+                color  = fg_color,
                 on_tap = opts.on_edit,
+            })
+        end
+
+        if has_toggle then
+            table.insert(right_hg, SUIWindow.Input.iconButton{
+                icon   = opts.toggle_icon or "hide",
+                w      = _CHEVRON_W() * 2,
+                h      = left_h,
+                color  = fg_color,
+                on_tap = opts.on_toggle,
             })
         end
 
@@ -2723,6 +2748,7 @@ local function _CardBase(opts)
                 icon   = opts.delete_icon or "delete",
                 w      = _CHEVRON_W() * 2,
                 h      = left_h,
+                color  = fg_color,
                 on_tap = opts.on_delete,
             })
         end
@@ -2736,7 +2762,7 @@ local function _CardBase(opts)
                     TextWidget:new{
                         text    = SUIStyle.icon("more"),
                         face    = Font:getFace(SUIStyle.FACE_ICONS, SZ(Screen:scaleBySize(SUIStyle.FS_DETAIL))),
-                        fgcolor = _clrPrimary(),
+                        fgcolor = fg_color,
                     },
                 },
             }
@@ -2769,7 +2795,7 @@ local function _CardBase(opts)
                     TextWidget:new{
                         text      = SUIStyle.icon("chevron"),
                         face      = _faceChevron(),
-                        fgcolor   = _clrPrimary(),
+                        fgcolor   = fg_color,
                         alignment = "right",
                     },
                 },
@@ -2790,7 +2816,7 @@ local function _CardBase(opts)
     local card_frame = FrameContainer:new{
         radius     = SZ(Screen:scaleBySize(12)),
         bordersize = SUIStyle.BORDER_SZ,
-        color      = Blitbuffer.gray(0.72),
+        color      = (opts.dim == true) and Blitbuffer.gray(0.45) or Blitbuffer.gray(0.72),
         padding    = 0,
         dimen      = Geom:new{ w = inner_w, h = content:getSize().h },
         content,
@@ -2816,6 +2842,9 @@ local function _CardBase(opts)
         end
         if opts.on_edit then
             table.insert(hold_items, { text = _("Rename"), icon = "edit", on_tap = opts.on_edit })
+        end
+        if opts.on_toggle then
+            table.insert(hold_items, { text = opts.toggle_label or _("Toggle"), icon = opts.toggle_icon or "hide", on_tap = opts.on_toggle })
         end
         if type(opts.more_items) == "table" then
             for _, item in ipairs(opts.more_items) do
@@ -2896,6 +2925,12 @@ end
 ---   on_delete    function|nil  — when set, shows a delete icon left of the arrows
 ---   delete_icon  string|nil    — SUIStyle icon key for the on_delete button; default "delete"
 ---                                (used e.g. when "delete" actually means "hide")
+---   on_toggle    function|nil  — icon button that flips an in-place state without
+---                                removing the row (unlike on_delete); pair with `dim`
+---                                to grey the row out while it stays in the list.
+---   toggle_icon  string|nil    — SUIStyle icon key for the on_toggle button; default "hide"
+---   dim          bool|nil      — visually mutes the whole row (title,
+---                                subtitle, frame border, every icon button)
 ---   show_chevron bool          — default false; when true shows chevron right of arrows
 ---   on_tap       function|nil  — tap handler on the card body (used with show_chevron)
 ---   on_hold      function|nil
@@ -2912,6 +2947,9 @@ function SUIWindow.ArrangeCard(opts)
         arrange_mode = true,
         on_delete    = opts.on_delete,
         delete_icon  = opts.delete_icon,
+        on_toggle    = opts.on_toggle,
+        toggle_icon  = opts.toggle_icon,
+        dim          = opts.dim,
         on_more      = opts.on_more,
         more_items   = opts.more_items,
         on_move_page = opts.on_move_page,
@@ -2930,7 +2968,10 @@ end
 --- Renders a list of items as ArrangeCards with up/down arrows.
 --- Section breaks (items with dim=true or _is_break=true) render as Section headers.
 ---
---- Items format: { text = string, dim = bool?, _is_break = bool? }
+--- Items format: { text = string, dim = bool?, _is_break = bool?, dim_row = bool?,
+---                  on_toggle = func?, toggle_icon = string? }
+--- (dim_row/on_toggle/toggle_icon mirror RowPage's convention — dim_row visually
+--- mutes a regular row without turning it into a Section header, unlike `dim`.)
 ---
 --- @param opts table
 ---   inner_w    number    — required
@@ -3004,6 +3045,9 @@ function SUIWindow.ArrangeList(opts)
                 on_tap       = item.on_tap,
                 on_delete    = _on_delete,
                 delete_icon  = item.delete_icon or opts.delete_icon,
+                on_toggle    = item.on_toggle,
+                toggle_icon  = item.toggle_icon,
+                dim          = item.dim_row,
                 on_move_up   = can_move_up and function()
                     items[_i], items[_i - 1] = items[_i - 1], items[_i]
                     _after_change()

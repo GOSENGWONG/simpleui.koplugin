@@ -1525,6 +1525,7 @@ M.ICON = {
     move_page  = "\u{F0EC}", -- exchange / move
     update     = "\u{E769}", -- update / sync
     hide       = "\u{E908}", -- eye-off / hide (NerdFonts)
+    show       = "\u{E907}", -- eye / show (NerdFonts)
 
     -- State / Content
     goal     = "\u{E153}",   -- flag (reading goals)
