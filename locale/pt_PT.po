@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: simpleui\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-20 07:41\n"
+"POT-Creation-Date: 2026-08-20 09:28\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -45,6 +45,14 @@ msgstr "% Lido (crescente)"
 #: modules/module_feat_coll.lua:172 modules/module_tbr.lua:272
 msgid "% Read (descending)"
 msgstr "% Lido (decrescente)"
+
+#: modules/module_heatmap.lua:180
+msgid "%1 - %2"
+msgstr "%1 - %2"
+
+#: modules/module_heatmap.lua:179
+msgid "%1 weeks"
+msgstr "%1 semanas"
 
 #: engines/sui_book_grid.lua:1779 engines/sui_book_grid.lua:1784
 msgid "%1 × %2"
@@ -112,12 +120,12 @@ msgstr ""
 "Um congelamento só pode cobrir um único dia em falta, logo a seguir a um dia "
 "ativo — ontem não é elegível."
 
-#: features/sui_presets.lua:862 features/sui_presets.lua:948
+#: features/sui_presets.lua:878 features/sui_presets.lua:964
 #: screens/sui_menu.lua:4064 screens/sui_menu.lua:4149
 msgid "A preset named \"%s\" already exists."
 msgstr "Já existe uma predefinição com o nome \"%s\"."
 
-#: features/sui_presets.lua:803 screens/sui_menu.lua:4010
+#: features/sui_presets.lua:819 screens/sui_menu.lua:4010
 msgid ""
 "A preset named \"%s\" already exists.\n"
 "Overwrite it?"
@@ -639,7 +647,7 @@ msgstr "Por etiqueta"
 msgid "CALENDAR"
 msgstr "CALENDÁRIO"
 
-#: modules/module_heatmap.lua:277
+#: modules/module_heatmap.lua:290
 msgid "Calendar"
 msgstr "Calendário"
 
@@ -653,11 +661,11 @@ msgstr "Calendário"
 #: features/sui_quickactions.lua:2515 features/sui_quickactions.lua:2593
 #: features/sui_quickactions.lua:2617 features/sui_quickactions.lua:2941
 #: features/sui_quickactions.lua:3345 features/sui_style.lua:1401
-#: features/sui_style.lua:2118 features/sui_presets.lua:766
-#: features/sui_presets.lua:805 features/sui_presets.lua:835
-#: features/sui_presets.lua:852 features/sui_presets.lua:880
-#: features/sui_presets.lua:920 features/sui_presets.lua:938
-#: features/sui_presets.lua:967 infra/sui_config.lua:886
+#: features/sui_style.lua:2118 features/sui_presets.lua:782
+#: features/sui_presets.lua:821 features/sui_presets.lua:851
+#: features/sui_presets.lua:868 features/sui_presets.lua:896
+#: features/sui_presets.lua:936 features/sui_presets.lua:954
+#: features/sui_presets.lua:983 infra/sui_config.lua:886
 #: infra/sui_config.lua:920 infra/sui_config.lua:1035 infra/sui_updater.lua:510
 #: infra/sui_updater.lua:527 screens/sui_titlebar.lua:1007
 #: screens/sui_menu.lua:656 screens/sui_menu.lua:921 screens/sui_menu.lua:1051
@@ -1054,8 +1062,8 @@ msgstr "Predefinido: Sistema"
 
 #: engines/sui_window.lua:1926 engines/sui_window.lua:2826
 #: features/sui_quickactions.lua:1520 features/sui_quickactions.lua:2935
-#: features/sui_quickactions.lua:2940 features/sui_presets.lua:876
-#: features/sui_presets.lua:879 features/sui_presets.lua:919
+#: features/sui_quickactions.lua:2940 features/sui_presets.lua:892
+#: features/sui_presets.lua:895 features/sui_presets.lua:935
 #: screens/sui_menu.lua:4080 screens/sui_menu.lua:4083
 #: screens/sui_menu.lua:4124 screens/sui_settings_window.lua:469
 #: screens/sui_settings_window.lua:514 screens/sui_settings_window.lua:643
@@ -1071,7 +1079,7 @@ msgstr "Apagar Definições"
 msgid "Delete \"%s\"? This removes its layout, modules and Quick Action."
 msgstr "Eliminar \"%s\"? Isto remove a sua disposição, módulos e Ação Rápida."
 
-#: features/sui_presets.lua:878 features/sui_presets.lua:918
+#: features/sui_presets.lua:894 features/sui_presets.lua:934
 #: screens/sui_menu.lua:4082 screens/sui_menu.lua:4123
 msgid "Delete preset \"%s\"?"
 msgstr "Eliminar a predefinição \"%s\"?"
@@ -1094,13 +1102,13 @@ msgstr "Digital"
 
 #: screens/sui_menu.lua:2488
 msgid "Disable \"Lock Scale\" first to set a custom label scale."
-msgstr ""
+msgstr "Desative \"Bloquear Escala\" primeiro para definir uma escala de etiqueta personalizada."
 "Desative \"Bloquear Escala\" primeiro para definir uma escala personalizada "
 "para as etiquetas."
 
 #: infra/sui_config.lua:870
 msgid "Disable \"Lock Scale\" first to set a per-module scale."
-msgstr ""
+msgstr "Desative \"Bloquear Escala\" primeiro para definir uma escala por módulo."
 "Desative \"Bloquear Escala\" primeiro para definir uma escala por módulo."
 
 #: infra/sui_config.lua:171
@@ -1182,7 +1190,7 @@ msgstr "Vazio"
 #: features/sui_quickactions.lua:887 features/sui_quickactions.lua:905
 #: features/sui_quickactions.lua:923
 msgid "Enable 'Browse by Author / Series / Tags' in the library menu first."
-msgstr ""
+msgstr "Ative 'Navegar por Autor / Série / Etiquetas' no menu da biblioteca primeiro."
 "Ative primeiro 'Explorar por Autor / Série / Etiquetas' no menu da "
 "biblioteca.Ative primeiro 'Explorar por Autor / Série / Etiquetas' no menu "
 "da biblioteca."
@@ -1251,7 +1259,7 @@ msgstr "Erro ao verificar atualizações."
 msgid "Error checking for updates: "
 msgstr "Erro ao verificar atualizações: "
 
-#: features/sui_presets.lua:1057 screens/sui_menu.lua:4262
+#: features/sui_presets.lua:1073 screens/sui_menu.lua:4262
 msgid "Error exporting preset: "
 msgstr "Erro ao exportar predefinição: "
 
@@ -1259,7 +1267,7 @@ msgstr "Erro ao exportar predefinição: "
 msgid "Error extracting zip: "
 msgstr "Erro ao extrair zip: "
 
-#: features/sui_presets.lua:1025 screens/sui_menu.lua:4229
+#: features/sui_presets.lua:1041 screens/sui_menu.lua:4229
 msgid "Error importing preset: "
 msgstr "Erro ao importar predefinição: "
 
@@ -1279,7 +1287,7 @@ msgstr "Excluir das metas"
 msgid "Excluded"
 msgstr "Excluído"
 
-#: features/sui_presets.lua:1041 screens/sui_menu.lua:4245
+#: features/sui_presets.lua:1057 screens/sui_menu.lua:4245
 msgid "Export preset"
 msgstr "Exportar predefinição"
 
@@ -1575,8 +1583,8 @@ msgid ""
 "The Cover size setting still applies on top of this, and the cover never "
 "shrinks below its 100% size."
 msgstr ""
-"Aumenta ou diminui a capa para que a sua altura corresponda sempre à "
-"coluna de texto, mantendo as proporções da capa.\n"
+"Aumenta ou diminui a capa para que a sua altura corresponda sempre à coluna "
+"de texto, mantendo as proporções da capa.\n"
 "O espaçamento entre a capa e o texto mantém-se conforme definido acima.\n"
 "A definição de Tamanho de Capa continua a aplicar-se sobre isto, e a capa "
 "nunca encolhe abaixo do seu tamanho de 100%."
@@ -1711,7 +1719,7 @@ msgstr ""
 msgid "Hours per month:"
 msgstr "Horas por mês:"
 
-#: modules/module_heatmap.lua:232
+#: modules/module_heatmap.lua:245
 msgid ""
 "How many weeks of history to include, and (in Calendar view) how many weeks "
 "the grid shows at 100% Scale. The actual number adjusts with Scale — fewer, "
@@ -1719,12 +1727,11 @@ msgid ""
 "this only changes how much history feeds the shading — the grid itself "
 "always has one column per hour."
 msgstr ""
-"Quantas semanas de histórico incluir e, na vista Calendário, quantas "
-"semanas a grelha mostra a 100% de Escala. O número real ajusta-se com a "
-"Escala — menos células, maiores, acima de 100%; mais células, mais "
-"pequenas, abaixo disso. Na vista Hora do dia, isto só altera quanto "
-"histórico alimenta o sombreado — a grelha em si tem sempre uma coluna "
-"por hora."
+"Quantas semanas de histórico incluir e, na vista Calendário, quantas semanas "
+"a grelha mostra a 100% de Escala. O número real ajusta-se com a Escala — "
+"menos células, maiores, acima de 100%; mais células, mais pequenas, abaixo "
+"disso. Na vista Hora do dia, isto só altera quanto histórico alimenta o "
+"sombreado — a grelha em si tem sempre uma coluna por hora."
 
 #: features/sui_quickactions.lua:2287 features/sui_quickactions.lua:2291
 msgid "Icon"
@@ -1766,7 +1773,7 @@ msgstr ""
 "Se selecionou a Predefinição Momentum, pressione prolongadamente o módulo "
 "Meta de Leitura para escolher e definir as suas metas de leitura."
 
-#: features/sui_presets.lua:998 screens/sui_menu.lua:4201
+#: features/sui_presets.lua:1014 screens/sui_menu.lua:4201
 msgid "Import preset"
 msgstr "Importar predefinição"
 
@@ -1794,7 +1801,7 @@ msgstr ""
 "Disposição inválida.\n"
 "Mantenha os separadores Esquerdo, Centro e Direito por ordem."
 
-#: features/sui_presets.lua:366 features/sui_presets.lua:546
+#: features/sui_presets.lua:382 features/sui_presets.lua:562
 msgid "Invalid data"
 msgstr "Dados inválidos"
 
@@ -1802,7 +1809,7 @@ msgstr "Dados inválidos"
 msgid "Invalid input. Please enter 1–6 hexadecimal digits (0–9, A–F)."
 msgstr "Entrada inválida. Introduza 1–6 dígitos hexadecimais (0–9, A–F)."
 
-#: features/sui_presets.lua:362 features/sui_presets.lua:542
+#: features/sui_presets.lua:378 features/sui_presets.lua:558
 msgid "Invalid preset file"
 msgstr "Ficheiro de predefinição inválido"
 
@@ -1906,7 +1913,7 @@ msgstr "Layout, papel de parede, predefinições e comportamento"
 msgid "Left"
 msgstr "Esquerda"
 
-#: modules/module_heatmap.lua:139 engines/sui_heatmap_widgets.lua:376
+#: modules/module_heatmap.lua:137 engines/sui_heatmap_widgets.lua:376
 msgid "Less"
 msgstr "Menos"
 
@@ -1963,8 +1970,8 @@ msgstr "Pressão Longa"
 msgid "Long press to customize"
 msgstr "Pressão longa para personalizar"
 
-#: features/sui_presets.lua:345 features/sui_presets.lua:357
-#: features/sui_presets.lua:525 features/sui_presets.lua:537
+#: features/sui_presets.lua:361 features/sui_presets.lua:373
+#: features/sui_presets.lua:541 features/sui_presets.lua:553
 msgid "LuaSettings module unavailable"
 msgstr "Módulo LuaSettings indisponível"
 
@@ -1982,8 +1989,8 @@ msgstr ""
 "SimpleUI — durante a leitura e ao navegar nos ficheiros — em vez do "
 "comportamento nativo do botão Home do KOReader."
 
-#: features/sui_presets.lua:823 features/sui_presets.lua:899
-#: features/sui_presets.lua:904 screens/sui_menu.lua:4029
+#: features/sui_presets.lua:839 features/sui_presets.lua:915
+#: features/sui_presets.lua:920 screens/sui_menu.lua:4029
 #: screens/sui_menu.lua:4103 screens/sui_menu.lua:4108
 msgid "Manage presets"
 msgstr "Gerir predefinições"
@@ -2043,7 +2050,7 @@ msgstr "É necessário pelo menos 1 separador no modo de navegação por página
 
 #: screens/sui_menu.lua:375
 msgid "Minimum 2 tabs required. Select another tab first."
-msgstr ""
+msgstr "São necessários no mínimo 2 separadores. Selecione outro separador primeiro."
 "São necessários pelo menos 2 separadores. Selecione outro separador primeiro."
 "São necessários pelo menos 2 separadores. Selecione outro separador primeiro."
 
@@ -2075,7 +2082,7 @@ msgstr "Módulos"
 msgid "Modules  (%d)"
 msgstr "Módulos  (%d)"
 
-#: engines/sui_screen_engine.lua:2745
+#: engines/sui_screen_engine.lua:2747
 msgid ""
 "Modules exceed the visible area.\n"
 "Move some to another page or adjust the scale."
@@ -2133,7 +2140,7 @@ msgstr "A Minha Ação"
 msgid "My Highlights"
 msgstr "Os Meus Destaques"
 
-#: features/sui_presets.lua:713 features/sui_presets.lua:718
+#: features/sui_presets.lua:729 features/sui_presets.lua:734
 msgid "My Presets"
 msgstr "As Minhas Predefinições"
 
@@ -2391,7 +2398,7 @@ msgstr ""
 "\n"
 "Abrir a página de lançamentos?"
 
-#: features/sui_presets.lua:337 features/sui_presets.lua:517
+#: features/sui_presets.lua:353 features/sui_presets.lua:533
 msgid "No export directory"
 msgstr "Nenhuma diretoria de exportação"
 
@@ -2454,7 +2461,7 @@ msgstr "Nenhum pacote encontrado."
 msgid "No plugins found."
 msgstr "Nenhum plugin encontrado."
 
-#: features/sui_presets.lua:1005 screens/sui_menu.lua:4209
+#: features/sui_presets.lua:1021 screens/sui_menu.lua:4209
 msgid ""
 "No preset files found.\n"
 "Place .lua files in:\n"
@@ -2464,7 +2471,7 @@ msgstr ""
 "Coloque ficheiros .lua em:\n"
 "%1"
 
-#: features/sui_presets.lua:982 screens/sui_menu.lua:4185
+#: features/sui_presets.lua:998 screens/sui_menu.lua:4185
 msgid "No presets found."
 msgstr "Nenhuma predefinição encontrada."
 
@@ -2619,15 +2626,15 @@ msgstr "Aviso de Sobrelotação"
 msgid "Overlays"
 msgstr "Sobreposições"
 
-#: features/sui_presets.lua:804 features/sui_presets.lua:834
-#: features/sui_presets.lua:966 screens/sui_menu.lua:4011
+#: features/sui_presets.lua:820 features/sui_presets.lua:850
+#: features/sui_presets.lua:982 screens/sui_menu.lua:4011
 #: screens/sui_menu.lua:4040 screens/sui_menu.lua:4169
 msgid "Overwrite"
 msgstr "Substituir"
 
-#: features/sui_presets.lua:833 features/sui_presets.lua:965
+#: features/sui_presets.lua:849 features/sui_presets.lua:981
 msgid "Overwrite preset \"%s\" with the current homescreen settings?"
-msgstr ""
+msgstr "Substituir a predefinição \"%s\" pelas definições atuais do ecrã inicial?"
 "Substituir a predefinição \"%s\" pelas definições atuais do ecrã inicial?"
 
 #: screens/sui_menu.lua:4039 screens/sui_menu.lua:4168
@@ -2787,7 +2794,7 @@ msgstr "Capa Substituta para Pastas sem Livros"
 msgid "Please enter a date in YYYY-MM-DD format."
 msgstr "Introduza uma data no formato AAAA-MM-DD."
 
-#: features/sui_presets.lua:778 screens/sui_menu.lua:3990
+#: features/sui_presets.lua:794 screens/sui_menu.lua:3990
 msgid "Please enter a name for the preset."
 msgstr "Por favor introduza um nome para a predefinição."
 
@@ -2827,25 +2834,25 @@ msgstr "Preservar Proporções da Capa"
 msgid "Preserve Deleted Books in Statistics"
 msgstr "Preservar Livros Eliminados nas Estatísticas"
 
-#: features/sui_presets.lua:1019 screens/sui_menu.lua:4221
+#: features/sui_presets.lua:1035 screens/sui_menu.lua:4221
 msgid "Preset \"%s\" imported."
 msgstr "Predefinição \"%s\" importada."
 
-#: features/sui_presets.lua:660 features/sui_presets.lua:738
+#: features/sui_presets.lua:676 features/sui_presets.lua:754
 #: screens/sui_menu.lua:3950
 msgid "Preset \"%s\" not found."
 msgstr "Predefinição \"%s\" não encontrada."
 
-#: features/sui_presets.lua:795 screens/sui_menu.lua:4000
+#: features/sui_presets.lua:811 screens/sui_menu.lua:4000
 msgid "Preset \"%s\" saved."
 msgstr "Predefinição \"%s\" guardada."
 
-#: features/sui_presets.lua:840 features/sui_presets.lua:972
+#: features/sui_presets.lua:856 features/sui_presets.lua:988
 #: screens/sui_menu.lua:4046 screens/sui_menu.lua:4175
 msgid "Preset \"%s\" updated."
 msgstr "Predefinição \"%s\" atualizada."
 
-#: features/sui_presets.lua:1052 screens/sui_menu.lua:4257
+#: features/sui_presets.lua:1068 screens/sui_menu.lua:4257
 msgid ""
 "Preset exported to:\n"
 "%s"
@@ -2853,11 +2860,11 @@ msgstr ""
 "Preset exportado para:\n"
 "%s"
 
-#: features/sui_presets.lua:763 screens/sui_menu.lua:3975
+#: features/sui_presets.lua:779 screens/sui_menu.lua:3975
 msgid "Preset name"
 msgstr "Nome da predefinição"
 
-#: features/sui_presets.lua:339 features/sui_presets.lua:519
+#: features/sui_presets.lua:355 features/sui_presets.lua:535
 msgid "Preset not found"
 msgstr "Predefinição não encontrada"
 
@@ -2985,7 +2992,7 @@ msgstr "Aleatório"
 msgid "Reading Goals"
 msgstr "Metas de Leitura"
 
-#: modules/module_heatmap.lua:165 modules/module_heatmap.lua:166
+#: modules/module_heatmap.lua:163 modules/module_heatmap.lua:164
 #: screens/sui_heatmap_popup.lua:193
 msgid "Reading Heatmap"
 msgstr "Mapa de Calor de Leitura"
@@ -3022,13 +3029,13 @@ msgid "Remove from To Be Read"
 msgstr "Remover de Quero Ler"
 
 #: engines/sui_window.lua:1923 engines/sui_window.lua:2818
-#: features/sui_presets.lua:846 features/sui_presets.lua:853
-#: features/sui_presets.lua:939 screens/sui_menu.lua:4052
+#: features/sui_presets.lua:862 features/sui_presets.lua:869
+#: features/sui_presets.lua:955 screens/sui_menu.lua:4052
 #: screens/sui_menu.lua:4059 screens/sui_menu.lua:4144
 msgid "Rename"
 msgstr "Renomear"
 
-#: features/sui_presets.lua:849 features/sui_presets.lua:935
+#: features/sui_presets.lua:865 features/sui_presets.lua:951
 #: screens/sui_menu.lua:4055 screens/sui_menu.lua:4140
 msgid "Rename \"%s\""
 msgstr "Renomear \"%s\""
@@ -3084,7 +3091,7 @@ msgstr "Repor todos os ícones das Ações Rápidas para a predefinição?"
 
 #: screens/sui_menu.lua:2522
 msgid "Reset all scales to default (100%)? This cannot be undone."
-msgstr ""
+msgstr "Repor todas as escalas para o padrão (100%)? Esta ação não pode ser desfeita."
 "Repor todas as escalas para o padrão (100%)? Esta ação não pode ser desfeita."
 "Repor todas as escalas para o valor predefinido (100%)? Esta ação não pode "
 "ser desfeita."
@@ -3158,12 +3165,12 @@ msgid "Saturday"
 msgstr "Sábado"
 
 #: modules/module_reading_goals.lua:383 features/sui_quickactions.lua:2395
-#: features/sui_presets.lua:771 screens/sui_menu.lua:3983
+#: features/sui_presets.lua:787 screens/sui_menu.lua:3983
 #: screens/sui_stats_windows.lua:663 screens/sui_settings_window.lua:447
 msgid "Save"
 msgstr "Guardar"
 
-#: features/sui_presets.lua:756 screens/sui_menu.lua:3968
+#: features/sui_presets.lua:772 screens/sui_menu.lua:3968
 msgid "Save as new preset"
 msgstr "Guardar como nova predefinição"
 
@@ -3171,11 +3178,11 @@ msgstr "Guardar como nova predefinição"
 msgid "Save icon preset"
 msgstr "Guardar predefinição de ícones"
 
-#: features/sui_presets.lua:761
+#: features/sui_presets.lua:777
 msgid "Save preset"
 msgstr "Guardar predefinição"
 
-#: modules/module_heatmap.lua:245 modules/module_heatmap.lua:247
+#: modules/module_heatmap.lua:258 modules/module_heatmap.lua:260
 #: modules/module_quote.lua:1354 modules/module_quote.lua:1358
 #: modules/module_action_list.lua:568 modules/module_action_list.lua:570
 #: modules/module_reading_stats.lua:660 modules/module_reading_stats.lua:662
@@ -3219,8 +3226,8 @@ msgstr ""
 "Escala apenas para a miniatura da capa.\n"
 "100% é o tamanho predefinido.\n"
 "Quando o Tamanho de Capa Dinâmico está ativado, isto escala a capa em "
-"relação ao seu tamanho dinâmico atual, e a capa nunca encolhe abaixo do "
-"seu tamanho de 100%."
+"relação ao seu tamanho dinâmico atual, e a capa nunca encolhe abaixo do seu "
+"tamanho de 100%."
 
 #: modules/module_coverdeck.lua:1162
 msgid ""
@@ -3283,7 +3290,7 @@ msgstr ""
 msgid "Scale for this module."
 msgstr "Escala para este módulo."
 
-#: modules/module_heatmap.lua:248 modules/module_quote.lua:1360
+#: modules/module_heatmap.lua:261 modules/module_quote.lua:1360
 #: modules/module_action_list.lua:571 modules/module_reading_stats.lua:663
 #: modules/module_reading_goals.lua:802 modules/module_clock.lua:953
 #: modules/module_currently.lua:1326 modules/module_quick_actions.lua:661
@@ -3343,8 +3350,8 @@ msgstr "Texto Secundário / Difuso"
 msgid "Select"
 msgstr "Selecionar"
 
-#: features/sui_presets.lua:669 features/sui_presets.lua:677
-#: features/sui_presets.lua:682 screens/sui_menu.lua:3959
+#: features/sui_presets.lua:685 features/sui_presets.lua:693
+#: features/sui_presets.lua:698 screens/sui_menu.lua:3959
 msgid "Select Preset"
 msgstr "Selecionar Predefinição"
 
@@ -3711,7 +3718,7 @@ msgstr "Iniciar com o Ecrã Inicial"
 
 #: screens/sui_onboarding.lua:62
 msgid "Start with a ready-made layout. You can change everything later."
-msgstr ""
+msgstr "Comece com um esquema pré-definido. Pode alterar tudo mais tarde."
 "Comece com um esquema pronto. Pode alterar tudo mais tarde.Começa com uma "
 "predefinição pronta a usar. Podes alterar tudo mais tarde."
 
@@ -4018,8 +4025,8 @@ msgstr "Este mês — Páginas"
 msgid "This month — Time"
 msgstr "Este mês — Tempo"
 
-#: features/sui_presets.lua:785 features/sui_presets.lua:858
-#: features/sui_presets.lua:944
+#: features/sui_presets.lua:801 features/sui_presets.lua:874
+#: features/sui_presets.lua:960
 msgid "This name is reserved by a built-in preset."
 msgstr "Este nome está reservado por uma predefinição incorporada."
 
@@ -4051,7 +4058,7 @@ msgstr "Qui"
 msgid "Thursday"
 msgstr "Quinta-feira"
 
-#: modules/module_heatmap.lua:278
+#: modules/module_heatmap.lua:178 modules/module_heatmap.lua:291
 msgid "Time of day"
 msgstr "Hora do dia"
 
@@ -4211,7 +4218,7 @@ msgstr "Vinte"
 msgid "Two"
 msgstr "Dois"
 
-#: modules/module_heatmap.lua:275 screens/sui_menu.lua:3128
+#: modules/module_heatmap.lua:288 screens/sui_menu.lua:3128
 #: screens/sui_menu.lua:3195
 msgid "Type"
 msgstr "Tipo"
@@ -4270,7 +4277,7 @@ msgstr "Atualização cancelada."
 msgid "Update check cancelled."
 msgstr "Verificação de atualizações cancelada."
 
-#: features/sui_presets.lua:831 screens/sui_menu.lua:4037
+#: features/sui_presets.lua:847 screens/sui_menu.lua:4037
 msgid "Update with current settings"
 msgstr "Atualizar com definições atuais"
 
@@ -4365,7 +4372,7 @@ msgstr "Controlo de Temperatura"
 
 #: screens/sui_menu.lua:2658
 msgid "Warn when modules on a page exceed the available screen height."
-msgstr ""
+msgstr "Avisar quando os módulos numa página excedem a altura de ecrã disponível."
 "Avisar quando os módulos numa página excedem a altura de ecrã disponível."
 "Avisar quando os módulos numa página excederem a altura disponível do ecrã."
 
@@ -4377,7 +4384,7 @@ msgstr "Qua"
 msgid "Wednesday"
 msgstr "Quarta-feira"
 
-#: modules/module_heatmap.lua:227 modules/module_heatmap.lua:231
+#: modules/module_heatmap.lua:240 modules/module_heatmap.lua:244
 msgid "Weeks shown"
 msgstr "Semanas mostradas"
 
