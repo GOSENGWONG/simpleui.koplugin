@@ -30,13 +30,16 @@ local HW          = require("engines/sui_heatmap_widgets")
 local PAD         = UI.PAD
 
 local SETTING_WEEKS          = "heatmap_weeks"
-local DEFAULT_WEEKS          = 20
+local DEFAULT_WEEKS          = 24
 local MIN_WEEKS, MAX_WEEKS   = 6, 26
 
 local SETTING_MODE  = "heatmap_view_mode"
 local MODE_CALENDAR = "calendar"
 local MODE_DAYPART  = "time_of_day"
 local DEFAULT_MODE  = MODE_CALENDAR
+
+local SETTING_SHOW_LEGEND  = "heatmap_show_legend"
+local SHOW_LEGEND_DEFAULT  = true
 
 local function getWeeks(pfx)
     local v = tonumber(SUISettings:readSetting(pfx .. SETTING_WEEKS))
@@ -60,6 +63,19 @@ end
 
 local function setMode(pfx, mode)
     SUISettings:saveSetting(pfx .. SETTING_MODE, mode)
+end
+
+-- "Less [ ][ ][ ][ ][ ] More" legend row below the grid — purely
+-- decorative once a person already knows the shading convention, so it's
+-- optional like the section label, not tied to Type/Weeks/Scale.
+local function getShowLegend(pfx)
+    local v = SUISettings:readSetting(pfx .. SETTING_SHOW_LEGEND)
+    if v == nil then return SHOW_LEGEND_DEFAULT end
+    return v == true
+end
+
+local function setShowLegend(pfx, show)
+    SUISettings:saveSetting(pfx .. SETTING_SHOW_LEGEND, show)
 end
 
 -- Shared geometry, used by both build() (which additionally reads the DB)
@@ -141,12 +157,18 @@ local function computeLayout(w, ctx)
 
     -- Legend cell size now matches the popup's own default (see
     -- sui_heatmap_widgets.lua's HW.buildLegend), not a scale-linked size.
+    -- Only sized in when the legend is actually shown (see
+    -- SETTING_SHOW_LEGEND) — hidden, it contributes neither height nor gap.
+    local show_legend   = getShowLegend(pfx)
     local legend_cell   = Screen:scaleBySize(11)
-    local legend_sample = TextWidget:new{ text = _("Less"), face = display_fonts.small }
-    local legend_h      = math.max(legend_cell, legend_sample:getSize().h)
-    legend_sample:free()
-    -- Half of the original 8px gap above the legend.
-    local gap_v        = math.floor(Screen:scaleBySize(4) * scale)
+    local legend_h, gap_v = 0, 0
+    if show_legend then
+        local legend_sample = TextWidget:new{ text = _("Less"), face = display_fonts.small }
+        legend_h = math.max(legend_cell, legend_sample:getSize().h)
+        legend_sample:free()
+        -- Half of the original 8px gap above the legend.
+        gap_v = math.floor(Screen:scaleBySize(4) * scale)
+    end
 
     local body_h = label_h + Screen:scaleBySize(6)
                  + 7 * cell_size + 6 * Screen:scaleBySize(2)
@@ -156,7 +178,7 @@ local function computeLayout(w, ctx)
         pfx = pfx, weeks = weeks, mode = mode, fonts = display_fonts,
         avail_w = avail_w, start_t = start_t, end_t = end_t,
         cell_size = cell_size, body_h = body_h, gap_v = gap_v,
-        legend_h = legend_h, legend_cell = legend_cell,
+        legend_h = legend_h, legend_cell = legend_cell, show_legend = show_legend,
     }
 end
 
@@ -173,22 +195,22 @@ M.label       = _("Reading Heatmap")
 M.enabled_key = "heatmap_enabled"
 M.default_on  = false
 
--- Appends the selected Type to the section label — the weeks count in
--- Calendar mode (e.g. "Reading Heatmap - 20 weeks"), or "Time of day" in
--- that mode — so the card's title reflects which grid it's currently
--- showing, and at what range. Composed via a translatable "%1 - %2"
--- template (same convention as sui_book_grid.lua's "%1 × %2") so the
--- separator itself can be adapted per language.
-function M.label_func(ctx)
+-- Right-aligned indicator of the selected Type on the section label row —
+-- the weeks count in Calendar mode, or "Time of day" in that mode — so the
+-- card's title row reflects which grid it's currently showing, and at what
+-- range. Rendered via sui_screen_engine.lua's sectionLabel right_text slot,
+-- the same one the page indicator uses, so it shares its font/color/right
+-- alignment.
+function M.label_right_func(ctx)
     local pfx  = (ctx and ctx.pfx) or "simpleui_hs_"
     local mode = getMode(pfx)
-    local mode_label = (mode == MODE_DAYPART)
+    return (mode == MODE_DAYPART)
         and _("Time of day")
         or  T(_("%1 weeks"), getWeeks(pfx))
-    return T(_("%1 - %2"), M.label, mode_label)
 end
 
 function M.build(w, ctx)
+    Config.applyLabelToggle(M, _("Reading Heatmap"))
     local L = computeLayout(w, ctx)
 
     local grid_widget
@@ -203,8 +225,6 @@ function M.build(w, ctx)
         grid_widget = HW.buildRangeHeatmap(daily_map, L.start_t, L.end_t, L.fonts, L.avail_w, { cell_size = L.cell_size })
     end
 
-    local legend = HW.buildLegend(L.fonts, L.legend_cell)
-
     -- Wrapped the same way as the legend below: below 100% Scale the grid's
     -- own intrinsic width (wd_label_w + num_cols*cell_size + gaps) is
     -- narrower than avail_w, and body's "align = left" would otherwise pin
@@ -214,12 +234,12 @@ function M.build(w, ctx)
         grid_widget,
     }
 
-    local body = VerticalGroup:new{
-        align = "left",
-        grid_box,
-        VerticalSpan:new{ width = L.gap_v },
-        CenterContainer:new{ dimen = Geom:new{ w = L.avail_w, h = legend:getSize().h }, legend },
-    }
+    local body = VerticalGroup:new{ align = "left", grid_box }
+    if L.show_legend then
+        local legend = HW.buildLegend(L.fonts, L.legend_cell)
+        table.insert(body, VerticalSpan:new{ width = L.gap_v })
+        table.insert(body, CenterContainer:new{ dimen = Geom:new{ w = L.avail_w, h = legend:getSize().h }, legend })
+    end
 
     local frame = CenterContainer:new{
         dimen = Geom:new{ w = w, h = body:getSize().h },
@@ -311,11 +331,32 @@ local function _makeViewItem(ctx_menu)
     }
 end
 
+local function _makeAppearanceItem(ctx_menu)
+    local pfx = ctx_menu.pfx
+    local _lc = ctx_menu._
+    return {
+        text_func      = function() return _lc("Appearance") end,
+        sub_item_table = {
+            Config.makeLabelToggleItem("heatmap", _("Reading Heatmap"), ctx_menu.refresh, _lc),
+            {
+                text           = _lc("Show legend"),
+                checked_func   = function() return getShowLegend(pfx) end,
+                keep_menu_open = true,
+                callback       = function()
+                    setShowLegend(pfx, not getShowLegend(pfx))
+                    ctx_menu.refresh()
+                end,
+            },
+        },
+    }
+end
+
 function M.getMenuItems(ctx_menu)
     return {
         _makeViewItem(ctx_menu),
         _makeWeeksItem(ctx_menu),
         _makeScaleItem(ctx_menu),
+        _makeAppearanceItem(ctx_menu),
     }
 end
 

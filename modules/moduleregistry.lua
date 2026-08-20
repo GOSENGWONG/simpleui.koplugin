@@ -19,6 +19,10 @@
 --   M.label_func     fun(ctx):string?  optional; when present, overrides M.label's text at
 --                             build time (e.g. to append a setting-dependent suffix). Only
 --                             called if M.label is truthy.
+--   M.label_right_func fun(ctx):string?  optional; text shown right-aligned on the same
+--                             row as the label (e.g. a setting-dependent mode indicator),
+--                             in the same style as the page indicator it takes priority
+--                             over. Only called if M.label is truthy.
 --   M.enabled_key    string?  settings suffix: pfx .. enabled_key → bool
 --   M.default_on     bool?    value when the key doesn't exist (default true)
 --

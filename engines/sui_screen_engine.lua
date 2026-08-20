@@ -362,6 +362,18 @@ local function pageIndicatorFor(mod, ctx)
     return string.format("%d/%d", page, npages)
 end
 
+-- Right-side section-label text for a module: a module-supplied
+-- M.label_right_func(ctx) (e.g. the active heatmap type) takes priority
+-- over the page indicator, falling back to pageIndicatorFor when the
+-- module doesn't define one. The two are mutually exclusive in practice —
+-- no module currently uses both — so no attempt is made to combine them.
+local function labelRightTextFor(mod, ctx)
+    if type(mod.label_right_func) == "function" then
+        return mod.label_right_func(ctx)
+    end
+    return pageIndicatorFor(mod, ctx)
+end
+
 -- Chevron pair descriptor for the same paginated module, passed to
 -- sectionLabel as page_nav. Mirrors pageIndicatorFor's nil case exactly (a
 -- single page or a non-paginated module gets neither the text nor the
@@ -2505,7 +2517,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                 end
                 if mod.label then
                     local label_text = (type(mod.label_func) == "function" and mod.label_func(ctx)) or mod.label
-                    col_body[#col_body+1] = sectionLabel(label_text, col_w, pageIndicatorFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
+                    col_body[#col_body+1] = sectionLabel(label_text, col_w, labelRightTextFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
                     if mod.is_book_mod then
                         self._book_mod_label_slots[mod.id] = {
                             parent = col_body,
@@ -2622,7 +2634,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                 end
                 if mod.label then
                     local label_text = (type(mod.label_func) == "function" and mod.label_func(ctx)) or mod.label
-                    body[#body+1] = sectionLabel(label_text, inner_w, pageIndicatorFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
+                    body[#body+1] = sectionLabel(label_text, inner_w, labelRightTextFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
                     if mod.is_book_mod then
                         self._book_mod_label_slots[mod.id] = {
                             parent = body,

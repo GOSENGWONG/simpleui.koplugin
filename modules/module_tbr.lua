@@ -577,6 +577,17 @@ local tbr_module = GridRenderer.makeModule{
 
     reset = function() GridRenderer.reset() end,
 }
-for k, v in pairs(tbr_module) do M[k] = v end
+-- Merge TBR's data/API functions (getDisplayName, getTBRList, addTBR, ...,
+-- all defined above onto the local M) into tbr_module itself, and return
+-- tbr_module — not M. tbr_module is the exact table GridRenderer.makeModule
+-- built internally, and its generated build()/getMenuItems() close over
+-- that same table (e.g. Config.applyLabelToggle(mod, lbl) inside build()
+-- mutates mod.label in place). Merging the other way around (copying
+-- tbr_module's fields onto a separate M and returning M) would leave every
+-- module-registry consumer reading a table that build() never touches
+-- again after this file first loads — any state build() sets on itself at
+-- runtime (starting with the label visibility toggle) would silently never
+-- reach the registered module.
+for k, v in pairs(M) do tbr_module[k] = v end
 
-return M
+return tbr_module
