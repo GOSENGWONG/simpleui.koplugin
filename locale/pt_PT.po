@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: simpleui\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-20 09:28\n"
+"POT-Creation-Date: 2026-08-20 09:57\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -46,11 +46,11 @@ msgstr "% Lido (crescente)"
 msgid "% Read (descending)"
 msgstr "% Lido (decrescente)"
 
-#: modules/module_heatmap.lua:180
+#: modules/module_heatmap.lua:188
 msgid "%1 - %2"
 msgstr "%1 - %2"
 
-#: modules/module_heatmap.lua:179
+#: modules/module_heatmap.lua:187
 msgid "%1 weeks"
 msgstr "%1 semanas"
 
@@ -647,7 +647,7 @@ msgstr "Por etiqueta"
 msgid "CALENDAR"
 msgstr "CALENDÁRIO"
 
-#: modules/module_heatmap.lua:290
+#: modules/module_heatmap.lua:308
 msgid "Calendar"
 msgstr "Calendário"
 
@@ -1102,13 +1102,15 @@ msgstr "Digital"
 
 #: screens/sui_menu.lua:2488
 msgid "Disable \"Lock Scale\" first to set a custom label scale."
-msgstr "Desative \"Bloquear Escala\" primeiro para definir uma escala de etiqueta personalizada."
-"Desative \"Bloquear Escala\" primeiro para definir uma escala personalizada "
-"para as etiquetas."
+msgstr ""
+"Desative \"Bloquear Escala\" primeiro para definir uma escala de etiqueta "
+"personalizada.Desative \"Bloquear Escala\" primeiro para definir uma escala "
+"personalizada para as etiquetas."
 
 #: infra/sui_config.lua:870
 msgid "Disable \"Lock Scale\" first to set a per-module scale."
-msgstr "Desative \"Bloquear Escala\" primeiro para definir uma escala por módulo."
+msgstr ""
+"Desative \"Bloquear Escala\" primeiro para definir uma escala por módulo."
 "Desative \"Bloquear Escala\" primeiro para definir uma escala por módulo."
 
 #: infra/sui_config.lua:171
@@ -1190,7 +1192,8 @@ msgstr "Vazio"
 #: features/sui_quickactions.lua:887 features/sui_quickactions.lua:905
 #: features/sui_quickactions.lua:923
 msgid "Enable 'Browse by Author / Series / Tags' in the library menu first."
-msgstr "Ative 'Navegar por Autor / Série / Etiquetas' no menu da biblioteca primeiro."
+msgstr ""
+"Ative 'Navegar por Autor / Série / Etiquetas' no menu da biblioteca primeiro."
 "Ative primeiro 'Explorar por Autor / Série / Etiquetas' no menu da "
 "biblioteca.Ative primeiro 'Explorar por Autor / Série / Etiquetas' no menu "
 "da biblioteca."
@@ -1719,19 +1722,18 @@ msgstr ""
 msgid "Hours per month:"
 msgstr "Horas por mês:"
 
-#: modules/module_heatmap.lua:245
+#: modules/module_heatmap.lua:262
 msgid ""
 "How many weeks of history to include, and (in Calendar view) how many weeks "
-"the grid shows at 100% Scale. The actual number adjusts with Scale — fewer, "
-"larger cells above 100%, more, smaller cells below it. In Time of day view, "
-"this only changes how much history feeds the shading — the grid itself "
-"always has one column per hour."
+"the grid shows — this count is unaffected by Scale, which only resizes the "
+"cells. In Time of day view, this only changes how much history feeds the "
+"shading — the grid itself always has one column per hour."
 msgstr ""
-"Quantas semanas de histórico incluir e, na vista Calendário, quantas semanas "
-"a grelha mostra a 100% de Escala. O número real ajusta-se com a Escala — "
-"menos células, maiores, acima de 100%; mais células, mais pequenas, abaixo "
-"disso. Na vista Hora do dia, isto só altera quanto histórico alimenta o "
-"sombreado — a grelha em si tem sempre uma coluna por hora."
+"Quantas semanas de histórico incluir e, na vista Calendário, quantas "
+"semanas a grelha mostra — esta contagem não é afetada pelo Scale, que só "
+"redimensiona as células. Na vista Hora do dia, isto só muda quanto "
+"histórico alimenta a sombra — a grelha em si tem sempre uma coluna por "
+"hora."
 
 #: features/sui_quickactions.lua:2287 features/sui_quickactions.lua:2291
 msgid "Icon"
@@ -1913,7 +1915,7 @@ msgstr "Layout, papel de parede, predefinições e comportamento"
 msgid "Left"
 msgstr "Esquerda"
 
-#: modules/module_heatmap.lua:137 engines/sui_heatmap_widgets.lua:376
+#: modules/module_heatmap.lua:145 engines/sui_heatmap_widgets.lua:376
 msgid "Less"
 msgstr "Menos"
 
@@ -2050,7 +2052,8 @@ msgstr "É necessário pelo menos 1 separador no modo de navegação por página
 
 #: screens/sui_menu.lua:375
 msgid "Minimum 2 tabs required. Select another tab first."
-msgstr "São necessários no mínimo 2 separadores. Selecione outro separador primeiro."
+msgstr ""
+"São necessários no mínimo 2 separadores. Selecione outro separador primeiro."
 "São necessários pelo menos 2 separadores. Selecione outro separador primeiro."
 "São necessários pelo menos 2 separadores. Selecione outro separador primeiro."
 
@@ -2634,7 +2637,8 @@ msgstr "Substituir"
 
 #: features/sui_presets.lua:849 features/sui_presets.lua:981
 msgid "Overwrite preset \"%s\" with the current homescreen settings?"
-msgstr "Substituir a predefinição \"%s\" pelas definições atuais do ecrã inicial?"
+msgstr ""
+"Substituir a predefinição \"%s\" pelas definições atuais do ecrã inicial?"
 "Substituir a predefinição \"%s\" pelas definições atuais do ecrã inicial?"
 
 #: screens/sui_menu.lua:4039 screens/sui_menu.lua:4168
@@ -2992,7 +2996,7 @@ msgstr "Aleatório"
 msgid "Reading Goals"
 msgstr "Metas de Leitura"
 
-#: modules/module_heatmap.lua:163 modules/module_heatmap.lua:164
+#: modules/module_heatmap.lua:171 modules/module_heatmap.lua:172
 #: screens/sui_heatmap_popup.lua:193
 msgid "Reading Heatmap"
 msgstr "Mapa de Calor de Leitura"
@@ -3091,7 +3095,8 @@ msgstr "Repor todos os ícones das Ações Rápidas para a predefinição?"
 
 #: screens/sui_menu.lua:2522
 msgid "Reset all scales to default (100%)? This cannot be undone."
-msgstr "Repor todas as escalas para o padrão (100%)? Esta ação não pode ser desfeita."
+msgstr ""
+"Repor todas as escalas para o padrão (100%)? Esta ação não pode ser desfeita."
 "Repor todas as escalas para o padrão (100%)? Esta ação não pode ser desfeita."
 "Repor todas as escalas para o valor predefinido (100%)? Esta ação não pode "
 "ser desfeita."
@@ -3182,7 +3187,7 @@ msgstr "Guardar predefinição de ícones"
 msgid "Save preset"
 msgstr "Guardar predefinição"
 
-#: modules/module_heatmap.lua:258 modules/module_heatmap.lua:260
+#: modules/module_heatmap.lua:275 modules/module_heatmap.lua:277
 #: modules/module_quote.lua:1354 modules/module_quote.lua:1358
 #: modules/module_action_list.lua:568 modules/module_action_list.lua:570
 #: modules/module_reading_stats.lua:660 modules/module_reading_stats.lua:662
@@ -3290,17 +3295,30 @@ msgstr ""
 msgid "Scale for this module."
 msgstr "Escala para este módulo."
 
-#: modules/module_heatmap.lua:261 modules/module_quote.lua:1360
-#: modules/module_action_list.lua:571 modules/module_reading_stats.lua:663
-#: modules/module_reading_goals.lua:802 modules/module_clock.lua:953
-#: modules/module_currently.lua:1326 modules/module_quick_actions.lua:661
-#: engines/sui_book_grid.lua:1729
+#: modules/module_quote.lua:1360 modules/module_action_list.lua:571
+#: modules/module_reading_stats.lua:663 modules/module_reading_goals.lua:802
+#: modules/module_clock.lua:953 modules/module_currently.lua:1326
+#: modules/module_quick_actions.lua:661 engines/sui_book_grid.lua:1729
 msgid ""
 "Scale for this module.\n"
 "100% is the default size."
 msgstr ""
 "Escala para este módulo.\n"
 "100% é o tamanho predefinido."
+
+#: modules/module_heatmap.lua:278
+msgid ""
+"Scale for this module.\n"
+"100% is the default size. Capped at 100% here: the grid always has as many "
+"columns as \"Weeks shown\" (or, in Time of day view, 24), so there's no room "
+"to grow the cells past their autofit size without the grid overflowing the "
+"card."
+msgstr ""
+"Escala para este módulo.\n"
+"100% é o tamanho predefinido. Limitado a 100% aqui: a grelha tem sempre "
+"tantas colunas quantas as de \"Semanas mostradas\" (ou, na vista Hora do "
+"dia, 24), pelo que não há espaço para as células crescerem além do tamanho "
+"automático sem a grelha sair do card."
 
 #: modules/module_coverdeck.lua:1170
 msgid ""
@@ -3718,9 +3736,10 @@ msgstr "Iniciar com o Ecrã Inicial"
 
 #: screens/sui_onboarding.lua:62
 msgid "Start with a ready-made layout. You can change everything later."
-msgstr "Comece com um esquema pré-definido. Pode alterar tudo mais tarde."
-"Comece com um esquema pronto. Pode alterar tudo mais tarde.Começa com uma "
-"predefinição pronta a usar. Podes alterar tudo mais tarde."
+msgstr ""
+"Comece com um esquema pré-definido. Pode alterar tudo mais tarde.Comece com "
+"um esquema pronto. Pode alterar tudo mais tarde.Começa com uma predefinição "
+"pronta a usar. Podes alterar tudo mais tarde."
 
 #: modules/module_coverdeck.lua:178 modules/module_coverdeck.lua:1334
 #: modules/module_coverdeck.lua:1365 modules/module_coverdeck.lua:1432
@@ -4058,7 +4077,7 @@ msgstr "Qui"
 msgid "Thursday"
 msgstr "Quinta-feira"
 
-#: modules/module_heatmap.lua:178 modules/module_heatmap.lua:291
+#: modules/module_heatmap.lua:186 modules/module_heatmap.lua:309
 msgid "Time of day"
 msgstr "Hora do dia"
 
@@ -4218,7 +4237,7 @@ msgstr "Vinte"
 msgid "Two"
 msgstr "Dois"
 
-#: modules/module_heatmap.lua:288 screens/sui_menu.lua:3128
+#: modules/module_heatmap.lua:306 screens/sui_menu.lua:3128
 #: screens/sui_menu.lua:3195
 msgid "Type"
 msgstr "Tipo"
@@ -4372,7 +4391,8 @@ msgstr "Controlo de Temperatura"
 
 #: screens/sui_menu.lua:2658
 msgid "Warn when modules on a page exceed the available screen height."
-msgstr "Avisar quando os módulos numa página excedem a altura de ecrã disponível."
+msgstr ""
+"Avisar quando os módulos numa página excedem a altura de ecrã disponível."
 "Avisar quando os módulos numa página excedem a altura de ecrã disponível."
 "Avisar quando os módulos numa página excederem a altura disponível do ecrã."
 
@@ -4384,7 +4404,7 @@ msgstr "Qua"
 msgid "Wednesday"
 msgstr "Quarta-feira"
 
-#: modules/module_heatmap.lua:240 modules/module_heatmap.lua:244
+#: modules/module_heatmap.lua:257 modules/module_heatmap.lua:261
 msgid "Weeks shown"
 msgstr "Semanas mostradas"
 
@@ -4900,6 +4920,20 @@ msgid "page read"
 msgid_plural "pages read"
 msgstr[0] "página lida"
 msgstr[1] "páginas lidas"
+
+#~ msgid ""
+#~ "How many weeks of history to include, and (in Calendar view) how many "
+#~ "weeks the grid shows at 100% Scale. The actual number adjusts with Scale "
+#~ "— fewer, larger cells above 100%, more, smaller cells below it. In Time "
+#~ "of day view, this only changes how much history feeds the shading — the "
+#~ "grid itself always has one column per hour."
+#~ msgstr ""
+#~ "Quantas semanas de histórico incluir e, na vista Calendário, quantas "
+#~ "semanas a grelha mostra a 100% de Escala. O número real ajusta-se com a "
+#~ "Escala — menos células, maiores, acima de 100%; mais células, mais "
+#~ "pequenas, abaixo disso. Na vista Hora do dia, isto só altera quanto "
+#~ "histórico alimenta o sombreado — a grelha em si tem sempre uma coluna por "
+#~ "hora."
 
 #~ msgid "Status — Finished"
 #~ msgstr "Estado — Concluído"

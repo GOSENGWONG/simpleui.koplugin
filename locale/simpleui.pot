@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: simpleui\n"
-"POT-Creation-Date: 2026-08-20 09:28\n"
+"POT-Creation-Date: 2026-08-20 09:57\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -45,11 +45,11 @@ msgstr ""
 msgid "% Read (descending)"
 msgstr ""
 
-#: modules/module_heatmap.lua:180
+#: modules/module_heatmap.lua:188
 msgid "%1 - %2"
 msgstr ""
 
-#: modules/module_heatmap.lua:179
+#: modules/module_heatmap.lua:187
 msgid "%1 weeks"
 msgstr ""
 
@@ -706,7 +706,7 @@ msgstr ""
 msgid "CALENDAR"
 msgstr ""
 
-#: modules/module_heatmap.lua:290
+#: modules/module_heatmap.lua:308
 msgid "Calendar"
 msgstr ""
 
@@ -1837,8 +1837,8 @@ msgstr ""
 msgid "Hours per month:"
 msgstr ""
 
-#: modules/module_heatmap.lua:245
-msgid "How many weeks of history to include, and (in Calendar view) how many weeks the grid shows at 100% Scale. The actual number adjusts with Scale — fewer, larger cells above 100%, more, smaller cells below it. In Time of day view, this only changes how much history feeds the shading — the grid itself always has one column per hour."
+#: modules/module_heatmap.lua:262
+msgid "How many weeks of history to include, and (in Calendar view) how many weeks the grid shows — this count is unaffected by Scale, which only resizes the cells. In Time of day view, this only changes how much history feeds the shading — the grid itself always has one column per hour."
 msgstr ""
 
 #: features/sui_quickactions.lua:2287
@@ -2044,7 +2044,7 @@ msgstr ""
 msgid "Left"
 msgstr ""
 
-#: modules/module_heatmap.lua:137
+#: modules/module_heatmap.lua:145
 #: engines/sui_heatmap_widgets.lua:376
 msgid "Less"
 msgstr ""
@@ -3162,8 +3162,8 @@ msgstr ""
 msgid "Reading Goals"
 msgstr ""
 
-#: modules/module_heatmap.lua:163
-#: modules/module_heatmap.lua:164
+#: modules/module_heatmap.lua:171
+#: modules/module_heatmap.lua:172
 #: screens/sui_heatmap_popup.lua:193
 msgid "Reading Heatmap"
 msgstr ""
@@ -3376,8 +3376,8 @@ msgstr ""
 msgid "Save preset"
 msgstr ""
 
-#: modules/module_heatmap.lua:258
-#: modules/module_heatmap.lua:260
+#: modules/module_heatmap.lua:275
+#: modules/module_heatmap.lua:277
 #: modules/module_quote.lua:1354
 #: modules/module_quote.lua:1358
 #: modules/module_action_list.lua:568
@@ -3449,7 +3449,6 @@ msgstr ""
 msgid "Scale for this module."
 msgstr ""
 
-#: modules/module_heatmap.lua:261
 #: modules/module_quote.lua:1360
 #: modules/module_action_list.lua:571
 #: modules/module_reading_stats.lua:663
@@ -3459,6 +3458,10 @@ msgstr ""
 #: modules/module_quick_actions.lua:661
 #: engines/sui_book_grid.lua:1729
 msgid "Scale for this module.\n100% is the default size."
+msgstr ""
+
+#: modules/module_heatmap.lua:278
+msgid "Scale for this module.\n100% is the default size. Capped at 100% here: the grid always has as many columns as \"Weeks shown\" (or, in Time of day view, 24), so there's no room to grow the cells past their autofit size without the grid overflowing the card."
 msgstr ""
 
 #: modules/module_coverdeck.lua:1170
@@ -4167,8 +4170,8 @@ msgstr ""
 msgid "Thursday"
 msgstr ""
 
-#: modules/module_heatmap.lua:178
-#: modules/module_heatmap.lua:291
+#: modules/module_heatmap.lua:186
+#: modules/module_heatmap.lua:309
 msgid "Time of day"
 msgstr ""
 
@@ -4321,7 +4324,7 @@ msgstr ""
 msgid "Two"
 msgstr ""
 
-#: modules/module_heatmap.lua:288
+#: modules/module_heatmap.lua:306
 #: screens/sui_menu.lua:3128
 #: screens/sui_menu.lua:3195
 msgid "Type"
@@ -4482,8 +4485,8 @@ msgstr ""
 msgid "Wednesday"
 msgstr ""
 
-#: modules/module_heatmap.lua:240
-#: modules/module_heatmap.lua:244
+#: modules/module_heatmap.lua:257
+#: modules/module_heatmap.lua:261
 msgid "Weeks shown"
 msgstr ""
 
