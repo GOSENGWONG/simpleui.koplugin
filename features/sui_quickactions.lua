@@ -399,7 +399,7 @@ local function _showBookmarkBrowserSourceDialog(bb_ui)
     -- rather than assuming the Homescreen, since at most one screen is
     -- normally live at a time and a Custom Screen deserves the same
     -- kept-alive/restored treatment below as the Homescreen always got.
-    local _, open_screen_inst = UI.getOpenScreen()
+    local open_screen_id, open_screen_inst = UI.getOpenScreen()
     local hs_was_open = open_screen_inst ~= nil
     local home_dir   = G_reader_settings:readSetting("home_dir")
     local source_dialog
