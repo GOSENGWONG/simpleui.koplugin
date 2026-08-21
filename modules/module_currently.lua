@@ -322,6 +322,36 @@ local function _getElemOrder(pfx)
     return _resolveElemOrder(SUISettings:readSetting(pfx .. ELEM_ORDER_KEY))
 end
 
+-- ---------------------------------------------------------------------------
+-- Author list rendering
+-- ---------------------------------------------------------------------------
+-- Author strings arrive as a single newline-separated string ("A\nB\nC").
+-- Aligned with KOReader's actual data format. 
+-- _splitAuthors breaks it into names (trimmed, empty tokens dropped). 
+-- _formatAuthors renders the result with these rules:
+-- 1. empty/whitespace input → "Unknown Author";
+-- 2. single author          → returned verbatim;
+-- 3. two or more author     → "Name1 et al."
+--    only the first name is kept, every other co-author is discarded.
+local function _splitAuthors(s)
+    local parts = {}
+    if not s or s == "" then return parts end
+    for piece in (s .. "\n"):gmatch("(.-)\r?\n") do
+        local trimmed = piece:match("^%s*(.-)%s*$")
+        if trimmed and trimmed ~= "" then
+            parts[#parts + 1] = trimmed
+        end
+    end
+    return parts
+end
+
+local function _formatAuthors(authors_str)
+    local parts = _splitAuthors(authors_str)
+    if #parts == 0 then return _("Unknown Author") end
+    if #parts == 1 then return parts[1] end
+    return parts[1] .. _(" et al.")
+end
+
 
 -- Module API
 local M = {}
@@ -636,10 +666,10 @@ function M.build(w, ctx)
             meta[#meta+1] = title_w
             meta_has_content = true
 
-        elseif elem == "author" and show.author and bd.authors and bd.authors ~= "" then
+        elseif elem == "author" and show.author then
             gap_before(author_gap)
             meta[#meta+1] = UI.makeColoredText{
-                text            = bd.authors,
+                text            = _formatAuthors(bd.authors),
                 face            = face_author,
                 fgcolor         = CLR_TEXT_SUB_EFF,
                 width           = tw,
