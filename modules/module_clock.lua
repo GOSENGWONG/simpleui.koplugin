@@ -47,7 +47,7 @@ local function _localDate()
     -- fails. os.date("*t", os.time()) is always safe.
     local now = os.time()
     local t   = os.date("*t", now)
-    if not t or not t.mday then
+    if not t or not t.day then
         -- Fallback via the datetime module's locale-aware formatter.
         return datetime.secondsToDate(now, true)
     end
@@ -65,7 +65,7 @@ local function _localDate()
     end
     local weekday = _weekdays[t.wday] or os.date("%A", now)
     local month   = _months[t.month]  or os.date("%B", now)
-    return string.format("%s, %d %s", weekday, t.mday, month)
+    return string.format("%s, %d %s", weekday, t.day, month)
 end
 
 -- ---------------------------------------------------------------------------
@@ -246,9 +246,22 @@ local function _wcCache()
         [2] = _("Twenty"), [3] = _("Thirty"),
         [4] = _("Forty"),  [5] = _("Fifty"),
     }
-    -- Fallback to "-" if the translator left WORD_CLOCK_TENS_SEP untranslated.
+    -- Fallback depends on the script family: CJK and Cyrillic languages
+    -- write tens+units directly with no separator ("二十一", "двадцатьодин");
+    -- English needs an explicit "-" (kept here so untranslated English
+    -- locales still read "Twenty-One"); languages that already provide a
+    -- translation (bg " и", pt " e ", cs " ", etc.) override this default.
     local sep = _("WORD_CLOCK_TENS_SEP")
-    _wc_sep_cache = (sep == "WORD_CLOCK_TENS_SEP") and "-" or sep
+    if sep == "WORD_CLOCK_TENS_SEP" then
+        -- KOReader stores "English" as locale "C" (the POSIX default — see
+        -- frontend/ui/language.lua's getLangMenuTable); ICU-style codes
+        -- like "en_GB" / "en_US" share the "en" prefix. Treat both as
+        -- English so all three read "Twenty-One" by default.
+        local lang   = G_reader_settings and G_reader_settings:readSetting("language") or ""
+        local prefix = lang:match("^([a-zA-Z]+)") or ""
+        sep = (prefix == "en" or lang == "C") and "-" or ""
+    end
+    _wc_sep_cache = sep
 end
 
 -- Converts a minute value [0..59] to its word representation.
