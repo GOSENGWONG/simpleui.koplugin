@@ -3161,27 +3161,50 @@ end
 --      next becomes visible (mirrors what onCloseDocument does).
 -- ---------------------------------------------------------------------------
 
+-- Reads the sidecar's summary.status once, for the steps below that all
+-- need it. Returns nil if the sidecar/summary can't be read.
+local function _readCurrentStatus(file)
+    local ok_DS, DocSettings = pcall(require, "docsettings")
+    if not ok_DS or not DocSettings then return nil end
+    local ok_open, ds = pcall(DocSettings.open, DocSettings, file)
+    if not ok_open or not ds then return nil end
+    local summary = ds:readSetting("summary")
+    local status  = type(summary) == "table" and summary.status or nil
+    pcall(function() ds:close() end)
+    return status
+end
+
 local function _onStatusChanged(file)
+    -- saveSummary has already flushed the new status to disk by the time
+    -- this runs (before caller_callback() in the FM paths; after flush() in
+    -- the reader paths — see patchReaderMarkBook / patchBookStatusWidget
+    -- below), so a single fresh read here is current for every step.
+    local new_status = _readCurrentStatus(file)
+
     -- 0. If the book is no longer "complete", remove it from the deleted-books
     --    store (in case it was previously deleted then re-added by the user and
     --    its status is now being changed back to reading/abandoned).
-    --    We read the sidecar — saveSummary has already flushed the new status
-    --    to disk before caller_callback() is invoked, so this is always current.
     pcall(function()
         local DB = SUISettings.DeletedBooks
         if not (DB and DB.isEnabled()) then return end
+        if new_status == "complete" then return end
         local ok_DS, DocSettings = pcall(require, "docsettings")
         if not ok_DS or not DocSettings then return end
-        local ds = DocSettings:open(file)
-        local summary = ds:readSetting("summary")
-        local new_status = type(summary) == "table" and summary.status or nil
-        if new_status ~= "complete" then
-            local md5 = ds:readSetting("partial_md5_checksum")
-            pcall(function() ds:close() end)
-            if md5 then DB.removeByMd5(md5) end
-        else
-            pcall(function() ds:close() end)
-        end
+        local ds  = DocSettings:open(file)
+        local md5 = ds:readSetting("partial_md5_checksum")
+        pcall(function() ds:close() end)
+        if md5 then DB.removeByMd5(md5) end
+    end)
+
+    -- 0b. If the book just became "complete", drop it from the To Be Read
+    --     list — TBR is meant to hold unstarted books, so a finished book
+    --     no longer belongs there. Opt-out toggle in the TBR module's menu,
+    --     on by default.
+    pcall(function()
+        if new_status ~= "complete" then return end
+        local TBR = package.loaded["modules/module_tbr"]
+        if not (TBR and TBR.isAutoRemoveFinishedEnabled and TBR.removeTBR) then return end
+        if TBR.isAutoRemoveFinishedEnabled() then TBR.removeTBR(file) end
     end)
 
     -- 1. Invalidate the sidecar cache for this file so the stale summary is
@@ -3228,6 +3251,13 @@ function M.patchStatusButtons(plugin)
     -- The single-file variant changes status directly (no ConfirmBox), but
     -- using caller_callback injection is simpler and equally correct: the
     -- status is written before caller_callback() is called inside orig_gen_row.
+    --
+    -- Order matters here: caller_callback is what closes the dialog and
+    -- triggers the caller's own refresh (e.g. the homescreen repainting the
+    -- row the book was tapped from). _onStatusChanged must run first, so
+    -- that refresh already sees the post-change state (TBR removal, cache
+    -- invalidation) instead of painting once with stale data and only
+    -- picking up the change on the next unrelated repaint.
     local orig_gen_row = fmutil.genStatusButtonsRow
     plugin._orig_fmutil_gen_status_row = orig_gen_row
 
@@ -3241,8 +3271,8 @@ function M.patchStatusButtons(plugin)
         end
 
         local wrapped_callback = function()
-            if caller_callback then caller_callback() end
             if file then _onStatusChanged(file) end
+            if caller_callback then caller_callback() end
         end
         return orig_gen_row(doc_settings_or_file, wrapped_callback)
     end
@@ -3251,18 +3281,19 @@ function M.patchStatusButtons(plugin)
     -- genMultipleStatusButtonsRow shows a ConfirmBox before actually changing
     -- the status. We cannot wrap btn.callback (it fires before confirmation).
     -- Instead, we inject _onStatusChanged into the caller_callback so it runs
-    -- after the status has been written to disk (inside ok_callback → caller_callback).
+    -- after the status has been written to disk (inside ok_callback → caller_callback),
+    -- but before caller_callback itself — same ordering reason as above.
     local orig_gen_multi = fmutil.genMultipleStatusButtonsRow
     plugin._orig_fmutil_gen_status_multi = orig_gen_multi
 
     fmutil.genMultipleStatusButtonsRow = function(files, caller_callback, button_disabled)
         local wrapped_callback = function()
-            if caller_callback then caller_callback() end
             if type(files) == "table" then
                 for f in pairs(files) do
                     _onStatusChanged(f)
                 end
             end
+            if caller_callback then caller_callback() end
         end
         return orig_gen_multi(files, wrapped_callback, button_disabled)
     end
@@ -3281,6 +3312,94 @@ function M.unpatchStatusButtons(plugin)
         plugin._orig_fmutil_gen_status_multi      = nil
     end
     fmutil._simpleui_status_buttons_patched = nil
+end
+
+-- ---------------------------------------------------------------------------
+-- Reuse _onStatusChanged for the two status-change paths that live inside
+-- the reader itself, so cache invalidation and TBR auto-removal apply there
+-- too, not just from the file manager (see patchStatusButtons above):
+--
+--   • ReaderStatus:markBook()      — "Mark as finished"/"Mark as reading" on
+--                                     the end-of-book dialog, and the
+--                                     end_document_auto_mark setting.
+--   • BookStatusWidget:onClose()   — the full-screen "Book status" page
+--                                     (Reading/Complete/On hold), reachable
+--                                     from the reader menu and from the
+--                                     end-of-book dialog's "Book status"
+--                                     button.
+-- ---------------------------------------------------------------------------
+
+function M.patchReaderMarkBook(plugin)
+    local ok_rs, ReaderStatus = pcall(require, "apps/reader/modules/readerstatus")
+    if not ok_rs or not ReaderStatus then return end
+    if ReaderStatus._simpleui_markbook_patched then return end
+    ReaderStatus._simpleui_markbook_patched = true
+
+    local orig_mark_book = ReaderStatus.markBook
+    plugin._orig_readerstatus_markbook = orig_mark_book
+
+    ReaderStatus.markBook = function(rs_self, ...)
+        orig_mark_book(rs_self, ...)
+        -- markBook() already flushed doc_settings before returning, so the
+        -- sidecar is current by the time _onStatusChanged reads it back.
+        local file = rs_self.document and rs_self.document.file
+        if file then _onStatusChanged(file) end
+    end
+end
+
+function M.unpatchReaderMarkBook(plugin)
+    local ReaderStatus = package.loaded["apps/reader/modules/readerstatus"]
+    if not ReaderStatus or not ReaderStatus._simpleui_markbook_patched then return end
+
+    if plugin._orig_readerstatus_markbook then
+        ReaderStatus.markBook              = plugin._orig_readerstatus_markbook
+        plugin._orig_readerstatus_markbook = nil
+    end
+    ReaderStatus._simpleui_markbook_patched = nil
+end
+
+function M.patchBookStatusWidget(plugin)
+    local ok_bsw, BookStatusWidget = pcall(require, "ui/widget/bookstatuswidget")
+    if not ok_bsw or not BookStatusWidget then return end
+    if BookStatusWidget._simpleui_onclose_patched then return end
+    BookStatusWidget._simpleui_onclose_patched = true
+
+    local orig_on_close = BookStatusWidget.onClose
+    plugin._orig_bookstatuswidget_onclose = orig_on_close
+
+    BookStatusWidget.onClose = function(bsw_self, ...)
+        -- Capture before orig_on_close runs: it only flushes doc_settings
+        -- when self.updated is true, and readonly instances (e.g. the
+        -- screensaver's "bookstatus" mode) never set it.
+        local was_updated = bsw_self.updated
+        local file = bsw_self.ui and bsw_self.ui.document and bsw_self.ui.document.file
+
+        -- orig_on_close flushes doc_settings, then calls self.close_callback
+        -- (which reveals/repaints whatever is behind this widget, e.g. the
+        -- homescreen), all before returning. Wrap close_callback itself so
+        -- _onStatusChanged runs first — otherwise the repaint happens with
+        -- stale state and the change only shows up on the next unrelated
+        -- repaint.
+        if was_updated and file then
+            local orig_close_callback = bsw_self.close_callback
+            bsw_self.close_callback = function(...)
+                _onStatusChanged(file)
+                if orig_close_callback then return orig_close_callback(...) end
+            end
+        end
+        return orig_on_close(bsw_self, ...)
+    end
+end
+
+function M.unpatchBookStatusWidget(plugin)
+    local BookStatusWidget = package.loaded["ui/widget/bookstatuswidget"]
+    if not BookStatusWidget or not BookStatusWidget._simpleui_onclose_patched then return end
+
+    if plugin._orig_bookstatuswidget_onclose then
+        BookStatusWidget.onClose              = plugin._orig_bookstatuswidget_onclose
+        plugin._orig_bookstatuswidget_onclose = nil
+    end
+    BookStatusWidget._simpleui_onclose_patched = nil
 end
 
 -- ---------------------------------------------------------------------------
@@ -3319,6 +3438,10 @@ function M.patchResetSettingsButton(plugin)
     -- before the button is built, so it's available to the wrapped callback
     -- regardless of whether doc_settings_or_file is a DocSettings table or a
     -- plain path string.
+    --
+    -- _onStatusChanged runs before caller_callback for the same reason as in
+    -- patchStatusButtons above: caller_callback triggers the caller's own
+    -- refresh, which must see the already-invalidated caches.
     local orig_gen_reset = fmutil.genResetSettingsButton
     plugin._orig_fmutil_gen_reset = orig_gen_reset
 
@@ -3332,8 +3455,8 @@ function M.patchResetSettingsButton(plugin)
         end
 
         local wrapped_callback = function()
-            if caller_callback then caller_callback() end
             if file then _onStatusChanged(file) end
+            if caller_callback then caller_callback() end
         end
         return orig_gen_reset(doc_settings_or_file, wrapped_callback, button_disabled)
     end
@@ -3344,12 +3467,12 @@ function M.patchResetSettingsButton(plugin)
 
     fmutil.genMultipleResetSettingsButton = function(files, caller_callback, button_disabled)
         local wrapped_callback = function()
-            if caller_callback then caller_callback() end
             if type(files) == "table" then
                 for f in pairs(files) do
                     _onStatusChanged(f)
                 end
             end
+            if caller_callback then caller_callback() end
         end
         return orig_gen_reset_multi(files, wrapped_callback, button_disabled)
     end
@@ -4700,6 +4823,8 @@ function M.installAll(plugin)
     M.patchMenuForNavpager(plugin)
     M.patchBookInfoNavigation(plugin)
     M.patchStatusButtons(plugin)
+    M.patchReaderMarkBook(plugin)
+    M.patchBookStatusWidget(plugin)
     M.patchResetSettingsButton(plugin)
     M.patchFileDialogBookTitle(plugin)
     M.patchFontGetFace(plugin)
@@ -4916,6 +5041,8 @@ function M.teardownAll(plugin)
         fmutil._simpleui_bookinfo_nav_patched = nil
     end
     M.unpatchStatusButtons(plugin)
+    M.unpatchReaderMarkBook(plugin)
+    M.unpatchBookStatusWidget(plugin)
     M.unpatchResetSettingsButton(plugin)
     M.unpatchFileDialogBookTitle(plugin)
     M.unpatchFontGetFace(plugin)
