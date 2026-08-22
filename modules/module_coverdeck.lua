@@ -77,79 +77,38 @@ end
 -- ---------------------------------------------------------------------------
 -- Author list rendering
 -- ---------------------------------------------------------------------------
--- Author strings arrive as a single comma-separated string ("A, B, C").
--- Rendering rules, in priority order:
--- 1. keep at most 5 authors, joined with ", ";
--- 2. if the full list doesn't fit max_chars, drop names from the tail one
---    at a time and append " et al." to whatever remains, as long as that
---    combined string still fits;
--- 3. if even "Name1 et al." doesn't fit, fall back to truncating Name1 alone.
-local _ET_AL = _(" et al.")
-
-local function _utf8len(s)
-    if not s then return 0 end
-    local count, i = 0, 1
-    while i <= #s do
-        local b = s:byte(i)
-        local len
-        if     b >= 240 then len = 4
-        elseif b >= 224 then len = 3
-        elseif b >= 192 then len = 2
-        else                     len = 1
-        end
-        count = count + 1
-        i = i + len
-    end
-    return count
-end
-
+-- Author strings arrive as a single newline-separated string ("A\nB\nC").
+-- Aligned with KOReader's actual data format. 
+-- _splitAuthors breaks it into names (trimmed, empty tokens dropped). 
+-- _formatAuthors renders the result with these rules:
+-- 1. empty/whitespace input → "Unknown Author";
+-- 2. single author          → returned verbatim;
+-- 3. two or more author     → "Name1 et al."
+--    only the first name is kept, every other co-author is discarded.
 local function _splitAuthors(s)
-    local out = {}
-    if not s then return out end
-    for token in s:gmatch("([^,]+)") do
-        local trimmed = token:gsub("^%s+", ""):gsub("%s+$", "")
-        if trimmed ~= "" then
-            out[#out + 1] = trimmed
+    local parts = {}
+    if not s or s == "" then return parts end
+    for piece in (s .. "\n"):gmatch("(.-)\r?\n") do
+        local trimmed = piece:match("^%s*(.-)%s*$")
+        if trimmed and trimmed ~= "" then
+            parts[#parts + 1] = trimmed
         end
     end
-    return out
+    return parts
 end
 
-local function _renderAuthors(authors_str, max_chars)
-    if not authors_str or authors_str == "" then return "" end
-    local list = _splitAuthors(authors_str)
-    local n = #list
-
-    if n == 0 then return _("Unknown Author") end
-    if n == 1 then
-        return truncateTitle(list[1], max_chars)
-    end
-    if n > 5 then
-        list = { list[1], list[2], list[3], list[4], list[5] }
-        n = 5
-    end
-
-    -- Try the full list first, then progressively drop names from the
-    -- tail. Each candidate is checked with its " et al." suffix already
-    -- attached, so the suffix's own length is always accounted for.
-    for keep = n, 1, -1 do
-        local head      = table.concat(list, ", ", 1, keep)
-        local candidate = (keep < n) and (head .. _ET_AL) or head
-        if _utf8len(candidate) <= max_chars then
-            return candidate
-        end
-    end
-
-    -- Not even "Name1 et al." fits: fall back to truncating the first
-    -- author's name on its own.
-    return truncateTitle(list[1], max_chars)
+local function _formatAuthors(authors_str)
+    local parts = _splitAuthors(authors_str)
+    if #parts == 0 then return _("Unknown Author") end
+    if #parts == 1 then return parts[1] end
+    return parts[1] .. _(" et al.")
 end
 
 -- ---------------------------------------------------------------------------
 -- Settings keys
 -- ---------------------------------------------------------------------------
 
-local SETTING_SOURCE        = "coverdeck_source"         -- pfx .. this; "recent"|"tbr"
+local SETTING_SOURCE        = "coverdeck_source"          -- pfx .. this; "recent"|"tbr"
 local SETTING_SHOW_FINISHED = "coverdeck_show_finished"   -- pfx .. this; default OFF
 local ELEM_ORDER_KEY        = "coverdeck_stats_order"     -- pfx .. this
 local MAIN_ORDER_KEY        = "coverdeck_main_order"      -- pfx .. this
@@ -948,7 +907,7 @@ function M.build(w, ctx)
         local author_fs   = math.floor(SUIStyle.FS_SUBTITLE * scale * lbl_scale)
         local face_author = Font:getFace(SUIStyle.FACE_REGULAR, math.max(8, author_fs))
         author_widget = UI.makeColoredText{
-            text            = _renderAuthors(bd.authors, 20),
+            text            = _formatAuthors(bd.authors),
             face            = face_author,
             fgcolor         = CLR_TEXT_SUB_EFF,
             width           = inner_w,
