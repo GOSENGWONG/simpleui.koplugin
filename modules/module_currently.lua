@@ -208,7 +208,7 @@ local function fetchBookStats(md5, shared_conn, ctx, force)
         -- created by openStatsDB() for O(log n) lookup instead of full-table scan.
         local row = conn:exec(string.format([[
             WITH b AS (
-                SELECT id FROM book WHERE md5 = '%s' LIMIT 1
+                %s
             ),
             ps_agg AS (
                 SELECT ps.page,
@@ -224,7 +224,7 @@ local function fetchBookStats(md5, shared_conn, ctx, force)
                 count(*),
                 sum(min(page_dur, %d))
             FROM ps_agg;
-        ]], md5, _MAX_SEC))
+        ]], string.format(Config.BOOK_ID_BY_MD5_SQL, md5), _MAX_SEC))
 
         if row and row[1] and row[1][1] then
             local days   = tonumber(row[1][1]) or 0

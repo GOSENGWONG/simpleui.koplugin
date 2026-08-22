@@ -1687,6 +1687,22 @@ function M.invalidateTopbarConfigCache() _topbar_cfg_menu_cache = nil end
 -- Stats Database
 local _SQ3, _lfs_mod, _indexes_created = nil, nil, false
 function M.getStatsDbPath() return DataStorage:getSettingsDir() .. "/statistics.sqlite3" end
+
+-- Single source of truth for resolving a book's `md5` (partial_md5_checksum)
+-- to its `book.id` in statistics.sqlite3. A %s placeholder for the md5
+-- value — meant to be embedded via string.format(), either standalone or
+-- nested inside a larger query (e.g. a CTE), not executed as-is.
+--
+-- ORDER BY last_open DESC: the same file can end up with more than one row
+-- in `book` (e.g. after being moved/renamed and re-indexed). Ordering by
+-- last_open picks the row that was most recently active, deterministically,
+-- instead of whichever row a plain LIMIT 1 happens to visit first.
+--
+-- Every query in this plugin that resolves a book id from an md5 should go
+-- through this constant rather than inlining the WHERE/ORDER BY itself, so
+-- the tie-break rule only ever needs to change in one place.
+M.BOOK_ID_BY_MD5_SQL = "SELECT id FROM book WHERE md5 = '%s' ORDER BY last_open DESC LIMIT 1"
+
 function M.openStatsDB()
     if not _SQ3 then
         local ok, s = pcall(require, "lua-ljsqlite3/init")
@@ -1702,6 +1718,15 @@ function M.openStatsDB()
     if not _lfs_mod.attributes(db_path, "mode") then return nil end
     local ok, conn = pcall(_SQ3.open, db_path)
     if not (ok and conn) then return nil end
+    -- statistics.sqlite3 is also written to by KOReader's own ReadingStats
+    -- plugin during an active reading session. Without a busy timeout, a
+    -- query that lands while that write is in progress fails immediately
+    -- with "database is locked" instead of waiting for it to finish; the
+    -- caller then silently keeps whatever it had cached before. Setting a
+    -- busy timeout here makes SQLite retry internally for up to the given
+    -- window before giving up, so a transient write no longer surfaces as a
+    -- query failure.
+    pcall(function() conn:exec("PRAGMA busy_timeout = 3000;") end)
     if not _indexes_created then
         local idx_ok = pcall(function()
             conn:exec("CREATE INDEX IF NOT EXISTS idx_simpleui_book_md5 ON book(md5);")

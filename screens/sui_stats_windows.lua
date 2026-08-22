@@ -193,8 +193,7 @@ local function _fetchBookStatsData(book, range_start, range_end)
     local id_book
     if md5 then
         local ok_q, row = pcall(function()
-            return conn:rowexec(string.format(
-                "SELECT id FROM book WHERE md5 = '%s' LIMIT 1", md5))
+            return conn:rowexec(string.format(Config.BOOK_ID_BY_MD5_SQL, md5))
         end)
         if ok_q then id_book = row and tonumber(row) or nil end
     end

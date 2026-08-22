@@ -154,6 +154,17 @@ local SETTING_SHOW_FINISHED = "coverdeck_show_finished"   -- pfx .. this; defaul
 local ELEM_ORDER_KEY        = "coverdeck_stats_order"     -- pfx .. this
 local MAIN_ORDER_KEY        = "coverdeck_main_order"      -- pfx .. this
 
+-- Progress badge (pentagon overlay on the centre cover, same drawing
+-- primitive as the book-grid modules' progress badge) — off by default,
+-- unlike the coverdeck_show_* elements above. Color follows the same
+-- "Follow Library / Dark / Light" 3-way choice as the book-grid modules'
+-- own per-badge color override (see engines/sui_book_grid.lua's
+-- GridRenderer.getBadgeColorOverride) — nil means "Follow Library". Named
+-- "Progress Badge" throughout, matching the book-grid/Library terminology
+-- for the same badge_key ("progress").
+local SETTING_SHOW_PROGRESS_BADGE  = "coverdeck_show_progress_badge"   -- pfx .. this; default OFF
+local SETTING_PROGRESS_BADGE_COLOR = "coverdeck_progress_badge_color"  -- pfx .. this; nil|"dark"|"light"
+
 -- Source values of the form COLLECTION_PREFIX .. collection_name select a
 -- user collection as the book source.
 local COLLECTION_PREFIX = "collection:"
@@ -188,6 +199,26 @@ end
 
 local function showFinished(pfx)
     return SUISettings:readSetting(pfx .. SETTING_SHOW_FINISHED) == true
+end
+
+-- Same "unset == off" convention as showFinished above — the progress
+-- badge is opt-in, unlike the coverdeck_show_* elements below (which
+-- default on).
+local function showProgressBadge(pfx)
+    return SUISettings:readSetting(pfx .. SETTING_SHOW_PROGRESS_BADGE) == true
+end
+
+-- nil ("Follow Library") / "dark" / "light" — mirrors
+-- GridRenderer.getBadgeColorOverride/setBadgeColor's shape, scoped by pfx
+-- only since coverdeck is a single-instance module (no per-instance id).
+local function getProgressBadgeColorOverride(pfx)
+    local v = SUISettings:readSetting(pfx .. SETTING_PROGRESS_BADGE_COLOR)
+    if v == "dark" or v == "light" then return v end
+    return nil
+end
+local function setProgressBadgeColor(pfx, v)
+    if v ~= "dark" and v ~= "light" then v = nil end -- nil = clear override, follow Library
+    SUISettings:saveSetting(pfx .. SETTING_PROGRESS_BADGE_COLOR, v)
 end
 
 -- Every coverdeck_show_* key defaults to ON (an unset key reads as true),
@@ -305,6 +336,68 @@ local function getSH()
 end
 
 -- ---------------------------------------------------------------------------
+-- Progress badge (pentagon) — same drawing primitive as the book-grid
+-- modules' progress badge (see engines/sui_book_grid.lua's
+-- GridRenderer.applyBadges), so a book's read/complete/abandoned status
+-- looks identical everywhere in the app. Coverdeck is a single-instance
+-- module (no per-instance id like the grid modules use), so there is no
+-- per-instance size override here — only color, via
+-- getProgressBadgeColorOverride/setProgressBadgeColor above.
+-- ---------------------------------------------------------------------------
+local _CoverWidgets = nil
+local function getCoverWidgets()
+    if not _CoverWidgets then
+        local ok, m = pcall(require, "features/library/sui_cover_widgets")
+        if ok and m then _CoverWidgets = m end
+    end
+    return _CoverWidgets
+end
+
+local _FC = nil
+local function getFC()
+    if not _FC then
+        local ok, m = pcall(require, "features/library/sui_foldercovers")
+        if ok and m then _FC = m end
+    end
+    return _FC
+end
+
+-- Overlays the progress pentagon on `cover_widget` when the book has a
+-- status worth showing (in progress, complete, or abandoned). Returns
+-- `cover_widget` unchanged otherwise — same "not started" convention as
+-- GridRenderer.applyBadges.
+local function applyProgressBadge(cover_widget, bd, cw, ch, pfx)
+    local has_progress = (bd.percent or 0) > 0 or bd.status == "complete" or bd.status == "abandoned"
+    if not has_progress then return cover_widget end
+
+    local CW = getCoverWidgets()
+    if not CW then return cover_widget end
+
+    local fc    = getFC()
+    local color = getProgressBadgeColorOverride(pfx)
+        or (fc and fc.getBadgeColorProgress and fc.getBadgeColorProgress())
+        or "dark"
+    local dark = color == "dark"
+
+    local cell_min    = math.min(cw, ch)
+    local edge_margin = math.max(1, math.floor(cell_min * 0.08))
+    local eff_size    = math.max(8, math.floor(cell_min * 0.14))
+
+    local desc = CW.buildProgressBadgeDesc(eff_size, bd.status, bd.percent, SUIStyle.BADGE_BORDER_SZ, dark)
+    local wg   = CW.buildProgressBadgeWidget(desc)
+    if not wg then return cover_widget end
+
+    -- Flush with the top edge, inset from the right — matches the corner
+    -- badges' placement convention in applyBadges.
+    local sz = wg:getSize()
+    wg.overlap_offset = { cw - sz.w - edge_margin, 0 }
+
+    local overlap = OverlapGroup:new{ dimen = Geom:new{ w = cw, h = ch }, cover_widget }
+    overlap[#overlap + 1] = wg
+    return overlap
+end
+
+-- ---------------------------------------------------------------------------
 -- Stats cache — LRU capped at BSTATS_CACHE_MAX entries: { result, t }.
 -- Eviction scans the small table for the oldest entry. Keeps RAM bounded
 -- even when the user browses a large TBR list across a long session.
@@ -368,7 +461,7 @@ local function fetchBookStats(md5, shared_conn, ctx, force)
     local ok, err = pcall(function()
         local row = conn:exec(string.format([[
             WITH b AS (
-                SELECT id FROM book WHERE md5 = '%s' LIMIT 1
+                %s
             ),
             ps_agg AS (
                 SELECT ps.page,
@@ -384,7 +477,7 @@ local function fetchBookStats(md5, shared_conn, ctx, force)
                 count(*),
                 sum(min(page_dur, %d))
             FROM ps_agg;
-        ]], md5, MAX_SEC_PER_PAGE))
+        ]], string.format(Config.BOOK_ID_BY_MD5_SQL, md5), MAX_SEC_PER_PAGE))
 
         if row and row[1] and row[1][1] then
             local days   = tonumber(row[1][1]) or 0
@@ -646,6 +739,7 @@ function M.build(w, ctx)
     local show_progress   = vis.progress
     local show_stats      = vis.show_stats
     local stats_order     = vis.stats_order
+    local show_progress_badge = showProgressBadge(pfx)
 
     -- Carousel dimensions: center_w is a percentage of inner_w (see
     -- _CENTER_W_PCT above), scaled by cs (raw scale * thumb_scale) on top.
@@ -681,6 +775,12 @@ function M.build(w, ctx)
     local function buildCover(fp, cw, ch)
         local bd    = SH.getBookData(fp, ctx.prefetched and ctx.prefetched[fp])
         local cover = SH.getBookCover(fp, cw, ch) or SH.coverPlaceholder(bd.title, bd.authors, cw, ch)
+        -- Only the centre cover is large enough for the badge to read
+        -- cleanly — side/far slots are narrow crops meant to look like a
+        -- sliver of book spine, not a full cover.
+        if show_progress_badge then
+            cover = applyProgressBadge(cover, bd, cw, ch, pfx)
+        end
         return cover
     end
     local function buildCroppedCover(fp, cw, ch, align)
@@ -1509,6 +1609,43 @@ function M.getMenuItems(ctx_menu)
         refresh = refresh,
         _lc     = _lc,
     }
+    do
+        -- Same grouping convention as the book-grid modules' per-badge
+        -- submenus (see engines/sui_book_grid.lua's "Pages Badge" /
+        -- "Series Badge" groups): a named row showing On/Off, containing
+        -- the toggle plus a color override independent from every other
+        -- module's badges.
+        local progress_badge_group = {
+            {
+                text           = _lc("Progress Badge"),
+                checked_func   = function() return showProgressBadge(pfx) end,
+                keep_menu_open = true,
+                callback       = function()
+                    SUISettings:saveSetting(pfx .. SETTING_SHOW_PROGRESS_BADGE, not showProgressBadge(pfx))
+                    refresh()
+                end,
+            },
+            Config.makeRadioSubmenuItem{
+                text         = _lc("Progress Badge Color"),
+                enabled_func = function() return showProgressBadge(pfx) end,
+                options      = {
+                    { value = nil,     label = _lc("Follow Library") },
+                    { value = "dark",  label = _lc("Dark") },
+                    { value = "light", label = _lc("Light") },
+                },
+                get          = function() return getProgressBadgeColorOverride(pfx) end,
+                set          = function(v) setProgressBadgeColor(pfx, v) end,
+                refresh      = refresh,
+            },
+        }
+        menu[#menu+1] = {
+            text_func  = function() return _lc("Progress Badge") end,
+            value_func = function()
+                return showProgressBadge(pfx) and _lc("On") or _lc("Off")
+            end,
+            sub_item_table = progress_badge_group,
+        }
+    end
     menu[#menu+1] = {
         text           = _lc("Show finished books"),
         checked_func   = function() return showFinished(pfx) end,
