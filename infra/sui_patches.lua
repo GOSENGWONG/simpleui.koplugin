@@ -57,6 +57,13 @@ end
 
 local M = {}
 
+-- Forward declarations needed because the ReaderUI fallback block inside
+-- patchUIManagerClose (below) can encounter a soft-parked Homescreen
+-- before these are defined further down this file, near
+-- _closeReaderToHomescreenSync (their primary caller).
+local _raiseParkedScreen
+local _dropParkedScreen
+
 -- ---------------------------------------------------------------------------
 -- Module-level state
 -- ---------------------------------------------------------------------------
@@ -2596,10 +2603,16 @@ function M.patchUIManagerClose(plugin)
                                 local RUI2 = package.loaded["apps/reader/readerui"]
                                 if RUI2 and RUI2.instance then return end
                                 local HS2 = liveHS()
-                                if not (HS2 and not HS2._instance) then return end
-                                _showHSCold(active_plugin, HS2, prev_action)
+                                if not HS2 then return end
+                                if HS2._instance and HS2._instance._parked then
+                                    _raiseParkedScreen(active_plugin, HS2, prev_action)
+                                elseif not HS2._instance then
+                                    _showHSCold(active_plugin, HS2, prev_action)
+                                end
                             end)
                         else
+                            local HS2b = liveHS()
+                            if HS2b then _dropParkedScreen(HS2b) end
                             UIManager:scheduleIn(0, function()
                                 local fm_ref = liveFM()
                                 if fm_ref and fm_ref.file_chooser then
@@ -3803,6 +3816,102 @@ local function _prepareReaderClose(plugin, readerui, via_gesture)
 end
 
 -- ---------------------------------------------------------------------------
+-- _raiseParkedScreen — warm-path promotion of a soft-parked screen instance.
+--
+-- Counterpart to ScreenWidget:onShowingReader's soft-park branch (see
+-- engines/sui_screen_engine.lua). When the reader opened, a parked HS was
+-- left alive at the bottom of the UIManager window stack instead of being
+-- torn down. This function:
+--   1. Confirms `instance` is actually parked (bails out otherwise, so
+--      callers can use it unconditionally).
+--   2. Finds it on the window stack and moves it to the top (O(n)).
+--   3. Re-injects a fresh navbar (new FM instance, correct tabs/bar).
+--   4. Calls `_refresh(false)` to pick up whatever changed while the
+--      reader was open (progress, book order, stats) — no full rebuild.
+--   5. Scopes the repaint to the widget's own dimen.
+--
+-- Returns true  → warm-path taken, caller must NOT build/show a fresh instance.
+-- Returns false → nothing was parked, or it was evicted unexpectedly; caller
+--                 falls back to its own cold-build path.
+-- ---------------------------------------------------------------------------
+_raiseParkedScreen = function(plugin, screen_module, prev_action)
+    local inst = screen_module and screen_module._instance
+    if not (inst and inst._parked) then return false end
+
+    local stack = UIManager._window_stack
+    if not stack then inst._parked = nil; return false end
+    local found = false
+    for i = 1, #stack do
+        if stack[i].widget == inst then
+            if i ~= #stack then
+                local entry = table.remove(stack, i)
+                table.insert(stack, entry)
+            end
+            found = true
+            break
+        end
+    end
+    if not found then
+        -- Evicted from the stack unexpectedly (nothing else is supposed to
+        -- close a parked instance) — treat it as gone and let the caller
+        -- fall back to a cold build.
+        inst._parked = nil
+        if screen_module._instance == inst then screen_module._instance = nil end
+        return false
+    end
+
+    inst._parked = nil
+
+    -- Re-inject a fresh navbar. We must NOT call wrapWithNavbar here — it
+    -- would rebuild the whole OverlapGroup around the placeholder
+    -- FrameContainer ScreenWidget:init() installs, painting the screen
+    -- white. Rebuilding just the bottom-bar widget and slotting it into
+    -- the existing _navbar_container (which already holds the live
+    -- content at [1]) is the correct, cheaper equivalent — same as
+    -- _showHSCold uses for a fresh instance.
+    local tabs = Config.loadTabConfig()
+    Bottombar.setActiveAndRefreshFM(plugin, "homescreen", tabs)
+    _ensureGoalCallback(plugin)
+    local new_bar = Bottombar.buildBarWidget("homescreen", tabs)
+    Bottombar.replaceBar(inst, new_bar, tabs)
+    inst._navbar_injected    = true
+    inst._navbar_prev_action = prev_action
+
+    inst._on_qa_tap   = _makeQaTap(plugin)
+    inst._on_goal_tap = plugin._goalTapCallback
+
+    -- Refresh stale data picked up while the reader was open.
+    pcall(function() inst:_refresh(false) end)
+
+    -- Scope the dirty region to the widget's own dimen instead of the full
+    -- screen. On colour panels, a full-screen "ui" dirty can be promoted to
+    -- a full flash by the EPDC driver; the dimen-scoped form stays as a "ui"
+    -- waveform and merges cleanly with the single repaint queued by the caller.
+    UIManager:setDirty(inst, function()
+        return "ui", inst.dimen
+    end)
+    return true
+end
+
+-- Closes a soft-parked screen instance for real instead of leaving it
+-- dangling alive-but-hidden. Used by any reader-close path that will NOT
+-- show the Homescreen this time (e.g. "Return to Book Folder", or landing
+-- in the Library) — without this, a parked instance from the open side
+-- would sit hidden with increasingly stale data until the user happened to
+-- reach the Homescreen some other way, defeating the point of parking it
+-- in the first place.
+_dropParkedScreen = function(screen_module)
+    local inst = screen_module and screen_module._instance
+    if not (inst and inst._parked) then return end
+    inst._parked = nil
+    -- Same warm-seed semantics as a normal onShowingReader close: preserve
+    -- _cached_books_state/_current_page/_cfg_cache for next time, discard
+    -- everything else.
+    inst._navbar_closing_intentionally = true
+    UIManager:close(inst)
+end
+
+-- ---------------------------------------------------------------------------
 -- _closeReaderToHomescreenSync
 --
 -- Synchronous inner body: onClose(false) + showFileManager + optional HS.
@@ -3827,26 +3936,29 @@ local function _closeReaderToHomescreenSync(plugin, readerui, file,
     -- (last_dir derived from file path) — mirrors native behaviour.
     readerui:showFileManager(file)
 
-    -- When "Return to Book Folder" is on: close the reader and land in the FM
-    -- at the book's folder with no HS — identical to native KOReader.
-    if return_to_folder then
-        plugin.active_action = "home"
-        return
-    end
-
-    -- Default path: show the Homescreen on top of the FM. The HS is always
-    -- closed by SimpleUIPlugin:onCloseWidget by the time we get here (it no
-    -- longer stays alive underneath ReaderUI), so this is always a fresh
-    -- HS.show() seeded from ScreenEngine._cached_books_state — never a
-    -- stack-raise of a still-alive instance.
     local HS = liveHS() or (function()
         local ok, m = pcall(require, "screens/sui_homescreen"); return ok and m
     end)()
+
+    -- When "Return to Book Folder" is on: close the reader and land in the FM
+    -- at the book's folder with no HS — identical to native KOReader. A
+    -- parked HS instance from the open side won't be shown this time —
+    -- close it for real rather than leaving it alive-hidden indefinitely.
+    if return_to_folder then
+        plugin.active_action = "home"
+        if HS then _dropParkedScreen(HS) end
+        return
+    end
+
+    -- Default path: raise a parked HS instance if soft-park left one alive
+    -- underneath, else build fresh (warm-seeded from
+    -- ScreenEngine._cached_books_state, same as before soft-park existed).
     if not HS then return end
 
     local fm_ref = liveFM()
     _closeOrphanedPopups(fm_ref, HS._instance)
 
+    if _raiseParkedScreen(plugin, HS, prev_action) then return end
     if HS._instance then return end
     _showHSCold(plugin, HS, prev_action)
 end
@@ -3882,7 +3994,8 @@ function M.closeReaderToHomescreen(plugin, via_gesture)
     --     onClose(false)          → suppresses internal "full" refresh;
     --                               onCloseDocument fires + flushes "Closing…" notice
     --     showFileManager         → FM ready synchronously
-    --     _showHSCold             → HS rebuilt (warm-seeded) in the same tick
+    --     _raiseParkedScreen/_showHSCold → HS raised (warm) or rebuilt (warm-seeded)
+    --                               in the same tick
     --   [event loop drains → single "ui" repaint of HS or FM]
     -- -----------------------------------------------------------------------
     UIManager:nextTick(function()
@@ -4122,6 +4235,12 @@ function M.closeReaderToLibrary(plugin)
     -- onClose() calls UIManager:close(self.dialog) which runs synchronously,
     -- so the flag has already been consumed. No need to clear it.
     readerui:showFileManager(file)
+
+    -- A parked HS instance from the open side won't be shown this time —
+    -- close it for real (see _dropParkedScreen) rather than leaving it
+    -- alive-hidden indefinitely with increasingly stale data.
+    local HS = liveHS()
+    if HS then _dropParkedScreen(HS) end
 
     -- After the FM appears, navigate to home_dir and rebuild the navbar.
     UIManager:scheduleIn(0, function()
