@@ -97,7 +97,7 @@ end
 -- Core widget builder
 -- ---------------------------------------------------------------------------
 local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, colors)
-    local clr_blk = colors and colors.blk or Blitbuffer.COLOR_BLACK
+    local clr_blk = colors and colors.blk or SUIStyle.COLOR.text_primary
     local clr_sub = colors and colors.sub or CLR_TEXT_SUB
 
     -- Placeholder: no actions configured at all
@@ -351,14 +351,7 @@ function M.build(w, ctx)
     local d         = _getDims(Config.getModuleScale(MOD_ID, ctx.pfx) * lf)
     local lbl_scale = Config.getItemLabelScale(MOD_ID, ctx.pfx) * lf
     d.fs = math.max(8, math.floor(d.fs * lbl_scale))
-    local ok_ss, SUIStyle  = pcall(require, "features/sui_style")
-    local _theme_fg        = ok_ss and SUIStyle and SUIStyle.getThemeColor("fg")
-    local _theme_secondary = ok_ss and SUIStyle and SUIStyle.getThemeColor("text_secondary")
-    local colors = (_theme_fg or _theme_secondary) and {
-        blk = _theme_fg or Blitbuffer.COLOR_BLACK,
-        sub = _theme_secondary or _theme_fg or CLR_TEXT_SUB,
-    } or nil
-    return buildListWidget(w, qa_ids, show_icons, align, ctx.on_qa_tap, d, colors)
+    return buildListWidget(w, qa_ids, show_icons, align, ctx.on_qa_tap, d)
 end
 
 function M.getHeight(ctx)

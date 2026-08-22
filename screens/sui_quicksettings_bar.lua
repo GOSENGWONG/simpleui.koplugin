@@ -42,6 +42,7 @@ local InputContainer    = require("ui/widget/container/inputcontainer")
 local GestureRange      = require("ui/gesturerange")
 
 local SUISettings = require("infra/sui_store")
+local SUIStyle    = require("features/sui_style")
 local _           = require("infra/sui_i18n").translate
 local N_          = require("infra/sui_i18n").ngettext
 
@@ -159,7 +160,7 @@ local function buildPanel(touch_menu)
             icon_widget = TextWidget:new{
                 text    = nerd_char,
                 face    = Font:getFace(ok_style and SUIStyle.FACE_ICONS or "symbols", math.floor(icon_size * 0.75)),
-                fgcolor = Blitbuffer.COLOR_BLACK,
+                fgcolor = SUIStyle.COLOR.text_primary,
                 padding = 0,
             }
         else
@@ -184,7 +185,7 @@ local function buildPanel(touch_menu)
                 icon_widget = TextWidget:new{
                     text    = (label:sub(1, 1)):upper(),
                     face    = Font:getFace("cfont", math.floor(icon_size * 0.55)),
-                    fgcolor = Blitbuffer.COLOR_BLACK,
+                    fgcolor = SUIStyle.COLOR.text_primary,
                 }
             end
         end
@@ -197,8 +198,8 @@ local function buildPanel(touch_menu)
 
         local bg_color = nil
         if not is_bare then
-            if bg == "flat" then bg_color = Blitbuffer.gray(0.08)
-            elseif bg == "solid" then bg_color = Blitbuffer.COLOR_WHITE end
+            if bg == "flat" then bg_color = SUIStyle.COLOR.surface_flat
+            elseif bg == "solid" then bg_color = SUIStyle.COLOR.surface end
         end
 
         local btn_frame = FrameContainer:new{
@@ -206,7 +207,7 @@ local function buildPanel(touch_menu)
             height     = btn_size,
             radius     = corner_r,
             bordersize = current_border,
-            color      = current_border > 0 and Blitbuffer.gray(0.75) or nil,
+            color      = current_border > 0 and SUIStyle.COLOR.gray or nil,
             background = bg_color,
             padding    = 0,
             CenterContainer:new{
@@ -231,7 +232,7 @@ local function buildPanel(touch_menu)
                 TextWidget:new{
                     text    = label,
                     face    = lbl_face,
-                    fgcolor = Blitbuffer.COLOR_BLACK,
+                    fgcolor = SUIStyle.COLOR.text_primary,
                     width   = lbl_w,
                 },
             })
@@ -354,7 +355,7 @@ local function buildPanel(touch_menu)
         table.insert(btn_row, TextWidget:new{
             text    = _("No actions configured.\nGo to Bars → Quick Settings Bar."),
             face    = Font:getFace("cfont"),
-            fgcolor = Blitbuffer.COLOR_DARK_GRAY,
+            fgcolor = SUIStyle.COLOR.text_secondary,
         })
     end
 

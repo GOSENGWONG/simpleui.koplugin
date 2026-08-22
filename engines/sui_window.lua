@@ -316,7 +316,7 @@ function SUIWindow:show()
         padding_right  = self._pad_h,
         padding_bottom = self._pad_v,
         padding_top    = 0,
-        background     = Blitbuffer.COLOR_WHITE,
+        background     = SUIStyle.COLOR.surface,
         dimen          = Geom:new{ w = self._modal_w, h = self._modal_h },
         VerticalSpan:new{ width = 0 },
     }
@@ -781,7 +781,7 @@ function SUIWindow:_buildTitleBar(ctx)
         fullscreen             = false,
         align                  = "center",
         with_bottom_line       = true,
-        bottom_line_color      = Blitbuffer.COLOR_BLACK,
+        bottom_line_color      = SUIStyle.COLOR.text_primary,
         left_icon              = left_icon,
         left_icon_tap_callback = left_cb,
         close_callback         = function() win:close() end,
@@ -934,8 +934,8 @@ function SUIWindow:_rebuildFrame(ctx, items)
                 dimen      = Geom:new{ w = btn_size, h = btn_size },
                 radius     = SZ(Screen:scaleBySize(8)),
                 bordersize = border_sz,
-                background = Blitbuffer.COLOR_WHITE,
-                color      = Blitbuffer.gray(0.75),
+                background = SUIStyle.COLOR.surface,
+                color      = SUIStyle.COLOR.gray,
                 padding    = 0,
                 [1]        = CenterContainer:new{
                     dimen = Geom:new{ w = btn_size - border_sz * 2, h = btn_size - border_sz * 2 },
@@ -1377,8 +1377,8 @@ local function _getPageDotClass()
     function _PageDotClass:paintTo(bb, x, y)
         local r       = math.floor(self.dot_size / 2)
         local cy      = y + math.floor(self.dot_bar_h / 2)
-        local clr_on  = Blitbuffer.COLOR_BLACK
-        local clr_off = SUIStyle.getThemeColor("text_secondary") or Blitbuffer.gray(0.55)
+        local clr_on  = SUIStyle.COLOR.text_primary
+        local clr_off = SUIStyle.COLOR.text_dim
         for i = 1, self.total_pages do
             local cx = x + (i - 1) * self.dot_touch_w + math.floor(self.dot_touch_w / 2)
             bb:paintCircle(cx, cy, r, i == self.current_page and clr_on or clr_off)
@@ -1405,7 +1405,7 @@ function SUIWindow:_buildDotBar(total_pages)
     local label_text = TextWidget:new{
         text    = T(_("Page %1 of %2"), self._current_page, total_pages),
         face    = label_face,
-        fgcolor = Blitbuffer.COLOR_BLACK,
+        fgcolor = SUIStyle.COLOR.text_primary,
     }
     local label_centered = CenterContainer:new{
         dimen = Geom:new{ w = self._inner_w, h = LABEL_H },
@@ -1544,7 +1544,7 @@ function SUIWindow.Input.tapable(widget, handlers, dimen)
                     dimen      = Geom:new{ w = dimen.w, h = dimen.h },
                     bordersize = SUIStyle.BORDER_SZ * 2,
                     radius     = SZ(Screen:scaleBySize(6)),
-                    color      = SUIStyle.getThemeColor("accent") or Blitbuffer.COLOR_BLACK,
+                    color      = SUIStyle.COLOR.text_primary,
                     padding    = 0,
                     widget,
                 }
@@ -1585,7 +1585,7 @@ function SUIWindow.Input.iconButton(opts)
     local sz  = opts.size  or SZ(Screen:scaleBySize(SUIStyle.FS_DETAIL))
     local w   = opts.w     or sz * 2
     local h   = opts.h     or sz
-    local clr = opts.color or Blitbuffer.COLOR_BLACK
+    local clr = opts.color or SUIStyle.COLOR.text_primary
 
     local ic = InputContainer:new{
         dimen = Geom:new{ w = w, h = h },
@@ -1615,9 +1615,9 @@ end
 -- Component helpers (module-private)
 -- ===========================================================================
 
-local function _clrPrimary()   return Blitbuffer.COLOR_BLACK end
-local function _clrSecondary() return SUIStyle.getThemeColor("text_secondary") or Blitbuffer.gray(0.55) end
-local function _clrSeparator() return Blitbuffer.gray(0.85) end
+local function _clrPrimary()   return SUIStyle.COLOR.text_primary end
+local function _clrSecondary() return SUIStyle.COLOR.text_dim end
+local function _clrSeparator() return SUIStyle.COLOR.gray_strong end
 
 local function _facePrimary()
     return Font:getFace(SUIStyle.FACE_REGULAR, SZ(SUIStyle.FS_BODY))
@@ -2622,7 +2622,7 @@ local function _CardBase(opts)
     local margin_v   = opts.margin_v or SZ(Screen:scaleBySize(8))
     local h_pad      = SZ(Size.padding.large)
     local v_pad      = SZ(Screen:scaleBySize(12))
-    local fg_color   = (opts.dim == true) and Blitbuffer.gray(0.45) or _clrPrimary()
+    local fg_color   = (opts.dim == true) and SUIStyle.COLOR.text_dim_alt or _clrPrimary()
 
     local del_w    = has_delete and (_CHEVRON_W() * 2) or 0
     local edit_w   = has_edit and (_CHEVRON_W() * 2) or 0
@@ -2816,7 +2816,7 @@ local function _CardBase(opts)
     local card_frame = FrameContainer:new{
         radius     = SZ(Screen:scaleBySize(12)),
         bordersize = SUIStyle.BORDER_SZ,
-        color      = (opts.dim == true) and Blitbuffer.gray(0.45) or Blitbuffer.gray(0.72),
+        color      = (opts.dim == true) and SUIStyle.COLOR.text_dim_alt or SUIStyle.COLOR.gray,
         padding    = 0,
         dimen      = Geom:new{ w = inner_w, h = content:getSize().h },
         content,
@@ -3228,7 +3228,7 @@ function SUIWindow.CenteredButtonFooter(ctx, opts)
     local text_w = TextWidget:new{
         text    = opts.icon and (SUIStyle.icon(opts.icon) .. "  " .. (opts.text or "")) or (opts.text or ""),
         face    = face,
-        fgcolor = is_disabled and (SUIStyle.getThemeColor("text_secondary") or Blitbuffer.gray(0.55)) or Blitbuffer.COLOR_BLACK,
+        fgcolor = is_disabled and SUIStyle.COLOR.text_dim or SUIStyle.COLOR.text_primary,
         bold    = true,
     }
 
@@ -3240,7 +3240,7 @@ function SUIWindow.CenteredButtonFooter(ctx, opts)
         height         = btn_h,
         radius         = btn_radius,
         bordersize     = border_sz,
-        color          = is_disabled and (SUIStyle.getThemeColor("text_secondary") or Blitbuffer.gray(0.55)) or Blitbuffer.gray(0.75),
+        color          = is_disabled and SUIStyle.COLOR.text_dim or SUIStyle.COLOR.gray,
         background     = nil,
         padding        = 0,
         dimen          = Geom:new{ w = btn_w, h = btn_h },

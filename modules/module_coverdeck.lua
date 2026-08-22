@@ -667,11 +667,8 @@ function M.build(w, ctx)
     local SH = getSH()
     if not SH then return nil end
 
-    -- Theme colors
-    local _theme_fg        = SUIStyle.getThemeColor("fg")
-    local _theme_secondary = SUIStyle.getThemeColor("text_secondary")
-    local CLR_TEXT_EFF     = _theme_fg or Blitbuffer.COLOR_BLACK
-    local CLR_TEXT_SUB_EFF = _theme_secondary or _theme_fg or CLR_TEXT_SUB
+    local CLR_TEXT_EFF     = SUIStyle.COLOR.text_primary
+    local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
 
     -- Scales: c.scale/c.thumb_scale/c.lbl_scale (from ctx.cfg) are raw
     -- values; ctx.landscape_factor is applied on top here.

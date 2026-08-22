@@ -51,6 +51,7 @@ local N_ = require("infra/sui_i18n").ngettext
 local Config      = require("infra/sui_config")
 local SUISettings = require("infra/sui_store")
 local UI          = require("infra/sui_core")
+local SUIStyle    = require("features/sui_style")
 
 -- Landscape-aware scaling for the raw pixel/font sizes below that build
 -- SUIWindow modal content directly in this file (icon picker previews, the
@@ -1603,7 +1604,7 @@ function QA.sui_build_qa_icons(plugin, ctx_menu, ctx)
                 icon_widget = TextWidget:new{
                     text    = nerd_char,
                     face    = Font:getFace(SUIStyle.FACE_ICONS, math.floor(icon_size * 0.8)),
-                    fgcolor = Blitbuffer.COLOR_BLACK,
+                    fgcolor = SUIStyle.COLOR.text_primary,
                     padding = 0,
                 }
             end
@@ -1629,7 +1630,7 @@ function QA.sui_build_qa_icons(plugin, ctx_menu, ctx)
             icon_widget = TextWidget:new{
                 text    = fallback_label and fallback_label:sub(1, 1):upper() or "?",
                 face    = Font:getFace("cfont", math.floor(icon_size * 0.7)),
-                fgcolor = Blitbuffer.COLOR_BLACK,
+                fgcolor = SUIStyle.COLOR.text_primary,
             }
         end
         
@@ -1637,8 +1638,8 @@ function QA.sui_build_qa_icons(plugin, ctx_menu, ctx)
             dimen      = Geom:new{ w = btn_size, h = btn_size },
             radius     = ctx.SZ(Screen:scaleBySize(8)),
             bordersize = border_sz,
-            background = Blitbuffer.COLOR_WHITE,
-            color      = Blitbuffer.gray(0.75),
+            background = SUIStyle.COLOR.surface,
+            color      = SUIStyle.COLOR.gray,
             padding    = 0,
             [1]        = CenterContainer:new{
                 dimen = Geom:new{ w = btn_size - border_sz * 2, h = btn_size - border_sz * 2 },
@@ -3100,7 +3101,7 @@ function QA.buildQARowIcon(icon_value, fallback_label, scale_fn)
             icon_widget = TextWidget:new{
                 text    = nerd_char,
                 face    = Font:getFace(SUIStyle.FACE_ICONS, math.floor(icon_size * 0.8)),
-                fgcolor = Blitbuffer.COLOR_BLACK,
+                fgcolor = SUIStyle.COLOR.text_primary,
                 padding = 0,
             }
         end
@@ -3126,7 +3127,7 @@ function QA.buildQARowIcon(icon_value, fallback_label, scale_fn)
         icon_widget = TextWidget:new{
             text    = fallback_label and fallback_label:sub(1, 1):upper() or "?",
             face    = Font:getFace("cfont", math.floor(icon_size * 0.7)),
-            fgcolor = Blitbuffer.COLOR_BLACK,
+            fgcolor = SUIStyle.COLOR.text_primary,
         }
     end
 
@@ -3134,8 +3135,8 @@ function QA.buildQARowIcon(icon_value, fallback_label, scale_fn)
         dimen      = Geom:new{ w = btn_size, h = btn_size },
         radius     = SZ(Screen:scaleBySize(6)),
         bordersize = border_sz,
-        background = Blitbuffer.COLOR_WHITE,
-        color      = Blitbuffer.gray(0.75),
+        background = SUIStyle.COLOR.surface,
+        color      = SUIStyle.COLOR.gray,
         padding    = 0,
         [1]        = CenterContainer:new{
             dimen = Geom:new{ w = btn_size - border_sz * 2, h = btn_size - border_sz * 2 },

@@ -12,6 +12,7 @@ local Config    = require("infra/sui_config")
 local UI        = require("infra/sui_core")
 local Bottombar = require("screens/sui_bottombar")
 local SUISettings = require("infra/sui_store")
+local SUIStyle    = require("features/sui_style")
 
 -- Lazy: only needed on D-pad devices, inside gesture event handlers.
 local _FocusManager
@@ -1740,7 +1741,7 @@ local function _ctMakeCoverWidget(cover_bb, ImageWidget)
             dimen      = { w = screen_w, h = screen_h },
             padding    = 0,
             bordersize = 0,
-            background = Blitbuffer.COLOR_BLACK,
+            background = SUIStyle.COLOR.text_primary,
             CenterContainer:new{
                 dimen = { w = screen_w, h = screen_h },
                 image,
@@ -3758,7 +3759,7 @@ function M._wrapButtonPaintTo(plugin, Button)
         if not SUISettings:isTrue("simpleui_debug_button_bounds") then return end
         local dimen = btn_self:getSize()
         if not dimen then return end
-        bb:paintBorder(x, y, dimen.w, dimen.h, 2, Blitbuffer.COLOR_RED)
+        bb:paintBorder(x, y, dimen.w, dimen.h, 2, SUIStyle.COLOR.debug)
     end
 end
 
@@ -4337,7 +4338,7 @@ local function _clearWhiteBackgrounds(w, depth)
     -- w.background can be a cdata (e.g. BlitBuffer color) that triggers
     -- blitbuffer.lua's __eq metamethod, which crashes if either operand
     -- is an uninitialised/null cdata rather than a proper Lua nil.
-    local ok, is_white = pcall(function() return w.background == Blitbuffer.COLOR_WHITE end)
+    local ok, is_white = pcall(function() return w.background == SUIStyle.COLOR.surface end)
     if ok and is_white then
         w.background = nil
     end
@@ -4625,7 +4626,7 @@ function M.patchWallpaperFM(plugin)
         plugin._orig_wp_uc_paintTo = orig_uc_pt
 
         UnderlineContainer.paintTo = function(uc_self, bb, x, y)
-            if _wallpaperEnabledFM() and uc_self.color == Blitbuffer.COLOR_WHITE then
+            if _wallpaperEnabledFM() and uc_self.color == SUIStyle.COLOR.surface then
                 -- Paint only the child, skip the white underline.
                 local container_size = uc_self:getSize()
                 if not uc_self.dimen then
@@ -4669,7 +4670,7 @@ function M.patchWallpaperFM(plugin)
 
         TextBoxWidget.paintTo = function(tbw_self, bb, x, y)
             if not (_wallpaperEnabledFM()
-                    and tbw_self.bgcolor == Blitbuffer.COLOR_WHITE) then
+                    and tbw_self.bgcolor == SUIStyle.COLOR.surface) then
                 return orig_tbw_pt(tbw_self, bb, x, y)
             end
 
@@ -4684,7 +4685,7 @@ function M.patchWallpaperFM(plugin)
                 tbw_self._sui_tmp_bb = Blitbuffer.new(w, h, Blitbuffer.TYPE_BB8)
             end
 
-            local fgcolor = tbw_self.fgcolor or Blitbuffer.COLOR_BLACK
+            local fgcolor = tbw_self.fgcolor or SUIStyle.COLOR.text_primary
             UI.paintWithAlphaMask(tbw_self, bb, x, y, w, h, fgcolor, orig_tbw_pt, tbw_self._sui_tmp_bb)
         end
 
@@ -4715,7 +4716,7 @@ function M.patchWallpaperFM(plugin)
 
         ProgressWidget.paintTo = function(pw_self, bb, x, y)
             if _wallpaperEnabledFM()
-                    and pw_self.bgcolor == Blitbuffer.COLOR_WHITE then
+                    and pw_self.bgcolor == SUIStyle.COLOR.surface then
                 local saved = pw_self.bgcolor
                 pw_self.bgcolor = nil
                 orig_pw_pt(pw_self, bb, x, y)

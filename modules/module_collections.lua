@@ -105,12 +105,9 @@ local _BASE_BADGE_FS     = 8   -- badge font (~0.375 x badge_sz) — proportiona
 local _BASE_EMPTY_H      = Screen:scaleBySize(36)
 local _BASE_EMPTY_FS     = SUIStyle.FS_BODY     -- 18: empty state
 
-local EDGE_COLOR = Blitbuffer.gray(0.70)
 local EDGE_H1    = 0.97   -- inner line height fraction of COLL_H
 local EDGE_H2    = 0.94   -- outer line height fraction
 
-local _CLR_COVER_BORDER = Blitbuffer.COLOR_BLACK
-local _CLR_COVER_BG     = Blitbuffer.gray(0.88)
 
 local LABEL_H = UI.LABEL_H  -- kept for any external callers; getHeight() uses getScaledLabelH()
 
@@ -657,7 +654,7 @@ end
 local function wrapAccentAndBadge(content, count, d, accent_color)
     local accent = FrameContainer:new{
         bordersize = 0, padding = 0,
-        background = accent_color or Blitbuffer.COLOR_BLACK,
+        background = accent_color or SUIStyle.COLOR.text_primary,
         dimen      = Geom:new{ w = d.coll_w, h = d.accent_h },
         VerticalSpan:new{ width = 0 },
     }
@@ -680,8 +677,8 @@ local function wrapAccentAndBadge(content, count, d, accent_color)
     end
 
     local dark      = getBadgeColor() == "dark"
-    local bg_color  = dark and Blitbuffer.COLOR_BLACK or Blitbuffer.COLOR_WHITE
-    local fg_color  = dark and Blitbuffer.COLOR_WHITE or Blitbuffer.COLOR_BLACK
+    local bg_color  = dark and SUIStyle.COLOR.text_primary or SUIStyle.COLOR.surface
+    local fg_color  = dark and SUIStyle.COLOR.surface or SUIStyle.COLOR.text_primary
 
     local badge_tw = UI.makeColoredText{
         text    = tostring(math.min(count, 99)),
@@ -737,7 +734,7 @@ local function buildSpineDecoration(d)
     local function edgeLine(h, y_off)
         local line = LineWidget:new{
             dimen      = Geom:new{ w = d.edge_thick, h = h },
-            background = EDGE_COLOR,
+            background = SUIStyle.COLOR.gray,
         }
         line.overlap_offset = { 0, y_off }
         return OverlapGroup:new{
@@ -769,7 +766,7 @@ local function buildStackCell(files, cover_override, coll_name, count, d, accent
         local raw = getStackBookCover(front_fp, d.coll_w, d.coll_h)
         if raw then
             cover = FrameContainer:new{
-                bordersize = SUIStyle.BADGE_BORDER_SZ, color = _CLR_COVER_BORDER,
+                bordersize = SUIStyle.BADGE_BORDER_SZ, color = SUIStyle.COLOR.text_primary,
                 padding    = 0, margin = 0,
                 dimen      = Geom:new{ w = d.coll_w, h = d.coll_h },
                 raw,
@@ -778,8 +775,8 @@ local function buildStackCell(files, cover_override, coll_name, count, d, accent
     end
     if not cover then
         cover = FrameContainer:new{
-            bordersize = SUIStyle.BADGE_BORDER_SZ, color = _CLR_COVER_BORDER,
-            background = _CLR_COVER_BG, padding = 0,
+            bordersize = SUIStyle.BADGE_BORDER_SZ, color = SUIStyle.COLOR.text_primary,
+            background = SUIStyle.COLOR.gray_strong, padding = 0,
             dimen      = Geom:new{ w = d.coll_w, h = d.coll_h },
             CenterContainer:new{
                 dimen = Geom:new{ w = d.coll_w, h = d.coll_h },
@@ -1016,12 +1013,8 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     local style = _resolveCoverStyleForCount(getCoverStyle(), count)
     local d     = getDims(scale, thumb_scale, lbl_scale, cw, getHideSpine(), getBadgeScale())
 
-    local ok_ss, SUIStyleR = pcall(require, "features/sui_style")
-    local _theme_secondary = ok_ss and SUIStyleR and SUIStyleR.getThemeColor("text_secondary")
-    local _theme_fg        = ok_ss and SUIStyleR and SUIStyleR.getThemeColor("fg")
-    local _theme_accent    = ok_ss and SUIStyleR and SUIStyleR.getThemeColor("accent")
-    local CLR_TEXT_SUB_EFF = _theme_secondary or _theme_fg or CLR_TEXT_SUB
-    local CLR_ACCENT_EFF   = _theme_accent or Blitbuffer.COLOR_BLACK
+    local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
+    local CLR_ACCENT_EFF   = SUIStyle.COLOR.text_primary
 
     local cover_widget, cover_slots
     if style == "quad" then
@@ -1182,7 +1175,7 @@ local function collectionsUpdateCovers(widget, _ctx)
                     slot.container[slot.idx] = img
                 else
                     slot.container[slot.idx] = FrameContainer:new{
-                        bordersize = SUIStyle.BADGE_BORDER_SZ, color = _CLR_COVER_BORDER,
+                        bordersize = SUIStyle.BADGE_BORDER_SZ, color = SUIStyle.COLOR.text_primary,
                         padding    = 0, margin = 0,
                         dimen      = Geom:new{ w = slot.w, h = slot.h },
                         img,
@@ -1554,7 +1547,6 @@ function mod.build(w, ctx)
         UI.makeColoredText{
             text    = ph_text,
             face    = Font:getFace(SUIStyle.FACE_REGULAR, SUIStyle.FS_BODY),
-            fgcolor = SUIStyle.getThemeColor("text_secondary"),
             width   = w - PAD * 2,
         },
     }

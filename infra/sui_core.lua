@@ -16,6 +16,7 @@ local Device         = require("device")
 local Screen         = Device.screen
 local logger         = require("logger")
 local SUISettings = require("infra/sui_store")
+local SUIStyle    = require("features/sui_style")
 
 -- Lazy references to sibling modules — resolved on first use to avoid
 -- circular-require issues at load time, but stored as upvalues so that
@@ -166,8 +167,11 @@ M.LABEL_TEXT_H  = Screen:scaleBySize(_body_fs)  -- TextWidget height for FS_BODY
 M.LABEL_H       = M.LABEL_PAD_TOP + M.LABEL_PAD_BOT + M.LABEL_TEXT_H
 
 -- Shared secondary text colour used across all desktop modules.
--- Edit this single value to retheme every module at once.
-M.CLR_TEXT_SUB  = Blitbuffer.COLOR_BLACK
+-- Kept as a pass-through of the shared style catalog (features/sui_style.lua
+-- loads before this module and doesn't depend on it, so no circular-require
+-- concern) rather than pointing every consumer at SUIStyle.COLOR directly,
+-- since ~10 modules already import this as UI.CLR_TEXT_SUB.
+M.CLR_TEXT_SUB  = SUIStyle.COLOR.text_primary
 
 -- ---------------------------------------------------------------------------
 -- Landscape reduction factor — single source of truth.
@@ -462,7 +466,7 @@ function M.wrapWithNavbar(inner_widget, active_action_id, tabs, force_no_arrows)
     local topbar_idx       = topbar_on and #overlap_items or nil
     local navbar_container = OverlapGroup():new(overlap_items)
     local is_bare_bar = SUISettings:readSetting("simpleui_bar_style") == "bare"
-    local wrapper_bg = (SUISettings:isTrue("simpleui_navbar_transparent") or SUISettings:isTrue("simpleui_statusbar_transparent") or is_bare_bar) and nil or Blitbuffer.COLOR_WHITE
+    local wrapper_bg = (SUISettings:isTrue("simpleui_navbar_transparent") or SUISettings:isTrue("simpleui_statusbar_transparent") or is_bare_bar) and nil or SUIStyle.COLOR.surface
 
     return navbar_container,
            FrameContainer():new{
@@ -650,7 +654,7 @@ function M.paintWithAlphaMask(widget, target_bb, x, y, w, h, fgcolor, custom_pai
         tmp_bb = Blitbuffer.new(w, h, Blitbuffer.TYPE_BB8)
         own_bb = true
     end
-    tmp_bb:fill(Blitbuffer.COLOR_WHITE)
+    tmp_bb:fill(SUIStyle.COLOR.surface)
     if custom_paint_fn then
         custom_paint_fn(widget, tmp_bb, 0, 0)
     else
@@ -683,7 +687,7 @@ end
 --       text    = "hello",
 --       face    = Font:getFace("cfont", SUIStyle.FS_CAPTION),
 --       bold    = true,
---       fgcolor = Blitbuffer.COLOR_BLACK,  -- any colour
+--       fgcolor = SUIStyle.COLOR.text_primary,  -- any colour
 --       width   = 200,                     -- optional, as with TextWidget
 --   }
 -- ---------------------------------------------------------------------------
@@ -711,7 +715,7 @@ function M.makeColoredText(opts)
     -- white buffer would produce an empty mask (invisible text).
     local inner_opts = {}
     for k, v in pairs(opts) do inner_opts[k] = v end
-    inner_opts.fgcolor = Blitbuffer.COLOR_BLACK
+    inner_opts.fgcolor = SUIStyle.COLOR.text_primary
 
     local inner = _TW():new(inner_opts)
 
@@ -801,7 +805,7 @@ end
 --       bold      = true,
 --       width     = tw,
 --       alignment = "center",
---       fgcolor   = Blitbuffer.COLOR_BLACK,
+--       fgcolor   = SUIStyle.COLOR.text_primary,
 --       max_lines = 2,     -- optional, passed through to inner TextBoxWidget
 --   }
 -- ---------------------------------------------------------------------------
@@ -812,7 +816,7 @@ local function _TBW()
 end
 
 function M.makeAlphaTextBox(opts)
-    local fgcolor = opts.fgcolor or Blitbuffer.COLOR_BLACK
+    local fgcolor = opts.fgcolor or SUIStyle.COLOR.text_primary
 
     local inner = _TBW():new{
         text        = opts.text,
@@ -826,8 +830,8 @@ function M.makeAlphaTextBox(opts)
         max_lines   = opts.max_lines,
         height_adjust = opts.height_adjust,
         height_overflow_show_ellipsis = opts.height_overflow_show_ellipsis,
-        fgcolor     = Blitbuffer.COLOR_BLACK,
-        bgcolor     = Blitbuffer.COLOR_WHITE,
+        fgcolor     = SUIStyle.COLOR.text_primary,
+        bgcolor     = SUIStyle.COLOR.surface,
         alpha       = true,
     }
 
@@ -885,12 +889,12 @@ function M.progressBar(w, pct, bar_h, fg_color, bg_color)
     local ok, SUIStyle = pcall(require, "features/sui_style")
     local style = SUISettings:get("simpleui_style_progress_bar_type") or "flat"
 
-    local bg = bg_color or (ok and SUIStyle.getThemeColor("progress_bg")) or Blitbuffer.gray(0.15)
-    local fg = fg_color or (ok and SUIStyle.getThemeColor("progress_fg")) or Blitbuffer.gray(0.75)
+    local bg = bg_color or SUIStyle.COLOR.track
+    local fg = fg_color or SUIStyle.COLOR.gray
     
     if style == "framed" then
         local border = ok and SUIStyle.BADGE_BORDER_SZ or 1
-        local border_color = Blitbuffer.COLOR_BLACK
+        local border_color = SUIStyle.COLOR.text_primary
         local inner_w = math.max(0, w - 2 * border)
         local inner_h = math.max(0, bar_h - 2 * border)
         local fw = math.max(0, math.floor(inner_w * math.min(pct or 0, 1.0)))
@@ -898,9 +902,9 @@ function M.progressBar(w, pct, bar_h, fg_color, bg_color)
         local bg_frame = FrameContainer():new{
             bordersize = border,
             color      = border_color,
-            background = Blitbuffer.COLOR_WHITE,
+            background = SUIStyle.COLOR.surface,
             padding    = 0, margin = 0,
-            LineWidget():new{ dimen = Geom():new{ w = inner_w, h = inner_h }, background = Blitbuffer.COLOR_WHITE }
+            LineWidget():new{ dimen = Geom():new{ w = inner_w, h = inner_h }, background = SUIStyle.COLOR.surface }
         }
 
         if fw <= 0 then

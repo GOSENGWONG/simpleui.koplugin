@@ -727,11 +727,8 @@ function GridRenderer.build(w, ctx, opts)
     local paged = opts.paged and #fps > max_items
     ctx[npages_key] = npages
 
-    local ok_ss, SUIStyle2 = pcall(require, "features/sui_style")
-    local _theme_fg        = ok_ss and SUIStyle2 and SUIStyle2.getThemeColor("fg")
-    local _theme_secondary = ok_ss and SUIStyle2 and SUIStyle2.getThemeColor("text_secondary")
-    local _clr_blk        = _theme_fg or Blitbuffer.COLOR_BLACK
-    local _clr_sub        = _theme_secondary or _theme_fg or CLR_TEXT_SUB
+    local _clr_blk        = SUIStyle.COLOR.text_primary
+    local _clr_sub        = CLR_TEXT_SUB
 
     local SH          = getSH()
     local pfx         = ctx.pfx
@@ -855,7 +852,7 @@ function GridRenderer.build(w, ctx, opts)
             local badge = FrameContainer:new{
                 bordersize  = border_sz,
                 color       = border_color,
-                background  = Blitbuffer.gray(0.15),
+                background  = SUIStyle.COLOR.track,
                 padding     = 0,
                 dimen       = Geom:new{ w = badge_d, h = badge_d },
                 radius      = badge_r,
@@ -1014,10 +1011,10 @@ function GridRenderer.build(w, ctx, opts)
             cell_widget = OverlapGroup:new{
                 dimen = Geom:new{ w = cw, h = cell_h },
                 tappable,
-                LineWidget:new{ dimen = Geom:new{ w = cw, h = bw },    background = Blitbuffer.COLOR_BLACK },
-                LineWidget:new{ dimen = Geom:new{ w = cw, h = bw },    background = Blitbuffer.COLOR_BLACK, overlap_offset = {0, cell_h - bw} },
-                LineWidget:new{ dimen = Geom:new{ w = bw, h = cell_h }, background = Blitbuffer.COLOR_BLACK },
-                LineWidget:new{ dimen = Geom:new{ w = bw, h = cell_h }, background = Blitbuffer.COLOR_BLACK, overlap_offset = {cw - bw, 0} },
+                LineWidget:new{ dimen = Geom:new{ w = cw, h = bw },    background = SUIStyle.COLOR.text_primary },
+                LineWidget:new{ dimen = Geom:new{ w = cw, h = bw },    background = SUIStyle.COLOR.text_primary, overlap_offset = {0, cell_h - bw} },
+                LineWidget:new{ dimen = Geom:new{ w = bw, h = cell_h }, background = SUIStyle.COLOR.text_primary },
+                LineWidget:new{ dimen = Geom:new{ w = bw, h = cell_h }, background = SUIStyle.COLOR.text_primary, overlap_offset = {cw - bw, 0} },
             }
         end
 
@@ -1065,7 +1062,7 @@ function GridRenderer.build(w, ctx, opts)
         -- just cover the freshly-painted wallpaper with a solid rectangle.
         local content_row = row
         if not ctx.has_wallpaper then
-            local eraser_bg = (ok_ss and SUIStyle2 and SUIStyle2.getThemeColor("bg")) or Blitbuffer.COLOR_WHITE
+            local eraser_bg = SUIStyle.COLOR.surface
             local eraser = LineWidget:new{
                 dimen      = Geom:new{ w = inner_w, h = row_h },
                 background = eraser_bg,
@@ -1114,13 +1111,10 @@ function GridRenderer.build(w, ctx, opts)
     local has_box    = show_frame or solid_bg
     local border_sz  = show_frame and SUIStyle.BORDER_SZ or 0
     local radius     = has_box and math.floor(Screen:scaleBySize(12) * scale) or 0
-    local border_color = Blitbuffer.gray(0.72)
-    if ok_ss and SUIStyle2 then
-        border_color = SUIStyle2.getThemeColor("separator") or border_color
-    end
+    local border_color = SUIStyle.COLOR.gray
     local bg_color = nil
     if solid_bg then
-        bg_color = (ok_ss and SUIStyle2 and SUIStyle2.getThemeColor("bg")) or Blitbuffer.COLOR_WHITE
+        bg_color = SUIStyle.COLOR.surface
     end
 
     local result = FrameContainer:new{

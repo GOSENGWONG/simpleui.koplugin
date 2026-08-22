@@ -23,6 +23,7 @@
 local Blitbuffer      = require("ffi/blitbuffer")
 local CenterContainer = require("ui/widget/container/centercontainer")
 local Device          = require("device")
+local SUIStyle        = require("features/sui_style")
 local Geom            = require("ui/geometry")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
@@ -41,8 +42,6 @@ local HW = {}
 -- ---------------------------------------------------------------------------
 -- Shading
 -- ---------------------------------------------------------------------------
-local _CLR_BORDER = Blitbuffer.gray(0.85)
-local _CLR_LABEL   = Blitbuffer.gray(0.45)
 local _LEVEL_GRAY  = { 0.16, 0.34, 0.52, 0.70, 0.90 }  -- index 1 = level 0 (none), unused — see HW.levelColor
 
 -- Which of the 5 shading levels (0-4) `seconds` falls into, relative to
@@ -61,7 +60,7 @@ end
 -- not as a shade of activity.
 function HW.levelColor(level)
     level = level or 0
-    if level == 0 then return Blitbuffer.COLOR_WHITE end
+    if level == 0 then return SUIStyle.COLOR.surface end
     return Blitbuffer.gray(_LEVEL_GRAY[level + 1] or _LEVEL_GRAY[1])
 end
 
@@ -73,7 +72,7 @@ local function buildCell(cell_size, border, fill_color)
     local inner = math.max(1, cell_size - 2 * border)
     return OverlapGroup:new{
         dimen = Geom:new{ w = cell_size, h = cell_size },
-        LineWidget:new{ dimen = Geom:new{ w = cell_size, h = cell_size }, background = _CLR_BORDER },
+        LineWidget:new{ dimen = Geom:new{ w = cell_size, h = cell_size }, background = SUIStyle.COLOR.gray_strong },
         CenterContainer:new{
             dimen = Geom:new{ w = cell_size, h = cell_size },
             LineWidget:new{ dimen = Geom:new{ w = inner, h = inner }, background = fill_color },
@@ -216,7 +215,7 @@ function HW.buildRangeHeatmap(daily_map, start_t, end_t, fonts, max_width, opts)
         if text then
             table.insert(labels_row, LeftContainer:new{
                 dimen = Geom:new{ w = cell_size, h = label_h },
-                TextWidget:new{ text = text, face = fonts.small, fgcolor = _CLR_LABEL },
+                TextWidget:new{ text = text, face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt },
             })
         else
             table.insert(labels_row, HorizontalSpan:new{ width = cell_size })
@@ -239,7 +238,7 @@ function HW.buildRangeHeatmap(daily_map, start_t, end_t, fonts, max_width, opts)
         if wd_text then
             table.insert(row_group, LeftContainer:new{
                 dimen = Geom:new{ w = wd_label_w, h = cell_size },
-                TextWidget:new{ text = wd_text, face = fonts.small, fgcolor = _CLR_LABEL },
+                TextWidget:new{ text = wd_text, face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt },
             })
         else
             table.insert(row_group, HorizontalSpan:new{ width = wd_label_w })
@@ -322,7 +321,7 @@ function HW.buildDayPartHeatmap(weekday_hour_map, fonts, max_width, is_12h, opts
         if h % 3 == 0 then
             table.insert(labels_row, LeftContainer:new{
                 dimen = Geom:new{ w = cell_size, h = label_h },
-                TextWidget:new{ text = formatHourLabel(h, is_12h), face = fonts.small, fgcolor = _CLR_LABEL },
+                TextWidget:new{ text = formatHourLabel(h, is_12h), face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt },
             })
         else
             table.insert(labels_row, HorizontalSpan:new{ width = cell_size })
@@ -341,7 +340,7 @@ function HW.buildDayPartHeatmap(weekday_hour_map, fonts, max_width, is_12h, opts
         if wd_text then
             table.insert(row_group, LeftContainer:new{
                 dimen = Geom:new{ w = wd_label_w, h = cell_size },
-                TextWidget:new{ text = wd_text, face = fonts.small, fgcolor = _CLR_LABEL },
+                TextWidget:new{ text = wd_text, face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt },
             })
         else
             table.insert(row_group, HorizontalSpan:new{ width = wd_label_w })
@@ -373,14 +372,14 @@ function HW.buildLegend(fonts, cell_size)
     local border = Size.line.thin
 
     local row = HorizontalGroup:new{ align = "center" }
-    table.insert(row, TextWidget:new{ text = _("Less"), face = fonts.small, fgcolor = _CLR_LABEL })
+    table.insert(row, TextWidget:new{ text = _("Less"), face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt })
     table.insert(row, HorizontalSpan:new{ width = gap * 2 })
     for level = 0, 4 do
         table.insert(row, buildCell(cell, border, HW.levelColor(level)))
         if level < 4 then table.insert(row, HorizontalSpan:new{ width = gap }) end
     end
     table.insert(row, HorizontalSpan:new{ width = gap * 2 })
-    table.insert(row, TextWidget:new{ text = _("More"), face = fonts.small, fgcolor = _CLR_LABEL })
+    table.insert(row, TextWidget:new{ text = _("More"), face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt })
     return row
 end
 

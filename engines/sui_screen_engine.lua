@@ -105,29 +105,14 @@ local PAD                = UI.PAD
 local MOD_GAP            = UI.MOD_GAP
 local SIDE_PAD           = UI.SIDE_PAD
 
--- Static color defaults — overridden at render-time by theme roles when set.
-local _CLR_TEXT_MID_DEFAULT      = Blitbuffer.gray(0.45)
-local _DOT_COLOR_INACTIVE_DEFAULT = Blitbuffer.gray(0.55)
+-- Static color defaults.
 
--- Dynamic accessors so theme changes take effect on the next repaint without
--- requiring a full rebuild.  Both fall back to the static defaults when no
--- custom "text_secondary" role is configured.
 local function _getTextMid()
-    local ok, SUIStyle = pcall(require, "features/sui_style")
-    if ok and SUIStyle then
-        local c = SUIStyle.getThemeColor("text_secondary")
-        if c then return c end
-    end
-    return _CLR_TEXT_MID_DEFAULT
+    return SUIStyle.COLOR.text_dim_alt
 end
 
 local function _getDotInactive()
-    local ok, SUIStyle = pcall(require, "features/sui_style")
-    if ok and SUIStyle then
-        local c = SUIStyle.getThemeColor("text_secondary")
-        if c then return c end
-    end
-    return _DOT_COLOR_INACTIVE_DEFAULT
+    return SUIStyle.COLOR.text_dim
 end
 
 -- Modules that render cover thumbnails declare has_covers = true; the
@@ -156,7 +141,7 @@ function DotWidget:paintTo(bb, x, y)
     for i = 1, self.total_pages do
         local cx = x + (i - 1) * tw + math.floor(tw / 2)
         if i == self.current_page then
-            bb:paintCircle(cx, cy, dot_r, Blitbuffer.COLOR_BLACK)
+            bb:paintCircle(cx, cy, dot_r, SUIStyle.COLOR.text_primary)
         else
             bb:paintCircle(cx, cy, dot_r, _getDotInactive())
         end
@@ -271,18 +256,10 @@ end
 -- doing so would wire the wrong module's pagination to the tap.
 -- landscape_factor (optional): scale multiplier for the label; defaults to 1.
 local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
-    -- Resolve theme fg color so labels honour the active palette.
-    -- The color pointer is included in the cache key so that a theme change
-    -- after the first render produces a fresh widget instead of reusing the
-    -- stale one (the cache is also invalidated on rebuildLayout, but this
-    -- guards against within-session theme switches without a full rebuild).
-        local _label_fg = SUIStyle.getThemeColor("fg")
-    
     local scale = Config.getLabelScale() * (landscape_factor or 1)
     local fs = math.max(8, math.floor(SUIStyle.FS_BODY * scale))
 
-    local color_key = _label_fg and tostring(_label_fg) or "default"
-    local key = text .. "|" .. w .. "|" .. color_key .. "|" .. tostring(scale) .. "|" .. tostring(right_text)
+    local key = text .. "|" .. w .. "|" .. tostring(scale) .. "|" .. tostring(right_text)
     if page_nav then
         key = key .. "|" .. page_nav.mod_id .. "|" .. tostring(page_nav.page) .. "|" .. tostring(page_nav.npages)
     end
@@ -300,12 +277,10 @@ local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
             -- FS_DETAIL), not the same `fs` as the title.
             local fs_right = math.max(8, math.floor(SUIStyle.FS_DETAIL * scale))
             local face_right = Font:getFace(SUIStyle.FACE_REGULAR, fs_right)
-            local _sub_fg = SUIStyle.getThemeColor("text_secondary") or _label_fg
             local right_widget = UI.makeColoredText{
                 text    = right_text,
                 face    = face_right,
                 bold    = false,
-                fgcolor = _sub_fg,
             }
             local gap      = PAD
             local row_h    = right_widget:getSize().h
@@ -333,7 +308,6 @@ local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
                 text    = text,
                 face    = face,
                 bold    = true,
-                fgcolor = _label_fg,
             }
             -- BUGFIX: TextWidget doesn't have a `width` option that pads its
             -- reported size — only `max_width`, and even then getSize()
@@ -365,7 +339,6 @@ local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
                     text    = text,
                 face    = face,
                 bold    = true,
-                fgcolor = _label_fg,    -- nil → KOReader default (black)
                 width   = avail_w,
             }
         end
@@ -596,7 +569,7 @@ local function buildChevronFooter(goto_fn)
     }
     -- Apply user-defined icon overrides for pagination chevrons.
     -- Since these are SimpleUI-created Buttons (not IconButtons), we use
-    -- applyPaginationIcons which calls _applyNativeBtn (btn.icon + :init() path).
+    -- applyPaginationIcons which calls SS.applyIconToBtn (btn.icon + :init() path).
     pcall(function()
         local ok_ss, SS = pcall(require, "features/sui_style")
         if not (ok_ss and SS and SS.applyPaginationIcons) then return end

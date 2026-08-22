@@ -47,7 +47,6 @@ local function getSH()
 end
 
 -- Colours
-local _CLR_DARK   = Blitbuffer.COLOR_BLACK
 
 -- Vertical gaps between elements (base values at 100% scale; scaled in build()).
 local _BASE_COVER_GAP  = Screen:scaleBySize(16)  -- between cover and text column
@@ -150,7 +149,7 @@ local function buildProgressBarWithPct(w, pct, bar_h, scale, lbl_scale, face_inl
     local pct_str = string.format("%.0f%%", (pct or 0) * 100)
     -- face_inline is pre-resolved by build(); fallback for direct calls.
     local _face   = face_inline or Font:getFace(SUIStyle.FACE_REGULAR, math.max(7, math.floor(_BASE_INLINEPCT_FS * scale * lbl_scale)))
-    local _fg     = fg_color or _CLR_DARK
+    local _fg     = fg_color or SUIStyle.COLOR.text_primary
 
     local bar = UI.progressBar(bar_w, pct, bar_h)
 
@@ -565,14 +564,11 @@ function M.build(w, ctx)
     end
 
     -- Colour used for placeholder stats text (dimmer than the normal sub-text).
-    local CLR_PLACEHOLDER = Blitbuffer.gray(0.55)
+    local CLR_PLACEHOLDER = SUIStyle.COLOR.text_dim
 
-    -- Theme: when fg is set use it for all text; otherwise fall back to module defaults.
-    local _theme_fg        = SUIStyle.getThemeColor("fg")
-    local _theme_secondary = SUIStyle.getThemeColor("text_secondary")
-    local _CLR_DARK_EFF    = _theme_fg or _CLR_DARK
-    local CLR_TEXT_SUB_EFF = _theme_secondary or _theme_fg or CLR_TEXT_SUB
-    local CLR_PH_EFF       = _theme_secondary or _theme_fg or CLR_PLACEHOLDER
+    local _CLR_DARK_EFF    = SUIStyle.COLOR.text_primary
+    local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
+    local CLR_PH_EFF       = CLR_PLACEHOLDER
 
     -- Pre-resolve the inline-pct font face once for buildProgressBarWithPct.
     local face_inlinepct = Font:getFace(SUIStyle.FACE_REGULAR,
@@ -1003,11 +999,10 @@ function M.build(w, ctx)
     local has_box    = show_frame or solid_bg
     local border_sz  = show_frame and SUIStyle.BORDER_SZ or 0
     local radius     = has_box and math.floor(Screen:scaleBySize(12) * scale) or 0
-    local border_color = Blitbuffer.gray(0.72)
-    border_color = SUIStyle.getThemeColor("separator") or border_color
+    local border_color = SUIStyle.COLOR.gray
     local bg_color = nil
     if solid_bg then
-        bg_color = SUIStyle.getThemeColor("bg") or Blitbuffer.COLOR_WHITE
+        bg_color = SUIStyle.COLOR.surface
     end
 
     local full_h = content_h

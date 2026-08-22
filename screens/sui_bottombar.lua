@@ -113,57 +113,42 @@ end
 
 local M = {}
 
--- Bar colors — static defaults used when no theme override is set.
-M.COLOR_INACTIVE_TEXT = Blitbuffer.gray(0.55)
-M.COLOR_SEPARATOR     = Blitbuffer.gray(0.7)
-
--- Returns the separator colour: respects the theme "separator" role, then
--- transparent when the user has hidden it, then the default grey.
-local function _sepColor()
-    local ok, style = pcall(_SUIStyle)
-    if ok and style then
-        local c = style.getThemeColor("separator")
-        if c then return c end
-    end
+-- Bar colors — derived from the shared style catalog, cached on first
+-- access (kept lazy, via _SUIStyle(), so requiring this module doesn't
+-- force features/sui_style to load at startup).
+local function _barColorInactiveText()
+    M.COLOR_INACTIVE_TEXT = M.COLOR_INACTIVE_TEXT or _SUIStyle().COLOR.text_dim
+    return M.COLOR_INACTIVE_TEXT
+end
+local function _barColorSeparator()
+    M.COLOR_SEPARATOR = M.COLOR_SEPARATOR or _SUIStyle().COLOR.gray
     return M.COLOR_SEPARATOR
+end
+
+-- Returns the separator colour: transparent when the user has hidden it,
+-- otherwise the default grey.
+local function _sepColor()
+    return _barColorSeparator()
 end
 -- Public accessor used by sui_core.lua to draw the full-width separator line.
 function M.sepColor() return _sepColor() end
 
 -- ---------------------------------------------------------------------------
--- Theme color helpers
--- Priority: transparent > bottombar_bg/fg role > bg/fg fallback > default.
--- The "bottombar_bg/fg" roles fall back to "bg/fg" automatically inside
--- SUIStyle.getThemeColor() via the _FALLBACKS chain.
+-- Bar color helpers
+-- Priority: transparent > default.
 -- ---------------------------------------------------------------------------
 local function _getBarBg()
     if M.getBarStyle() == "bare" or SUISettings:isTrue("simpleui_navbar_transparent") then return nil end
-    local ok, style = pcall(_SUIStyle)
-    if ok and style then
-        local c = style.getThemeColor("bottombar_bg")
-        if c then return c end
-    end
-    return Blitbuffer.COLOR_WHITE
+    return _SUIStyle().COLOR.surface
 end
 
 local function _getBarFg()
-    local ok, style = pcall(_SUIStyle)
-    if ok and style then
-        local c = style.getThemeColor("bottombar_fg")
-        if c then return c end
-    end
-    return Blitbuffer.COLOR_BLACK
+    return _SUIStyle().COLOR.text_primary
 end
 
--- Returns the color for inactive/dim nav items, respecting the theme
--- "text_secondary" role and falling back to the static default.
+-- Returns the color for inactive/dim nav items.
 local function _getInactiveColor()
-    local ok, style = pcall(_SUIStyle)
-    if ok and style then
-        local c = style.getThemeColor("text_secondary")
-        if c then return c end
-    end
-    return M.COLOR_INACTIVE_TEXT
+    return _barColorInactiveText()
 end
 
 -- ---------------------------------------------------------------------------
@@ -385,7 +370,7 @@ local function _makeColoredIcon(file, size, fgcolor)
             self.dimen.x, self.dimen.y = x, y
             local w, h = self.dimen.w, self.dimen.h
             if w <= 0 or h <= 0 then return end
-            self._inner.fgcolor = self._fg or Blitbuffer.COLOR_BLACK
+            self._inner.fgcolor = self._fg or SUIStyle.COLOR.text_primary
             local t_sz = self._inner:getSize()
             local ox = x + math.floor((size - t_sz.w) / 2)
             local oy = y + math.floor((size - t_sz.h) / 2)
@@ -536,7 +521,7 @@ function M.buildTabCell(action_id, active, tab_w, mode)
         elseif not SUISettings:isTrue("simpleui_navbar_transparent") then
             og[#og + 1] = LineWidget():new{
                 dimen          = Geom():new{ w = tab_w, h = M.INDIC_H() },
-                background     = _getBarBg() or Blitbuffer.COLOR_WHITE,
+                background     = _getBarBg() or _SUIStyle().COLOR.surface,
                 overlap_offset = { 0, 0 },
             }
         end
@@ -548,18 +533,12 @@ end
 -- Builds a navpager arrow cell (Prev or Next).
 -- `enabled`  — false → dimmed (no prev/next page exists).
 -- `is_prev`  — true → left arrow, false → right arrow.
--- Active navpager arrow color: reads theme "accent" (or bottombar_fg fallback)
--- at call-time so live updates work.
+-- Active navpager arrow color: uses the standard bar foreground color.
 local function _navpagerColorActive()
-    local ok, style = pcall(_SUIStyle)
-    if ok and style then
-        local c = style.getThemeColor("accent")
-        if c then return c end
-    end
     return _getBarFg()
 end
 
--- Dimmed navpager arrow: respects "text_secondary" theme role.
+-- Dimmed navpager arrow: uses the inactive text color.
 local function _navpagerColor()
     return _getInactiveColor()
 end
@@ -617,7 +596,7 @@ function M.buildNavpagerArrowCell(is_prev, enabled, tab_w, mode)
     if bar_style == "default" and not SUISettings:isTrue("simpleui_navbar_transparent") then
         og[#og + 1] = LineWidget():new{
             dimen          = Geom():new{ w = tab_w, h = M.INDIC_H() },
-            background     = _getBarBg() or Blitbuffer.COLOR_WHITE,
+            background     = _getBarBg() or _SUIStyle().COLOR.surface,
             overlap_offset = { 0, 0 },
         }
     end
@@ -678,8 +657,7 @@ local function _buildBarContainer(hg_args, is_navpager)
     local style = M.getBarStyle()
     if style == "framed" then
         local radius = math.floor(Screen:scaleBySize(12) * _getNavbarScale())
-        local ok, SUIStyle = pcall(_SUIStyle)
-        local border_color = (ok and SUIStyle and SUIStyle.getThemeColor("separator")) or Blitbuffer.gray(0.72)
+        local border_color = _SUIStyle().COLOR.gray
         local inner_bg = _getBarBg()
         
 

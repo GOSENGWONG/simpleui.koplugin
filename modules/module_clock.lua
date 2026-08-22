@@ -340,7 +340,7 @@ end
 -- getSize() sometimes reports incorrect heights before the first paint.
 -- ---------------------------------------------------------------------------
 
-local function _buildWordClockWidget(text, face, inner_w, align, theme_fg)
+local function _buildWordClockWidget(text, face, inner_w, align)
     -- Split the "Hour\nMinutes" string into two parts.
     local nl = text:find("\n")
     local line1 = nl and text:sub(1, nl - 1) or text
@@ -360,7 +360,6 @@ local function _buildWordClockWidget(text, face, inner_w, align, theme_fg)
             text    = txt,
             face    = face,
             bold    = true,
-            fgcolor = theme_fg,
         }
         if not wgt.dimen then wgt.dimen = wgt:getSize() end
         return ContainerClass:new{
@@ -614,10 +613,7 @@ local function build(w, pfx, vspan_pool, landscape_factor)
     local show_batt   = isBattEnabled(pfx)
     local clock_style = getClockStyle(pfx)
 
-    -- Theme: when fg is set, use it for sub-text; otherwise fall back to CLR_TEXT_SUB.
-    local theme_fg         = SUIStyle.getThemeColor("fg")
-    local theme_secondary  = SUIStyle.getThemeColor("text_secondary")
-    local sub_fg           = theme_secondary or theme_fg or CLR_TEXT_SUB
+    local sub_fg           = CLR_TEXT_SUB
 
     local align = getAlignment(pfx)
     local ContainerClass = CenterContainer
@@ -640,14 +636,14 @@ local function build(w, pfx, vspan_pool, landscape_factor)
             local wc_text = timeToWords(t.hour, t.min, is_12h)
             local face    = Font:getFace(SUIStyle.FACE_REGULAR, word_fs)
             -- Two lines × line_h each; use clock_w × 2 as the container budget.
-            local wc_widget = _buildWordClockWidget(wc_text, face, inner_w, align, theme_fg)
+            local wc_widget = _buildWordClockWidget(wc_text, face, inner_w, align)
             vg[#vg+1] = wc_widget
         elseif clock_style == "analogue" then
             -- Analogue face: square, sized to the same clock_w × 2 budget the
             -- word style uses (see getHeight below), capped to inner_w so a
             -- narrow column never clips it.
             local diameter = math.min(clock_w * 2, inner_w)
-            local face_widget = _buildAnalogueClockWidget(diameter, theme_fg or Blitbuffer.COLOR_BLACK)
+            local face_widget = _buildAnalogueClockWidget(diameter, SUIStyle.COLOR.text_primary)
             if face_widget then
                 vg[#vg+1] = ContainerClass:new{
                     dimen = Geom:new{ w = inner_w, h = diameter },
@@ -662,7 +658,6 @@ local function build(w, pfx, vspan_pool, landscape_factor)
                     text    = datetime.secondsToHour(os.time(), G_reader_settings:isTrue("twelve_hour_clock")),
                     face    = Font:getFace(SUIStyle.FACE_REGULAR, clock_fs),
                     bold    = true,
-                    fgcolor = theme_fg,   -- nil → KOReader default (black); honours theme palette
                 }),
             }
         end

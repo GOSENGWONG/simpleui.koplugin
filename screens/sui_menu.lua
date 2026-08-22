@@ -4368,32 +4368,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     },
                 },
             },
-            -- ── Theme Colors [DISABLED — not ready for release] ───────
-            --[[
-            -- ── Theme Colors ──────────────────────────────────────────────
-            {
-                text_func = function()
-                    -- Show the edit pencil if any theme color role is set.
-                    local has = SUISettings:get("simpleui_style_theme_bg")
-                             or SUISettings:get("simpleui_style_theme_fg")
-                             or SUISettings:get("simpleui_style_theme_bottombar_bg")
-                             or SUISettings:get("simpleui_style_theme_bottombar_fg")
-                             or SUISettings:get("simpleui_style_theme_statusbar_bg")
-                             or SUISettings:get("simpleui_style_theme_statusbar_fg")
-                             or SUISettings:get("simpleui_style_theme_text_secondary")
-                             or SUISettings:get("simpleui_style_theme_separator")
-                             or SUISettings:get("simpleui_style_theme_accent")
-                    return _("Theme Colors") .. (has and "  \u{270E}" or "")
-                end,
-                sub_item_table_func = function()
-                    local ok_ss, SUIStyle = pcall(require, "features/sui_style")
-                    if not ok_ss or not SUIStyle then return {} end
-                    local ok_fi, items = pcall(SUIStyle.makeThemeMenuItems)
-                    if not ok_fi or type(items) ~= "table" then return {} end
-                    return items
-                end,
-            },
-            -- END DISABLED: Theme Colors ]]
         }
     end
 

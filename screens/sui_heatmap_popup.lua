@@ -48,7 +48,7 @@ end
 local function buildPeriodSelector(inner_w, range_text, can_go_older, can_go_newer, on_prev, on_next, SZ)
     local face      = Font:getFace(SUIStyle.FACE_REGULAR, SZ(SUIStyle.FS_BODY))
     local face_chev = Font:getFace(SUIStyle.FACE_ICONS, math.floor(SZ(SUIStyle.FS_TITLE * 1.3)))
-    local CLR_BLACK = Blitbuffer.COLOR_BLACK
+    local CLR_BLACK = SUIStyle.COLOR.text_primary
 
     local gap   = SZ(Screen:scaleBySize(12))
     local btn_w = SZ(Screen:scaleBySize(44))
@@ -68,7 +68,7 @@ local function buildPeriodSelector(inner_w, range_text, can_go_older, can_go_new
         local tw = TextWidget:new{
             text    = glyph,
             face    = face_chev,
-            fgcolor = enabled and CLR_BLACK or Blitbuffer.gray(0.25),
+            fgcolor = enabled and CLR_BLACK or SUIStyle.COLOR.disabled,
             padding = 0,
         }
         local ic = InputContainer:new{
@@ -139,7 +139,7 @@ function M.show()
         local calendar_title = TextWidget:new{
             text    = _("CALENDAR"),
             face    = section_face,
-            fgcolor = Blitbuffer.COLOR_BLACK,
+            fgcolor = SUIStyle.COLOR.text_primary,
             bold    = true,
         }
 
@@ -163,7 +163,7 @@ function M.show()
         local day_part_title = TextWidget:new{
             text    = _("TIME OF DAY"),
             face    = section_face,
-            fgcolor = Blitbuffer.COLOR_BLACK,
+            fgcolor = SUIStyle.COLOR.text_primary,
             bold    = true,
         }
         local day_part_widget = HW.buildDayPartHeatmap(wd_hour_map, fonts, inner_w, is_12h)

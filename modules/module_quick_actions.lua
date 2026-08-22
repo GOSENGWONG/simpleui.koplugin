@@ -33,8 +33,6 @@ local CLR_TEXT_SUB = UI.CLR_TEXT_SUB
 
 local _BASE_PH_FS = SUIStyle.FS_BODY    -- 18: placeholder text
 
-local _CLR_BAR_FG  = Blitbuffer.gray(0.75)
-local _CLR_FLAT_BG = Blitbuffer.gray(0.08)
 
 local _BASE_ICON_SZ   = Screen:scaleBySize(52)
 local _BASE_FRAME_PAD = Screen:scaleBySize(18)
@@ -157,7 +155,7 @@ end
 -- Core widget builder (shared by all slots)
 -- ---------------------------------------------------------------------------
 local function buildQAWidget(w, action_ids, show_labels, on_tap_fn, d, shape, bg, colors, align)
-    local clr_blk = colors and colors.blk or Blitbuffer.COLOR_BLACK
+    local clr_blk = colors and colors.blk or SUIStyle.COLOR.text_primary
     local clr_sub = colors and colors.sub or CLR_TEXT_SUB
     local ph_fs = math.max(8, math.floor(_BASE_PH_FS * (d.frame_sz / (_BASE_ICON_SZ + _BASE_FRAME_PAD * 2))))
     local function _placeholder()
@@ -258,13 +256,13 @@ local function buildQAWidget(w, action_ids, show_labels, on_tap_fn, d, shape, bg
         local current_border = (not is_bare and (bg == "solid" or bg == "transparent")) and SUIStyle.BORDER_SZ or 0
         local bg_color = nil
         if not is_bare then
-            if bg == "flat" then bg_color = _CLR_FLAT_BG
-            elseif bg == "solid" then bg_color = Blitbuffer.COLOR_WHITE end
+            if bg == "flat" then bg_color = SUIStyle.COLOR.surface_flat
+            elseif bg == "solid" then bg_color = SUIStyle.COLOR.surface end
         end
 
         local icon_frame = FrameContainer:new{
             bordersize = current_border,
-            color      = current_border > 0 and _CLR_BAR_FG or nil,
+            color      = current_border > 0 and SUIStyle.COLOR.gray or nil,
             background = bg_color,
             radius     = corner_r,
             padding    = is_bare and 0 or d.frame_pad,
@@ -614,14 +612,7 @@ local function makeInstance(inst_id)
         local d           = _getQADims(Config.getModuleScale(S.id, ctx.pfx) * lf, w - PAD * 2)
         local lbl_scale = Config.getItemLabelScale(S.id, ctx.pfx) * lf
         d.lbl_fs = math.max(6, math.floor(d.lbl_fs * lbl_scale))
-        local ok_ss, SUIStyle  = pcall(require, "features/sui_style")
-        local _theme_fg        = ok_ss and SUIStyle and SUIStyle.getThemeColor("fg")
-        local _theme_secondary = ok_ss and SUIStyle and SUIStyle.getThemeColor("text_secondary")
-        local colors = (_theme_fg or _theme_secondary) and {
-            blk = _theme_fg or Blitbuffer.COLOR_BLACK,
-            sub = _theme_secondary or _theme_fg or CLR_TEXT_SUB,
-        } or nil
-        return buildQAWidget(w, qa_ids, show_labels, ctx.on_qa_tap, d, getShape(ctx.pfx), getBg(ctx.pfx), colors, getAlign(ctx.pfx))
+        return buildQAWidget(w, qa_ids, show_labels, ctx.on_qa_tap, d, getShape(ctx.pfx), getBg(ctx.pfx), nil, getAlign(ctx.pfx))
     end
 
     function S.getHeight(ctx)
