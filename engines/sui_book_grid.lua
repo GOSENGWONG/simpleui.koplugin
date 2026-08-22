@@ -1511,24 +1511,47 @@ end
 -- ---------------------------------------------------------------------------
 -- clearRowCaches(ctx) — invalidates every row module's cached file list
 -- (ctx[cache_key], populated lazily on a row module's first build() call
--- within a given ctx and never invalidated again for that ctx's lifetime)
--- without touching anything else in ctx.
+-- within a given ctx and never invalidated again for that ctx's lifetime),
+-- plus the section-label header cache (page/npages indicator + chevrons)
+-- that any paginated row module keeps in sync with that same file list.
 --
--- Needed because a "kept-alive" ctx (sui_homescreen.lua's _refreshImmediate
--- with keep_cache=true, used after book-hold-dialog actions like status
--- changes, collection membership, or TBR add/remove — full rebuilds are
--- avoided there since cover prefetch and config gathering are expensive)
--- otherwise keeps serving each row's pre-action file list forever: e.g. a
--- book just removed from TBR still shows in the TBR row until the whole
--- Homescreen is rebuilt. Per-row lists are cheap to recompute (a
--- ReadCollection/settings lookup, not the I/O keep_cache protects), so
+-- Needed because a "kept-alive" ctx (sui_screen_engine.lua's
+-- _refreshImmediate with keep_cache=true, used after book-hold-dialog
+-- actions like status changes, collection membership, or TBR add/remove —
+-- full rebuilds are avoided there since cover prefetch and config gathering
+-- are expensive) otherwise keeps serving each row's pre-action file list
+-- forever: e.g. a book just removed from TBR still shows in the TBR row
+-- until the whole screen is rebuilt. Per-row lists are cheap to recompute
+-- (a ReadCollection/settings lookup, not the I/O keep_cache protects), so
 -- clearing them on every refresh — even a "kept-alive" one — is cheap
 -- insurance.
+--
+-- The label-cache invalidation lives here (rather than at each call site)
+-- because it is the SAME underlying condition every clearRowCaches() caller
+-- already has: a paginated row's file list is changing, which can shift
+-- its page/npages. sui_screen_engine.lua's sectionLabel() memoizes each
+-- row's header (text + chevrons) by "mod_id|page|npages", not by the
+-- ScreenWidget instance the chevrons' tap handler closes over — so if the
+-- recomputed page/npages happens to match a combination already cached
+-- under a since-replaced instance (rotation, tab switch, a Custom Screen
+-- reopen, ...), the row would keep showing a header wired to a dead
+-- closure: no error, the chevrons would just silently do nothing.
+-- Invalidating unconditionally here, alongside the file-list clear that
+-- already has to happen at the same moment, means every current and future
+-- clearRowCaches() caller is covered automatically, instead of relying on
+-- each one to separately remember to also invalidate the label cache.
+-- engines/sui_screen_engine.lua is required lazily (pcall, same pattern
+-- that file already uses in the other direction for sui_book_grid.lua) to
+-- avoid a load-order dependency between the two engines.
 -- ---------------------------------------------------------------------------
 function GridRenderer.clearRowCaches(ctx)
     if not ctx then return end
     for key in pairs(GridRenderer._known_row_cache_keys) do
         ctx[key] = nil
+    end
+    local ok_se, ScreenEngine = pcall(require, "engines/sui_screen_engine")
+    if ok_se and ScreenEngine and ScreenEngine.invalidateLabelCache then
+        ScreenEngine.invalidateLabelCache()
     end
 end
 

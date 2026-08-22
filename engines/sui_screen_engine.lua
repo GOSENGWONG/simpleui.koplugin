@@ -224,8 +224,25 @@ local _EMPTY_GAP        = Screen:scaleBySize(12)
 local _face_empty_title = Font:getFace(SUIStyle.FACE_REGULAR,    SUIStyle.FS_TITLE)     -- FS_TITLE (22)
 local _face_empty_sub   = Font:getFace(SUIStyle.FACE_REGULAR,  SUIStyle.FS_SUBTITLE)  -- FS_SUBTITLE (20)
 
--- Section label widget cache — keyed by "text|inner_w|scale_pct".
--- Invalidated on screen resize/rotation via invalidateLabelCache().
+-- Section label widget cache — keyed by "text|inner_w|scale_pct", plus
+-- "mod_id|page|npages" for a paginated row's header (see sectionLabel's
+-- page_nav parameter below). That extra key segment tracks pagination
+-- STATE, not the identity of the ScreenWidget whose chevrons a cached
+-- widget's tap handler closes over — so anything that can change a
+-- paginated row's page/npages without necessarily replacing this module's
+-- own local widget cache must also invalidate this one, or a stale cached
+-- header can end up wired to a dead closure (chevrons that silently do
+-- nothing on tap).
+--
+-- Invalidated via invalidateLabelCache() from:
+--   • main.lua's onCloseDocument — reader-return path, every document close.
+--   • infra/sui_core.lua's invalidateDimCache — screen resize/rotation.
+--   • engines/sui_book_grid.lua's GridRenderer.clearRowCaches — every place
+--     a row module's file-list cache is cleared (status changes, TBR/
+--     collection add-remove, the debounced background refresh, ...), since
+--     that is precisely when a paginated row's page/npages can shift.
+--     Centralised there instead of at each clearRowCaches() call site so
+--     future callers get this for free.
 local _label_cache = {}
 
 local function invalidateLabelCache()
@@ -2856,7 +2873,11 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
                             -- updateStats() with no such intermediate cache.
                             -- Mirrors the identical fix already applied in
                             -- _refreshImmediate for the book-hold-dialog's
-                            -- keep_cache=true path.
+                            -- keep_cache=true path. clearRowCaches() also
+                            -- invalidates the section-label header cache
+                            -- (page/npages indicator + chevrons) for the
+                            -- same paginated rows — see its doc comment in
+                            -- sui_book_grid.lua.
                             local ok_gr, GR = pcall(require, "engines/sui_book_grid")
                             if ok_gr and GR then GR.clearRowCaches(self._ctx_cache) end
                         end
@@ -3216,7 +3237,10 @@ function ScreenWidget:_refreshImmediate(keep_cache)
         -- in the TBR row until the Homescreen is fully torn down and rebuilt.
         -- Clear just those (cheap: a ReadCollection/settings lookup, not the
         -- I/O keep_cache is protecting) so the very next build re-fetches
-        -- each row's current membership.
+        -- each row's current membership. clearRowCaches() also invalidates
+        -- the section-label header cache (page/npages indicator + chevrons)
+        -- for the same paginated rows — see its doc comment in
+        -- sui_book_grid.lua for why that lives there instead of here.
         local ok_gr, GridRenderer = pcall(require, "engines/sui_book_grid")
         if ok_gr and GridRenderer then GridRenderer.clearRowCaches(self._ctx_cache) end
     end
