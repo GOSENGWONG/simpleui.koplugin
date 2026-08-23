@@ -83,14 +83,11 @@ local function isIconHidden(pfx, suffix)
 end
 
 -- ---------------------------------------------------------------------------
--- Action validity (mirrors module_quick_actions)
+-- Action validity — QA.filterValidIds is the single source of truth,
+-- shared with module_quick_actions and QA.showQAFolderDialog.
 -- ---------------------------------------------------------------------------
 local function getEntry(action_id)
     return QA.getEntry(action_id)
-end
-
-local function getCustomQAValid()
-    return QA.getCustomQAValid()
 end
 
 -- ---------------------------------------------------------------------------
@@ -118,15 +115,7 @@ local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, c
     end
 
     -- Filter valid IDs
-    local valid_ids = {}
-    local cqa_valid = getCustomQAValid()
-    for _, aid in ipairs(action_ids) do
-        if aid:match("^custom_qa_%d+$") then
-            if cqa_valid[aid] then valid_ids[#valid_ids + 1] = aid end
-        elseif QA.isBuiltin(aid) then
-            valid_ids[#valid_ids + 1] = aid
-        end
-    end
+    local valid_ids = QA.filterValidIds(action_ids)
     -- Placeholder: actions were saved but none are valid anymore
     if #valid_ids == 0 then
         local ph_fs   = math.max(8, math.floor(_BASE_PH_FS * (d.row_h / _BASE_ROW_H)))

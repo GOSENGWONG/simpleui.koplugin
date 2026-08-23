@@ -143,10 +143,6 @@ local function getEntry(action_id)
     return QA.getEntry(action_id)
 end
 
-local function getCustomQAValid()
-    return QA.getCustomQAValid()
-end
-
 local function invalidateCustomQACache()
     QA.invalidateCustomQACache()
 end
@@ -175,16 +171,7 @@ local function buildQAWidget(w, action_ids, show_labels, on_tap_fn, d, shape, bg
 
     if not action_ids or #action_ids == 0 then return _placeholder() end
 
-    local valid_ids = {}
-    local cqa_valid = getCustomQAValid()
-    for _, aid in ipairs(action_ids) do
-        if aid:match("^custom_qa_%d+$") then
-            if cqa_valid[aid] then valid_ids[#valid_ids + 1] = aid end
-        elseif QA.isBuiltin(aid) then
-            valid_ids[#valid_ids + 1] = aid
-        end
-        -- unknown IDs (neither a live custom QA nor a known built-in) are silently dropped
-    end
+    local valid_ids = QA.filterValidIds(action_ids)
     if #valid_ids == 0 then return _placeholder() end
     local n        = #valid_ids
     local inner_w  = w - PAD * 2

@@ -1968,6 +1968,33 @@ function QA.invalidateCustomQACache()
     _cqa_valid_cache = nil
 end
 
+-- Single source of truth for "which of these saved action ids are still
+-- valid to render", used by every surface that persists a list of ids and
+-- redraws them later: the Quick Actions Row module, the Action List module,
+-- and QA group/folder windows (QA.showQAFolderDialog). Handles both id
+-- families a saved slot can hold:
+--   "custom_qa_<N>"   — validated against QA.getCustomQAValid() (deleted
+--                       custom QAs disappear from that cache)
+--   anything else     — validated against QA.isRegistered(), which covers
+--                       built-ins AND externally registered actions (e.g. a
+--                       Custom Screen's "open_custom_screen:<id>", see
+--                       infra/sui_custom_screens.lua)
+-- Ids matching neither — e.g. a deleted Custom Screen's leftover id — are
+-- silently dropped, same as a deleted custom QA.
+function QA.filterValidIds(ids)
+    if not ids then return {} end
+    local valid = {}
+    local cqa_valid = QA.getCustomQAValid()
+    for _, id in ipairs(ids) do
+        if id:match("^custom_qa_%d+$") then
+            if cqa_valid[id] then valid[#valid + 1] = id end
+        elseif QA.isRegistered(id) then
+            valid[#valid + 1] = id
+        end
+    end
+    return valid
+end
+
 -- ---------------------------------------------------------------------------
 -- Icon picker
 -- ---------------------------------------------------------------------------
@@ -3222,15 +3249,7 @@ function QA.showQAFolderDialog(qa_id, title, fm, show_unavailable_fn)
         -- the Quick Actions Row module hasn't been loaded for some reason.
         local mqa = package.loaded["modules/module_quick_actions"]
         if mqa and mqa.buildQAWidget and mqa.getQADims and mqa.FRAME_SZ then
-            local valid_items = {}
-            local cqa_valid = QA.getCustomQAValid()
-            for _, mid in ipairs(items) do
-                if mid:match("^custom_qa_%d+$") then
-                    if cqa_valid[mid] then valid_items[#valid_items + 1] = mid end
-                elseif QA.isBuiltin(mid) then
-                    valid_items[#valid_items + 1] = mid
-                end
-            end
+            local valid_items = QA.filterValidIds(items)
 
             if #valid_items > 0 then
                 local inner_w = ctx.inner_w
