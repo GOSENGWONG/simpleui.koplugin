@@ -2257,6 +2257,23 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 sub_item_table_func = function()
                     local SUIWallpaper = require("features/sui_wallpaper")
                     local items = {}
+                    items[#items + 1] = {
+                        text = _("Browse…"),
+                        keep_menu_open = true,
+                        callback = function()
+                            local AssetBrowser = require("engines/sui_asset_browser")
+                            UIManager:show(AssetBrowser:new{
+                                path       = SUIWallpaper.styleGetWallpapersDir(),
+                                extensions = SUIWallpaper.SUPPORTED_WALLPAPER_EXTS,
+                                title      = _("Choose wallpaper"),
+                                onConfirm  = function(path)
+                                    SUIWallpaper.styleSetWallpaper(path)
+                                    _applyFullLayoutRefresh()
+                                end,
+                            })
+                        end,
+                        separator = true,
+                    }
                     local wps = SUIWallpaper.styleScanWallpapers()
                     for _, wp in ipairs(wps) do
                         local _wp = wp

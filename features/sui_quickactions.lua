@@ -112,6 +112,12 @@ function QA.getIconsDir()
             local _qa_plugin_dir = require("infra/sui_paths").getPluginDir()
             _icons_dir_cache = _qa_plugin_dir .. "icons/custom"
         end
+        -- Ensure the directory exists so consumers (the flat icon list and
+        -- the AssetBrowser "Browse…" button) can always list/navigate it,
+        -- even before the user has ever dropped a custom icon in it.
+        if lfs.attributes(_icons_dir_cache, "mode") ~= "directory" then
+            lfs.mkdir(_icons_dir_cache)
+        end
     end
     return _icons_dir_cache
 end
@@ -2087,6 +2093,28 @@ function QA.showIconPicker(current_icon, on_select, default_label, _picker_handl
             end,
         }}
     end
+    buttons[#buttons + 1] = {{
+        text     = _("Browse…"),
+        callback = function()
+            UIManager:close(_picker_handle[picker_key])
+            local AssetBrowser = require("engines/sui_asset_browser")
+            UIManager:show(AssetBrowser:new{
+                path       = QA.ICONS_DIR,
+                -- Matches SUIStyle.safeIconPath exactly (single source of
+                -- truth) so every format the validator accepts is browsable,
+                -- and nothing browsable ever gets rejected downstream.
+                -- Format-specific restrictions narrower than this (e.g. tab
+                -- bar icons requiring svg/png only) are enforced by each
+                -- caller's own on_select guard, not by the picker itself.
+                extensions = SUIStyle.SUPPORTED_ICON_EXTS,
+                title      = _("Choose icon"),
+                onConfirm  = function(path) on_select(path) end,
+                onCancel   = function()
+                    QA.showIconPicker(current_icon, on_select, default_label, _picker_handle, picker_key, allow_nerd, on_cancel)
+                end,
+            })
+        end,
+    }}
     if #icons == 0 then
         buttons[#buttons + 1] = {{
             text    = _("No icons found in:") .. "\n" .. QA.ICONS_DIR,

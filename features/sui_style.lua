@@ -303,7 +303,11 @@ end
 -- SVG requires librsvg (available on most KOReader builds).
 -- PNG is always safe (liblodepng is always present).
 -- JPG/JPEG are supported but not recommended for icons (no transparency).
-local _SUPPORTED_ICON_EXTS = { png = true, svg = true, jpg = true, jpeg = true }
+-- Exported (not local) so callers that need to *offer* the same set of
+-- formats — e.g. engines/sui_asset_browser.lua's file filter in the
+-- "Browse…" button of QA.showIconPicker — stay in sync with what this
+-- validator actually accepts, instead of duplicating the literal set.
+M.SUPPORTED_ICON_EXTS = { png = true, svg = true, jpg = true, jpeg = true }
 
 --- Validates `path` as a loadable icon file.
 --- Returns `path` when valid, `fallback` otherwise.
@@ -328,7 +332,7 @@ function M.safeIconPath(path, fallback, slot_id)
 
     -- Extension check — fast, no I/O.
     local ext = path:match("%.([^.]+)$")
-    if not ext or not _SUPPORTED_ICON_EXTS[ext:lower()] then
+    if not ext or not M.SUPPORTED_ICON_EXTS[ext:lower()] then
         logger.warn("simpleui/style: unsupported icon format '" .. tostring(ext)
                     .. "' in path: " .. path)
         if slot_id then M.setIcon(slot_id, nil) end
