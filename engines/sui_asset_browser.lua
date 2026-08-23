@@ -1,24 +1,33 @@
 -- engines/sui_asset_browser.lua — Simple UI
--- Generic filesystem browser with thumbnail preview, built on top of
--- KOReader's PathChooser widget. Lets the user navigate directories and
--- pick an image file, with a live thumbnail rendered next to each matching
--- entry and an optional name filter bar.
+-- Generic filesystem browser with optional thumbnail preview, built on top
+-- of KOReader's PathChooser widget. Lets the user navigate directories and
+-- pick a file matching a set of extensions, with an optional name filter
+-- bar and — for image formats — a live thumbnail rendered next to each
+-- matching entry.
 --
--- This widget is deliberately generic: it knows nothing about icons or
--- wallpapers specifically. Every filesystem-specific detail (starting
--- directory, accepted extensions, title, thumbnail size) is supplied by the
--- caller through the options table. This lets both the icon picker
--- (features/sui_quickactions.lua, QA.showIconPicker) and the wallpaper
--- picker (screens/sui_menu.lua, makeWallpaperMenuItems) share the exact
--- same browsing/preview code without either depending on the other's file
--- layout or extension set.
+-- This widget is deliberately generic: it knows nothing about icons,
+-- wallpapers, or icon packs specifically. Every filesystem-specific detail
+-- (starting directory, accepted extensions, title, whether thumbnails make
+-- sense at all) is supplied by the caller through the options table. This
+-- is Simple UI's single external-file-selection widget: every feature that
+-- needs the user to pick a file from outside its own managed directory
+-- goes through this, instead of each feature building its own PathChooser
+-- wrapper or being stuck with a flat, non-navigable list.
+--
+-- show_thumbnails defaults to true, but should be set to false by callers
+-- picking a non-image file type (e.g. a .zip icon pack) — there is nothing
+-- meaningful to preview for those, and skipping the thumbnail column also
+-- skips the widget-tree reach-around described below entirely.
 --
 -- CONSUMERS:
 --   features/sui_quickactions.lua — QA.showIconPicker's "Browse…" button,
---     opened with path = QA.getIconsDir(), extensions = {svg, png}.
---   screens/sui_menu.lua — the "Select Wallpaper" submenu's "Browse…" entry,
---     opened with path = SUIWallpaper.styleGetWallpapersDir(), extensions =
---     the raster set already used by SUIWallpaper.styleScanWallpapers().
+--     opened with path = QA.getIconsDir(), extensions = SUIStyle's
+--     SUPPORTED_ICON_EXTS, show_thumbnails = true (default).
+--   screens/sui_menu.lua — the "Select Wallpaper" submenu's "Browse…"
+--     entry, extensions = SUIWallpaper.SUPPORTED_WALLPAPER_EXTS,
+--     show_thumbnails = true (default).
+--   screens/sui_menu.lua — the "Install pack from ZIP" submenu's
+--     "Browse…" entry, extensions = {zip=true}, show_thumbnails = false.
 --
 -- IMPLEMENTATION NOTE — thumbnail injection is not public PathChooser API:
 -- PathChooser/Menu do not expose a supported way to render a thumbnail next
@@ -30,6 +39,8 @@
 -- versions. _injectThumbnail() is therefore wrapped in pcall and logs a
 -- warning instead of raising when the tree doesn't match what's expected,
 -- so a future core change degrades to "no thumbnail" rather than a crash.
+-- This whole code path is skipped when show_thumbnails is false, so
+-- non-image consumers (icon packs) are entirely unaffected by it.
 
 local BD = require("ui/bidi")
 local Device = require("device")
@@ -69,6 +80,7 @@ local _InnerChooser = PathChooser:extend{
     select_file = true,
     onConfirm = nil,
     extensions = nil,       -- {ext=true, ...}, required
+    show_thumbnails = true, -- set false for non-image extensions (e.g. zip)
     thumb_size = nil,       -- resolved in init() if not supplied
     _filter_text = "",
     _all_items = nil,
@@ -84,8 +96,11 @@ function _InnerChooser:init()
         return self._matches_ext(filename)
     end
 
+    -- The override below also accounts for the filter bar's height, which
+    -- is needed regardless of thumbnails — always install it, and only
+    -- branch on show_thumbnails for the thumbnail-column sizing itself.
     self._base_thumb_size = self.thumb_size or DEFAULT_THUMB_SIZE
-    self.state_w = self._base_thumb_size + DEFAULT_THUMB_GAP
+    self.state_w = self.show_thumbnails and (self._base_thumb_size + DEFAULT_THUMB_GAP) or 0
     self._recalculateDimen = _InnerChooser._recalculateDimen
     PathChooser.init(self)
     if not self._all_items then
@@ -102,6 +117,10 @@ function _InnerChooser:_recalculateDimen(no_recalculate_dimen)
         self.item_dimen.h = math.floor(self.available_height / self.perpage)
     end
 
+    if not self.show_thumbnails then
+        self.state_w = 0
+        return
+    end
     local content_w = math.max(0, self.item_dimen.w - 2 * Size.padding.fullscreen)
     local max_state_w = math.max(1, math.floor(content_w / 4))
     local ts = self._base_thumb_size or DEFAULT_THUMB_SIZE
@@ -184,6 +203,7 @@ function _InnerChooser:updateItems(select_number, no_recalculate_dimen)
     Menu.updateItems(self, select_number, no_recalculate_dimen)
     self.path_items[self.path] = (self.page - 1) * self.perpage + (select_number or 1)
 
+    if not self.show_thumbnails then return end
     local eff_thumb = self._thumb_size or 0
     if eff_thumb <= 0 then return end
 
@@ -230,12 +250,13 @@ end
 -- Outer wrapper with filter bar
 -- ---------------------------------------------------------------------------
 local AssetBrowser = WidgetContainer:extend{
-    path = nil,         -- required: starting directory
-    extensions = nil,   -- required: {ext=true, ...}, lowercase, no dot
-    title = nil,        -- optional dialog title
-    thumb_size = nil,   -- optional thumbnail size override
-    onConfirm = nil,    -- required: function(real_path)
-    onCancel = nil,     -- optional: function()
+    path = nil,             -- required: starting directory
+    extensions = nil,       -- required: {ext=true, ...}, lowercase, no dot
+    title = nil,            -- optional dialog title
+    show_thumbnails = true, -- set false for non-image extensions (e.g. zip)
+    thumb_size = nil,       -- optional thumbnail size override
+    onConfirm = nil,        -- required: function(real_path)
+    onCancel = nil,         -- optional: function()
     is_always_active = true,
 }
 
@@ -289,6 +310,7 @@ function AssetBrowser:init()
         path = self.path,
         extensions = self.extensions,
         title = self.title,
+        show_thumbnails = self.show_thumbnails,
         thumb_size = self.thumb_size,
         onConfirm = self.onConfirm,
         height = self.dimen.h,

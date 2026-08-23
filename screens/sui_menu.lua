@@ -3780,11 +3780,48 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                             local items = {}
 
                             -- ── Install zip ───────────────────────────────────────
+                            local function _installPackAndNotify(zip_path)
+                                local pack_name, err = IP.installZip(zip_path)
+                                if pack_name then
+                                    UIManager:show(InfoMessage():new{
+                                        text    = string.format(
+                                            _("Pack \"%s\" installed.\nYou can now apply it from the list."),
+                                            pack_name),
+                                        timeout = 4,
+                                    })
+                                else
+                                    UIManager:show(InfoMessage():new{
+                                        text    = _("Error installing pack:") .. "\n" .. tostring(err),
+                                        timeout = 5,
+                                    })
+                                end
+                            end
+
                             items[#items + 1] = {
                                 text = _("Install pack from ZIP"),
                                 sub_item_table_func = function()
                                     local sub = {}
                                     local dir = IP.getPacksDir()
+                                    if dir then
+                                        sub[#sub + 1] = {
+                                            text = _("Browse…"),
+                                            keep_menu_open = true,
+                                            callback = function()
+                                                local AssetBrowser = require("engines/sui_asset_browser")
+                                                UIManager:show(AssetBrowser:new{
+                                                    path            = dir,
+                                                    -- No image format applies to a .zip archive, so there is
+                                                    -- nothing to preview — skip the thumbnail column entirely.
+                                                    extensions      = { zip = true },
+                                                    show_thumbnails = false,
+                                                    title           = _("Choose icon pack"),
+                                                    onConfirm       = function(path) _installPackAndNotify(path) end,
+                                                })
+                                            end,
+                                            separator = true,
+                                        }
+                                    end
+
                                     local lfs = require("libs/libkoreader-lfs")
                                     local T   = require("ffi/util").template
                                     local zips = {}
@@ -3807,22 +3844,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                             local _z = z
                                             sub[#sub + 1] = {
                                                 text     = _z.name,
-                                                callback = function()
-                                                    local pack_name, err = IP.installZip(_z.path)
-                                                    if pack_name then
-                                                        UIManager:show(InfoMessage():new{
-                                                            text    = string.format(
-                                                                _("Pack \"%s\" installed.\nYou can now apply it from the list."),
-                                                                pack_name),
-                                                            timeout = 4,
-                                                        })
-                                                    else
-                                                        UIManager:show(InfoMessage():new{
-                                                            text    = _("Error installing pack:") .. "\n" .. tostring(err),
-                                                            timeout = 5,
-                                                        })
-                                                    end
-                                                end,
+                                                callback = function() _installPackAndNotify(_z.path) end,
                                             }
                                         end
                                     end
