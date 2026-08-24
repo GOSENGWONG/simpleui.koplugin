@@ -695,7 +695,7 @@ function M.build(w, ctx)
             -- effect when `height` is set; leaving height nil would make
             -- the widget grow to fit the full text instead of clamping.
             local desc_tbw_line_h = math.floor(1.3 * face_desc.size + 0.5)
-            meta[#meta+1] = TextBoxWidget:new{
+            local desc_args = {
                 text      = bd.description,
                 face      = face_desc,
                 width     = tw,
@@ -704,6 +704,21 @@ function M.build(w, ctx)
                 height_overflow_show_ellipsis = true,
                 fgcolor   = CLR_TEXT_SUB_EFF,
             }
+
+            local desc_w
+            if ctx.has_wallpaper then
+                local ok_tbx, tbx = pcall(UI.makeAlphaTextBox, desc_args)
+                if ok_tbx then
+                    desc_w = tbx
+                else
+                    logger.warn("simpleui: module_currently: makeAlphaTextBox failed, falling back to TextBoxWidget: " .. tostring(tbx))
+                    desc_w = TextBoxWidget:new(desc_args)
+                end
+            else
+                desc_w = TextBoxWidget:new(desc_args)
+            end
+
+            meta[#meta+1] = desc_w
             meta_has_content = true
 
         elseif elem == "progress" and show.progress then
