@@ -604,8 +604,16 @@ local _NAV_ICON_SIZE = 16
 -- turnPageFn(delta) is called on tap; it owns clamping (via turnPage
 -- above), persisting the new page, and repainting — this function only
 -- decides whether each chevron is enabled for the CURRENT page/npages.
+--
+-- has_wallpaper (optional): when true, the chevrons are built inside
+-- Bottombar.withWallpaperAlphaIcons so their icons are alpha-blended from
+-- birth (see that function's doc comment for why it must happen at
+-- construction time, not after), and Bottombar.patchWallpaperIcon makes
+-- their button frame paint transparently too — together, the chevrons
+-- paint over the Homescreen wallpaper instead of showing their default
+-- opaque background.
 -- ---------------------------------------------------------------------------
-function GridRenderer.buildPageNavButtons(page, npages, row_h, turnPageFn)
+function GridRenderer.buildPageNavButtons(page, npages, row_h, turnPageFn, has_wallpaper)
     if npages <= 1 then return nil, nil end
     local icon_size = Screen:scaleBySize(_NAV_ICON_SIZE)
     local v_pad = math.max(0, math.floor((row_h - icon_size) / 2))
@@ -624,10 +632,20 @@ function GridRenderer.buildPageNavButtons(page, npages, row_h, turnPageFn)
             callback        = function() turnPageFn(delta) end,
         }
         Bottombar.patchDimmedIcon(btn)
+        if has_wallpaper then Bottombar.patchWallpaperIcon(btn) end
         return btn
     end
-    return make("chevron.left",  page > 1,      -1),
-           make("chevron.right", page < npages,  1)
+    local prev_btn, next_btn
+    if has_wallpaper then
+        Bottombar.withWallpaperAlphaIcons(function()
+            prev_btn, next_btn = make("chevron.left",  page > 1,      -1),
+                                  make("chevron.right", page < npages,  1)
+        end)
+    else
+        prev_btn, next_btn = make("chevron.left",  page > 1,      -1),
+                              make("chevron.right", page < npages,  1)
+    end
+    return prev_btn, next_btn
 end
 
 -- ---------------------------------------------------------------------------

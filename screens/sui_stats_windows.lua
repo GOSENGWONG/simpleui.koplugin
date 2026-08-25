@@ -3205,7 +3205,7 @@ function StatsWindows.showStreakManagerWindow()
         for i, name in ipairs(_smWeekdayAbbr()) do
             weekday_row[#weekday_row + 1] = _CenterContainer:new{
                 dimen = Geom:new{ w = cell_w, h = wd_h },
-                TextWidget:new{ text = name, face = face_wd, fgcolor = SUIStyle.COLOR.text_dim_alt, bold = true },
+                TextWidget:new{ text = name, face = face_wd, fgcolor = SUIStyle.COLOR.text_dim, bold = true },
             }
             if i < 7 then weekday_row[#weekday_row + 1] = HorizontalSpan:new{ width = gap } end
         end

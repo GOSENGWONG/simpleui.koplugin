@@ -108,7 +108,7 @@ local SIDE_PAD           = UI.SIDE_PAD
 -- Static color defaults.
 
 local function _getTextMid()
-    return SUIStyle.COLOR.text_dim_alt
+    return SUIStyle.COLOR.text_dim
 end
 
 local function _getDotInactive()
@@ -261,7 +261,11 @@ local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
 
     local key = text .. "|" .. w .. "|" .. tostring(scale) .. "|" .. tostring(right_text)
     if page_nav then
+        -- has_wallpaper is folded in too: it changes how the chevrons are
+        -- built (see GridRenderer.buildPageNavButtons), so toggling the
+        -- wallpaper must not reuse a cached widget built for the other state.
         key = key .. "|" .. page_nav.mod_id .. "|" .. tostring(page_nav.page) .. "|" .. tostring(page_nav.npages)
+            .. "|" .. tostring(page_nav.has_wallpaper)
     end
     if not _label_cache[key] then
         local face = Font:getFace(SUIStyle.FACE_REGULAR, fs)
@@ -295,7 +299,7 @@ local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
                 local ok_gr, GridRenderer = pcall(require, "engines/sui_book_grid")
                 if ok_gr and GridRenderer then
                     prev_button, next_button = GridRenderer.buildPageNavButtons(
-                        page_nav.page, page_nav.npages, row_h, page_nav.turnPageFn)
+                        page_nav.page, page_nav.npages, row_h, page_nav.turnPageFn, page_nav.has_wallpaper)
                     if prev_button then
                         nav_w = prev_button:getSize().w + next_button:getSize().w + gap * 2
                     end
@@ -388,10 +392,11 @@ local function pageNavFor(self, mod, ctx)
     if not npages or npages <= 1 then return nil end
     local page = ctx["_row_page_" .. mod.id] or 1
     return {
-        mod_id     = mod.id,
-        page       = page,
-        npages     = npages,
-        turnPageFn = function(delta) self:_turnBookModPage(mod.id, delta) end,
+        mod_id        = mod.id,
+        page          = page,
+        npages        = npages,
+        turnPageFn    = function(delta) self:_turnBookModPage(mod.id, delta) end,
+        has_wallpaper = ctx.has_wallpaper,
     }
 end
 

@@ -649,6 +649,12 @@ end
 -- Shared helper to paint a widget with perfect alpha transparency over wallpapers
 -- ---------------------------------------------------------------------------
 function M.paintWithAlphaMask(widget, target_bb, x, y, w, h, fgcolor, custom_paint_fn, tmp_bb)
+    -- widget can be nil if it was already freed (e.g. a widget shared with
+    -- a tree that got torn down elsewhere via a CloseWidget cascade) while
+    -- this wrapper is still reachable from a live paint pass. Skip the
+    -- paint rather than crash the whole repaint pipeline.
+    if not widget then return end
+
     local own_bb = false
     if not tmp_bb then
         tmp_bb = Blitbuffer.new(w, h, Blitbuffer.TYPE_BB8)
@@ -663,6 +669,73 @@ function M.paintWithAlphaMask(widget, target_bb, x, y, w, h, fgcolor, custom_pai
     tmp_bb:invertRect(0, 0, w, h)
     target_bb:colorblitFromRGB32(tmp_bb, x, y, 0, 0, w, h, fgcolor)
     if own_bb then tmp_bb:free() end
+end
+
+-- Shared lazy loader used by makeAlphaMaskWidget and its callers below.
+local _WidgetContainer
+local function _WC()
+    _WidgetContainer = _WidgetContainer or require("ui/widget/container/widgetcontainer")
+    return _WidgetContainer
+end
+
+-- ---------------------------------------------------------------------------
+-- makeAlphaMaskWidget — generic WidgetContainer wrapper that paints `inner`
+-- through paintWithAlphaMask, recolored to `fgcolor`, with a cached scratch
+-- Blitbuffer sized to the widget's own dimen.
+--
+-- This is the shared shape behind makeColoredText, makeAlphaTextBox, and
+-- wrapDimmable below (each just builds a different `inner` and picks a
+-- `fgcolor`) — kept as a single factory instead of three near-identical
+-- WidgetContainer definitions, and reused by other engines that need the
+-- same alpha-mask-recolored-widget technique.
+--
+-- `dimen` defaults to `inner:getSize()`. Pass it explicitly when the wrapper
+-- needs to report a size independent of the inner widget (e.g. a fixed
+-- icon-cell size).
+-- ---------------------------------------------------------------------------
+function M.makeAlphaMaskWidget(inner, fgcolor, dimen)
+    local widget = _WC():new{}
+    widget.dimen  = dimen or inner:getSize()
+    widget._inner = inner
+    widget._fg    = fgcolor
+
+    function widget:getSize()
+        return self.dimen
+    end
+
+    function widget:paintTo(bb, x, y)
+        self.dimen.x, self.dimen.y = x, y
+        local w = self.dimen.w
+        local h = self.dimen.h
+        if w <= 0 or h <= 0 then return end
+
+        if not self._tmp_bb or self._tmp_bb:getWidth() ~= w or self._tmp_bb:getHeight() ~= h then
+            if self._tmp_bb then self._tmp_bb:free() end
+            self._tmp_bb = Blitbuffer.new(w, h, Blitbuffer.TYPE_BB8)
+        end
+        M.paintWithAlphaMask(self._inner, bb, x, y, w, h, self._fg, nil, self._tmp_bb)
+    end
+
+    function widget:onCloseWidget()
+        self:free()
+    end
+
+    function widget:free()
+        if self._inner then
+            self._inner:free()
+            self._inner = nil
+        end
+        if self._tmp_bb then
+            self._tmp_bb:free()
+            self._tmp_bb = nil
+        end
+    end
+
+    function widget:onToggleNightMode() require("ui/uimanager"):setDirty(self) end
+    function widget:onSetNightMode()    require("ui/uimanager"):setDirty(self) end
+    function widget:onApplyTheme()      require("ui/uimanager"):setDirty(self) end
+
+    return widget
 end
 
 -- ---------------------------------------------------------------------------
@@ -691,13 +764,7 @@ end
 --       width   = 200,                     -- optional, as with TextWidget
 --   }
 -- ---------------------------------------------------------------------------
--- Shared lazy loaders for both makeColoredText and makeAlphaTextBox.
-local _WidgetContainer
-local function _WC()
-    _WidgetContainer = _WidgetContainer or require("ui/widget/container/widgetcontainer")
-    return _WidgetContainer
-end
-
+-- Shared lazy loader for makeColoredText and makeAlphaTextBox.
 local _TextWidget
 local function _TW()
     _TextWidget = _TextWidget or require("ui/widget/textwidget")
@@ -718,49 +785,7 @@ function M.makeColoredText(opts)
     inner_opts.fgcolor = SUIStyle.COLOR.text_primary
 
     local inner = _TW():new(inner_opts)
-
-    local dimen = inner:getSize()
-
-    local widget = _WC():new{}
-    widget.dimen  = dimen
-    widget._inner = inner
-    widget._fg    = fgcolor
-
-    function widget:getSize()
-        return self.dimen
-    end
-
-    function widget:paintTo(bb, x, y)
-        self.dimen.x, self.dimen.y = x, y
-        local w = self.dimen.w
-        local h = self.dimen.h
-        if w <= 0 or h <= 0 then return end
-
-        if not self._tmp_bb or self._tmp_bb:getWidth() ~= w or self._tmp_bb:getHeight() ~= h then
-            if self._tmp_bb then self._tmp_bb:free() end
-            self._tmp_bb = Blitbuffer.new(w, h, Blitbuffer.TYPE_BB8)
-        end
-        M.paintWithAlphaMask(self._inner, bb, x, y, w, h, self._fg, nil, self._tmp_bb)
-    end
-
-    function widget:onCloseWidget() self:free() end
-
-    function widget:free()
-        if self._inner then
-            self._inner:free()
-            self._inner = nil
-        end
-        if self._tmp_bb then
-            self._tmp_bb:free()
-            self._tmp_bb = nil
-        end
-    end
-
-    function widget:onToggleNightMode() require("ui/uimanager"):setDirty(self) end
-    function widget:onSetNightMode()    require("ui/uimanager"):setDirty(self) end
-    function widget:onApplyTheme()      require("ui/uimanager"):setDirty(self) end
-
-    return widget
+    return M.makeAlphaMaskWidget(inner, fgcolor)
 end
 
 -- ---------------------------------------------------------------------------
@@ -835,49 +860,23 @@ function M.makeAlphaTextBox(opts)
         alpha       = true,
     }
 
-    local dimen = inner:getSize()
+    return M.makeAlphaMaskWidget(inner, fgcolor)
+end
 
-    local widget = _WC():new{}
-    widget.dimen  = dimen
-    widget._inner = inner
-    widget._fg    = fgcolor
-
-    function widget:getSize()
-        return self.dimen
-    end
-
-    function widget:paintTo(bb, x, y)
-        self.dimen.x, self.dimen.y = x, y
-        local w = self.dimen.w
-        local h = self.dimen.h
-
-        if not self._tmp_bb or self._tmp_bb:getWidth() ~= w or self._tmp_bb:getHeight() ~= h then
-            if self._tmp_bb then self._tmp_bb:free() end
-            self._tmp_bb = Blitbuffer.new(w, h, Blitbuffer.TYPE_BB8)
-        end
-        M.paintWithAlphaMask(self._inner, bb, x, y, w, h, self._fg, nil, self._tmp_bb)
-    end
-
-    function widget:onCloseWidget()
-        self:free()
-    end
-
-    function widget:free()
-        if self._inner then
-            self._inner:free()
-            self._inner = nil
-        end
-        if self._tmp_bb then
-            self._tmp_bb:free()
-            self._tmp_bb = nil
-        end
-    end
-
-    function widget:onToggleNightMode() require("ui/uimanager"):setDirty(self) end
-    function widget:onSetNightMode()    require("ui/uimanager"):setDirty(self) end
-    function widget:onApplyTheme()      require("ui/uimanager"):setDirty(self) end
-
-    return widget
+-- ---------------------------------------------------------------------------
+-- wrapDimmable — wraps any already-built widget so it paints dimmed.
+--
+-- Generalises the alpha-recolour technique above (and the one used by
+-- Bottombar.patchDimmedIcon for the pagination chevrons) to arbitrary
+-- widgets: an icon's on/off, enabled/disabled state is expressed by dimming
+-- the SAME widget rather than swapping in a visually distinct asset.
+--
+-- Pass-through when dim is false, so callers can wrap unconditionally:
+--   icon_widget = UI.wrapDimmable(icon_widget, entry.dim)
+-- ---------------------------------------------------------------------------
+function M.wrapDimmable(inner, dim, fgcolor)
+    if not dim or not inner then return inner end
+    return M.makeAlphaMaskWidget(inner, fgcolor or SUIStyle.COLOR.text_dim)
 end
 
 -- ---------------------------------------------------------------------------

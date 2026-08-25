@@ -24,6 +24,7 @@ local UIManager    = require("ui/uimanager")
 local SUIStyle     = require("features/sui_style")
 local Config       = require("infra/sui_config")
 local SUISettings = require("infra/sui_store")
+local AAPaint      = require("infra/sui_aa_paint")
 local PAD          = UI.PAD
 local PAD2         = UI.PAD2
 local CLR_TEXT_SUB = UI.CLR_TEXT_SUB
@@ -380,12 +381,9 @@ end
 -- ---------------------------------------------------------------------------
 -- Analogue clock face
 -- ---------------------------------------------------------------------------
--- Drawn directly with per-pixel coverage-based anti-aliasing: for each pixel
--- near a tick or hand, compute how far it sits from the stroke's centre line
--- and blend black into it proportionally to the shape's coverage of that
--- pixel (see _blendPixel/_paintCapsule below). This needs no supersampling —
--- blitbuffer's own :scale() is nearest-neighbour, so drawing at a larger
--- size and scaling down would not actually smooth anything.
+-- Drawn directly with the coverage-based anti-aliasing primitives in
+-- infra/sui_aa_paint.lua (see that module's header for how the technique
+-- works) instead of relying on any native rounded-shape drawing.
 --
 -- No rim: bare ticks + hands read cleanly on their own, and a ring is one
 -- more shape whose stroke width would need to stay in proportion at every
@@ -402,45 +400,6 @@ end
 -- transparently over a wallpaper, the same way UI.makeColoredText composites
 -- coloured text — this drawing routine just fills the role that
 -- TextWidget:paintTo plays there.
-
--- Blends `ink` (0 = black) into pixel (px,py) by coverage in [0,1] —
--- over-compositing onto whatever grey value is already there, so
--- overlapping strokes (e.g. a tick crossing a hand) compound correctly
--- instead of one overwriting the other.
-local function _blendPixel(bb, px, py, cov, x0, y0, x1, y1)
-    if cov <= 0 then return end
-    if px < x0 or px > x1 or py < y0 or py > y1 then return end
-    if cov > 1 then cov = 1 end
-    local g = bb:getPixel(px, py):getColor8().a
-    bb:setPixel(px, py, Blitbuffer.Color8(math.floor(g * (1 - cov) + 0.5)))
-end
-
--- Paints an anti-aliased capsule (a straight stroke of full width `width`,
--- rounded at both ends) from (ax,ay) to (bx,by) onto `bb`. For every
--- candidate pixel, projects it onto the segment to find the nearest point
--- on the stroke's centre line, then blends by how far the pixel's centre
--- sits inside the stroke's half-width — pixels fully inside get full ink,
--- pixels straddling the edge get partial ink, giving a smooth edge at
--- whatever resolution `bb` actually is.
-local function _paintCapsule(bb, ax, ay, bx, by, width, x0, y0, x1, y1)
-    local half = width / 2
-    local dx, dy = bx - ax, by - ay
-    local len2 = dx * dx + dy * dy
-    local minx = math.floor(math.min(ax, bx) - half - 1)
-    local maxx = math.floor(math.max(ax, bx) + half + 1)
-    local miny = math.floor(math.min(ay, by) - half - 1)
-    local maxy = math.floor(math.max(ay, by) + half + 1)
-    for py = miny, maxy do
-        for px = minx, maxx do
-            local t = len2 > 0 and ((px - ax) * dx + (py - ay) * dy) / len2 or 0
-            if t < 0 then t = 0 elseif t > 1 then t = 1 end
-            local qx, qy = ax + t * dx, ay + t * dy
-            local ddx, ddy = px - qx, py - qy
-            local dist = math.sqrt(ddx * ddx + ddy * ddy)
-            _blendPixel(bb, px, py, half + 0.5 - dist, x0, y0, x1, y1)
-        end
-    end
-end
 
 -- Draws the face into `bb` (assumed already white-filled, size diameter ×
 -- diameter), in BLACK ink — UI.paintWithAlphaMask inverts and recolours it
@@ -462,9 +421,9 @@ local function _drawAnalogueFace(bb, diameter, hour, min)
         local sn, co   = math.sin(angle), math.cos(angle)
         local outer    = r - tick_gap
         local inner    = outer - tick_len
-        _paintCapsule(bb, cx + inner * sn, cy - inner * co,
-                          cx + outer * sn, cy - outer * co,
-                          tick_w, x0, y0, x1, y1)
+        AAPaint.paintCapsule(bb, cx + inner * sn, cy - inner * co,
+                                 cx + outer * sn, cy - outer * co,
+                                 tick_w, x0, y0, x1, y1)
     end
 
     -- Hands: no centre hub, so each hand's stroke starts a little past the
@@ -472,9 +431,9 @@ local function _drawAnalogueFace(bb, diameter, hour, min)
     local tail = math.max(diameter * 0.04, 2)
     local function drawHand(angle, length, width)
         local sn, co = math.sin(angle), math.cos(angle)
-        _paintCapsule(bb, cx - tail * sn, cy + tail * co,
-                          cx + length * sn, cy - length * co,
-                          width, x0, y0, x1, y1)
+        AAPaint.paintCapsule(bb, cx - tail * sn, cy + tail * co,
+                                 cx + length * sn, cy - length * co,
+                                 width, x0, y0, x1, y1)
     end
     local minute_angle = (min / 60) * (2 * math.pi)
     local hour_angle    = ((hour % 12) + min / 60) / 12 * (2 * math.pi)
@@ -513,7 +472,7 @@ local function _buildAnalogueClockWidget(diameter, fg_color)
             _drawAnalogueFace(tmp_bb, d, hour, min)
         end
 
-        UI.paintWithAlphaMask(nil, bb, x, y, d, d, fg_color, custom_paint_fn, self._tmp_bb)
+        UI.paintWithAlphaMask(widget, bb, x, y, d, d, fg_color, custom_paint_fn, self._tmp_bb)
     end
 
     function widget:onCloseWidget() self:free() end

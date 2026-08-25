@@ -1369,9 +1369,8 @@ M.FS_CAPTION  = _fs(12)
 --
 --  text_primary         — primary text, active icons/borders (black).
 --  text_secondary       — secondary text (e.g. onboarding subtitles).
---  text_dim             — inactive/dim text or icons.
---  text_dim_alt         — secondary text shown alongside text_dim contexts
---                         (e.g. opts.dim variants, chart axis labels).
+--  text_dim             — inactive/dim text or icons (e.g. opts.dim
+--                         variants, chart axis labels).
 --  surface              — solid light background / "eraser" fill.
 --  surface_flat         — flat dark background (flat-style cards, bars).
 --  gray                 — medium-weight gray: card and frame borders, the
@@ -1390,8 +1389,7 @@ M.FS_CAPTION  = _fs(12)
 M.COLOR = {
     text_primary         = Blitbuffer.COLOR_BLACK,
     text_secondary       = Blitbuffer.COLOR_DARK_GRAY,
-    text_dim             = Blitbuffer.gray(0.55),
-    text_dim_alt         = Blitbuffer.gray(0.45),
+    text_dim             = Blitbuffer.gray(0.45),
     surface              = Blitbuffer.COLOR_WHITE,
     surface_flat         = Blitbuffer.gray(0.08),
     gray                 = Blitbuffer.gray(0.72),
@@ -1797,7 +1795,7 @@ end
 
 local _ACTION_SET = {
     library=true, homescreen=true, collections=true, history=true, continue=true,
-    favorites=true, bookmark_browser=true, wifi_toggle=true, wifi_toggle_off=true, frontlight=true,
+    favorites=true, bookmark_browser=true, wifi_toggle=true, frontlight=true,
     night_mode=true,
     stats_calendar=true, power=true, browse_authors=true, browse_series=true, browse_tags=true,
     settings=true,

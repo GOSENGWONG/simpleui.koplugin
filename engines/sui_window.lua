@@ -2622,7 +2622,7 @@ local function _CardBase(opts)
     local margin_v   = opts.margin_v or SZ(Screen:scaleBySize(8))
     local h_pad      = SZ(Size.padding.large)
     local v_pad      = SZ(Screen:scaleBySize(12))
-    local fg_color   = (opts.dim == true) and SUIStyle.COLOR.text_dim_alt or _clrPrimary()
+    local fg_color   = (opts.dim == true) and SUIStyle.COLOR.text_dim or _clrPrimary()
 
     local del_w    = has_delete and (_CHEVRON_W() * 2) or 0
     local edit_w   = has_edit and (_CHEVRON_W() * 2) or 0
@@ -2816,7 +2816,7 @@ local function _CardBase(opts)
     local card_frame = FrameContainer:new{
         radius     = SZ(Screen:scaleBySize(12)),
         bordersize = SUIStyle.BORDER_SZ,
-        color      = (opts.dim == true) and SUIStyle.COLOR.text_dim_alt or SUIStyle.COLOR.gray,
+        color      = (opts.dim == true) and SUIStyle.COLOR.text_dim or SUIStyle.COLOR.gray,
         padding    = 0,
         dimen      = Geom:new{ w = inner_w, h = content:getSize().h },
         content,

@@ -11,6 +11,15 @@
 --                         QA.iterBuiltin, QA.getCustomQAValid
 --   sui_menu           — QA.makeMenuItems, QA.makeIconsMenuItems
 --
+-- Widget construction for an entry (icon resolution, dim state, frame/
+-- border, per-layout assembly) is centralized in
+-- engines/sui_quickactions_render.lua (QARenderer), the same way
+-- engines/sui_book_grid.lua centralizes cover-grid rendering. Consumers that
+-- render a quick action as a widget — module_quick_actions.lua,
+-- module_action_list.lua, sui_quicksettings_bar.lua, sui_bottombar.lua —
+-- call into QARenderer rather than calling QA.getEntry and building the
+-- widget themselves.
+--
 -- EXTERNAL PLUGIN API:
 --   QA.register(descriptor)   — add an action to the registry
 --   QA.unregister(id)         — remove an action (call on plugin unload)
@@ -24,6 +33,12 @@
 --     -- optional dynamic icon/label (called every render):
 --     get_icon    = function(id) ... end,
 --     get_label   = function(id) ... end,
+--     -- optional state hook (called every render): when present, the
+--     -- action is treated as having an on/off state, and getEntry() sets
+--     -- entry.dim = true whenever it returns false. Consumers building the
+--     -- icon widget dim it via UI.wrapDimmable instead of switching to a
+--     -- separate "off" icon asset (see wifi_toggle / night_mode below).
+--     is_active   = function(id) -> boolean,
 --     -- execution:
 --     is_in_place = true,  -- bool OR function(id)->bool
 --     -- optional, only meaningful when is_in_place is true: set this when
@@ -806,9 +821,9 @@ local function _registerBuiltins()
         {
             id    = "wifi_toggle",
             label = _("Wi-Fi"),
-            icon  = Config.ICON.ko_wifi_on,
-            get_icon = function(_id)
-                return Config.wifiIcon()
+            icon  = Config.ICON.ko_wifi,
+            is_active = function(_id)
+                return Config.wifiOn()
             end,
             get_label = function(_id)
                 local a = Config.ACTION_BY_ID["wifi_toggle"]
@@ -832,6 +847,9 @@ local function _registerBuiltins()
             id    = "night_mode",
             label = _("Night Mode"),
             icon  = Config.ICON.night,
+            is_active = function(_id)
+                return Screen.night_mode and true or false
+            end,
             is_in_place = true,
             execute = function(_ctx)
                 UIManager:broadcastEvent(require("ui/event"):new("ToggleNightMode"))
@@ -1657,12 +1675,7 @@ function QA.sui_build_qa_icons(plugin, ctx_menu, ctx)
     local pool = {}
     for _k, a in ipairs(Config.ALL_ACTIONS) do
         local lbl = QA.getEntry(a.id).label
-        if a.id == "wifi_toggle" then
-            pool[#pool + 1] = { id = a.id, is_default = true, title = lbl .. "  (" .. _("On") .. ")" }
-            pool[#pool + 1] = { id = "wifi_toggle_off", is_default = true, title = lbl .. "  (" .. _("Off") .. ")" }
-        else
-            pool[#pool + 1] = { id = a.id, is_default = true, title = lbl }
-        end
+        pool[#pool + 1] = { id = a.id, is_default = true, title = lbl }
     end
     for _i, qa_id in ipairs(Config.getCustomQAList()) do
         local c = Config.getCustomQAConfig(qa_id)
@@ -1734,12 +1747,8 @@ function QA.sui_build_qa_icons(plugin, ctx_menu, ctx)
             local effective_icon = current_icon
             if not effective_icon then
                 if _is_default then
-                    if _id == "wifi_toggle_off" then
-                        effective_icon = Config.ICON.ko_wifi_off
-                    else
-                        local a_entry = Config.ACTION_BY_ID[_id]
-                        effective_icon = a_entry and a_entry.icon
-                    end
+                    local a_entry = Config.ACTION_BY_ID[_id]
+                    effective_icon = a_entry and a_entry.icon
                 elseif _is_screen then
                     -- Mirrors infra/sui_custom_screens.lua's own
                     -- registerQuickAction() fallback (screen.icon or
@@ -1885,7 +1894,7 @@ end
 -- getEntry(id) — canonical resolver used by ALL rendering code
 -- ---------------------------------------------------------------------------
 
-local _wifi_entry = { icon = "", label = "" }
+local _dyn_entry = { icon = "", label = "", dim = false }
 
 function QA.getEntry(id)
     -- Custom QA
@@ -1928,24 +1937,25 @@ function QA.getEntry(id)
         desc = a
     end
 
-    -- Dynamic icon/label (e.g. wifi_toggle).
-    local has_dynamic = desc.get_icon or desc.get_label
+    -- Dynamic icon/label/state (e.g. wifi_toggle, night_mode).
+    local has_dynamic = desc.get_icon or desc.get_label or desc.is_active
     local icon_ov  = QA.getDefaultActionIcon(id)
     local label_ov = QA.getDefaultActionLabel(id)
-
-    if id == "wifi_toggle" then
-        _wifi_entry.icon  = (desc.get_icon and desc.get_icon(id)) or desc.icon
-        _wifi_entry.label = label_ov or (desc.get_label and desc.get_label(id)) or desc.label
-        return _wifi_entry
-    end
 
     if not icon_ov and not label_ov and not has_dynamic then
         return desc  -- fast path: no overrides, no dynamic fields
     end
-    return {
-        icon  = icon_ov or (desc.get_icon and desc.get_icon(id)) or desc.icon,
-        label = label_ov or (desc.get_label and desc.get_label(id)) or desc.label,
-    }
+
+    local dim = false
+    if desc.is_active then
+        local ok_active, active = pcall(desc.is_active, id)
+        dim = ok_active and active == false
+    end
+
+    _dyn_entry.icon  = icon_ov or (desc.get_icon and desc.get_icon(id)) or desc.icon
+    _dyn_entry.label = label_ov or (desc.get_label and desc.get_label(id)) or desc.label
+    _dyn_entry.dim   = dim
+    return _dyn_entry
 end
 
 -- ---------------------------------------------------------------------------
@@ -2694,7 +2704,6 @@ function QA.hasCustomIcons()
     for _, a in ipairs(Config.ALL_ACTIONS) do
         if QA.getDefaultActionIcon(a.id) ~= nil then return true end
     end
-    if QA.getDefaultActionIcon("wifi_toggle_off") ~= nil then return true end
     for _, qa_id in ipairs(Config.getCustomQAList()) do
         local c = Config.getCustomQAConfig(qa_id)
         if c.icon ~= nil
@@ -2806,12 +2815,7 @@ function QA.makeIconsMenuItems(plugin)
     local pool = {}
     for _k, a in ipairs(Config.ALL_ACTIONS) do
         local lbl = QA.getEntry(a.id).label
-        if a.id == "wifi_toggle" then
-            pool[#pool + 1] = { id = a.id, is_default = true, title = lbl .. "  (" .. _("On") .. ")" }
-            pool[#pool + 1] = { id = "wifi_toggle_off", is_default = true, title = lbl .. "  (" .. _("Off") .. ")" }
-        else
-            pool[#pool + 1] = { id = a.id, is_default = true, title = lbl }
-        end
+        pool[#pool + 1] = { id = a.id, is_default = true, title = lbl }
     end
     for _i, qa_id in ipairs(Config.getCustomQAList()) do
         local c = Config.getCustomQAConfig(qa_id)

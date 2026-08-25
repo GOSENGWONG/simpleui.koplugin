@@ -215,7 +215,7 @@ function HW.buildRangeHeatmap(daily_map, start_t, end_t, fonts, max_width, opts)
         if text then
             table.insert(labels_row, LeftContainer:new{
                 dimen = Geom:new{ w = cell_size, h = label_h },
-                TextWidget:new{ text = text, face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt },
+                TextWidget:new{ text = text, face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim },
             })
         else
             table.insert(labels_row, HorizontalSpan:new{ width = cell_size })
@@ -238,7 +238,7 @@ function HW.buildRangeHeatmap(daily_map, start_t, end_t, fonts, max_width, opts)
         if wd_text then
             table.insert(row_group, LeftContainer:new{
                 dimen = Geom:new{ w = wd_label_w, h = cell_size },
-                TextWidget:new{ text = wd_text, face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt },
+                TextWidget:new{ text = wd_text, face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim },
             })
         else
             table.insert(row_group, HorizontalSpan:new{ width = wd_label_w })
@@ -321,7 +321,7 @@ function HW.buildDayPartHeatmap(weekday_hour_map, fonts, max_width, is_12h, opts
         if h % 3 == 0 then
             table.insert(labels_row, LeftContainer:new{
                 dimen = Geom:new{ w = cell_size, h = label_h },
-                TextWidget:new{ text = formatHourLabel(h, is_12h), face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt },
+                TextWidget:new{ text = formatHourLabel(h, is_12h), face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim },
             })
         else
             table.insert(labels_row, HorizontalSpan:new{ width = cell_size })
@@ -340,7 +340,7 @@ function HW.buildDayPartHeatmap(weekday_hour_map, fonts, max_width, is_12h, opts
         if wd_text then
             table.insert(row_group, LeftContainer:new{
                 dimen = Geom:new{ w = wd_label_w, h = cell_size },
-                TextWidget:new{ text = wd_text, face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt },
+                TextWidget:new{ text = wd_text, face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim },
             })
         else
             table.insert(row_group, HorizontalSpan:new{ width = wd_label_w })
@@ -372,14 +372,14 @@ function HW.buildLegend(fonts, cell_size)
     local border = Size.line.thin
 
     local row = HorizontalGroup:new{ align = "center" }
-    table.insert(row, TextWidget:new{ text = _("Less"), face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt })
+    table.insert(row, TextWidget:new{ text = _("Less"), face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim })
     table.insert(row, HorizontalSpan:new{ width = gap * 2 })
     for level = 0, 4 do
         table.insert(row, buildCell(cell, border, HW.levelColor(level)))
         if level < 4 then table.insert(row, HorizontalSpan:new{ width = gap }) end
     end
     table.insert(row, HorizontalSpan:new{ width = gap * 2 })
-    table.insert(row, TextWidget:new{ text = _("More"), face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim_alt })
+    table.insert(row, TextWidget:new{ text = _("More"), face = fonts.small, fgcolor = SUIStyle.COLOR.text_dim })
     return row
 end
 
