@@ -757,7 +757,15 @@ function GridRenderer.build(w, ctx, opts)
     local D           = SH.getDims(scale, thumb_scale)
     local pct_fs      = math.max(8, math.floor(_BASE_RB_PCT_FS * scale * lbl_scale))
 
-    local inner_w = w - PAD * 2
+    -- Frame border / solid background — same optional box every other
+    -- homescreen module offers (module_currently.lua, module_heatmap.lua,
+    -- module_reading_goals.lua). Computed up front so inner_w below already
+    -- reserves room for the border, keeping the box's real outer width
+    -- equal to `w`.
+    local box = SUIStyle.computeBox(
+        GridRenderer.showFrame(pfx, id), GridRenderer.solidBg(pfx, id), scale, PAD)
+
+    local inner_w = w - box.inset_h
 
     -- Cover size: base is the auto-fit size (grid_cols covers + gaps filling
     -- inner_w). Width uses grid_cols, not the item count on this page, so a
@@ -1124,25 +1132,7 @@ function GridRenderer.build(w, ctx, opts)
         content = swipe_area
     end
 
-    local show_frame = GridRenderer.showFrame(pfx, id)
-    local solid_bg   = GridRenderer.solidBg(pfx, id)
-    local has_box    = show_frame or solid_bg
-    local border_sz  = show_frame and SUIStyle.BORDER_SZ or 0
-    local radius     = has_box and math.floor(Screen:scaleBySize(12) * scale) or 0
-    local border_color = SUIStyle.COLOR.gray
-    local bg_color = nil
-    if solid_bg then
-        bg_color = SUIStyle.COLOR.surface
-    end
-
-    local result = FrameContainer:new{
-        bordersize = border_sz,
-        radius     = radius,
-        color      = border_color,
-        background = bg_color,
-        padding = PAD, padding_top = has_box and PAD or 0, padding_bottom = has_box and PAD or 0,
-        content,
-    }
+    local result = SUIStyle.wrapBox(content, box)
     result._cover_slots = cover_slots
     -- Snapshot for GridRenderer.updateStats (below): the exact file list
     -- this widget was built with (already sliced to the current page), the
@@ -1328,7 +1318,12 @@ function GridRenderer.getHeight(_ctx, opts)
     local grid_cols = opts.grid_cols or opts.max_items or 5
     local w = (_ctx and (_ctx.col_w or _ctx.inner_w))
               or (Screen:getWidth() - UI.SIDE_PAD * 2)
-    local inner_w = w - PAD * 2
+    -- Frame border / solid background — computed up front so inner_w below
+    -- mirrors build()'s own corrected value exactly (see build()'s comment
+    -- on why the border must be reserved here too, not just the padding).
+    local box = SUIStyle.computeBox(
+        GridRenderer.showFrame(pfx, id), GridRenderer.solidBg(pfx, id), scale, PAD)
+    local inner_w = w - box.inset_h
 
     -- cs uses the raw getters — mirrors build()'s cs above.
     local cs = Config.getModuleScaleRaw(id, pfx) * Config.getThumbScaleRaw(id, pfx)
@@ -1376,18 +1371,10 @@ function GridRenderer.getHeight(_ctx, opts)
     -- so they stay outside this multiplication.
     local h = grid_rows * cell_h + math.max(0, grid_rows - 1) * row_gap
 
-    local show_frame = GridRenderer.showFrame(pfx, id)
-    if show_frame or GridRenderer.solidBg(pfx, id) then
-        h = h + PAD * 2
-    end
-    -- Mirrors build()'s `border_sz = show_frame and SUIStyle.BORDER_SZ or 0`
-    -- passed as FrameContainer's `bordersize` — FrameContainer:getSize()
-    -- adds (margin + bordersize) * 2 to the content height, so the border
-    -- itself (not just the padding) grows the real widget by border_sz * 2
-    -- pixels whenever the frame is on.
-    if show_frame then
-        h = h + SUIStyle.BORDER_SZ * 2
-    end
+    -- box.inset_v already folds in the border (FrameContainer draws it
+    -- outside the padding — see computeBox's doc comment), so no separate
+    -- border_sz*2 addition is needed here.
+    h = h + box.inset_v
     return Config.getScaledLabelH() + h
 end
 

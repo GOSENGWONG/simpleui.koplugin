@@ -100,6 +100,15 @@ local function _getStatsProvider()
     return _SP
 end
 
+-- True until the very first ScreenWidget:onShow() this KOReader process (or
+-- plugin hot-reload — this module is evicted from package.loaded on
+-- teardown, which naturally resets this local) has consumed it. That one
+-- call is allowed to fetch live stats/books data synchronously so every
+-- module paints with correct data on its very first frame: a one-off delay
+-- at startup is acceptable, unlike the same delay on every reader return.
+-- Never re-armed afterwards, regardless of whether the fetch succeeded.
+local _cold_boot_pending = true
+
 -- Layout constants sourced from sui_core (single source of truth).
 local PAD                = UI.PAD
 local MOD_GAP            = UI.MOD_GAP
@@ -3423,6 +3432,16 @@ function ScreenWidget:onShow()
         need_async = true
     end
 
+    -- Consumed at most once per process (or per hot-reload): the very first
+    -- screen shown is allowed to block below on a live books+stats fetch
+    -- instead of taking the stale-then-correct path every other cold-open
+    -- uses. Every subsequent onShow() — including every reader return —
+    -- falls through to the unchanged behaviour further down.
+    local is_app_cold_boot = _cold_boot_pending
+    if is_app_cold_boot then
+        _cold_boot_pending = false
+    end
+
     -- Cold-open path: _cached_books_state is nil, so _buildCtx would call
     -- prefetchBooks() (sidecar I/O for every recent book) and SP.get() (DB
     -- queries) synchronously, blocking the first paint. This mirrors the
@@ -3456,45 +3475,97 @@ function ScreenWidget:onShow()
     -- _refresh() and corrects anything the stale data got wrong (book
     -- finished, new book opened since the cache was built, etc.).
     if not self._cached_books_state then
-        local SH = _getBookShared()
-        local stale = SH and SH.getStaleBooks and SH.getStaleBooks()
-        if stale then
-            -- Defensive: unlike prefetchBooks()'s live ReadHistory walk, this
-            -- persisted cross-process snapshot deliberately skips
-            -- lfs.attributes for speed (see the comment above), so it can
-            -- carry a filepath for a book that was deleted while KOReader
-            -- was closed (e.g. via Calibre over USB). Every other path in
-            -- this plugin that touches a book filepath (prefetchBooks,
-            -- TBR.getTBRList, Config.getCoverBB) already guards with the
-            -- same check; this cache was the one gap. A handful of stat()
-            -- calls here is negligible next to the instant-paint goal this
-            -- mechanism exists for, and it stops a dangling path from ever
-            -- reaching cover extraction / doc-open code further down.
+        if is_app_cold_boot then
+            -- App startup: fetch the real book state synchronously instead
+            -- of seeding from SH.getStaleBooks(). Mirrors the prefetchBooks()
+            -- call the deferred tick in _refresh() makes further below in
+            -- this file — same show_c/show_r resolution, same count — so the
+            -- very first paint already has authoritative data and needs no
+            -- follow-up correction.
+            local SH = _getBookShared()
+            if SH then
+                local mod_r  = Registry.get("recent")
+                local mod_cd = Registry.get("coverdeck")
+                local show_c = Registry.isEnabled(Registry.get("currently"), self._pfx)
+                local show_r = (mod_r and Registry.isEnabled(mod_r, self._pfx))
+                    or (mod_cd and Registry.isEnabled(mod_cd, self._pfx))
+                self._cached_books_state = SH.prefetchBooks(show_c, show_r, 15)
+            end
+            self._cached_books_state = self._cached_books_state
+                or { current_fp = nil, recent_fps = {}, prefetched_data = {} }
+        else
+            -- Cold-open path: _cached_books_state is nil, so _buildCtx would call
+            -- prefetchBooks() (sidecar I/O for every recent book) and SP.get() (DB
+            -- queries) synchronously, blocking the first paint. This mirrors the
+            -- EXACT same pattern already used for reading_stats: _defer_stats below
+            -- makes _buildCtx call SP.getStale() — a zero-cost return of the last
+            -- DB query result, falling back to `{}` (zeros/placeholder for one
+            -- frame) when nothing has ever been cached — instead of SP.get(). The
+            -- equivalent here is SH.getStaleBooks(): an instant reference to the
+            -- last successful SH.prefetchBooks() result, now persisted across
+            -- process restarts too (see module_books_shared.lua), with NO
+            -- ReadHistory walk, NO lfs.attributes, NO sidecar cache lookups, NO new
+            -- work of any kind — just a table reference (or a single lazy disk
+            -- read, at most once per process). is_book_mod modules (currently,
+            -- coverdeck, recent) render with the exact same data they last had,
+            -- identical in spirit to how reading_stats never flashes to zero on
+            -- return.
             --
-            -- KOBO_VIRTUAL:// paths (module_books_shared.lua's
-            -- _koboVirtualPath) are skipped: lfs.attributes cannot resolve
-            -- them, and there is no exported real-path lookup to reverse the
-            -- mapping here, so a real-file check would false-negative every
-            -- kepub on Kobo devices instead of only catching deleted books.
-            local function _existsOrVirtual(fp)
-                if fp:match("^KOBO_VIRTUAL://") then return true end
-                return lfs.attributes(fp, "mode") == "file"
-            end
-            if stale.current_fp and not _existsOrVirtual(stale.current_fp) then
-                stale.current_fp = nil
-            end
-            if stale.recent_fps then
-                local kept = {}
-                for _, fp in ipairs(stale.recent_fps) do
-                    if _existsOrVirtual(fp) then
-                        kept[#kept + 1] = fp
-                    end
+            -- getStaleBooks() returns nil only in the genuinely-first-ever-run case
+            -- (no in-memory cache AND no on-disk mirror — e.g. right after install,
+            -- or settings were cleared). Deliberately, NO active resolution (like
+            -- the previous SH.peekRecentBooks() fallback) is attempted in that
+            -- case: this mirrors SP.getStale() exactly, which has no equivalent
+            -- fallback either and simply lets reading_stats render `{}` for that
+            -- one frame. is_book_mod modules fall back to their own "no data yet"
+            -- path (build() returns nil/empty) the same way reading_stats shows
+            -- zeros — a single harmless frame, corrected by the deferred refresh
+            -- moments later, with zero extra work spent avoiding it.
+            --
+            -- need_async stays true regardless, so the full, authoritative
+            -- prefetchBooks() pass still runs ~50ms later via the deferred
+            -- _refresh() and corrects anything the stale data got wrong (book
+            -- finished, new book opened since the cache was built, etc.).
+            local SH = _getBookShared()
+            local stale = SH and SH.getStaleBooks and SH.getStaleBooks()
+            if stale then
+                -- Defensive: unlike prefetchBooks()'s live ReadHistory walk, this
+                -- persisted cross-process snapshot deliberately skips
+                -- lfs.attributes for speed (see the comment above), so it can
+                -- carry a filepath for a book that was deleted while KOReader
+                -- was closed (e.g. via Calibre over USB). Every other path in
+                -- this plugin that touches a book filepath (prefetchBooks,
+                -- TBR.getTBRList, Config.getCoverBB) already guards with the
+                -- same check; this cache was the one gap. A handful of stat()
+                -- calls here is negligible next to the instant-paint goal this
+                -- mechanism exists for, and it stops a dangling path from ever
+                -- reaching cover extraction / doc-open code further down.
+                --
+                -- KOBO_VIRTUAL:// paths (module_books_shared.lua's
+                -- _koboVirtualPath) are skipped: lfs.attributes cannot resolve
+                -- them, and there is no exported real-path lookup to reverse the
+                -- mapping here, so a real-file check would false-negative every
+                -- kepub on Kobo devices instead of only catching deleted books.
+                local function _existsOrVirtual(fp)
+                    if fp:match("^KOBO_VIRTUAL://") then return true end
+                    return lfs.attributes(fp, "mode") == "file"
                 end
-                stale.recent_fps = kept
+                if stale.current_fp and not _existsOrVirtual(stale.current_fp) then
+                    stale.current_fp = nil
+                end
+                if stale.recent_fps then
+                    local kept = {}
+                    for _, fp in ipairs(stale.recent_fps) do
+                        if _existsOrVirtual(fp) then
+                            kept[#kept + 1] = fp
+                        end
+                    end
+                    stale.recent_fps = kept
+                end
             end
+            self._cached_books_state = stale or { current_fp = nil, recent_fps = {}, prefetched_data = {} }
+            need_async = true
         end
-        self._cached_books_state = stale or { current_fp = nil, recent_fps = {}, prefetched_data = {} }
-        need_async = true
     end
 
     if self._navbar_container then
@@ -3515,7 +3586,12 @@ function ScreenWidget:onShow()
         self._navbar_inner = overlap
         _deferredFreeOldTree(old)
 
-        if need_async then
+        -- Only the ordinary cold-open enters deferred-stats mode. On the
+        -- app-cold-boot pass, _defer_stats stays falsy so _buildCtx() takes
+        -- its live branch below: opens the DB connection, calls SP.get()
+        -- for real, and computes status_counts / book stats synchronously —
+        -- exactly what the async correction tick would do, just inline.
+        if need_async and not is_app_cold_boot then
             self._defer_stats = true
         end
         
@@ -3526,7 +3602,7 @@ function ScreenWidget:onShow()
             ClockMod.scheduleRefresh(self)
         end
         
-        if need_async then
+        if need_async and not is_app_cold_boot then
             self._defer_stats = false
             self:_refresh(false)
         end

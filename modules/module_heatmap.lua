@@ -114,6 +114,16 @@ local function computeLayout(w, ctx)
     local raw_scale = math.min(1.0, Config.getModuleScaleRaw("heatmap", pfx))
     local scale     = raw_scale * lf
 
+    -- Frame border / solid background — same optional box every other
+    -- homescreen module offers (module_currently.lua, module_reading_goals.lua):
+    -- a border, a filled background, or both, each adding PAD to every edge.
+    -- Computed up front so avail_w below already reserves room for the
+    -- border, keeping the box's real outer width equal to `w`.
+    local box = SUIStyle.computeBox(
+        SUISettings:isTrue(pfx .. "heatmap_show_frame"),
+        SUISettings:isTrue(pfx .. "heatmap_solid_bg"),
+        scale, PAD)
+
     -- Layout font: only used to size the weekday-label column and, from
     -- that, the grid's own cell size (below) — kept at its original tiny,
     -- scale-linked size so the calendar cells stay the size they've
@@ -127,7 +137,7 @@ local function computeLayout(w, ctx)
     -- module's own Scale setting, so card and popup read the same.
     local display_fonts = { small = Font:getFace(SUIStyle.FACE_REGULAR, UI.SZ(SUIStyle.FS_CAPTION)) }
 
-    local avail_w = w - PAD * 2
+    local avail_w = w - box.inset_h
     local start_t, end_t = HD.getWeekBlockRange(weeks, 0)
 
     local mode = getMode(pfx)
@@ -174,11 +184,14 @@ local function computeLayout(w, ctx)
                  + 7 * cell_size + 6 * Screen:scaleBySize(2)
                  + gap_v + legend_h
 
+    body_h = body_h + box.inset_v
+
     return {
         pfx = pfx, weeks = weeks, mode = mode, fonts = display_fonts,
         avail_w = avail_w, start_t = start_t, end_t = end_t,
         cell_size = cell_size, body_h = body_h, gap_v = gap_v,
         legend_h = legend_h, legend_cell = legend_cell, show_legend = show_legend,
+        box = box,
     }
 end
 
@@ -241,14 +254,15 @@ function M.build(w, ctx)
         table.insert(body, CenterContainer:new{ dimen = Geom:new{ w = L.avail_w, h = legend:getSize().h }, legend })
     end
 
-    local frame = CenterContainer:new{
-        dimen = Geom:new{ w = w, h = body:getSize().h },
-        body,
-    }
+    -- Content sits at avail_w (w minus the box's own insets); the box below
+    -- supplies the left/right gutter via padding rather than by centering
+    -- inside a full-w wrapper, so its real outer width — content + 2*padding
+    -- + 2*bordersize — lands on exactly `w`, matching the section label.
+    local box = SUIStyle.wrapBox(body, L.box)
 
     local tappable = InputContainer:new{
-        dimen = Geom:new{ w = w, h = body:getSize().h },
-        [1]   = frame,
+        dimen = Geom:new{ w = w, h = box:getSize().h },
+        [1]   = box,
     }
     tappable.ges_events = {
         TapHeatmap = { GestureRange:new{ ges = "tap", range = function() return tappable.dimen end } },
@@ -344,6 +358,24 @@ local function _makeAppearanceItem(ctx_menu)
                 keep_menu_open = true,
                 callback       = function()
                     setShowLegend(pfx, not getShowLegend(pfx))
+                    ctx_menu.refresh()
+                end,
+            },
+            {
+                text           = _lc("Frame"),
+                checked_func   = function() return SUISettings:isTrue(pfx .. "heatmap_show_frame") end,
+                keep_menu_open = true,
+                callback       = function()
+                    SUISettings:saveSetting(pfx .. "heatmap_show_frame", not SUISettings:isTrue(pfx .. "heatmap_show_frame"))
+                    ctx_menu.refresh()
+                end,
+            },
+            {
+                text           = _lc("Solid Background"),
+                checked_func   = function() return SUISettings:isTrue(pfx .. "heatmap_solid_bg") end,
+                keep_menu_open = true,
+                callback       = function()
+                    SUISettings:saveSetting(pfx .. "heatmap_solid_bg", not SUISettings:isTrue(pfx .. "heatmap_solid_bg"))
                     ctx_menu.refresh()
                 end,
             },

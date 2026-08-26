@@ -52,12 +52,15 @@
 --   Icon packs: SUIStyle.getPacksDir() / .listPacks() / .installZip(path) /
 --               .applyPack(path)
 
-local SUISettings = require("infra/sui_store")
-local logger      = require("logger")
-local _           = require("infra/sui_i18n").translate
-local Blitbuffer  = require("ffi/blitbuffer")
-local Device      = require("device")
-local Screen      = Device.screen
+local SUISettings     = require("infra/sui_store")
+local logger          = require("logger")
+local _               = require("infra/sui_i18n").translate
+local Blitbuffer      = require("ffi/blitbuffer")
+local Device          = require("device")
+local FrameContainer   = require("ui/widget/container/framecontainer")
+local HorizontalGroup  = require("ui/widget/horizontalgroup")
+local HorizontalSpan   = require("ui/widget/horizontalspan")
+local Screen          = Device.screen
 
 -- ---------------------------------------------------------------------------
 -- Slot catalogue
@@ -1402,6 +1405,70 @@ M.COLOR = {
 
 -- Global border thickness for all frames and elements
 M.BORDER_SZ   = math.max(1, Screen:scaleBySize(1))
+
+-- ---------------------------------------------------------------------------
+-- computeBox(show_frame, solid_bg, scale, pad) — style and sizing for the
+-- optional Frame/Background box offered by every homescreen card that has
+-- one.
+--
+-- `outer_margin` keeps the box's own visible edge — border and/or solid
+-- background — aligned with sectionLabel's own left/right text inset
+-- (engines/sui_screen_engine.lua), instead of flush against the module's
+-- true outer edges. `inner_pad` is the breathing room between that edge
+-- and the content, reserved only while the box is actually shown; with no
+-- frame and no background there's nothing to leave room between, so
+-- content sits directly at outer_margin, matching the label above it.
+--
+-- inset_h always reserves outer_margin on both sides — the label's own
+-- inset is unconditional too, so this keeps content aligned with it
+-- whether or not the box is currently shown. inset_v has no outer_margin
+-- term: there's no label edge to align against vertically.
+-- ---------------------------------------------------------------------------
+function M.computeBox(show_frame, solid_bg, scale, pad)
+    local has_box   = show_frame or solid_bg
+    local border_sz = show_frame and M.BORDER_SZ or 0
+    local inner_pad = has_box and pad or 0
+    return {
+        has_box      = has_box,
+        border_sz    = border_sz,
+        radius       = has_box and math.floor(Screen:scaleBySize(12) * (scale or 1)) or 0,
+        border_color = M.COLOR.gray,
+        bg_color     = solid_bg and M.COLOR.surface or nil,
+        outer_margin = pad,
+        inner_pad    = inner_pad,
+        inset_h = pad * 2 + inner_pad * 2 + border_sz * 2,
+        inset_v = inner_pad * 2 + border_sz * 2,
+    }
+end
+
+-- ---------------------------------------------------------------------------
+-- wrapBox(content, box) — wraps `content` (already sized to fit within
+-- box.inset_h/inset_v less than the module's own w) in the optional Frame/
+-- Background box computed by computeBox(). The box's own edge sits inset
+-- by box.outer_margin on the left and right, so it lines up with
+-- sectionLabel's text above it instead of extending past it to the
+-- column's true edges. The returned widget's total width is exactly the
+-- w originally passed to computeBox.
+-- ---------------------------------------------------------------------------
+function M.wrapBox(content, box)
+    local inner = FrameContainer:new{
+        bordersize     = box.border_sz,
+        radius         = box.radius,
+        color          = box.border_color,
+        background     = box.bg_color,
+        padding        = box.inner_pad,
+        padding_top    = box.has_box and box.inner_pad or 0,
+        padding_bottom = box.has_box and box.inner_pad or 0,
+        content,
+    }
+    if box.outer_margin <= 0 then return inner end
+    return HorizontalGroup:new{
+        align = "top",
+        HorizontalSpan:new{ width = box.outer_margin },
+        inner,
+        HorizontalSpan:new{ width = box.outer_margin },
+    }
+end
 
 -- Thinner border and specific color for library badges and book covers
 M.BADGE_BORDER_SZ  = require("ui/size").border.thin

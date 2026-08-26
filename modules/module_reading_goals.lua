@@ -554,7 +554,17 @@ function M.build(w, ctx)
     if not show_ann and not show_mon and not show_day then return nil end
 
     local ok, res = pcall(function()
-    local inner_w = w - PAD * 2
+    local scale = Config.getModuleScale("reading_goals", ctx.pfx) * (ctx.landscape_factor or 1)
+    -- Frame border / solid background — same optional box every other
+    -- homescreen module offers (module_currently.lua, module_heatmap.lua):
+    -- a border, a filled background, or both, each adding PAD to every edge.
+    -- Computed up front so inner_w below already reserves room for the
+    -- border, keeping the box's real outer width equal to `w`.
+    local box = SUIStyle.computeBox(
+        SUISettings:isTrue(ctx.pfx .. "reading_goals_show_frame"),
+        SUISettings:isTrue(ctx.pfx .. "reading_goals_solid_bg"),
+        scale, PAD)
+    local inner_w = w - box.inset_h
     -- Stats pre-fetched by StatsProvider and passed via ctx.stats.
     local sp         = ctx.stats or {}
     local books_read = sp.books_year  or 0
@@ -568,8 +578,6 @@ function M.build(w, ctx)
     local rg_update_funcs = {}
     local CLR_TEXT_BLK_EFF = SUIStyle.COLOR.text_primary
     local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
-
-    local scale = Config.getModuleScale("reading_goals", ctx.pfx) * (ctx.landscape_factor or 1)
 
     if compact then
         -- scale already includes ctx.landscape_factor.
@@ -698,28 +706,7 @@ function M.build(w, ctx)
         end
     end
 
-    local show_frame = SUISettings:isTrue(ctx.pfx .. "reading_goals_show_frame")
-    local solid_bg   = SUISettings:isTrue(ctx.pfx .. "reading_goals_solid_bg")
-    local has_box    = show_frame or solid_bg
-    local border_sz  = show_frame and SUIStyle.BORDER_SZ or 0
-    local radius     = has_box and math.floor(Screen:scaleBySize(12) * scale) or 0
-    local border_color = SUIStyle.COLOR.gray
-    local bg_color = nil
-    if solid_bg then
-        bg_color = SUIStyle.COLOR.surface
-    end
-
-    local final_frame = FrameContainer:new{
-        bordersize    = border_sz,
-        radius        = radius,
-        color         = border_color,
-        background    = bg_color,
-        padding       = 0,
-        padding_left  = PAD, padding_right = PAD,
-        padding_top   = has_box and PAD or 0,
-        padding_bottom= has_box and PAD or 0,
-        VerticalGroup:new(rows_children),
-    }
+    local final_frame = SUIStyle.wrapBox(VerticalGroup:new(rows_children), box)
     final_frame._rg_update_funcs = rg_update_funcs
     return final_frame
     end)
@@ -778,6 +765,12 @@ function M.getHeight(_ctx)
     end
     if SUISettings:isTrue(pfx .. "reading_goals_show_frame") or SUISettings:isTrue(pfx .. "reading_goals_solid_bg") then
         h = h + PAD * 2
+    end
+    -- Mirrors build()'s wrapped FrameContainer: bordersize is drawn outside
+    -- the padding, so the border itself (not just the padding) grows the
+    -- real widget by border_sz * 2 pixels whenever the frame is on.
+    if SUISettings:isTrue(pfx .. "reading_goals_show_frame") then
+        h = h + SUIStyle.BORDER_SZ * 2
     end
     return label_h + h
 end
