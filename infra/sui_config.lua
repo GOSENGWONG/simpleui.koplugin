@@ -765,6 +765,33 @@ function M.setThumbScale(pct, mod_id, pfx)
     SUISettings:set(_thumbKey(mod_id, pfx), _clamp(pct))
 end
 
+-- Element Scale — like Thumb Scale, but keyed by an extra `elem` name, for
+-- modules with more than one independently-sizeable sub-element (e.g. the
+-- clock module's clock face, date text, and battery text).
+local ELEM_SCALE_KEY_SUFFIX = "_elem_scale"
+
+local function _elemKey(mod_id, elem, pfx)
+    return (pfx or "simpleui_hs_") .. (mod_id or "") .. "_" .. (elem or "") .. ELEM_SCALE_KEY_SUFFIX
+end
+
+function M.getElemScale(mod_id, elem, pfx)
+    local v = SUISettings:get(_elemKey(mod_id, elem, pfx))
+    local n = tonumber(v)
+    if not n then return 1.0 end
+    return _clamp(n) / 100
+end
+
+function M.getElemScalePct(mod_id, elem, pfx)
+    local v = SUISettings:get(_elemKey(mod_id, elem, pfx))
+    local n = tonumber(v)
+    if not n then return SCALE_DEF end
+    return _clamp(n)
+end
+
+function M.setElemScale(pct, mod_id, elem, pfx)
+    SUISettings:set(_elemKey(mod_id, elem, pfx), _clamp(pct))
+end
+
 -- Label Scale
 function M.getLabelScale()
     local v = SUISettings:get(LABEL_SCALE_KEY)
@@ -831,6 +858,11 @@ function M.resetAllScales(pfx, pfx_qa)
             SUISettings:del((pfx or "simpleui_hs_") .. mod.id .. "_scale")
             SUISettings:del((pfx or "simpleui_hs_") .. mod.id .. THUMB_SCALE_KEY_SUFFIX)
             SUISettings:del(_itemLabelKey(mod.id, pfx))
+            if mod.id == "clock" then
+                SUISettings:del((pfx or "simpleui_hs_") .. "clock_clock_elem_scale")
+                SUISettings:del((pfx or "simpleui_hs_") .. "clock_date_elem_scale")
+                SUISettings:del((pfx or "simpleui_hs_") .. "clock_batt_elem_scale")
+            end
         end
     end
     if pfx_qa then

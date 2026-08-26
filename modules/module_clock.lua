@@ -552,18 +552,23 @@ local function build(w, pfx, vspan_pool, landscape_factor)
     -- twice — same convention as GridRenderer.build's `cs`. date/batt below
     -- keep the lf-scaled `scale`, since they're fixed-pixel elements from
     -- the shared type scale, not width-derived.
-    local raw_scale = Config.getModuleScaleRaw("clock", pfx)
-    local clock_w   = math.floor(inner_w * _CLOCK_W_PCT * raw_scale)
-    local clock_fs  = math.max(_CLOCK_FS_MIN, math.floor(inner_w * _CLOCK_FS_PCT * raw_scale))
-    local word_fs   = math.max(_WORD_FS_MIN,  math.floor(inner_w * _WORD_FS_PCT  * raw_scale))
+    local raw_scale  = Config.getModuleScaleRaw("clock", pfx)
+    local clock_elem = Config.getElemScale("clock", "clock", pfx)
+    local date_elem  = Config.getElemScale("clock", "date",  pfx)
+    local batt_elem  = Config.getElemScale("clock", "batt",  pfx)
 
-    -- Scale remaining dimensions from base values (fixed-pixel, lf-scaled).
-    local date_h        = math.max(8,  math.floor(_BASE_DATE_H    * scale))
+    local clock_w   = math.floor(inner_w * _CLOCK_W_PCT * raw_scale * clock_elem)
+    local clock_fs  = math.max(_CLOCK_FS_MIN, math.floor(inner_w * _CLOCK_FS_PCT * raw_scale * clock_elem))
+    local word_fs   = math.max(_WORD_FS_MIN,  math.floor(inner_w * _WORD_FS_PCT  * raw_scale * clock_elem))
+
+    -- Scale remaining dimensions from base values (fixed-pixel, lf-scaled),
+    -- each further scaled by its own element size on top of the module scale.
+    local date_h        = math.max(8,  math.floor(_BASE_DATE_H    * scale * date_elem))
     local date_gap      = math.max(0,  math.floor(_BASE_DATE_GAP  * scale * getDateGapPct(pfx) / 100))
     local batt_gap      = math.max(0,  math.floor(_BASE_BATT_GAP  * scale * getBattGapPct(pfx) / 100))
-    local date_fs       = math.max(8,  math.floor(_BASE_DATE_FS   * scale))
-    local batt_fs       = math.max(7,  math.floor(_BASE_BATT_FS   * scale))
-    local batt_h        = math.max(7,  math.floor(_BASE_BATT_H    * scale))
+    local date_fs       = math.max(8,  math.floor(_BASE_DATE_FS   * scale * date_elem))
+    local batt_fs       = math.max(7,  math.floor(_BASE_BATT_FS   * scale * batt_elem))
+    local batt_h        = math.max(7,  math.floor(_BASE_BATT_H    * scale * batt_elem))
 
     local bot_pad_extra = math.floor(_BASE_BOT_PAD_EXTRA * scale)
 
@@ -872,13 +877,16 @@ function M.getHeight(ctx)
     -- column-width estimate, not _REF_INNER_W above — that constant already
     -- has PAD*2 subtracted out, for calibrating the _*_PCT constants).
     local raw_scale        = Config.getModuleScaleRaw("clock", ctx.pfx)
+    local clock_elem        = Config.getElemScale("clock", "clock", ctx.pfx)
+    local date_elem         = Config.getElemScale("clock", "date",  ctx.pfx)
+    local batt_elem         = Config.getElemScale("clock", "batt",  ctx.pfx)
     local w_estimate        = ctx.col_w or ctx.inner_w or (Screen:getWidth() - UI.SIDE_PAD * 2)
     local inner_w_estimate  = w_estimate - PAD * 2
-    local clock_w   = math.floor(inner_w_estimate * _CLOCK_W_PCT * raw_scale)
-    local date_h    = math.max(8, math.floor(_BASE_DATE_H   * scale))
+    local clock_w   = math.floor(inner_w_estimate * _CLOCK_W_PCT * raw_scale * clock_elem)
+    local date_h    = math.max(8, math.floor(_BASE_DATE_H   * scale * date_elem))
     local date_gap  = math.max(0, math.floor(_BASE_DATE_GAP * scale * getDateGapPct(ctx.pfx) / 100))
     local batt_gap  = math.max(0, math.floor(_BASE_BATT_GAP * scale * getBattGapPct(ctx.pfx) / 100))
-    local batt_h    = math.max(7, math.floor(_BASE_BATT_H   * scale))
+    local batt_h    = math.max(7, math.floor(_BASE_BATT_H   * scale * batt_elem))
 
     local h_base      = PAD * 2 + PAD2
     local show_clock  = isClockEnabled(ctx.pfx)
@@ -910,20 +918,6 @@ function M.getHeight(ctx)
 end
 
 
-local function _makeScaleItem(ctx_menu)
-    local pfx = ctx_menu.pfx
-    local _lc = ctx_menu._
-    return Config.makeScaleItem({
-        text_func    = function() return _lc("Scale") end,
-        enabled_func = function() return not Config.isScaleLinked() end,
-        title        = _lc("Scale"),
-        info         = _lc("Scale for this module.\n100% is the default size."),
-        get          = function() return Config.getModuleScalePct("clock", pfx) end,
-        set          = function(v) Config.setModuleScale(v, "clock", pfx) end,
-        refresh      = ctx_menu.refresh,
-    })
-end
-
 function M.getMenuItems(ctx_menu)
     local pfx     = ctx_menu.pfx
     local refresh = ctx_menu.refresh
@@ -933,6 +927,47 @@ function M.getMenuItems(ctx_menu)
         SUISettings:saveSetting(pfx .. key, not current)
         refresh()
     end
+
+    -- Scale + per-element Size are grouped into a single "Size" submenu,
+    -- mirroring sui_book_grid.lua's size_group pattern.
+    local size_group = {}
+
+    size_group[#size_group + 1] = Config.makeScaleItem{
+        text_func    = function() return _lc("Scale") end,
+        enabled_func = function() return not Config.isScaleLinked() end,
+        title        = _lc("Scale"),
+        info         = _lc("Scale for this module.\n100% is the default size."),
+        get          = function() return Config.getModuleScalePct("clock", pfx) end,
+        set          = function(v) Config.setModuleScale(v, "clock", pfx) end,
+        refresh      = refresh,
+    }
+    size_group[#size_group + 1] = Config.makeScaleItem{
+        text_func    = function() return _lc("Clock Size") end,
+        enabled_func = function() return isClockEnabled(pfx) end,
+        title        = _lc("Clock Size"),
+        info         = _lc("Scale for the clock face only.\n100% is the default size."),
+        get          = function() return Config.getElemScalePct("clock", "clock", pfx) end,
+        set          = function(v) Config.setElemScale(v, "clock", "clock", pfx) end,
+        refresh      = refresh,
+    }
+    size_group[#size_group + 1] = Config.makeScaleItem{
+        text_func    = function() return _lc("Date Size") end,
+        enabled_func = function() return isDateEnabled(pfx) end,
+        title        = _lc("Date Size"),
+        info         = _lc("Scale for the date text only.\n100% is the default size."),
+        get          = function() return Config.getElemScalePct("clock", "date", pfx) end,
+        set          = function(v) Config.setElemScale(v, "clock", "date", pfx) end,
+        refresh      = refresh,
+    }
+    size_group[#size_group + 1] = Config.makeScaleItem{
+        text_func    = function() return _lc("Battery Size") end,
+        enabled_func = function() return isBattEnabled(pfx) end,
+        title        = _lc("Battery Size"),
+        info         = _lc("Scale for the battery text only.\n100% is the default size."),
+        get          = function() return Config.getElemScalePct("clock", "batt", pfx) end,
+        set          = function(v) Config.setElemScale(v, "clock", "batt", pfx) end,
+        refresh      = refresh,
+    }
 
     return {
         {
@@ -958,7 +993,10 @@ function M.getMenuItems(ctx_menu)
                 },
             },
         },
-        _makeScaleItem(ctx_menu),
+        {
+            text_func      = function() return _lc("Size") end,
+            sub_item_table = size_group,
+        },
         {
             -- Clock Style submenu: Digital / Word / Analogue
             text_func  = function() return _lc("Clock Style") end,
