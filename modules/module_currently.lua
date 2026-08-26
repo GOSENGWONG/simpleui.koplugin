@@ -865,9 +865,11 @@ function M.build(w, ctx)
             if not _compact_stats_rendered then
                 _compact_stats_rendered = true
 
-                local stats_row = HorizontalGroup:new{ align = "center" }
-                
-                local function _update(nb, nd)
+                -- Rendered as a single TextWidget (not one widget per part +
+                -- separators) so the whole row can be capped to `tw` and
+                -- truncated with an ellipsis instead of stretching the
+                -- layout when the joined parts run long.
+                local function _composeText(nb, nd)
                     local secs_left
                     local avg_t = (nb and nb.avg_time and nb.avg_time > 0) and nb.avg_time or nd.avg_time
                     if avg_t and avg_t > 0 and nd.pages and nd.pages > 0 then
@@ -878,44 +880,43 @@ function M.build(w, ctx)
                     local parts = {}
                     for _i, e in ipairs(elem_order) do
                         if e == "book_time" and show.time and nb and nb.total_secs > 0 then
-                            parts[#parts+1] = { text = string.format(_("%s read"), fmtTime(nb.total_secs)), placeholder = false }
+                            parts[#parts+1] = string.format(_("%s read"), fmtTime(nb.total_secs))
                         elseif e == "book_remaining" and show.remain and secs_left then
-                            parts[#parts+1] = { text = string.format(_("%s left"), fmtTime(secs_left)), placeholder = false }
+                            parts[#parts+1] = string.format(_("%s left"), fmtTime(secs_left))
                         elseif e == "book_days" and show.days and nb and nb.days > 0 then
-                            parts[#parts+1] = { text = string.format(N_("%d day of reading", "%d days of reading", nb.days), nb.days), placeholder = false }
+                            parts[#parts+1] = string.format(N_("%d day of reading", "%d days of reading", nb.days), nb.days)
                         end
                     end
 
-                    if #parts == 0 then
-                        local any_active = (show.days or show.time or show.remain)
-                        if any_active then
-                            parts[#parts+1] = { text = string.format(_("%s read"), "—"), placeholder = true }
-                        end
+                    if #parts > 0 then
+                        return table.concat(parts, " · "), CLR_TEXT_SUB_EFF, true
                     end
 
-                    for i = #stats_row, 1, -1 do stats_row[i] = nil end
-                    
-                    for i, part in ipairs(parts) do
-                        if i > 1 then
-                            stats_row[#stats_row+1] = UI.makeColoredText{
-                                text    = " · ",
-                                face    = face_s,
-                                fgcolor = CLR_TEXT_SUB_EFF,
-                            }
-                        end
-                        stats_row[#stats_row+1] = UI.makeColoredText{
-                            text    = part.text,
-                            face    = face_s,
-                            fgcolor = part.placeholder and CLR_PH_EFF or CLR_TEXT_SUB_EFF,
-                        }
+                    local any_active = (show.days or show.time or show.remain)
+                    if any_active then
+                        return string.format(_("%s read"), "—"), CLR_PH_EFF, true
                     end
+                    return "", CLR_PH_EFF, false
                 end
 
-                _update(bstats, bd)
+                local text0, fg0, has_content0 = _composeText(bstats, bd)
+                local stats_w = UI.makeColoredText{
+                    text                    = text0,
+                    face                    = face_s,
+                    fgcolor                 = fg0,
+                    max_width               = tw,
+                    truncate_with_ellipsis  = true,
+                }
+
+                local function _update(nb, nd)
+                    local text, fg = _composeText(nb, nd)
+                    _updateColoredText(stats_w, text, fg)
+                end
                 table.insert(_cr_update_funcs, _update)
-                if #stats_row > 0 then
+
+                if has_content0 then
                     gap_before(pct_gap)
-                    meta[#meta+1] = stats_row
+                    meta[#meta+1] = stats_w
                     meta_has_content = true
                 end
             end
