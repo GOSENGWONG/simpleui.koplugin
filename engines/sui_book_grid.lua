@@ -1133,6 +1133,11 @@ function GridRenderer.build(w, ctx, opts)
     end
 
     local result = SUIStyle.wrapBox(content, box)
+    -- Seed dimen so paintTo can fill absolute x/y in place. Needed for
+    -- swipe hit-testing and partial refreshes when this widget is the
+    -- direct body child (no menu wrapper).
+    local sz = result:getSize()
+    result.dimen = Geom:new{ w = sz.w, h = sz.h }
     result._cover_slots = cover_slots
     -- Snapshot for GridRenderer.updateStats (below): the exact file list
     -- this widget was built with (already sliced to the current page), the

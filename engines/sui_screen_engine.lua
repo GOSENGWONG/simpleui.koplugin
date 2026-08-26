@@ -1117,9 +1117,21 @@ function ScreenWidget:init()
                     end
                     for mod_id, slot in pairs(self._book_mod_slots) do
                         if on_current_page[mod_id] then
-                            local widget = slot.widget
-                            if widget and widget.dimen and ges.pos:intersectWith(widget.dimen) then
-                                local sw = _findSwipeWidget(widget, 6)
+                            -- Hit-test against the layout wrapper when present: the raw
+                            -- build() result sits inside wrapBox (FrameContainer /
+                            -- HorizontalGroup for the module frame & background) and
+                            -- may not carry absolute screen dimen. The pooled wrapper
+                            -- always does — it is what the body lays out and paints.
+                            local hit_dimen
+                            if slot.has_menu and self._wrapper_pool then
+                                local wrap = self._wrapper_pool[mod_id]
+                                hit_dimen = wrap and wrap.dimen
+                            end
+                            if not hit_dimen then
+                                hit_dimen = slot.widget and slot.widget.dimen
+                            end
+                            if hit_dimen and ges.pos:intersectWith(hit_dimen) then
+                                local sw = _findSwipeWidget(slot.widget, 8)
                                 if sw and sw:onSwipe(nil, ges) then
                                     return true
                                 end
@@ -2561,7 +2573,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                         mod      = mod,
                         widget   = widget,
                         parent   = col_body,
-                        index    = #col_body + 1,
+                        index    = #col_body,
                         col_w    = col_w,
                         has_menu = has_menu,
                     }
@@ -2688,7 +2700,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                         mod      = mod,
                         widget   = widget,
                         parent   = body,
-                        index    = #body + 1,
+                        index    = #body,
                         col_w    = inner_w,
                         has_menu = has_menu,
                     }
