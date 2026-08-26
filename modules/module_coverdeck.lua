@@ -123,6 +123,9 @@ local MAIN_ORDER_KEY        = "coverdeck_main_order"      -- pfx .. this
 -- for the same badge_key ("progress").
 local SETTING_SHOW_PROGRESS_BADGE  = "coverdeck_show_progress_badge"   -- pfx .. this; default OFF
 local SETTING_PROGRESS_BADGE_COLOR = "coverdeck_progress_badge_color"  -- pfx .. this; nil|"dark"|"light"
+-- When progress badge is on: also paint it on right-hand peeks (nil/true)
+-- or only on the centre cover (false). Default on.
+local SETTING_PROGRESS_BADGE_ON_PEEKS = "coverdeck_progress_badge_on_peeks"
 
 -- Source values of the form COLLECTION_PREFIX .. collection_name select a
 -- user collection as the book source.
@@ -165,6 +168,12 @@ end
 -- default on).
 local function showProgressBadge(pfx)
     return SUISettings:readSetting(pfx .. SETTING_SHOW_PROGRESS_BADGE) == true
+end
+
+-- Right-hand peeks also show the progress badge (default on). Only
+-- meaningful when showProgressBadge is on.
+local function showProgressBadgeOnPeeks(pfx)
+    return SUISettings:nilOrTrue(pfx .. SETTING_PROGRESS_BADGE_ON_PEEKS)
 end
 
 -- nil ("Follow Library") / "dark" / "light" — mirrors
@@ -325,7 +334,12 @@ end
 -- status worth showing (in progress, complete, or abandoned). Returns
 -- `cover_widget` unchanged otherwise — same "not started" convention as
 -- GridRenderer.applyBadges.
-local function applyProgressBadge(cover_widget, bd, cw, ch, pfx)
+-- ref_w/ref_h (optional): centre-cover size. When set (right-hand peeks),
+-- badge edge and right inset follow the full-cover formula scaled by
+-- ch/ref_h — the same height ratio the peek cover uses vs the centre —
+-- so size and margin stay visually consistent instead of shrinking with
+-- the narrow crop width.
+local function applyProgressBadge(cover_widget, bd, cw, ch, pfx, ref_w, ref_h)
     local has_progress = (bd.percent or 0) > 0 or bd.status == "complete" or bd.status == "abandoned"
     if not has_progress then return cover_widget end
 
@@ -338,16 +352,25 @@ local function applyProgressBadge(cover_widget, bd, cw, ch, pfx)
         or "dark"
     local dark = color == "dark"
 
-    local cell_min    = math.min(cw, ch)
-    local edge_margin = math.max(1, math.floor(cell_min * 0.08))
-    local eff_size    = math.max(8, math.floor(cell_min * 0.14))
+    local edge_margin, eff_size
+    if ref_h and ref_h > 0 and ref_w and ref_w > 0 then
+        local scale   = ch / ref_h
+        local ref_min = math.min(ref_w, ref_h)
+        edge_margin   = math.max(1, math.floor(ref_min * 0.08 * scale))
+        eff_size      = math.max(8, math.floor(ref_min * 0.14 * scale))
+    else
+        local cell_min = math.min(cw, ch)
+        edge_margin    = math.max(1, math.floor(cell_min * 0.08))
+        eff_size       = math.max(8, math.floor(cell_min * 0.14))
+    end
 
     local desc = CW.buildProgressBadgeDesc(eff_size, bd.status, bd.percent, SUIStyle.BADGE_BORDER_SZ, dark)
     local wg   = CW.buildProgressBadgeWidget(desc)
     if not wg then return cover_widget end
 
     -- Flush with the top edge, inset from the right — matches the corner
-    -- badges' placement convention in applyBadges.
+    -- badges' placement convention in applyBadges (and the scaled centre
+    -- margin when ref_w/ref_h are set).
     local sz = wg:getSize()
     wg.overlap_offset = { cw - sz.w - edge_margin, 0 }
 
@@ -695,7 +718,8 @@ function M.build(w, ctx)
     local show_progress   = vis.progress
     local show_stats      = vis.show_stats
     local stats_order     = vis.stats_order
-    local show_progress_badge = showProgressBadge(pfx)
+    local show_progress_badge         = showProgressBadge(pfx)
+    local show_progress_badge_on_peeks = showProgressBadgeOnPeeks(pfx)
 
     -- Carousel dimensions: center_w is a percentage of inner_w (see
     -- _CENTER_W_PCT above), scaled by cs (raw scale * thumb_scale) on top.
@@ -731,9 +755,6 @@ function M.build(w, ctx)
     local function buildCover(fp, cw, ch)
         local bd    = SH.getBookData(fp, ctx.prefetched and ctx.prefetched[fp])
         local cover = SH.getBookCover(fp, cw, ch) or SH.coverPlaceholder(bd.title, bd.authors, cw, ch)
-        -- Only the centre cover is large enough for the badge to read
-        -- cleanly — side/far slots are narrow crops meant to look like a
-        -- sliver of book spine, not a full cover.
         if show_progress_badge then
             cover = applyProgressBadge(cover, bd, cw, ch, pfx)
         end
@@ -742,6 +763,13 @@ function M.build(w, ctx)
     local function buildCroppedCover(fp, cw, ch, align)
         local bd    = SH.getBookData(fp, ctx.prefetched and ctx.prefetched[fp])
         local cover = SH.getCroppedBookCover(fp, cw, ch, align) or SH.coverPlaceholder(bd.title, bd.authors, cw, ch)
+        -- Right-hand peeks show the cover's right edge — where the progress
+        -- badge sits — so paint it there too when enabled (optional setting).
+        -- Left peeks crop the left edge (badge would be off-canvas).
+        -- Size/margin scale from centre by ch/center_h (side 0.85, far 0.75).
+        if show_progress_badge and show_progress_badge_on_peeks and align == "right" then
+            cover = applyProgressBadge(cover, bd, cw, ch, pfx, center_w, center_h)
+        end
         return cover
     end
 
@@ -755,7 +783,8 @@ function M.build(w, ctx)
         items[#items+1] = buildCroppedCover(fps[carouselIdx(curIdx, 2, count)], far_w, far_h, "right")
         items[#items].overlap_offset = { math.floor(centerX + half_cw + offset_far - far_w), yTopOf(centerY, far_h) }
         cover_slots[#cover_slots+1] = { fp = fps[carouselIdx(curIdx, 2, count)],  w = far_w,  h = far_h, kind = "crop", align = "right",
-                                        overlap_offset = items[#items].overlap_offset }
+                                        overlap_offset = items[#items].overlap_offset,
+                                        ref_w = center_w, ref_h = center_h }
     end
     if count >= 2 then
         items[#items+1] = buildCroppedCover(fps[carouselIdx(curIdx, -1, count)], side_w, side_h, "left")
@@ -767,7 +796,8 @@ function M.build(w, ctx)
         items[#items+1] = buildCroppedCover(fps[carouselIdx(curIdx, 1, count)], side_w, side_h, "right")
         items[#items].overlap_offset = { math.floor(centerX + half_cw + offset_near - side_w), yTopOf(centerY, side_h) }
         cover_slots[#cover_slots+1] = { fp = fps[carouselIdx(curIdx, 1, count)],  w = side_w, h = side_h, kind = "crop", align = "right",
-                                        overlap_offset = items[#items].overlap_offset }
+                                        overlap_offset = items[#items].overlap_offset,
+                                        ref_w = center_w, ref_h = center_h }
     end
     items[#items+1] = buildCover(fps[curIdx], center_w, center_h)
     items[#items].overlap_offset = { math.floor(centerX - half_cw), yTopOf(centerY, center_h) }
@@ -1048,10 +1078,12 @@ function M.build(w, ctx)
     return result
 end
 
-function M.updateCovers(widget, _ctx)
+function M.updateCovers(widget, ctx)
     if not widget or not widget._cover_slots then return true end
     local SH = getSH()
     if not SH then return true end
+    local pfx = (ctx and ctx.pfx) or ""
+    local show_badge = showProgressBadge(pfx)
     local all_done = true
     for _, slot in ipairs(widget._cover_slots) do
         -- Crop slots (side/far "peek" covers) carry their left/right
@@ -1061,6 +1093,16 @@ function M.updateCovers(widget, _ctx)
             and SH.getCroppedBookCover(slot.fp, slot.w, slot.h, slot.align)
             or SH.getBookCover(slot.fp, slot.w, slot.h)
         if new_cover then
+            -- Re-apply progress badge after a late cover load (build() already
+            -- did this for centre + right peeks; the poll would otherwise
+            -- strip it).
+            local on_peeks = showProgressBadgeOnPeeks(pfx)
+            local apply = show_badge and (slot.kind ~= "crop"
+                or (on_peeks and slot.align == "right"))
+            if apply then
+                local bd = SH.getBookData(slot.fp, ctx and ctx.prefetched and ctx.prefetched[slot.fp])
+                new_cover = applyProgressBadge(new_cover, bd, slot.w, slot.h, pfx, slot.ref_w, slot.ref_h)
+            end
             -- Use the overlap_offset recorded at build() time — the current
             -- widget at slot.idx may be a placeholder with no overlap_offset.
             new_cover.overlap_offset = slot.overlap_offset
@@ -1587,6 +1629,17 @@ function M.getMenuItems(ctx_menu)
                 keep_menu_open = true,
                 callback       = function()
                     SUISettings:saveSetting(pfx .. SETTING_SHOW_PROGRESS_BADGE, not showProgressBadge(pfx))
+                    refresh()
+                end,
+            },
+            {
+                text           = _lc("On side covers too"),
+                enabled_func   = function() return showProgressBadge(pfx) end,
+                checked_func   = function() return showProgressBadgeOnPeeks(pfx) end,
+                keep_menu_open = true,
+                callback       = function()
+                    SUISettings:saveSetting(pfx .. SETTING_PROGRESS_BADGE_ON_PEEKS,
+                        not showProgressBadgeOnPeeks(pfx))
                     refresh()
                 end,
             },
