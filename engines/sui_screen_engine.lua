@@ -866,9 +866,12 @@ function ScreenWidget:init()
     local sh = Screen:getHeight()
     self.dimen = Geom:new{ w = sw, h = sh }
 
-    local _bar_y = sh - Bottombar.TOTAL_H()
+    -- Computed at hit-test time so a soft-parked instance raised after an
+    -- orientation change still blocks the bar correctly (init-time bar_y
+    -- would stay frozen at the pre-reader height).
     local function _in_bar(ges)
-        return ges and ges.pos and ges.pos.y >= _bar_y
+        if not (ges and ges.pos) then return false end
+        return ges.pos.y >= Screen:getHeight() - Bottombar.TOTAL_H()
     end
 
     self.ges_events = {

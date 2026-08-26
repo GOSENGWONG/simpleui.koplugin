@@ -3861,15 +3861,36 @@ _raiseParkedScreen = function(plugin, screen_module, prev_action)
         return false
     end
 
+    -- Orientation may have changed while parked under the reader
+    -- (onSetRotationMode ignores SetRotationMode while ReaderUI is open).
+    -- The parked tree then carries the wrong chrome: bottom bar offset,
+    -- topbar width, pagination footer, touch-zone ratios, self.dimen,
+    -- BlockNavbar _in_bar height, wrapper pools, etc. Patching each of
+    -- those is fragile — fall back to a cold reopen (warm-seeded via
+    -- onCloseWidget's intentional-close path) so init builds everything
+    -- for the current orientation. Soft-park still wins on the common
+    -- same-orientation reader round-trip.
+    local cur_w = Screen:getWidth()
+    if inst._layout_sw ~= nil and inst._layout_sw ~= cur_w then
+        logger.dbg("simpleui[rotation]: raiseParked layout stale — cold reopen",
+            "layout_sw=", inst._layout_sw, "cur_w=", cur_w)
+        inst._parked = nil
+        UI.invalidateDimCache()
+        local ok_wp, SUIWallpaper = pcall(require, "features/sui_wallpaper")
+        if ok_wp and SUIWallpaper and SUIWallpaper.freeCache then
+            SUIWallpaper.freeCache()
+        end
+        -- Seed page/books for the cold open; drop orientation-bound cfg.
+        inst._cfg_cache = nil
+        inst._navbar_closing_intentionally = true
+        UIManager:close(inst)
+        inst._navbar_closing_intentionally = nil
+        return false
+    end
+
     inst._parked = nil
 
-    -- Re-inject a fresh navbar. We must NOT call wrapWithNavbar here — it
-    -- would rebuild the whole OverlapGroup around the placeholder
-    -- FrameContainer ScreenWidget:init() installs, painting the screen
-    -- white. Rebuilding just the bottom-bar widget and slotting it into
-    -- the existing _navbar_container (which already holds the live
-    -- content at [1]) is the correct, cheaper equivalent — same as
-    -- _showHSCold uses for a fresh instance.
+    -- Same orientation: re-inject navbar and refresh data without a full rebuild.
     local tabs = Config.loadTabConfig()
     Bottombar.setActiveAndRefreshFM(plugin, "homescreen", tabs)
     _ensureGoalCallback(plugin)
@@ -3881,7 +3902,6 @@ _raiseParkedScreen = function(plugin, screen_module, prev_action)
     inst._on_qa_tap   = _makeQaTap(plugin)
     inst._on_goal_tap = plugin._goalTapCallback
 
-    -- Refresh stale data picked up while the reader was open.
     pcall(function() inst:_refresh(false) end)
 
     -- Scope the dirty region to the widget's own dimen instead of the full
