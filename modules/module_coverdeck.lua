@@ -1076,7 +1076,16 @@ function M.updateStats(widget, ctx)
     local actual_widget = (widget._cd_update_funcs) and widget
                           or (widget[1] and widget[1]._cd_update_funcs and widget[1])
     if not actual_widget or not actual_widget._cd_update_funcs then return false end
-    
+
+    -- Progress bar and progress badge are built into the widget tree at
+    -- build time and are not among _cd_update_funcs (the bar is a static
+    -- LineWidget/OverlapGroup; the badge is composited onto the centre
+    -- cover). Status/percent changes need a full rebuild — same contract
+    -- as GridRenderer.updateStats for progress_style "badge".
+    local pfx = (ctx and ctx.pfx) or ""
+    local vis = getVisibleElements(pfx, ctx and ctx.cfg and ctx.cfg.coverdeck)
+    if (vis and vis.progress) or showProgressBadge(pfx) then return false end
+
     local fp = actual_widget._center_fp
     if not fp then return false end
 

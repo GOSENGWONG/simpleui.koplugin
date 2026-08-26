@@ -2085,7 +2085,15 @@ function ScreenWidget:_showBookHoldDialog(fp, mod_id)
         -- what a module shows or how a cover looks (e.g. status badges),
         -- so re-render on close rather than trying to track exactly which
         -- action fired. This mirrors _navigateRefresh in module_coverdeck.lua.
-        refresh_fn = function() self_ref:_refreshImmediate(true) end,
+        refresh_fn = function()
+            -- Status change already invalidates the sidecar cache via
+            -- patchStatusButtons → _onStatusChanged. Drop the books prefetch
+            -- and ctx so the rebuild re-runs prefetchBooks() and picks up the
+            -- new percent/summary for Cover Deck + book-grid badges/bars.
+            self_ref._cached_books_state = nil
+            self_ref._ctx_cache          = nil
+            self_ref:_refreshImmediate(true)
+        end,
         -- "More by <Author>" (sui_browse_author, registered in main.lua)
         -- repaints FM.instance.file_chooser to the virtual author leaf, but
         -- the homescreen is what's actually on screen here, on top of FM —
@@ -3320,6 +3328,21 @@ function ScreenWidget:_refreshImmediate(keep_cache)
         -- sui_book_grid.lua for why that lives there instead of here.
         local ok_gr, GridRenderer = pcall(require, "engines/sui_book_grid")
         if ok_gr and GridRenderer then GridRenderer.clearRowCaches(self._ctx_cache) end
+        -- Hold-dialog actions (status, reset, ...) write the sidecar but
+        -- leave ctx.prefetched with the pre-action percent/summary. Clear
+        -- just those fields so the next build/getBookData re-reads them
+        -- from DocSettings without a full prefetchBooks (titles/covers/md5
+        -- stay cached). Progress badges on Cover Deck and book-grid modules
+        -- stay accurate after status changes on the homescreen.
+        local prefetched = self._ctx_cache.prefetched
+        if type(prefetched) == "table" then
+            for _, entry in pairs(prefetched) do
+                if type(entry) == "table" then
+                    entry.percent = nil
+                    entry.summary = nil
+                end
+            end
+        end
     end
     if not self._navbar_container then return end
     self:_updatePage(keep_cache or false)

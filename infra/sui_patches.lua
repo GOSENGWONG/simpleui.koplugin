@@ -3241,6 +3241,12 @@ local function _onStatusChanged(file)
     --    stale ctx.stats survives. We must also clear _ctx_cache so that the
     --    next _updatePage() call re-runs _buildCtx() and fetches fresh stats
     --    from the now-invalidated StatsProvider.
+    --
+    --    Also drop _cached_books_state: that table holds prefetched
+    --    percent/summary from the last prefetchBooks(). Clearing only
+    --    _ctx_cache still lets _buildCtx() reuse the stale prefetched_data,
+    --    so progress badges/bars on Cover Deck and book-grid modules keep
+    --    showing the pre-status values after a hold-dialog status change.
     local ok_hs, HS = pcall(require, "screens/sui_homescreen")
     if ok_hs and HS then
         -- Flag for the class-level check in onShow.
@@ -3249,10 +3255,12 @@ local function _onStatusChanged(file)
         -- open behind the FM/library dialog).
         local inst = HS._instance
         if inst then
-            inst._ctx_cache          = nil
-            inst._stats_need_refresh = true
+            inst._ctx_cache           = nil
+            inst._cached_books_state  = nil
+            inst._stats_need_refresh  = true
         end
     end
+
 end
 
 function M.patchStatusButtons(plugin)

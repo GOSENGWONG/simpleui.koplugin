@@ -572,6 +572,28 @@ function SH.pageCountFromFilename(filepath)
     return n and tonumber(n) or nil
 end
 
+-- Live percent/summary for a filepath. Prefers BookList's in-memory
+-- DocSettings (the object genStatusButtonsRow mutates on the hold dialog)
+-- so a keep_cache homescreen rebuild sees the new status without waiting
+-- for a disk re-open. Falls back to DocSettings.open on the sidecar file.
+local function _readLiveProgress(filepath)
+    local ok_bl, BookList = pcall(require, "ui/widget/booklist")
+    if ok_bl and BookList and BookList.getDocSettings then
+        local ok_ds, ds = pcall(BookList.getDocSettings, filepath)
+        if ok_ds and ds and ds.readSetting then
+            return ds:readSetting("percent_finished") or 0, ds:readSetting("summary")
+        end
+    end
+    local DS = getDocSettings()
+    if DS and lfs.attributes(filepath, "mode") == "file" then
+        local ok2, ds = pcall(DS.open, DS, filepath)
+        if ok2 and ds then
+            return ds:readSetting("percent_finished") or 0, ds:readSetting("summary")
+        end
+    end
+    return nil, nil
+end
+
 function SH.getBookData(filepath, prefetched)
     local meta = {}
     local percent, pages, md5, stat_pages, stat_total_time = 0, nil, nil, nil, nil
@@ -579,7 +601,10 @@ function SH.getBookData(filepath, prefetched)
 
     if prefetched then
         -- Fast path: use data already extracted by prefetchBooks.
-        percent         = prefetched.percent or 0
+        -- percent/summary may be nil when a keep_cache refresh cleared them
+        -- after a hold-dialog status change — re-read only those fields so
+        -- progress badges/bars stay current without a full prefetchBooks.
+        percent         = prefetched.percent
         pages           = prefetched.doc_pages
         md5             = prefetched.partial_md5_checksum
         stat_pages      = prefetched.stat_pages
@@ -587,6 +612,18 @@ function SH.getBookData(filepath, prefetched)
         meta.title      = prefetched.title
         meta.authors    = prefetched.authors
         summary         = prefetched.summary
+        if percent == nil or summary == nil then
+            local live_pct, live_sum = _readLiveProgress(filepath)
+            if percent == nil and live_pct ~= nil then
+                percent = live_pct
+                prefetched.percent = percent
+            end
+            if summary == nil and live_sum ~= nil then
+                summary = live_sum
+                prefetched.summary = summary
+            end
+        end
+        percent = percent or 0
         if type(summary) == "table" then status = summary.status end
     elseif prefetched ~= false then
         -- prefetched==nil means prefetchBooks was not called (e.g. direct call).
