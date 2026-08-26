@@ -2810,8 +2810,36 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
         UIManager:setDirty(self, "ui")
 
         if defer_async then
-            if self._refresh_scheduled then return end
+            if self._refresh_scheduled then
+                -- BUGFIX: a deferred refresh is already queued, and its
+                -- stats_only-ness was fixed at schedule time below — the
+                -- callback only ever runs once (gated on _refresh_scheduled)
+                -- and, until this fix, always acted on whatever stats_only
+                -- value its own caller had passed, ignoring anyone who
+                -- called in after it was queued. Two call sites can race
+                -- for this same slot on device resume (SimpleUIPlugin:onResume
+                -- in main.lua wants the full refresh; ScreenWidget:onResume
+                -- right below wants stats_only) — whichever call reaches
+                -- here first silently determined what the single pending
+                -- callback would do, so if the stats_only call scheduled
+                -- first, the full refresh's caller (this branch) just
+                -- returned and its row-cache clear, label-cache invalidation,
+                -- and book-module rebuild (all gated on `not stats_only`
+                -- below) never ran — the paginated book-grid modules (TBR,
+                -- Recent, ...) silently kept whatever page/file-list state
+                -- they had before the still-pending callback fired.
+                --
+                -- Upgrading the pending flag in place — only ever from true
+                -- to false, never the reverse — means the callback always
+                -- ends up doing at least as much work as the strongest
+                -- caller seen before it fires, regardless of arrival order.
+                if not stats_only then
+                    self._refresh_pending_stats_only = false
+                end
+                return
+            end
             self._refresh_scheduled = true
+            self._refresh_pending_stats_only = stats_only
             local token = {}
             self._pending_refresh_token = token
 
@@ -2819,6 +2847,9 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
                 if self._pending_refresh_token ~= token then return end
                 if _sget(self._id, "_instance") ~= self then return end
                 self._refresh_scheduled = false
+                -- Read live rather than the closed-over parameter: a later
+                -- caller may have upgraded this pending refresh (see above).
+                local stats_only = self._refresh_pending_stats_only
 
                 -- Open a DB connection if needed
                 if not self._db_conn and not self._db_sync_guard then
@@ -2994,6 +3025,17 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
                                     end
                                 end
                             end
+
+                            -- Keeps this module's "x/y" page indicator and
+                            -- chevrons in sync regardless of which branch
+                            -- above ran: an in-place updateStats can shift
+                            -- npages without the current page's own slice
+                            -- changing (see GridRenderer.updateStats), and a
+                            -- full rebuild here — unlike _refreshBookModSlot's
+                            -- swipe/chevron path — never touched the header
+                            -- widget on its own. Same pattern as
+                            -- _refreshBookModSlot; see _syncBookModLabel.
+                            self:_syncBookModLabel(id)
                         end
                     end
 
@@ -3123,6 +3165,39 @@ function ScreenWidget:_turnBookModPage(mod_id, delta)
     return true
 end
 
+-- ---------------------------------------------------------------------------
+-- _syncBookModLabel(mod_id) — surgical repaint of a paginated book module's
+-- section-title header: the "x/y" page indicator and its chevrons.
+--
+-- A book module's grid content and its header live in separate widgets
+-- (see _book_mod_slots vs _book_mod_label_slots) — updating the former never
+-- touches the latter. Every caller that changes a paginated module's content
+-- (a page turn, a background stats refresh, a status/collection change, ...)
+-- must therefore also call this afterwards, or the header keeps showing the
+-- page/npages — and, worse, the chevrons keep the enabled/disabled state —
+-- from before the change, potentially blocking access to a page that just
+-- became reachable.
+--
+-- Reads ctx fresh (via pageIndicatorFor/pageNavFor) rather than trusting the
+-- caller to know the current page/npages, so this is always safe to call
+-- speculatively: it's a no-op (no setDirty) when the recomputed label widget
+-- is identical to the one already mounted.
+-- ---------------------------------------------------------------------------
+function ScreenWidget:_syncBookModLabel(mod_id)
+    local label_slot = self._book_mod_label_slots and self._book_mod_label_slots[mod_id]
+    if not (label_slot and label_slot.parent and label_slot.mod.label) then return end
+    local new_label = sectionLabel(label_slot.mod.label, label_slot.col_w,
+        pageIndicatorFor(label_slot.mod, self._ctx_cache), pageNavFor(self, label_slot.mod, self._ctx_cache),
+        self._ctx_cache and self._ctx_cache.landscape_factor)
+    if new_label == label_slot.parent[label_slot.index] then return end
+    label_slot.parent[label_slot.index] = new_label
+    if new_label.dimen then
+        UIManager:setDirty(self, function() return "ui", new_label.dimen, true end)
+    else
+        UIManager:setDirty(self, "ui")
+    end
+end
+
 function ScreenWidget:_refreshBookModSlot(mod_id)
     if not self._ctx_cache or not self._book_mod_slots then return false end
     local slot = self._book_mod_slots[mod_id]
@@ -3186,20 +3261,7 @@ function ScreenWidget:_refreshBookModSlot(mod_id)
     -- the tree we just replaced — without this, the number (and which
     -- chevron is enabled) would stay stale until the next full homescreen
     -- rebuild.
-    local label_slot = self._book_mod_label_slots and self._book_mod_label_slots[mod_id]
-    if label_slot and label_slot.parent and label_slot.mod.label then
-        local new_label = sectionLabel(label_slot.mod.label, label_slot.col_w,
-            pageIndicatorFor(label_slot.mod, self._ctx_cache), pageNavFor(self, label_slot.mod, self._ctx_cache),
-            self._ctx_cache and self._ctx_cache.landscape_factor)
-        if new_label ~= label_slot.parent[label_slot.index] then
-            label_slot.parent[label_slot.index] = new_label
-            if new_label.dimen then
-                UIManager:setDirty(self, function() return "ui", new_label.dimen, true end)
-            else
-                UIManager:setDirty(self, "ui")
-            end
-        end
-    end
+    self:_syncBookModLabel(mod_id)
 
     return true
 end

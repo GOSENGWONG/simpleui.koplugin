@@ -1739,6 +1739,21 @@ function SimpleUIPlugin:onResume()
             -- that reuses a potentially stale _ctx_cache.
             HS.refresh(false)
         end
+        -- Any live Custom Screen needs the same follow-up full refresh HS
+        -- gets above. ScreenWidget:onResume (engines/sui_screen_engine.lua)
+        -- already ran for every live screen with stats_only=true, which
+        -- keeps single-value stats current but leaves anything backed by a
+        -- paginated grid module (TBR, Library grid, ...) stale — HS has
+        -- this call to cover that gap, and a Custom Screen has no other
+        -- caller asking for it, live-but-hidden underneath it or not.
+        local ScreenEngine = package.loaded["engines/sui_screen_engine"]
+        if ScreenEngine then
+            for _, id in ipairs(ScreenEngine.liveScreenIds()) do
+                if id ~= "hs" then
+                    ScreenEngine.refreshScreen(id, false)
+                end
+            end
+        end
         -- Re-open the Homescreen on wakeup when \"Start with Homescreen\" is set.
         if SUISettings:nilOrTrue("simpleui_enabled") then
             Patches.showHSAfterResume(self)

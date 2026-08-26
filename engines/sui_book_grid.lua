@@ -1198,6 +1198,14 @@ end
 -- re-derives the filtered file list from opts.getFileList()/opts.filterItem
 -- itself, exactly like build()'s own cold-cache path, and only once
 -- everything else checks out writes the result back into ctx[cache_key].
+--
+-- Also keeps ctx[npages_key] current even on the true-returning path: the
+-- displayed page's own slice can stay identical while the total item count
+-- crosses a page boundary elsewhere in the list, so npages must be
+-- refreshed independently of the identity check below. The caller is
+-- expected to re-sync the section-label header (page indicator + chevrons)
+-- off the back of this, via ScreenWidget:_syncBookModLabel — see that
+-- function's doc comment.
 -- ---------------------------------------------------------------------------
 function GridRenderer.updateStats(widget, ctx, opts)
     if not widget or not widget._row_update_funcs then return false end
@@ -1247,11 +1255,19 @@ function GridRenderer.updateStats(widget, ctx, opts)
     -- makeModule's M.build on every call, same table this function
     -- receives), not re-read from settings here, so this always agrees
     -- with what build() last actually used. persist=false: a stats-only
-    -- refresh must not move the page as a side effect.
+    -- refresh must not move the page as a side effect (never clamps the
+    -- stored page). npages, unlike page, isn't a user-facing selection —
+    -- it's a plain fact derived from the current file count — so it's
+    -- written back into ctx unconditionally below, same as build() already
+    -- does at its own call site, keeping the section-label's "x/y"
+    -- indicator and chevrons (sui_screen_engine.lua's pageIndicatorFor/
+    -- pageNavFor, both reading ctx) accurate even when this fast path
+    -- succeeds instead of falling back to a full build().
     local grid_rows = opts.grid_rows or 1
     local grid_cols = opts.grid_cols or opts.max_items or 5
     local max_items = grid_rows * grid_cols
-    local _, _, page_fps = _resolveCurrentPage(fps, ctx, id, max_items, opts.paged, false)
+    local _, npages, page_fps = _resolveCurrentPage(fps, ctx, id, max_items, opts.paged, false)
+    ctx["_row_npages_" .. id] = npages
 
     -- Identity check: same files, same order, same count as what this
     -- widget was actually built with. Any difference means the row's
