@@ -140,7 +140,8 @@ function SimpleUIPlugin:init()
                 local base = DataStorage:getSettingsDir() .. "/simpleui"
                 for _, sub in ipairs({
                     "", "/sui_icons", "/sui_icons/packs", "/sui_quotes",
-                    "/sui_wallpapers", "/sui_presets", "/sui_presets/sui_presets_export", "/sui_presets/sui_presets_import"
+                    "/sui_wallpapers", "/sui_presets", "/sui_presets/sui_presets_export", "/sui_presets/sui_presets_import",
+                    "/backups"
                 }) do
                     local path = base .. sub
                     if lfs_early.attributes(path, "mode") ~= "directory" then

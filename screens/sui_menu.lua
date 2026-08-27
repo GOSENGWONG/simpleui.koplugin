@@ -4456,6 +4456,15 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 end,
             },
             {
+                text                = _("Backup & Restore"),
+                -- Built lazily so the scope chooser closures are only allocated
+                -- when the user actually opens this submenu (same OPT-H pattern
+                -- as every other sub_item_table_func above).
+                sub_item_table_func = function()
+                    return require("features/sui_backup").makeMenuItems(ctx_menu)
+                end,
+            },
+            {
                 text      = _("Factory Reset"),
                 separator = true,
                 callback  = function()
