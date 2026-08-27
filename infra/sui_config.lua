@@ -403,6 +403,29 @@ local function deviceHasWifi()
     return _has_wifi_toggle
 end
 
+-- True when this device maps a key to the KOReader "Home" key name.
+-- Used to show the "Home Button Opens Home Screen" option and to wire
+-- ReaderUI/FileManager onHome handlers. KOReader has no Device:hasHomeKey();
+-- hasKeys() alone is insufficient (registers Home even when the event_map
+-- never emits it). Cache for the process lifetime — event_map is fixed.
+local _has_home_key = nil
+function M.deviceHasHomeKey()
+    if _has_home_key ~= nil then return _has_home_key end
+    _has_home_key = false
+    local ok, result = pcall(function()
+        local dev = getDevice()
+        if not (dev and dev:hasKeys()) then return false end
+        local map = dev.input and dev.input.event_map
+        if type(map) ~= "table" then return false end
+        for _, name in pairs(map) do
+            if name == "Home" then return true end
+        end
+        return false
+    end)
+    if ok and result then _has_home_key = true end
+    return _has_home_key
+end
+
 -- Returns whether Wi-Fi is currently on. Single source of truth for the
 -- wifi_toggle Quick Action's is_active state (see features/sui_quickactions.lua),
 -- which dims the (single) Wi-Fi icon rather than swapping to a distinct
@@ -1969,6 +1992,16 @@ function M.applyFirstRunDefaults()
         M.saveTopbarConfig({ side = { clock = "left", battery = "right", wifi = "right" }, order_left = { "clock" }, order_right = { "wifi", "battery" } })
     end
 
+    -- Home key → Homescreen (was PocketBook-only simpleui_pb_home_opens_hs).
+    -- Migrate once when the new key is absent; leave the old key in place so
+    -- older plugin versions reading the same settings file still work.
+    if SUISettings:get("simpleui_home_key_opens_hs") == nil
+            and SUISettings:get("simpleui_pb_home_opens_hs") ~= nil then
+        SUISettings:set("simpleui_home_key_opens_hs",
+            SUISettings:isTrue("simpleui_pb_home_opens_hs"))
+    end
+    def("simpleui_home_key_opens_hs", true)
+
     -- Homescreen modules (default preset)
     local PFX = "simpleui_hs_"
     def(PFX .. "quote_enabled",           false)
@@ -2070,7 +2103,7 @@ end
 function M.reset()
     _tabs_cache, _navbar_mode_cache, M.wifi_optimistic = nil, nil, nil
     M.cover_extraction_pending, M._cover_extract_queue, M._cover_extract_pending, M._cover_extract_specs = false, {}, {}, {}
-    _Device, _NetworkMgr, _has_wifi_toggle, _topbar_item_labels, _SQ3, _lfs_mod, _BookInfoManager, _topbar_cfg_menu_cache, _ReadCollection = nil, nil, nil, nil, nil, nil, nil, nil, nil
+    _Device, _NetworkMgr, _has_wifi_toggle, _has_home_key, _topbar_item_labels, _SQ3, _lfs_mod, _BookInfoManager, _topbar_cfg_menu_cache, _ReadCollection = nil, nil, nil, nil, nil, nil, nil, nil, nil
     _QA_lazy().clearQAKeyCache()
     M.clearCoverCache()
 end
