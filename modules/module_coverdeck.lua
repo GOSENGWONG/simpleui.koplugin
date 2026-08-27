@@ -946,7 +946,11 @@ function M.build(w, ctx)
         }
     end
 
-    local _cd_update_funcs = {}
+    -- Closures used by updateStats for in-place refresh.
+    -- _cd_update_funcs: DB-backed stats text (needs bstats).
+    -- _cd_bd_only_funcs: progress bar (needs only book data).
+    local _cd_update_funcs  = {}
+    local _cd_bd_only_funcs = {}
     local function _updateColoredText(wgt, txt, fg)
         if wgt._inner and wgt._inner.setText then
             wgt._inner:setText(txt)
@@ -958,28 +962,38 @@ function M.build(w, ctx)
         end
     end
 
-    -- Progress bar widget
+    -- Progress bar: wrapped in a single-child container so updateStats can
+    -- replace the bar without touching the surrounding VerticalGroup.
     local progress_widget
     if show_progress then
-        progress_widget = UI.progressBar(center_w, bd.percent, bar_h)
+        local _bar_w = center_w
+        local _bar_h = bar_h
+        local _init_bar = UI.progressBar(_bar_w, bd.percent, _bar_h)
+        local bar_container = OverlapGroup:new{
+            dimen = _init_bar:getSize(),
+            _init_bar,
+        }
+        local function _update_bar(_nb, nd)
+            bar_container[1] = UI.progressBar(_bar_w, (nd and nd.percent or 0), _bar_h)
+        end
+        table.insert(_cd_bd_only_funcs, _update_bar)
+        progress_widget = bar_container
     end
 
-    -- Stats widget
+    -- Stats: single compact line rebuilt from the arranged stats order.
     local stats_widget
     local has_any_stats = show_stats and vis.has_stat
 
     if has_any_stats then
         local bstats
         if vis.has_stat then
-            -- Fast path: use stats pre-computed by _buildCtx() when the centre cover
-            -- matches the pre-fetched entry (common case on first render).
+            -- Fast path: stats pre-computed by _buildCtx() for this centre book.
             local pre = ctx.coverdeck_center_stats
             if pre and pre.fp == fps[curIdx] then
                 bstats = pre.stats
             else
-                -- Slow path: no pre-computed stats for this centre book.
-                -- Result lands in _bstats_cache so subsequent carousel
-                -- navigations are instant.
+                -- Slow path: query once; result lands in _bstats_cache for
+                -- subsequent carousel navigations.
                 local prefetched_entry = ctx.prefetched and ctx.prefetched[fps[curIdx]]
                 local md5 = _resolveMd5(fps[curIdx], prefetched_entry)
                 if md5 then
@@ -1075,9 +1089,10 @@ function M.build(w, ctx)
         bordersize = 0, padding = PAD, padding_top = PAD, padding_bottom = 0,
         final_vg,
     }
-    result._cover_slots = cover_slots
+    result._cover_slots     = cover_slots
     result._cd_update_funcs = _cd_update_funcs
-    result._center_fp = fps[curIdx]
+    result._cd_bd_only_funcs = _cd_bd_only_funcs
+    result._center_fp       = fps[curIdx]
     return result
 end
 
@@ -1118,27 +1133,19 @@ function M.updateCovers(widget, ctx)
 end
 
 function M.updateStats(widget, ctx)
-    local actual_widget = (widget._cd_update_funcs) and widget
-                          or (widget[1] and widget[1]._cd_update_funcs and widget[1])
-    if not actual_widget or not actual_widget._cd_update_funcs then return false end
-
-    -- Progress bar and progress badge are built into the widget tree at
-    -- build time and are not among _cd_update_funcs (the bar is a static
-    -- LineWidget/OverlapGroup; the badge is composited onto the centre
-    -- cover). Status/percent changes need a full rebuild — same contract
-    -- as GridRenderer.updateStats for progress_style "badge".
-    local pfx = (ctx and ctx.pfx) or ""
-    local vis = getVisibleElements(pfx, ctx and ctx.cfg and ctx.cfg.coverdeck)
-    if (vis and vis.progress) or showProgressBadge(pfx) then return false end
+    local actual_widget = (widget._cd_update_funcs or widget._cd_bd_only_funcs) and widget
+                          or (widget[1] and (widget[1]._cd_update_funcs or widget[1]._cd_bd_only_funcs) and widget[1])
+    if not actual_widget then return false end
+    if not actual_widget._cd_update_funcs and not actual_widget._cd_bd_only_funcs then
+        return false
+    end
 
     local fp = actual_widget._center_fp
     if not fp then return false end
 
-    -- The widget only carries data for the carousel's centre book at build
-    -- time (_center_fp). The underlying list/order can change between
-    -- renders (book closed, "show finished" toggled, TBR list changed), so
-    -- recompute the centre fp build() would currently produce and bail on
-    -- any mismatch, to avoid patching the wrong book's stats.
+    -- Widget is bound to the centre book at build time. Recompute the centre
+    -- fp build() would produce and bail on mismatch so we never patch the
+    -- wrong book's numbers (list/order can change between renders).
     do
         local c        = ctx.cfg and ctx.cfg.coverdeck
         local source   = c and c.source or getSource(ctx.pfx)
@@ -1150,12 +1157,18 @@ function M.updateStats(widget, ctx)
         if expected_center_fp ~= fp then return false end
     end
 
+    -- Progress badge is composited into the cover widget tree at build time.
+    -- Percent/status changes on the badge require a full rebuild — same
+    -- contract as GridRenderer.updateStats for progress_style "badge".
+    local pfx = (ctx and ctx.pfx) or ""
+    if showProgressBadge(pfx) then return false end
+
     local bstats
     local pre = ctx.coverdeck_center_stats
     if pre and pre.fp == fp then
         bstats = pre.stats
     end
-    
+
     local prefetched_entry = ctx.prefetched and ctx.prefetched[fp]
     if not bstats then
         local md5 = _resolveMd5(fp, prefetched_entry)
@@ -1164,11 +1177,19 @@ function M.updateStats(widget, ctx)
         end
     end
 
-    if bstats then
-        local SH = getSH()
-        local bd = SH.getBookData(fp, prefetched_entry)
+    local SH = getSH()
+    if not SH then return true end
+    local bd = SH.getBookData(fp, prefetched_entry)
+
+    if bstats and actual_widget._cd_update_funcs then
         for _, fn in ipairs(actual_widget._cd_update_funcs) do
             fn(bstats, bd)
+        end
+    end
+    -- Progress bar only needs bd; update even when there is no SQLite history.
+    if actual_widget._cd_bd_only_funcs then
+        for _, fn in ipairs(actual_widget._cd_bd_only_funcs) do
+            fn(nil, bd)
         end
     end
     return true
