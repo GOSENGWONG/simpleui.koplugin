@@ -441,14 +441,32 @@ function M.fetchBookStatsForCtx(md5, db_conn, force)
 end
 
 
+-- Empty placeholder when history has no existing books (same pattern as
+-- Quick Actions / Featured Collection / Collections).
+local function _emptyPlaceholder(w, h)
+    return CenterContainer:new{
+        dimen = Geom:new{ w = w, h = h },
+        UI.makeColoredText{
+            text    = _("No books to show yet — open a book to see it here."),
+            face    = Font:getFace(SUIStyle.FACE_REGULAR, SUIStyle.FS_BODY),
+            fgcolor = CLR_TEXT_SUB,
+            width   = w - PAD * 2,
+        },
+    }
+end
+
 -- Builds the module widget: cover on the left, text column on the right.
 -- Elements in the text column are rendered in user-configured order.
 function M.build(w, ctx)
     Config.applyLabelToggle(M, _("Currently Reading"))
-    if not ctx.current_fp then return nil end
+    if not ctx.current_fp then
+        return _emptyPlaceholder(w, M.getHeight(ctx))
+    end
 
     local SH = getSH()
-    if not SH then return nil end
+    if not SH then
+        return _emptyPlaceholder(w, M.getHeight(ctx))
+    end
 
     -- Use pre-read settings bundle from ctx when available (normal HS path).
     -- Falls back to direct reads only when called outside the homescreen.

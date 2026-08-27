@@ -1773,7 +1773,11 @@ function ScreenWidget:_buildCtx()
                 -- max_recent is set to 15 so that after each module filters
                 -- finished books at render time, at least 5 unfinished entries
                 -- remain available for display.
-                self._cached_books_state = SH.prefetchBooks(show_c, show_r, max_recent)
+                local excl = SUISettings:readSetting(self._pfx .. "recent_exclude_currently")
+                if excl == nil then excl = true end
+                self._cached_books_state = SH.prefetchBooks(show_c, show_r, max_recent, {
+                    exclude_current = excl,
+                })
                 if Config.cover_extraction_pending then
                     self:_scheduleCoverPoll()
                 end
@@ -2909,7 +2913,11 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
                             local show_c = Registry.isEnabled(Registry.get("currently"), self._pfx)
                             local show_r = (mod_r and Registry.isEnabled(mod_r, self._pfx)) or (mod_cd and Registry.isEnabled(mod_cd, self._pfx))
                             -- show_finished removed: each module filters independently at render time.
-                            local new_bs = SH.prefetchBooks(show_c, show_r, 15)
+                            local excl = SUISettings:readSetting(self._pfx .. "recent_exclude_currently")
+                            if excl == nil then excl = true end
+                            local new_bs = SH.prefetchBooks(show_c, show_r, 15, {
+                                exclude_current = excl,
+                            })
                             self._cached_books_state = new_bs
                             self._ctx_cache.prefetched = new_bs.prefetched_data
                             self._ctx_cache.current_fp = new_bs.current_fp
@@ -3539,7 +3547,11 @@ function ScreenWidget:onShow()
                 local show_c = Registry.isEnabled(Registry.get("currently"), self._pfx)
                 local show_r = (mod_r and Registry.isEnabled(mod_r, self._pfx))
                     or (mod_cd and Registry.isEnabled(mod_cd, self._pfx))
-                self._cached_books_state = SH.prefetchBooks(show_c, show_r, 15)
+                local excl = SUISettings:readSetting(self._pfx .. "recent_exclude_currently")
+                if excl == nil then excl = true end
+                self._cached_books_state = SH.prefetchBooks(show_c, show_r, 15, {
+                    exclude_current = excl,
+                })
             end
             self._cached_books_state = self._cached_books_state
                 or { current_fp = nil, recent_fps = {}, prefetched_data = {} }

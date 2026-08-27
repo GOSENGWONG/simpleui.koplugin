@@ -880,8 +880,15 @@ local function _loadStaleBooksFromDisk()
     return v
 end
 
-function SH.prefetchBooks(show_currently, show_recent, max_recent)
+-- opts.exclude_current (default true): when Currently and Recent are both
+-- active, keep the currently-reading book out of recent_fps. Callers that
+-- pass false allow the same book in both modules.
+function SH.prefetchBooks(show_currently, show_recent, max_recent, opts)
     max_recent = max_recent or 5
+    opts = type(opts) == "table" and opts or {}
+    local exclude_current = opts.exclude_current
+    if exclude_current == nil then exclude_current = true end
+
     local state = { current_fp = nil, recent_fps = {}, prefetched_data = {} }
     if not show_currently and not show_recent then return state end
 
@@ -892,10 +899,12 @@ function SH.prefetchBooks(show_currently, show_recent, max_recent)
     end
 
     local DS = getDocSettings()
-    -- hist[1] is the most recently read book.
-    -- • show_currently=true  → claim it as current_fp; never add to recent_fps.
-    -- • show_currently=false → treat it like any other entry for recent_fps.
-    -- Always start at index 1 so hist[1] is never silently dropped.
+    -- Walk history in order. Only existing files count:
+    -- • show_currently → first existing file becomes current_fp (so a deleted
+    --   hist[1] falls through to the next book, same idea as Cover Deck on
+    --   the recent source).
+    -- • show_recent → fill recent_fps, optionally skipping current_fp.
+    local claimed_current = false
     for i = 1, #(ReadHistory.hist or {}) do
         local entry = ReadHistory.hist[i]
         local fp = entry and entry.file
@@ -906,8 +915,9 @@ function SH.prefetchBooks(show_currently, show_recent, max_recent)
             -- the kobo.koplugin's BookInfoManager patch, and that openBook
             -- passes the correct path to DocumentRegistry for DRM decryption.
             fp = _koboVirtualPath(fp)
-            if i == 1 and show_currently then
-                -- Claim as currently-reading book.
+            if show_currently and not claimed_current then
+                -- First existing history entry → currently-reading book.
+                claimed_current = true
                 state.current_fp = fp
                 if DS then
                     local cached = _cacheGet(fp)
@@ -975,9 +985,12 @@ function SH.prefetchBooks(show_currently, show_recent, max_recent)
                         end
                     end
                 end
+                -- When exclusion is off, the same book may also appear in Recent.
+                if show_recent and not exclude_current
+                        and #state.recent_fps < max_recent then
+                    state.recent_fps[#state.recent_fps + 1] = fp
+                end
             elseif show_recent and #state.recent_fps < max_recent then
-                -- i==1 only reaches here when show_currently==false, so hist[1]
-                -- is correctly included in recent rather than being skipped.
                 local pct = 0
                 local book_summary = nil
                 if DS then

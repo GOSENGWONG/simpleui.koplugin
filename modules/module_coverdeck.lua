@@ -1,18 +1,19 @@
 -- module_coverdeck.lua
 -- Displays recent or TBR books as a cover-flow carousel.
 
-local Blitbuffer  = require("ffi/blitbuffer")
-local BD             = require("ui/bidi")
-local Device         = require("device")
-local Font           = require("ui/font")
-local FrameContainer = require("ui/widget/container/framecontainer")
-local Geom           = require("ui/geometry")
-local GestureRange   = require("ui/gesturerange")
-local InputContainer = require("ui/widget/container/inputcontainer")
-local OverlapGroup   = require("ui/widget/overlapgroup")
-local TextWidget     = require("ui/widget/textwidget")
-local VerticalGroup  = require("ui/widget/verticalgroup")
-local Screen         = Device.screen
+local Blitbuffer       = require("ffi/blitbuffer")
+local BD               = require("ui/bidi")
+local Device           = require("device")
+local Font             = require("ui/font")
+local CenterContainer  = require("ui/widget/container/centercontainer")
+local FrameContainer   = require("ui/widget/container/framecontainer")
+local Geom             = require("ui/geometry")
+local GestureRange     = require("ui/gesturerange")
+local InputContainer   = require("ui/widget/container/inputcontainer")
+local OverlapGroup     = require("ui/widget/overlapgroup")
+local TextWidget       = require("ui/widget/textwidget")
+local VerticalGroup    = require("ui/widget/verticalgroup")
+local Screen           = Device.screen
 local _ = require("infra/sui_i18n").translate
 local N_ = require("infra/sui_i18n").ngettext
 local logger         = require("logger")
@@ -669,6 +670,20 @@ end
 -- build
 -- ---------------------------------------------------------------------------
 
+-- Empty placeholder when the chosen source has no books (same pattern as
+-- Quick Actions / Featured Collection / Collections).
+local function _emptyPlaceholder(w, h)
+    return CenterContainer:new{
+        dimen = Geom:new{ w = w, h = h },
+        UI.makeColoredText{
+            text    = _("No books to show yet — open a book to see it here."),
+            face    = Font:getFace(SUIStyle.FACE_REGULAR, SUIStyle.FS_BODY),
+            fgcolor = CLR_TEXT_SUB,
+            width   = w - PAD * 2,
+        },
+    }
+end
+
 function M.build(w, ctx)
     local pfx    = ctx.pfx
 
@@ -682,12 +697,14 @@ function M.build(w, ctx)
 
     local fps = getFps(source, ctx)
     if not fps or #fps == 0 then
-        logger.warn(string.format("coverdeck: no books found (source=%s)", tostring(source)))
-        return nil
+        logger.dbg(string.format("coverdeck: no books found (source=%s)", tostring(source)))
+        return _emptyPlaceholder(w, M.getHeight(ctx))
     end
 
     local SH = getSH()
-    if not SH then return nil end
+    if not SH then
+        return _emptyPlaceholder(w, M.getHeight(ctx))
+    end
 
     local CLR_TEXT_EFF     = SUIStyle.COLOR.text_primary
     local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
