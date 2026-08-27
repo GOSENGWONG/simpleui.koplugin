@@ -325,13 +325,9 @@ end
 -- Author list rendering
 -- ---------------------------------------------------------------------------
 -- Author strings arrive as a single newline-separated string ("A\nB\nC").
--- Aligned with KOReader's actual data format. 
--- _splitAuthors breaks it into names (trimmed, empty tokens dropped). 
--- _formatAuthors renders the result with these rules:
--- 1. empty/whitespace input → "Unknown Author";
--- 2. single author          → returned verbatim;
--- 3. two or more author     → "Name1 et al."
---    only the first name is kept, every other co-author is discarded.
+-- _formatAuthors returns nil when there is no usable name (caller hides the
+-- row, same policy as description), a single name verbatim, or "Name et al."
+-- when there are two or more.
 local function _splitAuthors(s)
     local parts = {}
     if not s or s == "" then return parts end
@@ -346,7 +342,7 @@ end
 
 local function _formatAuthors(authors_str)
     local parts = _splitAuthors(authors_str)
-    if #parts == 0 then return _("Unknown Author") end
+    if #parts == 0 then return nil end
     if #parts == 1 then return parts[1] end
     return parts[1] .. _(" et al.")
 end
@@ -683,16 +679,19 @@ function M.build(w, ctx)
             meta_has_content = true
 
         elseif elem == "author" and show.author then
-            gap_before(author_gap)
-            meta[#meta+1] = UI.makeColoredText{
-                text            = _formatAuthors(bd.authors),
-                face            = face_author,
-                fgcolor         = CLR_TEXT_SUB_EFF,
-                width           = tw,
-                max_width       = tw,
-                truncation_char = "…",  -- ellipsis
-            }
-            meta_has_content = true
+            local author_text = _formatAuthors(bd.authors)
+            if author_text then
+                gap_before(author_gap)
+                meta[#meta+1] = UI.makeColoredText{
+                    text            = author_text,
+                    face            = face_author,
+                    fgcolor         = CLR_TEXT_SUB_EFF,
+                    width           = tw,
+                    max_width       = tw,
+                    truncation_char = "…",
+                }
+                meta_has_content = true
+            end
 
         elseif elem == "series" and show.series and series_text ~= "" then
             gap_before(series_gap)

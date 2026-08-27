@@ -1,41 +1,30 @@
 -- sui_metadata_providers.lua — Simple UI
--- Integrates external metadata sources for files whose real bibliographic
--- data (title, author, series) lives outside standard document properties
--- but is recoverable through a companion plugin's own document provider.
 --
--- BookInfoManager is the single point Library/covers/series grouping read
--- metadata from (Config.getBookInfoManager(), see infra/sui_config.lua).
--- Rather than teaching every caller about each external source, this module
--- patches BookInfoManager.extractBookInfo once: for a recognized file it
--- temporarily substitutes the external provider so extraction reads through
--- it, then restores the native lookup for every other file.
+-- Supplies bibliographic metadata for CBZ chapter archives whose real
+-- title/author/series live in an embedded ComicInfo.xml rather than in
+-- the engine's native document properties.
 --
--- Each entry in SOURCES below is self-contained (recognition + provider
--- resolution) so a new external source can be added as one more entry
--- without touching the patch itself.
+-- BookInfoManager is the single cache Library, covers and series grouping
+-- read from. This module patches it once so that:
+--   1. extractBookInfo / extractInBackground skip files that already have a
+--      usable cached row (avoids mass re-extract when a folder gains one file)
+--   2. extractBookInfo redirects recognized CBZs to the companion document
+--      provider when available, then merges ComicInfo.xml into the row
+--   3. getBookInfo fills incomplete CBZ rows from ComicInfo.xml in-place and
+--      keeps a small text snapshot so the UI can still show title/author while
+--      a row is temporarily missing (in-progress extraction)
 --
--- getBookInfo is also patched: a cached row for a recognized file that is
--- missing title or authors is evicted and re-extracted once per session,
--- so an incomplete row never lingers in the cache indefinitely.
+-- ComicInfo.xml is read from the ZIP in pure Lua (store and deflate), so
+-- metadata does not depend on an external binary.
 --
--- Chapter archives (Rakuyomi CBZ) ship a ComicInfo.xml entry. On e-readers
--- the companion CbzDocument provider can read it via an external binary;
--- on Android that binary cannot run from noexec storage. This module
--- therefore reads ComicInfo.xml from the ZIP itself in pure Lua and
--- injects the result into CbzDocument.getDocumentProps, so metadata
--- extraction works on every platform without depending on the binary.
---
--- Public API
--- ----------
---   Providers.install()  -- idempotent; call once during plugin init
+-- Public API: Providers.install()  -- idempotent
 
 local logger = require("logger")
 
 local Providers = {}
 
 -- ---------------------------------------------------------------------------
--- Companion-app chapter archives (CBZ files produced by a manga/comics
--- reader plugin, tagged with their own origin metadata)
+-- Paths
 -- ---------------------------------------------------------------------------
 
 local ok_android, android = pcall(require, "android")
@@ -49,15 +38,14 @@ local function normalizePath(path)
     return path:gsub("/+$", "")
 end
 
--- True when path is the directory itself or any file/subdir under it.
 local function pathIsUnder(path, directory)
     path = normalizePath(path)
     directory = normalizePath(directory)
     if not (path and directory) then return false end
     if path == directory then return true end
-    local dir_prefix = directory
-    if dir_prefix:sub(-1) ~= "/" then dir_prefix = dir_prefix .. "/" end
-    return path:sub(1, #dir_prefix) == dir_prefix
+    local prefix = directory
+    if prefix:sub(-1) ~= "/" then prefix = prefix .. "/" end
+    return path:sub(1, #prefix) == prefix
 end
 
 local function getDataDir()
@@ -69,12 +57,40 @@ local function absoluteDataPath(path)
     if type(path) ~= "string" or path == "" or path:sub(1, 1) == "/" then
         return path
     end
-    path = path:gsub("^%./", "")
-    return getDataDir() .. "/" .. path
+    return getDataDir() .. "/" .. path:gsub("^%./", "")
+end
+
+local function isCbz(path)
+    return type(path) == "string" and path:lower():sub(-4) == ".cbz"
 end
 
 -- ---------------------------------------------------------------------------
--- Pure-Lua ZIP helpers (no external binary)
+-- Bounded path → value cache (evicts everything when full)
+-- ---------------------------------------------------------------------------
+
+local CACHE_MAX = 128
+
+local function newCache()
+    return { map = {}, n = 0 }
+end
+
+local function cacheGet(c, key)
+    return c.map[key]
+end
+
+local function cacheSet(c, key, value)
+    if c.map[key] == nil then
+        if c.n >= CACHE_MAX then
+            c.map = {}
+            c.n = 0
+        end
+        c.n = c.n + 1
+    end
+    c.map[key] = value
+end
+
+-- ---------------------------------------------------------------------------
+-- ZIP helpers
 -- ---------------------------------------------------------------------------
 
 local function u16(data, i)
@@ -88,16 +104,17 @@ local function u32(data, i)
         + (data:byte(i + 3) or 0) * 16777216
 end
 
--- Raw DEFLATE inflate via zlib (ZIP method 8). windowBits = -15 selects
--- raw deflate without a zlib/gzip wrapper — required for ZIP payloads.
-local _raw_inflate
+-- Raw DEFLATE (ZIP method 8). windowBits = -15 = no zlib/gzip wrapper.
+local _inflate_fn -- false = unavailable, nil = not tried, function = ready
+
 local function rawInflate(compressed, uncompressed_size)
     if type(compressed) ~= "string" or compressed == "" then return nil end
-    if _raw_inflate == false then return nil end
-    if _raw_inflate == nil then
+    if _inflate_fn == false then return nil end
+
+    if _inflate_fn == nil then
         local ok_ffi, ffi = pcall(require, "ffi")
         if not ok_ffi then
-            _raw_inflate = false
+            _inflate_fn = false
             return nil
         end
         pcall(function()
@@ -125,24 +142,19 @@ local function rawInflate(compressed, uncompressed_size)
             ]]
         end)
         local libz
-        local ok_lib = pcall(function()
-            if ffi.loadlib then
-                libz = ffi.loadlib("z", 1)
-            else
-                libz = ffi.load("z")
-            end
+        pcall(function()
+            libz = ffi.loadlib and ffi.loadlib("z", 1) or ffi.load("z")
         end)
-        if not ok_lib or not libz or not libz.inflateInit2_ then
-            _raw_inflate = false
+        if not (libz and libz.inflateInit2_) then
+            _inflate_fn = false
             return nil
         end
-        _raw_inflate = function(data, out_len)
-            out_len = math.max(out_len or (#data * 4), 64)
+        _inflate_fn = function(data, out_len)
+            out_len = math.max(out_len or (#data * 4), 256)
             local stream = ffi.new("z_stream")
-            -- Version string is only checked for ABI compatibility; the
-            -- stream_size argument is what actually matters.
-            local init = libz.inflateInit2_(stream, -15, "1.2.0", ffi.sizeof(stream))
-            if init ~= 0 then return nil end
+            if libz.inflateInit2_(stream, -15, "1.2.0", ffi.sizeof(stream)) ~= 0 then
+                return nil
+            end
             local out = ffi.new("unsigned char[?]", out_len)
             stream.next_in = ffi.cast("const unsigned char *", data)
             stream.avail_in = #data
@@ -150,123 +162,169 @@ local function rawInflate(compressed, uncompressed_size)
             stream.avail_out = out_len
             local res = libz.inflate(stream, 4) -- Z_FINISH
             libz.inflateEnd(stream)
-            -- Z_STREAM_END (1) or Z_OK (0) with full output are both fine.
             if res ~= 1 and res ~= 0 then return nil end
             local produced = tonumber(stream.total_out) or 0
             if produced <= 0 then return nil end
             return ffi.string(out, produced)
         end
     end
-    return _raw_inflate(compressed, uncompressed_size)
+
+    return _inflate_fn(compressed, uncompressed_size)
 end
 
--- Reads a single entry from a ZIP/CBZ archive. Supports store (0) and
--- deflate (8). Returns the entry bytes or nil.
-local function readZipEntry(path, entry_name)
-    if type(path) ~= "string" or type(entry_name) ~= "string" then return nil end
+-- Find EOCD offset inside a tail buffer, or nil.
+local function findEocd(tail)
+    for pos = #tail - 21, 1, -1 do
+        if tail:sub(pos, pos + 3) == "PK\005\006" then
+            return pos
+        end
+    end
+end
+
+-- Read one named entry (store or deflate). entry_names is a list of
+-- acceptable names (first match wins, case-insensitive).
+local function readZipEntry(path, entry_names)
+    if type(path) ~= "string" then return nil end
+    if type(entry_names) == "string" then entry_names = { entry_names } end
+    if type(entry_names) ~= "table" or #entry_names == 0 then return nil end
+
+    local want = {}
+    for _, name in ipairs(entry_names) do
+        want[name:lower()] = true
+    end
+
     local file = io.open(path, "rb")
     if not file then return nil end
 
-    local size = file:seek("end")
-    if not size or size < 22 then
+    local function fail()
         file:close()
         return nil
     end
 
-    -- Locate end-of-central-directory record (last 64 KiB + 22 bytes).
+    local size = file:seek("end")
+    if not size or size < 22 then return fail() end
+
+    local tail_len = math.min(size, 65535 + 22)
+    file:seek("set", size - tail_len)
+    local tail = file:read(tail_len)
+    if not tail then return fail() end
+
+    local eocd = findEocd(tail)
+    if not eocd then return fail() end
+
+    local cd_size   = u32(tail, eocd + 12)
+    local cd_offset = u32(tail, eocd + 16)
+    if cd_size == 0 or cd_offset + cd_size > size then return fail() end
+
+    file:seek("set", cd_offset)
+    local cd = file:read(cd_size)
+    if not cd or #cd < cd_size then return fail() end
+
+    local local_offset, comp_method, comp_size, uncomp_size
+    local i = 1
+    while i + 46 <= #cd + 1 do
+        if cd:sub(i, i + 3) ~= "PK\001\002" then break end
+        local name_len    = u16(cd, i + 28)
+        local extra_len   = u16(cd, i + 30)
+        local comment_len = u16(cd, i + 32)
+        local name = cd:sub(i + 46, i + 45 + name_len)
+        if want[name:lower()] then
+            local_offset = u32(cd, i + 42)
+            comp_method  = u16(cd, i + 10)
+            comp_size    = u32(cd, i + 20)
+            uncomp_size  = u32(cd, i + 24)
+            break
+        end
+        i = i + 46 + name_len + extra_len + comment_len
+    end
+    if not local_offset then return fail() end
+
+    file:seek("set", local_offset)
+    local lfh = file:read(30)
+    if not lfh or #lfh < 30 or lfh:sub(1, 4) ~= "PK\003\004" then
+        return fail()
+    end
+    local l_name_len  = u16(lfh, 27)
+    local l_extra_len = u16(lfh, 29)
+    -- Prefer central-directory sizes (local header may be zeroed with data descriptors).
+    file:seek("set", local_offset + 30 + l_name_len + l_extra_len)
+    local payload = file:read(comp_size)
+    file:close()
+
+    if not payload or #payload < comp_size then return nil end
+    if comp_method == 0 then return payload end
+    if comp_method == 8 then return rawInflate(payload, uncomp_size) end
+    return nil
+end
+
+-- True when the archive contains any of the named entries (no decompress).
+local function zipHasEntry(path, entry_names)
+    if type(path) ~= "string" then return false end
+    if type(entry_names) == "string" then entry_names = { entry_names } end
+    if type(entry_names) ~= "table" then return false end
+
+    local want = {}
+    for _, name in ipairs(entry_names) do
+        want[name:lower()] = true
+    end
+
+    local file = io.open(path, "rb")
+    if not file then return false end
+
+    local size = file:seek("end")
+    if not size or size < 22 then
+        file:close()
+        return false
+    end
+
     local tail_len = math.min(size, 65535 + 22)
     file:seek("set", size - tail_len)
     local tail = file:read(tail_len)
     if not tail then
         file:close()
-        return nil
+        return false
     end
 
-    local eocd
-    for pos = #tail - 21, 1, -1 do
-        if tail:sub(pos, pos + 3) == "PK\005\006" then
-            eocd = pos
-            break
-        end
-    end
+    local eocd = findEocd(tail)
     if not eocd then
         file:close()
-        return nil
+        return false
     end
 
     local cd_size   = u32(tail, eocd + 12)
     local cd_offset = u32(tail, eocd + 16)
     if cd_size == 0 or cd_offset + cd_size > size then
         file:close()
-        return nil
+        return false
     end
 
     file:seek("set", cd_offset)
     local cd = file:read(cd_size)
-    if not cd or #cd < cd_size then
-        file:close()
-        return nil
-    end
+    file:close()
+    if not cd then return false end
 
-    -- Scan central directory for the requested entry (case-insensitive).
-    local want = entry_name:lower()
     local i = 1
-    local local_offset, comp_method, comp_size, uncomp_size
     while i + 46 <= #cd + 1 do
         if cd:sub(i, i + 3) ~= "PK\001\002" then break end
-        local method   = u16(cd, i + 10)
-        local csize    = u32(cd, i + 20)
-        local usize    = u32(cd, i + 24)
-        local name_len = u16(cd, i + 28)
-        local extra_len = u16(cd, i + 30)
+        local name_len    = u16(cd, i + 28)
+        local extra_len   = u16(cd, i + 30)
         local comment_len = u16(cd, i + 32)
-        local loc_off  = u32(cd, i + 42)
         local name = cd:sub(i + 46, i + 45 + name_len)
-        if name:lower() == want then
-            local_offset = loc_off
-            comp_method  = method
-            comp_size    = csize
-            uncomp_size  = usize
-            break
-        end
+        if want[name:lower()] then return true end
         i = i + 46 + name_len + extra_len + comment_len
     end
-    if not local_offset then
-        file:close()
-        return nil
-    end
-
-    -- Local file header → payload.
-    file:seek("set", local_offset)
-    local lfh = file:read(30)
-    if not lfh or #lfh < 30 or lfh:sub(1, 4) ~= "PK\003\004" then
-        file:close()
-        return nil
-    end
-    local l_name_len  = u16(lfh, 27)
-    local l_extra_len = u16(lfh, 29)
-    -- Skip name + extra; method/sizes in the local header can be zero when
-    -- data descriptors are used, so prefer the central-directory values.
-    file:seek("set", local_offset + 30 + l_name_len + l_extra_len)
-    local payload = file:read(comp_size)
-    file:close()
-    if not payload or #payload < comp_size then return nil end
-
-    if comp_method == 0 then
-        return payload
-    elseif comp_method == 8 then
-        return rawInflate(payload, uncomp_size)
-    end
-    return nil
+    return false
 end
 
--- Reads the trailing ZIP comment (used only for origin-id recognition).
 local function readZipComment(path)
     local file = io.open(path, "rb")
     if not file then return nil end
 
     local size = file:seek("end")
-    if not size or size <= 0 then file:close(); return nil end
+    if not size or size <= 0 then
+        file:close()
+        return nil
+    end
 
     local read_size = math.min(size, 65535 + 22)
     file:seek("set", size - read_size)
@@ -274,139 +332,159 @@ local function readZipComment(path)
     file:close()
     if not data then return nil end
 
-    for pos = read_size - 21, 1, -1 do
-        if data:sub(pos, pos + 3) == "PK\005\006" then
-            local comment_len = u16(data, pos + 20)
-            if pos + 21 + comment_len == read_size and comment_len > 0 then
-                return data:sub(pos + 22, pos + 21 + comment_len)
-            end
-        end
+    local eocd = findEocd(data)
+    if not eocd then return nil end
+    local comment_len = u16(data, eocd + 20)
+    if eocd + 21 + comment_len == #data and comment_len > 0 then
+        return data:sub(eocd + 22, eocd + 21 + comment_len)
     end
 end
 
 -- ---------------------------------------------------------------------------
--- ComicInfo.xml → KOReader document props
+-- ComicInfo.xml
 -- ---------------------------------------------------------------------------
 
+local COMICINFO_NAMES = { "ComicInfo.xml", "comicinfo.xml" }
+
 local function xmlText(xml, tag)
-    -- Matches <Tag>value</Tag> or <Tag ...>value</Tag>; skips empty/self-closing.
-    local pattern = "<" .. tag .. "%s*[^>]*>(.-)</" .. tag .. "%s*>"
-    local value = xml:match(pattern)
+    local value = xml:match("<" .. tag .. "%s*[^>]*>(.-)</" .. tag .. "%s*>")
     if not value then return nil end
-    -- Strip nested tags if any, decode a few common entities.
     value = value:gsub("<.->", "")
     value = value
-        :gsub("&lt;", "<")
-        :gsub("&gt;", ">")
-        :gsub("&amp;", "&")
-        :gsub("&quot;", '"')
-        :gsub("&apos;", "'")
-        :gsub("^%s+", "")
-        :gsub("%s+$", "")
+        :gsub("&lt;", "<"):gsub("&gt;", ">"):gsub("&amp;", "&")
+        :gsub("&quot;", '"'):gsub("&apos;", "'")
+        :gsub("^%s+", ""):gsub("%s+$", "")
     if value == "" then return nil end
     return value
 end
 
--- Maps ComicInfo.xml fields to the shape CbzDocument/_parseMetadata produces
--- (and BookInfoManager expects), including the singular "author"/"notes"
--- keys that the existing field patch renames to authors/description.
 local function parseComicInfoXml(xml)
     if type(xml) ~= "string" or xml == "" then return nil end
 
-    local title    = xmlText(xml, "Title")
-    local series   = xmlText(xml, "Series")
-    local number   = xmlText(xml, "Number")
-    local summary  = xmlText(xml, "Summary")
+    local title   = xmlText(xml, "Title")
+    local series  = xmlText(xml, "Series")
+    local number  = xmlText(xml, "Number")
+    local summary = xmlText(xml, "Summary")
     local language = xmlText(xml, "LanguageISO")
-    local genre    = xmlText(xml, "Genre")
-    local publisher = xmlText(xml, "Publisher")
-    local year_s   = xmlText(xml, "Year")
-    local rating_s = xmlText(xml, "CommunityRating")
+    local genre   = xmlText(xml, "Genre")
 
     local authors = {}
     local function addAuthor(v)
-        if v and v ~= "" then
-            for _, existing in ipairs(authors) do
-                if existing == v then return end
-            end
-            authors[#authors + 1] = v
+        if not v or v == "" then return end
+        for _, existing in ipairs(authors) do
+            if existing == v then return end
         end
+        authors[#authors + 1] = v
     end
     addAuthor(xmlText(xml, "Writer"))
     addAuthor(xmlText(xml, "Penciller"))
     addAuthor(xmlText(xml, "Inker"))
+    addAuthor(xmlText(xml, "Translator"))
 
     local info = {}
-    if title then info.title = title end
+    if title then
+        info.title = title
+    elseif series then
+        info.title = series
+    end
     if series then info.series = series end
     if number then info.series_index = tonumber(number) or number end
-    if publisher then info.publisher = publisher end
     if language then info.language = language end
     if genre then info.keywords = genre end
     if summary then
-        info.notes = summary
         info.description = summary
+        info.notes = summary
     end
     if #authors > 0 then
         local joined = table.concat(authors, " & ")
-        info.author = joined
         info.authors = joined
-    end
-    if year_s then
-        local y = tonumber(year_s)
-        if y and y > 0 then info.publication_year = y end
-    end
-    if rating_s then
-        local r = tonumber(rating_s)
-        if r and r >= 0 then info.rating = r end
+        info.author = joined
     end
 
     if not next(info) then return nil end
     return info
 end
 
-local comicinfo_cache = {} -- path → { mtime, size, props|false }
+local comicinfo_cache = newCache()
 
+local function fileIdentity(path)
+    local ok, lfs = pcall(require, "libs/libkoreader-lfs")
+    if not (ok and lfs) then return 0, 0 end
+    return lfs.attributes(path, "size") or 0,
+           lfs.attributes(path, "modification") or 0
+end
+
+-- Returns a props table or nil. Results are cached per path+mtime+size.
 local function readComicInfoProps(path)
-    if type(path) ~= "string" then return nil end
+    if not isCbz(path) then return nil end
 
-    local ok_lfs, lfs = pcall(require, "libs/libkoreader-lfs")
-    local size, mtime = 0, 0
-    if ok_lfs and lfs then
-        size = lfs.attributes(path, "size") or 0
-        mtime = lfs.attributes(path, "modification") or 0
-    end
-    local cached = comicinfo_cache[path]
+    local size, mtime = fileIdentity(path)
+    local cached = cacheGet(comicinfo_cache, path)
     if cached and cached.size == size and cached.mtime == mtime then
         return cached.props or nil
     end
 
-    local xml = readZipEntry(path, "ComicInfo.xml")
+    local xml = readZipEntry(path, COMICINFO_NAMES)
     local props = xml and parseComicInfoXml(xml) or nil
-    comicinfo_cache[path] = { size = size, mtime = mtime, props = props or false }
+    cacheSet(comicinfo_cache, path, {
+        size = size,
+        mtime = mtime,
+        props = props or false,
+    })
     return props
 end
 
+-- Columns BookInfoManager actually stores.
+local BOOKINFO_KEYS = {
+    "title", "authors", "series", "series_index",
+    "language", "keywords", "description",
+}
+
+local function bookinfoPatchFromComic(comic)
+    if type(comic) ~= "table" then return nil end
+    local patch = {}
+    for _, key in ipairs(BOOKINFO_KEYS) do
+        local value = comic[key]
+        if value ~= nil and value ~= "" then
+            patch[key] = value
+        end
+    end
+    return next(patch) and patch or nil
+end
+
+-- Merge ComicInfo fields into an existing bookinfo row.
+local function enrichBookInfoFromComic(bim, filepath)
+    if not isCbz(filepath) then return false end
+    if type(bim) ~= "table" or type(bim.setBookInfoProperties) ~= "function" then
+        return false
+    end
+    local patch = bookinfoPatchFromComic(readComicInfoProps(filepath))
+    if not patch then return false end
+    return pcall(bim.setBookInfoProperties, bim, filepath, patch)
+end
+
 -- ---------------------------------------------------------------------------
--- Recognition: storage path or origin-id ZIP comment
+-- Chapter-archive recognition
 -- ---------------------------------------------------------------------------
 
-local origin_metadata_cache = {}
-local function hasOriginMetadata(path)
-    if origin_metadata_cache[path] ~= nil then
-        return origin_metadata_cache[path]
-    end
+local origin_cache = newCache()
+
+local function hasOriginComment(path)
+    local cached = cacheGet(origin_cache, path)
+    if cached ~= nil then return cached end
+
     local comment = readZipComment(path)
-    local has_origin = type(comment) == "string"
+    local has = type(comment) == "string"
         and comment:find('"chapter_id"', 1, true) ~= nil
         and comment:find('"manga_id"', 1, true) ~= nil
         and comment:find('"source_id"', 1, true) ~= nil
-    origin_metadata_cache[path] = has_origin
-    return has_origin
+    cacheSet(origin_cache, path, has)
+    return has
 end
 
 local storage_path_loaded = false
 local storage_path_cache
+
 local function getChapterStoragePath()
     if storage_path_loaded then return storage_path_cache end
     storage_path_loaded = true
@@ -416,49 +494,61 @@ local function getChapterStoragePath()
     local content = require("util").readFromFile(home .. "/settings.json", "rb")
     if content then
         local ok_json, rapidjson = pcall(require, "rapidjson")
-        local ok_decode, settings = false, nil
         if ok_json then
-            ok_decode, settings = pcall(rapidjson.decode, content)
-        end
-        if ok_decode and type(settings) == "table"
-                and type(settings.storage_path) == "string"
-                and settings.storage_path ~= "" then
-            storage = absoluteDataPath(settings.storage_path)
+            local ok_decode, settings = pcall(rapidjson.decode, content)
+            if ok_decode and type(settings) == "table"
+                    and type(settings.storage_path) == "string"
+                    and settings.storage_path ~= "" then
+                storage = absoluteDataPath(settings.storage_path)
+            end
         end
     end
     storage_path_cache = normalizePath(storage)
     return storage_path_cache
 end
 
-local function isChapterArchive(path)
-    if type(path) ~= "string" then return false end
-    if path:lower():sub(-4) ~= ".cbz" then return false end
-    local storage = getChapterStoragePath()
-    return pathIsUnder(path, storage) or hasOriginMetadata(path)
+-- Cheap entry-presence probe (no decompress / parse).
+local comicinfo_presence_cache = newCache()
+
+local function hasComicInfoEntry(path)
+    local size, mtime = fileIdentity(path)
+    local cached = cacheGet(comicinfo_presence_cache, path)
+    if cached and cached.size == size and cached.mtime == mtime then
+        return cached.has
+    end
+    local has = zipHasEntry(path, COMICINFO_NAMES)
+    cacheSet(comicinfo_presence_cache, path, {
+        size = size, mtime = mtime, has = has,
+    })
+    return has
 end
 
-local function getChapterArchiveProvider(path)
-    if type(path) ~= "string" or path:lower():sub(-4) ~= ".cbz"
-            or not isChapterArchive(path) then
-        return nil
+local function isChapterArchive(path)
+    if not isCbz(path) then return false end
+    local storage = getChapterStoragePath()
+    if pathIsUnder(path, storage) or hasOriginComment(path) then
+        return true
     end
-    local ok_cbz, CbzDocument = pcall(require, "extensions/CbzDocument")
-    if not (ok_cbz and type(CbzDocument) == "table") then
-        return nil
-    end
+    return hasComicInfoEntry(path)
+end
 
-    -- Patch once: prefer pure-Lua ComicInfo.xml, then fall back to the
-    -- provider's own binary/server path. Also normalise author/notes keys
-    -- to the plural forms BookInfoManager stores.
-    if not CbzDocument._simpleui_authors_field_patched then
-        CbzDocument._simpleui_authors_field_patched = true
-        local orig_getDocumentProps = CbzDocument.getDocumentProps
+-- ---------------------------------------------------------------------------
+-- Companion document provider (optional)
+-- ---------------------------------------------------------------------------
+
+local function getChapterArchiveProvider(path)
+    if not isChapterArchive(path) then return nil end
+
+    local ok, CbzDocument = pcall(require, "extensions/CbzDocument")
+    if not (ok and type(CbzDocument) == "table") then return nil end
+
+    if not CbzDocument._simpleui_comicinfo_patched then
+        CbzDocument._simpleui_comicinfo_patched = true
+        local orig = CbzDocument.getDocumentProps
         function CbzDocument:getDocumentProps(...)
-            local props = orig_getDocumentProps(self, ...)
+            local props = orig(self, ...)
             if type(props) ~= "table" then props = {} end
 
-            -- Fill gaps from ComicInfo.xml without depending on the
-            -- external cbz_metadata_reader binary (unusable on Android).
             local comic = readComicInfoProps(self.file)
             if comic then
                 for key, value in pairs(comic) do
@@ -468,7 +558,6 @@ local function getChapterArchiveProvider(path)
                     end
                 end
             end
-
             if (not props.authors or props.authors == "") and props.author then
                 props.authors = props.author
             end
@@ -482,21 +571,7 @@ local function getChapterArchiveProvider(path)
     return CbzDocument
 end
 
--- ---------------------------------------------------------------------------
--- External sources known to this module. Each entry is self-contained:
--- getProvider(path) returns the document provider to extract metadata with
--- for a recognized file, or nil for anything it doesn't own. Cheap checks
--- (extension, path) must run before any expensive ones — this runs on
--- every file passed through BookInfoManager.extractBookInfo, not just
--- matching ones. A source's own provider require doubles as its
--- availability check: if the companion plugin isn't installed, the
--- require fails and getProvider returns nil, so no separate
--- "is this plugin loaded" probe is needed here.
--- ---------------------------------------------------------------------------
-
-local SOURCES = {
-    getChapterArchiveProvider,
-}
+local SOURCES = { getChapterArchiveProvider }
 
 local function resolveProvider(path)
     for _, getProvider in ipairs(SOURCES) do
@@ -508,6 +583,46 @@ end
 -- ---------------------------------------------------------------------------
 -- BookInfoManager patch
 -- ---------------------------------------------------------------------------
+
+-- Text-only snapshot of a complete row. Used when getBookInfo returns nil
+-- during an in-progress re-extract so the UI can keep showing title/author.
+local display_cache = newCache()
+
+local function snapshotMeta(bi)
+    if type(bi) ~= "table" then return nil end
+    local has_text = (bi.title and bi.title ~= "")
+        or (bi.authors and bi.authors ~= "")
+        or (bi.series and bi.series ~= "")
+    if not has_text then return nil end
+    return {
+        title        = bi.title,
+        authors      = bi.authors,
+        series       = bi.series,
+        series_index = bi.series_index,
+        description  = bi.description,
+        language     = bi.language,
+        keywords     = bi.keywords,
+        pages        = bi.pages,
+    }
+end
+
+local function syntheticFromSnapshot(snap)
+    return {
+        title         = snap.title,
+        authors       = snap.authors,
+        series        = snap.series,
+        series_index  = snap.series_index,
+        description   = snap.description,
+        language      = snap.language,
+        keywords      = snap.keywords,
+        pages         = snap.pages,
+        has_meta      = "Y",
+        -- No cover payload: force callers to keep polling until the real row
+        -- is written back, without inventing a cover bitmap.
+        cover_fetched = false,
+        has_cover     = false,
+    }
+end
 
 function Providers.install()
     local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
@@ -523,46 +638,118 @@ function Providers.install()
         return true
     end
 
+    local orig_getBookInfo = BookInfoManager.getBookInfo
     local orig_extractBookInfo = BookInfoManager.extractBookInfo
-    function BookInfoManager:extractBookInfo(filepath, ...)
-        local provider = resolveProvider(filepath)
-        if not provider then
-            return orig_extractBookInfo(self, filepath, ...)
+    local orig_extractInBackground = BookInfoManager.extractInBackground
+
+    -- True when the cached row is good enough that a full extract would only
+    -- wipe and rewrite the same data (the mass-reset problem on folder refresh).
+    local function canSkipExtract(bim, filepath, cover_specs)
+        if type(orig_getBookInfo) ~= "function" then return false end
+        local ok, bi = pcall(orig_getBookInfo, bim, filepath, false)
+        if not ok or not bi or not bi.cover_fetched then return false end
+        if bi.has_cover and cover_specs
+                and type(bim.isCachedCoverInvalid) == "function"
+                and bim.isCachedCoverInvalid(bi, cover_specs) then
+            return false
+        end
+        -- Cover state is fine. Fill any missing text from ComicInfo without
+        -- opening the document engine.
+        if isCbz(filepath) then
+            local need_meta = (not bi.title or bi.title == "")
+                or (not bi.authors or bi.authors == "")
+                or (not bi.series or bi.series == "")
+            if need_meta then
+                enrichBookInfoFromComic(bim, filepath)
+            end
+        end
+        return true
+    end
+
+    function BookInfoManager:extractBookInfo(filepath, cover_specs, ...)
+        if canSkipExtract(self, filepath, cover_specs) then
+            return true
         end
 
-        local orig_getProvider = DocumentRegistry.getProvider
-        DocumentRegistry.getProvider = function(registry, file, ...)
-            if file == filepath then return provider end
-            return orig_getProvider(registry, file, ...)
+        local provider = resolveProvider(filepath)
+        local result
+
+        if provider then
+            local orig_getProvider = DocumentRegistry.getProvider
+            DocumentRegistry.getProvider = function(registry, file, ...)
+                if file == filepath then return provider end
+                return orig_getProvider(registry, file, ...)
+            end
+            local ok, extract_result = pcall(
+                orig_extractBookInfo, self, filepath, cover_specs, ...)
+            DocumentRegistry.getProvider = orig_getProvider
+            if not ok then
+                logger.warn("simpleui: metadata extraction failed:", tostring(extract_result))
+                error(extract_result, 0)
+            end
+            result = extract_result
+        else
+            result = orig_extractBookInfo(self, filepath, cover_specs, ...)
         end
-        local ok_extract, result = pcall(orig_extractBookInfo, self, filepath, ...)
-        DocumentRegistry.getProvider = orig_getProvider
-        if not ok_extract then
-            logger.warn("simpleui: external metadata extraction failed:", tostring(result))
-            error(result, 0)
-        end
+
+        enrichBookInfoFromComic(self, filepath)
         return result
     end
 
-    -- Cached rows for a recognized external source are self-healing: if a
-    -- row is missing title or authors (e.g. an earlier extraction ran before
-    -- this module recognized the file), it is evicted once per session so
-    -- the next lookup re-extracts through the redirected provider above
-    -- instead of returning incomplete data indefinitely.
-    if type(BookInfoManager.deleteBookInfo) == "function" then
-        local orig_getBookInfo = BookInfoManager.getBookInfo
-        local healed = {}
+    -- Drop already-complete files before launching a background batch so a
+    -- single new chapter does not re-queue (and wipe) the rest of the folder.
+    if type(orig_extractInBackground) == "function" then
+        function BookInfoManager:extractInBackground(files)
+            if type(files) ~= "table" or #files == 0 then
+                return orig_extractInBackground(self, files)
+            end
+            local filtered = {}
+            for _, entry in ipairs(files) do
+                local fp = type(entry) == "table" and entry.filepath or entry
+                local specs = type(entry) == "table" and entry.cover_specs or nil
+                if not canSkipExtract(self, fp, specs) then
+                    filtered[#filtered + 1] = entry
+                end
+            end
+            if #filtered == 0 then return true end
+            return orig_extractInBackground(self, filtered)
+        end
+    end
+
+    if type(orig_getBookInfo) == "function" then
+        local healed = newCache()
         function BookInfoManager:getBookInfo(filepath, ...)
             local bookinfo = orig_getBookInfo(self, filepath, ...)
-            if bookinfo and not healed[filepath]
-                    and (not bookinfo.title or bookinfo.title == ""
-                        or not bookinfo.authors or bookinfo.authors == "")
-                    and resolveProvider(filepath) then
-                healed[filepath] = true
-                self:deleteBookInfo(filepath)
-                return orig_getBookInfo(self, filepath, ...)
+
+            if bookinfo then
+                local snap = snapshotMeta(bookinfo)
+                if snap then cacheSet(display_cache, filepath, snap) end
+
+                if isCbz(filepath) and not cacheGet(healed, filepath) then
+                    local incomplete = (not bookinfo.title or bookinfo.title == "")
+                        or (not bookinfo.authors or bookinfo.authors == "")
+                        or (not bookinfo.series or bookinfo.series == "")
+                    if incomplete then
+                        cacheSet(healed, filepath, true)
+                        if enrichBookInfoFromComic(self, filepath) then
+                            bookinfo = orig_getBookInfo(self, filepath, ...)
+                            if bookinfo then
+                                local snap2 = snapshotMeta(bookinfo)
+                                if snap2 then cacheSet(display_cache, filepath, snap2) end
+                            end
+                        end
+                    end
+                end
+                return bookinfo
             end
-            return bookinfo
+
+            -- Row missing (never extracted, or temporarily replaced while
+            -- in_progress). Serve last known text metadata when available.
+            local snap = cacheGet(display_cache, filepath)
+            if snap then
+                return syntheticFromSnapshot(snap)
+            end
+            return nil
         end
     end
 

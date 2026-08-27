@@ -69,7 +69,6 @@ M.ICON = {
     night          = _P .. "night.svg",
     stats          = _P .. "stats.svg",
     power          = _P .. "power.svg",
-    backup         = _P .. "backup.svg",
     plus_alt       = _P .. "plus_alt.svg",
     custom         = _P .. "custom.svg",
     custom_dir     = _P .. "custom",
@@ -129,7 +128,6 @@ M.ALL_ACTIONS = {
     { id = "stats_calendar",   label = _("Stats"),            icon = M.ICON.stats       },
     { id = "power",            label = _("Power"),            icon = M.ICON.power       },
     { id = "sui_settings",     label = _("Settings"),         icon = M.ICON.ko_settings },
-    { id = "backup_export",    label = _("Backup"),           icon = M.ICON.backup },
     { id = "browse_authors",   label = _("Authors"),          icon = M.ICON.author,
       browsemeta_mode = "author" },
     { id = "browse_series",    label = _("Series"),           icon = M.ICON.series,
@@ -1693,16 +1691,36 @@ function M.flushCoverQueue()
     end
     local files = {}
     for _, fp in ipairs(queue) do
-        if _lfsMode(fp) == "file" then
-            files[#files + 1] = { filepath = fp, cover_specs = M._cover_extract_specs[fp] }
-        else
-            M._cover_extract_pending[fp] = nil
-        end
+        local specs = M._cover_extract_specs[fp]
         M._cover_extract_specs[fp] = nil
+        if _lfsMode(fp) ~= "file" then
+            M._cover_extract_pending[fp] = nil
+        else
+            -- Skip files that already have a usable cached cover: avoids
+            -- re-queuing (and wiping) complete rows when only one new file
+            -- needs extraction. extractInBackground applies the same filter.
+            local skip = false
+            local ok_bi, bi = pcall(bim.getBookInfo, bim, fp, false)
+            if ok_bi and bi and bi.cover_fetched then
+                local invalid = bi.has_cover and specs
+                    and type(bim.isCachedCoverInvalid) == "function"
+                    and bim.isCachedCoverInvalid(bi, specs)
+                if not invalid then
+                    skip = true
+                    M._cover_extract_pending[fp] = nil
+                end
+            end
+            if not skip then
+                files[#files + 1] = { filepath = fp, cover_specs = specs }
+            end
+        end
     end
+    if #files == 0 then return end
     local ok = pcall(bim.extractInBackground, bim, files)
     if not ok then
-        for _, fp in ipairs(queue) do M._cover_extract_pending[fp] = nil end
+        for _, entry in ipairs(files) do
+            M._cover_extract_pending[entry.filepath] = nil
+        end
     end
 end
 
