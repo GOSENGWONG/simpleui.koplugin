@@ -244,12 +244,21 @@ end
 function Backup.getBackupsDir()
     local base = _dataDir()
     if not base then return nil end
-    local dir = base .. "/backups"
     local lfs = _lfs()
-    if lfs and lfs.attributes(dir, "mode") ~= "directory" then
-        pcall(lfs.mkdir, dir)
+    if lfs then
+        if lfs.attributes(base, "mode") ~= "directory" then
+            pcall(lfs.mkdir, base)
+        end
+        local dir = base .. "/backups"
+        if lfs.attributes(dir, "mode") ~= "directory" then
+            pcall(lfs.mkdir, dir)
+        end
+        if lfs.attributes(dir, "mode") == "directory" then
+            return dir
+        end
+        return nil
     end
-    return dir
+    return base .. "/backups"
 end
 
 --- Map an absolute path inside the simpleui/ tree to a "@dir_rel/rel" token.
@@ -487,8 +496,7 @@ local function _buildSnapshot(scope)
     end
 
     local start_with_hs = false
-    local G = G_reader_settings
-    if G and G.readSetting("start_with") == "homescreen_simpleui" then
+    if G_reader_settings and G_reader_settings:readSetting("start_with") == "homescreen_simpleui" then
         start_with_hs = true
     end
 
@@ -513,6 +521,9 @@ function Backup.export(filepath)
     local meta_ok, Meta = pcall(dofile, require("infra/sui_paths").getPluginDirNoSlash() .. "/_meta.lua")
 
     local f = LuaSettings:open(filepath)
+    if not f or type(f.data) ~= "table" then
+        return nil, _("Could not open backup file for writing")
+    end
     f:saveSetting("type", "simpleui_backup")
     f:saveSetting("format_version", Backup.FORMAT_VERSION)
     f:saveSetting("created", os.time())
@@ -557,7 +568,7 @@ function Backup.parse(filepath)
     end
 
     local ok, f = pcall(LuaSettings.open, LuaSettings, filepath)
-    if not ok or not f then
+    if not ok or not f or type(f.data) ~= "table" then
         return nil, _("Not a valid backup file.")
     end
     local typ = f:readSetting("type")
@@ -918,7 +929,9 @@ local function _presentCategories(parsed)
 end
 
 --- Parse a .sui file chosen in the browser and stage it for import.
-local function _loadBackupFile(filepath)
+--- ctx_menu is optional; when present its refresh() rebuilds the current
+--- SUIWindow nested menu so category toggles appear immediately.
+local function _loadBackupFile(filepath, ctx_menu)
     local UIManager   = require("ui/uimanager")
     local InfoMessage = require("ui/widget/infomessage")
 
@@ -939,13 +952,16 @@ local function _loadBackupFile(filepath)
     end
 
     _pending_import = { parsed = parsed, filter = present }
+    if ctx_menu and ctx_menu.refresh then
+        ctx_menu.refresh()
+    end
     UIManager:show(InfoMessage:new{
         text    = _("Backup loaded. Choose what to import, then tap \"Restore Selected…\"."),
         timeout = 4,
     })
 end
 
-local function _startImportFlow()
+local function _startImportFlow(ctx_menu)
     local UIManager = require("ui/uimanager")
     local InfoMessage = require("ui/widget/infomessage")
     local dir = Backup.getBackupsDir()
@@ -960,7 +976,7 @@ local function _startImportFlow()
         show_thumbnails = false,
         title           = _("Choose backup file"),
         onConfirm       = function(path)
-            _loadBackupFile(path)
+            _loadBackupFile(path, ctx_menu)
         end,
     })
 end
@@ -998,6 +1014,9 @@ local function _confirmRestore(ctx_menu)
                 return
             end
             _pending_import = nil
+            if ctx_menu and ctx_menu.refresh then
+                ctx_menu.refresh()
+            end
             UIManager:show(ConfirmBox:new{
                 text        = _("Backup restored.\nRestart KOReader now to finish applying all changes?"),
                 ok_text     = _("Restart now"),
@@ -1130,47 +1149,52 @@ function Backup.makeMenuItems(ctx_menu)
     }
 
     -- ── Import ──────────────────────────────────────────────────────────────
-    local import_items = {}
+    -- Built via sub_item_table_func so a loaded backup reappears on the next
+    -- menu rebuild (SUIWindow nested_menu re-calls items_func on repaint;
+    -- native TouchMenu re-calls this when the submenu is entered again).
+    items[#items + 1] = {
+        text = _("Import Backup…"),
+        sub_item_table_func = function()
+            local import_items = {}
 
-    import_items[#import_items + 1] = {
-        text      = _("Choose backup file…"),
-        callback  = function() _startImportFlow() end,
-        separator = true,
-    }
+            import_items[#import_items + 1] = {
+                text      = _("Choose backup file…"),
+                callback  = function() _startImportFlow(ctx_menu) end,
+                separator = true,
+            }
 
-    local pend = _pending_import
-    if pend then
-        local import_entries = {}
-        for _i, cat in ipairs(Backup.CATEGORIES) do
-            local cat_id = cat.id
-            if pend.filter[cat_id] ~= nil then
-                import_entries[#import_entries + 1] = {
-                    label = cat.label,
-                    get   = function() return pend.filter[cat_id] == true end,
-                    set   = function(v) pend.filter[cat_id] = v end,
+            local pend = _pending_import
+            if pend then
+                local import_entries = {}
+                for _i, cat in ipairs(Backup.CATEGORIES) do
+                    local cat_id = cat.id
+                    if pend.filter[cat_id] ~= nil then
+                        import_entries[#import_entries + 1] = {
+                            label = cat.label,
+                            get   = function() return pend.filter[cat_id] == true end,
+                            set   = function(v) pend.filter[cat_id] = v end,
+                        }
+                    end
+                end
+                for _i, row in ipairs(_makeToggleItems(import_entries)) do
+                    import_items[#import_items + 1] = row
+                end
+                import_items[#import_items + 1] = {
+                    text      = _("Restore Selected…"),
+                    separator = true,
+                    callback  = function() _confirmRestore(ctx_menu) end,
+                }
+            else
+                -- dim (not enabled=false): SUIWindow hides enabled=false rows
+                -- completely; we want a visible-but-inactive placeholder.
+                import_items[#import_items + 1] = {
+                    text = _("No backup loaded yet."),
+                    dim  = true,
                 }
             end
-        end
-        for _i, row in ipairs(_makeToggleItems(import_entries)) do
-            import_items[#import_items + 1] = row
-        end
-        import_items[#import_items + 1] = {
-            text      = _("Restore Selected…"),
-            separator = true,
-            callback  = function() _confirmRestore(ctx_menu) end,
-        }
-    else
-        -- dim (not enabled=false): SUIWindow hides enabled=false rows
-        -- completely; we want a visible-but-inactive placeholder.
-        import_items[#import_items + 1] = {
-            text = _("No backup loaded yet."),
-            dim  = true,
-        }
-    end
 
-    items[#items + 1] = {
-        text           = _("Import Backup…"),
-        sub_item_table = import_items,
+            return import_items
+        end,
     }
 
     return items
