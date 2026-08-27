@@ -422,9 +422,19 @@ local function _hasBox(pfx)
 end
 
 
--- Clears the stats cache (called from main.lua:onCloseDocument before rebuild).
+-- Clears the entire stats cache. Called from main.lua:onCloseDocument as a
+-- fallback when the closed book's md5 could not be resolved; safe since
+-- fetchBookStats() re-populates entries on demand.
 function M.invalidateCache()
-    -- Stale data is intentionally kept for the async UI update.
+    _bstats_cache = {}
+end
+
+-- Removes only the cache entry for the given md5, leaving stats cached for
+-- every other book intact. Mirrors module_coverdeck.invalidateCacheForMd5;
+-- called from main.lua:onCloseDocument so the closed book's stats are fresh
+-- on the next render without discarding the rest of the cache.
+function M.invalidateCacheForMd5(md5)
+    if md5 then _bstats_cache[md5] = nil end
 end
 
 -- Exposed for pre-computation in _buildCtx (sui_homescreen.lua).

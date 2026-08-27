@@ -100,6 +100,18 @@ local function _getStatsProvider()
     return _SP
 end
 
+-- Predicts which book occupies the Cover Deck's centre slot before any
+-- carousel navigation happens, so its stats can be pre-fetched off the paint
+-- path. Mirrors the ordering rule in module_coverdeck.buildRecentFps(): the
+-- active book takes the centre slot when there is one, otherwise the most
+-- recently read book takes its place. A guard at read time compares this
+-- prediction against the book actually centred in the carousel and falls
+-- back to a live query on mismatch, so an incorrect guess here never shows
+-- the wrong book's stats — it only costs one extra query on that render.
+local function _coverdeckDefaultCenterFp(current_fp, recent_fps)
+    return current_fp or (recent_fps and recent_fps[1])
+end
+
 -- True until the very first ScreenWidget:onShow() this KOReader process (or
 -- plugin hot-reload — this module is evicted from package.loaded on
 -- teardown, which naturally resets this local) has consumed it. That one
@@ -1888,8 +1900,7 @@ function ScreenWidget:_buildCtx()
     -- reuse it directly rather than repeating the visibility logic here.
     local coverdeck_center_stats = nil
     if coverdeck_needs_db and self._db_conn then
-        local saved_center_fp = SUISettings:readSetting(self._pfx .. "flow_recent_fp")
-        local center_fp = saved_center_fp or (bs.recent_fps and bs.recent_fps[1])
+        local center_fp = _coverdeckDefaultCenterFp(bs.current_fp, bs.recent_fps)
         local pe = center_fp and bs.prefetched_data and bs.prefetched_data[center_fp]
         local center_md5 = type(pe) == "table" and pe.partial_md5_checksum
         if center_md5 then
@@ -1917,10 +1928,10 @@ function ScreenWidget:_buildCtx()
             local pe_c  = bs.prefetched_data and bs.prefetched_data[bs.current_fp]
             local c_md5 = type(pe_c) == "table" and pe_c.partial_md5_checksum
             if c_md5 then
-                -- Fix 5: use pcall(require) instead of package.loaded so that the
-                -- module is always resolved even on the very first render, before
-                -- build() has had a chance to load it. require() is idempotent —
-                -- subsequent calls return the cached module at zero extra cost.
+                -- pcall(require) resolves the module even on the very first render,
+                -- before build() has had a chance to load it. require() is
+                -- idempotent — subsequent calls return the cached module at zero
+                -- extra cost.
                 local mc_ok, mc_mod = pcall(require, "modules/module_currently")
                 if mc_ok and mc_mod and mc_mod.fetchBookStatsForCtx then
                     currently_book_stats = {
@@ -2995,9 +3006,10 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
                     end
 
                     local MCD = package.loaded["modules/module_coverdeck"]
-                    if MCD and MCD.fetchBookStatsForCtx and self._ctx_cache.recent_fps then
-                        local saved_center_fp = SUISettings:readSetting(self._pfx .. "flow_recent_fp")
-                        local center_fp = saved_center_fp or self._ctx_cache.recent_fps[1]
+                    if MCD and MCD.fetchBookStatsForCtx
+                            and (self._ctx_cache.current_fp or self._ctx_cache.recent_fps) then
+                        local center_fp = _coverdeckDefaultCenterFp(
+                            self._ctx_cache.current_fp, self._ctx_cache.recent_fps)
                         local pe = center_fp and self._ctx_cache.prefetched and self._ctx_cache.prefetched[center_fp]
                         local md5 = pe and pe.partial_md5_checksum
                         if md5 then

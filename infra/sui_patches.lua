@@ -5002,6 +5002,13 @@ function M.installAll(plugin)
     if ok_sg and SG then
         pcall(SG.install)
     end
+    -- External metadata providers (e.g. companion reader plugins storing
+    -- their own document metadata) — installed unconditionally; the patch
+    -- itself is a no-op for any file none of its sources recognizes.
+    local ok_mp, MP = pcall(require, "features/library/sui_metadata_providers")
+    if ok_mp and MP then
+        pcall(MP.install)
+    end
     -- Virtual author/series browser — installed only when the feature is enabled
     -- in settings (default: on). When disabled, FileChooser is left unpatched so
     -- third-party user-patches (e.g. 2-author-series.lua) can run unobstructed.

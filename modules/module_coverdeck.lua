@@ -644,9 +644,12 @@ function M.reset()
     _bstats_cache_count = 0
 end
 
+-- Clears the entire stats cache. Called from main.lua:onCloseDocument as a
+-- fallback when the closed book's md5 could not be resolved; safe since
+-- fetchBookStats() re-populates entries on demand.
 function M.invalidateCache()
-    -- No-op: M.updateStats always force-refreshes the centre book's stats,
-    -- so the cache self-corrects on the next paint.
+    _bstats_cache       = {}
+    _bstats_cache_count = 0
 end
 
 -- Removes only the cache entry for the given md5, leaving all other books
