@@ -2152,27 +2152,36 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         local function makeModuleSettingsMenu()
             local items    = {}
             local qa_items = {}
+            local function _moduleSettingsItems(_mod)
+                local list = type(_mod.getMenuItems) == "function" and (_mod.getMenuItems(ctx_menu) or {}) or {}
+                list[#list + 1] = Config.makeBentoWidthItem({
+                    get     = function() return Config.getBentoWidth(_mod.id, ctx.pfx) end,
+                    set     = function(v) Config.setBentoWidth(v, _mod.id, ctx.pfx) end,
+                    refresh = ctx_menu.refresh,
+                })
+                return list
+            end
             for _loop_, mod in ipairs(Registry.list()) do
-                if type(mod.getMenuItems) == "function" then
-                    local _mod = mod
-                    local text_fn = function()
-                        local count_lbl = type(_mod.getCountLabel) == "function"
-                            and _mod.getCountLabel(ctx.pfx)
-                        return count_lbl
-                            and (_(_mod.name) .. "  " .. count_lbl) -- FIX: Force translation
-                            or   _(_mod.name)                      -- FIX: Force translation
-                    end
-                    if _mod.id:match("_row_") then
-                        qa_items[#qa_items + 1] = {
-                            text_func           = text_fn,
-                            sub_item_table_func = function() return _mod.getMenuItems(ctx_menu) end,
-                        }
-                    else
-                        items[#items + 1] = {
-                            text_func           = text_fn,
-                            sub_item_table_func = function() return _mod.getMenuItems(ctx_menu) end,
-                        }
-                    end
+                -- Every module gets a settings entry so Column width is reachable
+                -- from the global menu as well as from long-press on the homescreen.
+                local _mod = mod
+                local text_fn = function()
+                    local count_lbl = type(_mod.getCountLabel) == "function"
+                        and _mod.getCountLabel(ctx.pfx)
+                    return count_lbl
+                        and (_(_mod.name) .. "  " .. count_lbl)
+                        or   _(_mod.name)
+                end
+                if _mod.id:match("_row_") then
+                    qa_items[#qa_items + 1] = {
+                        text_func           = text_fn,
+                        sub_item_table_func = function() return _moduleSettingsItems(_mod) end,
+                    }
+                else
+                    items[#items + 1] = {
+                        text_func           = text_fn,
+                        sub_item_table_func = function() return _moduleSettingsItems(_mod) end,
+                    }
                 end
             end
             if #qa_items > 0 then

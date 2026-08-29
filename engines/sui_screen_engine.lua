@@ -307,8 +307,16 @@ local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
                 face    = face_right,
                 bold    = false,
             }
-            local gap      = PAD
-            local row_h    = right_widget:getSize().h
+            local gap = PAD
+            local title_widget = UI.makeColoredText{
+                text    = text,
+                face    = face,
+                bold    = true,
+            }
+            -- Shared row height so title, "1/2", and chevrons centre on one line.
+            local title_h = title_widget:getSize().h
+            local right_h = right_widget:getSize().h
+            local row_h   = math.max(title_h, right_h)
 
             -- Chevrons, one on each side of right_widget. Built lazily
             -- (same require-on-first-use pattern as elsewhere in this file)
@@ -329,32 +337,25 @@ local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
 
             local right_w  = right_widget:getSize().w + nav_w
             local title_w  = math.max(1, avail_w - right_w - gap)
-            local title_widget = UI.makeColoredText{
-                text    = text,
-                face    = face,
-                bold    = true,
-            }
-            -- BUGFIX: TextWidget doesn't have a `width` option that pads its
-            -- reported size — only `max_width`, and even then getSize()
-            -- always reflects the real glyph width (never padded up when
-            -- the text is shorter). Passing `width = title_w` above did
-            -- nothing: the title's HorizontalGroup slot was only ever as
-            -- wide as the rendered text itself, so right_text ended up
-            -- right after the title instead of at the row's right edge.
-            -- LeftContainer with an explicit dimen gives it a real,
-            -- title_w-wide slot regardless of how short the title text is.
+            -- LeftContainer gives the title a real title_w-wide slot so the
+            -- page indicator stays at the row's right edge (TextWidget's
+            -- getSize() only reports glyph width, never pads to max_width).
             local title_slot = LeftContainer:new{
-                dimen = Geom:new{ w = title_w, h = title_widget:getSize().h },
+                dimen = Geom:new{ w = title_w, h = row_h },
                 title_widget,
             }
-            content = HorizontalGroup:new{ align = "bottom" }
+            local right_slot = CenterContainer:new{
+                dimen = Geom:new{ w = right_widget:getSize().w, h = row_h },
+                right_widget,
+            }
+            content = HorizontalGroup:new{ align = "center" }
             table.insert(content, title_slot)
             table.insert(content, HorizontalSpan:new{ width = gap })
             if prev_button then
                 table.insert(content, prev_button)
                 table.insert(content, HorizontalSpan:new{ width = gap })
             end
-            table.insert(content, right_widget)
+            table.insert(content, right_slot)
             if next_button then
                 table.insert(content, HorizontalSpan:new{ width = gap })
                 table.insert(content, next_button)
@@ -2192,6 +2193,15 @@ function ScreenWidget:_openModuleSettingsFor(mod)
                 })
                 items[#items + 1] = gap_item
             end
+            -- Column width (bento grid) — same chrome slot for every module.
+            items[#items + 1] = Config.makeBentoWidthItem({
+                get     = function() return Config.getBentoWidth(mod.id, self._pfx) end,
+                set     = function(v)
+                    Config.setBentoWidth(v, mod.id, self._pfx)
+                    screen._enabled_mods_cache = nil
+                end,
+                refresh = ctx_menu.refresh,
+            })
             return SUIWindow.MenuTable{
                 items          = items,
                 inner_w        = ctx.inner_w,
@@ -2331,19 +2341,43 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
     local layout_fingerprint = ""
     local pages_by_id = {}
     
+    -- Column widths come from per-module settings (bento grid), not the layout.
+    local mod_col_width = {}
     if layout and type(layout.pages) == "table" then
         for _, page in ipairs(layout.pages) do
             local page_ids = {}
-            for _, mod_id in ipairs(page.modules) do
-                table.insert(page_ids, mod_id)
-                layout_fingerprint = layout_fingerprint .. mod_id .. ","
+            for _, entry in ipairs(page.modules) do
+                -- Accept legacy { id, width } entries and migrate width to settings.
+                local mod_id
+                if type(entry) == "table" then
+                    mod_id = entry.id
+                    if type(entry.width) == "number" and mod_id then
+                        Config.setBentoWidth(entry.width, mod_id, self._pfx)
+                    end
+                else
+                    mod_id = entry
+                end
+                if mod_id then
+                    table.insert(page_ids, mod_id)
+                    local bw = Config.getBentoWidth(mod_id, self._pfx)
+                    mod_col_width[mod_id] = bw
+                    layout_fingerprint = layout_fingerprint .. mod_id .. ":" .. tostring(bw) .. ","
+                end
             end
             layout_fingerprint = layout_fingerprint .. "|"
             table.insert(pages_by_id, page_ids)
         end
     else
         pages_by_id = splitOrderIntoPages(raw_order)
-        layout_fingerprint = table.concat(raw_order, ",")
+        for _, mod_id in ipairs(raw_order) do
+            if mod_id ~= "__page_break__" then
+                local bw = Config.getBentoWidth(mod_id, self._pfx)
+                mod_col_width[mod_id] = bw
+                layout_fingerprint = layout_fingerprint .. mod_id .. ":" .. tostring(bw) .. ","
+            else
+                layout_fingerprint = layout_fingerprint .. "|"
+            end
+        end
     end
 
     if not self._enabled_mods_cache
@@ -2490,251 +2524,253 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
     local first_mod      = true
     local page_has_covers = false
 
-    if is_landscape then
-        -- col_w / portrait_inner_w = the scale factor for this layout's
-        -- modules. getSpreadColWidth/getPortraitInnerW are the same
-        -- formulas UI.getLandscapeFactor() uses for callers with no inner_w.
-        local COL_GAP = PAD
-        local col_w   = UI.getSpreadColWidth(inner_w)
-        local portrait_inner_w = UI.getPortraitInnerW()
-        _landscape_factor     = (portrait_inner_w > 0) and (col_w / portrait_inner_w) or 1
-        ctx.landscape_factor  = _landscape_factor
+    -- Bento packing (portrait and landscape):
+    --   • width < 100% → column of that share of the row
+    --   • consecutive modules whose widths fit (sum ≤ 100) sit side by side
+    --   • when a module no longer fits horizontally, it stacks into an
+    --     existing column that has the same width (same % only); otherwise
+    --     a new row starts
+    --   • 100% (default) always takes a full-width row of its own
+    --   • rows whose columns sum to < 100% are centred in the container
+    -- In landscape the same rules apply inside each spread column.
+    do
+        -- Shared horizontal gap: bento columns and landscape page split.
+        -- TEMP test: 1 px (was Screen:scaleBySize(6))
+        local H_COL_GAP = 1
+        mod_col_width = mod_col_width or {}
 
-        -- Stored here for the clock tick path which rebuilds outside _updatePage.
-        self._clock_landscape_factor = _landscape_factor
-
-        -- Spread mode: left = current page, right = next page.
-        -- Solo mode (odd total, last page): split this page's modules in half.
-        local right_page_mods = pages_of_mods[self._current_page + 1]
-        local is_spread       = right_page_mods ~= nil
-
-        local left_col  = {}
-        local right_col = {}
-
-        if is_spread then
-            for _, mod in ipairs(cur_page_mods) do
-                if mod.has_covers then page_has_covers = true end
-                local ok_w, widget = pcall(mod.build, col_w, ctx)
-                if not ok_w or not widget then
-                    logger.warn("simpleui: screen (" .. tostring(self._id) .. "): build failed for "
-                                .. tostring(mod.id) .. ": " .. tostring(widget))
-                else
-                    left_col[#left_col + 1] = { mod = mod, widget = widget }
-                end
-            end
-            for _, mod in ipairs(right_page_mods) do
-                if mod.has_covers then page_has_covers = true end
-                local ok_w, widget = pcall(mod.build, col_w, ctx)
-                if not ok_w or not widget then
-                    logger.warn("simpleui: screen (" .. tostring(self._id) .. "): build failed for "
-                                .. tostring(mod.id) .. ": " .. tostring(widget))
-                else
-                    right_col[#right_col + 1] = { mod = mod, widget = widget }
-                end
-            end
-        else
-            local col_mods = {}
-            for _, mod in ipairs(cur_page_mods) do
-                if mod.has_covers then page_has_covers = true end
-                col_mods[#col_mods + 1] = mod
-            end
-            local n_col    = #col_mods
-            local split_at = math.ceil(n_col / 2)
-            for i, mod in ipairs(col_mods) do
-                local ok_w, widget = pcall(mod.build, col_w, ctx)
-                if not ok_w or not widget then
-                    logger.warn("simpleui: screen (" .. tostring(self._id) .. "): build failed for "
-                                .. tostring(mod.id) .. ": " .. tostring(widget))
-                else
-                    if i <= split_at then
-                        left_col[#left_col + 1]  = { mod = mod, widget = widget }
-                    else
-                        right_col[#right_col + 1] = { mod = mod, widget = widget }
-                    end
-                end
-            end
-        end
-
-        -- Builds a VerticalGroup from a list of {mod, widget} entries.
-        local function _build_col_group(entries)
-            local col_body  = VerticalGroup:new{ align = "left" }
-            local col_first = true
-            for _, entry in ipairs(entries) do
-                local mod    = entry.mod
-                local widget = entry.widget
-                if col_first then
-                    col_first = false
-                    local gap_px = mod_gaps[mod.id] or MOD_GAP
-                    local initial_pad = topbar_on and gap_px or (gap_px + MOD_GAP)
-                    col_body[#col_body+1] = self:_vspan(initial_pad)
-                else
-                    col_body[#col_body+1] = self:_vspan(mod_gaps[mod.id] or MOD_GAP)
-                end
-                if mod.label then
-                    local label_text = (type(mod.label_func) == "function" and mod.label_func(ctx)) or mod.label
-                    col_body[#col_body+1] = sectionLabel(label_text, col_w, labelRightTextFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
-                    if mod.is_book_mod then
-                        self._book_mod_label_slots[mod.id] = {
-                            parent = col_body,
-                            index  = #col_body,
-                            mod    = mod,
-                            col_w  = col_w,
-                        }
-                    end
-                end
-                local has_menu   = type(mod.getMenuItems) == "function"
-                local entry_widget = has_menu
-                    and self:_makeModWrapper(mod, widget, col_w)
-                    or  widget
-                col_body[#col_body+1] = entry_widget
-                -- Record slot for per-module cover poll (only for cover modules).
-                if mod.has_covers and type(mod.updateCovers) == "function" then
-                    self._cover_mod_slots[mod.id] = {
-                        mod    = mod,
-                        widget = widget,  -- raw widget with _cover_slots attached
-                    }
-                end
-                if mod.is_book_mod then
-                    self._book_mod_slots[mod.id] = {
-                        mod      = mod,
-                        widget   = widget,
-                        parent   = col_body,
-                        index    = #col_body,
-                        col_w    = col_w,
-                        has_menu = has_menu,
-                    }
-                end
-                if type(mod.updateStats) == "function" then
-                    self._stats_mod_slots[mod.id] = { mod = mod, widget = widget }
-                end
-            end
-            return col_body
-        end
-
-        -- Locates the child index of the clock module within a column group
-        -- by replaying the same insertion order used in _build_col_group.
-        local function _locate_clock_idx(col_entries, _col_group)
-            local gi        = 0
-            local col_first = true
-            for _, entry in ipairs(col_entries) do
-                if col_first then col_first = false
-                else gi = gi + 1 end
-                if entry.mod.label then gi = gi + 1 end
-                gi = gi + 1
-                if entry.mod.id == "clock" then
-                    return gi
-                end
-            end
-            return nil
-        end
-
-        if #left_col > 0 or #right_col > 0 then
-            if first_mod then first_mod = false
-            else body[#body+1] = self:_vspan(MOD_GAP) end
-
-            local left_group  = _build_col_group(left_col)
-            local right_group = _build_col_group(right_col)
-
-            local row = HorizontalGroup:new{
-                align = "top",
-                left_group,
-                HorizontalSpan:new{ width = COL_GAP },
-                right_group,
-            }
-            body[#body+1] = row
-
-            local lci = _locate_clock_idx(left_col,  left_group)
-            if lci then
-                self._clock_body_ref   = left_group
-                self._clock_body_idx   = lci
-                for _, e in ipairs(left_col) do
-                    if e.mod.id == "clock" then
-                        self._clock_is_wrapped = type(e.mod.getMenuItems) == "function"
-                        break
-                    end
-                end
-            else
-                local rci = _locate_clock_idx(right_col, right_group)
-                if rci then
-                    self._clock_body_ref = right_group
-                    self._clock_body_idx = rci
-                    for _, e in ipairs(right_col) do
-                        if e.mod.id == "clock" then
-                            self._clock_is_wrapped = type(e.mod.getMenuItems) == "function"
-                            break
-                        end
-                    end
-                end
-            end
-        end
-
-    else
-        -- Portrait single-column layout.
-        self._clock_landscape_factor = nil
-        for _, mod in ipairs(cur_page_mods) do
+        -- Builds label + hold-wrapper cell. Slot registration happens in
+        -- _register_cell once the cell's real parent is known.
+        local function _emit_mod(mod, col_w)
             if mod.has_covers then page_has_covers = true end
-            local ok_w, widget = pcall(mod.build, inner_w, ctx)
+            local ok_w, widget = pcall(mod.build, col_w, ctx)
             if not ok_w then
                 logger.warn("simpleui: screen (" .. tostring(self._id) .. "): build failed for "
                             .. tostring(mod.id) .. ": " .. tostring(widget))
-            elseif widget then
-                if first_mod then
-                    first_mod = false
-                    local gap_px = mod_gaps[mod.id] or MOD_GAP
-                    local initial_pad = topbar_on and gap_px or (gap_px + MOD_GAP)
-                    body[#body+1] = self:_vspan(initial_pad)
-                else
-                    local gap_px = mod_gaps[mod.id] or MOD_GAP
-                    body[#body+1] = self:_vspan(gap_px)
-                end
-                if mod.label then
-                    local label_text = (type(mod.label_func) == "function" and mod.label_func(ctx)) or mod.label
-                    body[#body+1] = sectionLabel(label_text, inner_w, labelRightTextFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
-                    if mod.is_book_mod then
-                        self._book_mod_label_slots[mod.id] = {
-                            parent = body,
-                            index  = #body,
-                            mod    = mod,
-                            col_w  = inner_w,
-                        }
-                    end
-                end
-                local has_menu = type(mod.getMenuItems) == "function"
-                if mod.id == "header" then
-                    self._header_body_idx   = #body + 1
-                    self._header_is_wrapped = has_menu
-                end
-                if mod.id == "clock" then
-                    self._clock_body_idx   = #body + 1
-                    self._clock_body_ref   = body
-                    self._clock_is_wrapped = has_menu
-                end
-                if has_menu then
-                    body[#body+1] = self:_makeModWrapper(mod, widget, inner_w)
-                else
-                    body[#body+1] = widget
-                end
-                -- Record slot for per-module cover poll (only for cover modules).
-                if mod.has_covers and type(mod.updateCovers) == "function" then
-                    self._cover_mod_slots[mod.id] = {
-                        mod    = mod,
-                        widget = widget,
-                    }
-                end
+                return nil
+            end
+            if not widget then return nil end
+
+            local cell = VerticalGroup:new{ align = "left" }
+            if mod.label then
+                local label_text = (type(mod.label_func) == "function" and mod.label_func(ctx)) or mod.label
+                cell[#cell+1] = sectionLabel(label_text, col_w, labelRightTextFor(mod, ctx), pageNavFor(self, mod, ctx), ctx.landscape_factor)
                 if mod.is_book_mod then
-                    self._book_mod_slots[mod.id] = {
-                        mod      = mod,
-                        widget   = widget,
-                        parent   = body,
-                        index    = #body,
-                        col_w    = inner_w,
-                        has_menu = has_menu,
+                    self._book_mod_label_slots[mod.id] = {
+                        parent = cell,
+                        index  = #cell,
+                        mod    = mod,
+                        col_w  = col_w,
                     }
-                end
-                if type(mod.updateStats) == "function" then
-                    self._stats_mod_slots[mod.id] = { mod = mod, widget = widget }
                 end
             end
+            cell[#cell+1] = self:_makeModWrapper(mod, widget, col_w)
+
+            if mod.has_covers and type(mod.updateCovers) == "function" then
+                self._cover_mod_slots[mod.id] = { mod = mod, widget = widget }
+            end
+            if type(mod.updateStats) == "function" then
+                self._stats_mod_slots[mod.id] = { mod = mod, widget = widget }
+            end
+            -- Stash for _register_cell (widget + col_w needed by book slots).
+            cell._sui_mod = mod
+            cell._sui_widget = widget
+            cell._sui_col_w = col_w
+            return cell
+        end
+
+        -- Records clock / header / book-mod slots against the cell itself.
+        -- Clock tick does body[idx][1] = new_widget with is_wrapped: body must
+        -- be the cell VerticalGroup and idx the wrapper index inside it.
+        local function _register_cell(cell)
+            if not cell or not cell._sui_mod then return end
+            local mod = cell._sui_mod
+            local widget = cell._sui_widget
+            local col_w = cell._sui_col_w
+            if mod.id == "clock" then
+                self._clock_body_ref   = cell
+                self._clock_body_idx   = #cell
+                self._clock_is_wrapped = true
+            end
+            if mod.id == "header" then
+                self._header_body_ref   = cell
+                self._header_body_idx   = #cell
+                self._header_is_wrapped = true
+            end
+            if mod.is_book_mod then
+                self._book_mod_slots[mod.id] = {
+                    mod      = mod,
+                    widget   = widget,
+                    parent   = cell,
+                    index    = #cell,
+                    col_w    = col_w,
+                    has_menu = true,
+                }
+            end
+            cell._sui_mod = nil
+            cell._sui_widget = nil
+            cell._sui_col_w = nil
+        end
+
+        -- Packs mods into parent_body. container_w is the full available
+        -- width for a 100% module. first is a one-element table toggled so
+        -- the first row can apply top-of-page padding.
+        local function _pack_bento(mods, parent_body, container_w, first)
+            local function _flush_row(row_cols)
+                if not row_cols or #row_cols == 0 then return end
+                local lead_mod = row_cols[1].mods[1]
+                local gap_px = mod_gaps[lead_mod.id] or MOD_GAP
+                if first[1] then
+                    first[1] = false
+                    local initial_pad = topbar_on and gap_px or (gap_px + MOD_GAP)
+                    parent_body[#parent_body+1] = self:_vspan(initial_pad)
+                else
+                    parent_body[#parent_body+1] = self:_vspan(gap_px)
+                end
+
+                local n = #row_cols
+                local gaps_w = (n - 1) * H_COL_GAP
+                local avail = math.max(1, container_w - gaps_w)
+
+                local sum_pct = 0
+                for _, col in ipairs(row_cols) do sum_pct = sum_pct + col.width end
+
+                local target = {}
+                local allocated = 0
+                for i, col in ipairs(row_cols) do
+                    if i == n then
+                        local row_pixels = math.max(1, math.floor(avail * sum_pct / 100))
+                        target[i] = math.max(1, row_pixels - allocated)
+                    else
+                        target[i] = math.max(1, math.floor(avail * col.width / 100))
+                        allocated = allocated + target[i]
+                    end
+                end
+
+                local h_row = HorizontalGroup:new{ align = "center" }
+                for i, col in ipairs(row_cols) do
+                    local slot_w = target[i]
+                    local v_col = VerticalGroup:new{ align = "left" }
+                    for mi, mod in ipairs(col.mods) do
+                        if mi > 1 then
+                            v_col[#v_col+1] = self:_vspan(mod_gaps[mod.id] or MOD_GAP)
+                        end
+                        local cell = _emit_mod(mod, slot_w)
+                        if cell then
+                            _register_cell(cell)
+                            v_col[#v_col+1] = cell
+                        end
+                    end
+                    -- Pin the column to the allocated slot width. Without this,
+                    -- VerticalGroup reports content width (which can exceed
+                    -- slot_w); neighbouring columns then overlap the
+                    -- HorizontalSpan and the inter-column gap never changes
+                    -- no matter what H_COL_GAP is set to.
+                    local col_h = v_col:getSize().h
+                    h_row[#h_row+1] = LeftContainer:new{
+                        dimen = Geom:new{ w = slot_w, h = col_h },
+                        v_col,
+                    }
+                    if i < n then
+                        h_row[#h_row+1] = HorizontalSpan:new{ width = H_COL_GAP }
+                    end
+                end
+
+                -- Centre when the row does not consume the full container.
+                local content_w = gaps_w
+                for i = 1, n do content_w = content_w + target[i] end
+                local leftover = container_w - content_w
+                if leftover > 1 then
+                    local left_pad = math.floor(leftover / 2)
+                    parent_body[#parent_body+1] = HorizontalGroup:new{
+                        align = "center",
+                        HorizontalSpan:new{ width = left_pad },
+                        h_row,
+                        HorizontalSpan:new{ width = leftover - left_pad },
+                    }
+                else
+                    parent_body[#parent_body+1] = h_row
+                end
+            end
+
+            local row_cols = {}
+            local row_sum = 0
+            for _, mod in ipairs(mods) do
+                -- Width already clamped by Config.getBentoWidth.
+                local w = mod_col_width[mod.id] or 100
+
+                if w >= 100 then
+                    _flush_row(row_cols)
+                    row_cols, row_sum = {}, 0
+                    _flush_row({ { width = 100, mods = { mod } } })
+                elseif row_sum + w <= 100 then
+                    row_cols[#row_cols+1] = { width = w, mods = { mod } }
+                    row_sum = row_sum + w
+                else
+                    -- Stack only onto a column with the same width %.
+                    local stacked = false
+                    for _, col in ipairs(row_cols) do
+                        if col.width == w then
+                            col.mods[#col.mods+1] = mod
+                            stacked = true
+                            break
+                        end
+                    end
+                    if not stacked then
+                        _flush_row(row_cols)
+                        row_cols = { { width = w, mods = { mod } } }
+                        row_sum = w
+                    end
+                end
+            end
+            _flush_row(row_cols)
+        end
+
+        if is_landscape then
+            local col_w = UI.getSpreadColWidth(inner_w)
+            local portrait_inner_w = UI.getPortraitInnerW()
+            _landscape_factor = (portrait_inner_w > 0) and (col_w / portrait_inner_w) or 1
+            ctx.landscape_factor = _landscape_factor
+            self._clock_landscape_factor = _landscape_factor
+
+            -- Spread: left = current page, right = next page.
+            -- Solo (odd total, last page): split this page's modules in half.
+            local right_page_mods = pages_of_mods[self._current_page + 1]
+            local left_mods, right_mods
+            if right_page_mods then
+                left_mods, right_mods = cur_page_mods, right_page_mods
+            else
+                left_mods, right_mods = {}, {}
+                local split_at = math.ceil(#cur_page_mods / 2)
+                for i, mod in ipairs(cur_page_mods) do
+                    if i <= split_at then
+                        left_mods[#left_mods + 1] = mod
+                    else
+                        right_mods[#right_mods + 1] = mod
+                    end
+                end
+            end
+
+            local left_group  = VerticalGroup:new{ align = "left" }
+            local right_group = VerticalGroup:new{ align = "left" }
+            local left_first, right_first = { true }, { true }
+            _pack_bento(left_mods,  left_group,  col_w, left_first)
+            _pack_bento(right_mods, right_group, col_w, right_first)
+
+            if #left_group > 0 or #right_group > 0 then
+                first_mod = false
+                body[#body+1] = HorizontalGroup:new{
+                    align = "top",
+                    left_group,
+                    HorizontalSpan:new{ width = H_COL_GAP },
+                    right_group,
+                }
+            end
+        else
+            self._clock_landscape_factor = nil
+            local first_state = { true }
+            _pack_bento(cur_page_mods, body, inner_w, first_state)
+            first_mod = first_state[1]
         end
     end
 

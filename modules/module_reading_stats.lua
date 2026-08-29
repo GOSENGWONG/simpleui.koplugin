@@ -788,12 +788,7 @@ function M.getMenuItems(ctx_menu)
         },
         _makeScaleItem(ctx_menu),
         Config.makeScaleItem({
-            text_func     = function()
-                local pct = Config.getRSTextScalePct()
-                return pct == Config.RS_TEXT_SCALE_DEF
-                    and _lc("Text Size")
-                    or  string.format(_lc("Text Size — %d%%"), pct)
-            end,
+            text_func     = function() return _lc("Text Size") end,
             title         = _lc("Text Size"),
             info          = _lc("Size of the text inside the stat cards.\nDoes not affect card size or padding.\n100% is the default size."),
             get           = function() return Config.getRSTextScalePct() end,

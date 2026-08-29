@@ -152,8 +152,13 @@ local BUILTIN_PRESETS = {
         settings = {
             simpleui_hs_clock_scale = 100,
             simpleui_hide_label_clock = false,
-            simpleui_hs_quote_source = "quotes",
-            simpleui_hs_quote_align = "center",
+            -- module_quote.lua's SETTING_SOURCE/SETTING_ALIGN constants
+            -- already carry a "simpleui_" prefix of their own, on top of
+            -- the pfx ("simpleui_hs_") every setter/getter concatenates in
+            -- front of them — unlike module_clock's bare "clock_align"
+            -- suffix. The resulting on-disk key really is double-prefixed.
+            simpleui_hs_simpleui_quote_source = "quotes",
+            simpleui_hs_simpleui_quote_align = "center",
             -- "currently" is deliberately left unconfigured here — it renders
             -- with whatever sui_config.lua's applyFirstRunDefaults() (or the
             -- user's own customization, if any) currently defines.
@@ -202,6 +207,39 @@ local BUILTIN_PRESETS = {
             simpleui_hs_recent_show_frame = false,
             simpleui_hs_recent_solid_bg = false,
             simpleui_hide_label_recent = false,
+        }
+    },
+    {
+        id = "builtin_dashboard",
+        name = _("Dashboard"),
+        desc = _("Clock") .. ", " .. _("Quote of the Day") .. ", " .. _("Currently Reading") .. ", "
+            .. _("Reading Goals") .. ", " .. _("Reading Stats"),
+        layout = { pages = { { id = 1, modules = { "clock", "quote", "currently", "reading_goals", "reading_stats" } } } },
+        settings = {
+            simpleui_hs_clock_scale       = 70,
+            simpleui_hs_clock_align       = "left",
+            simpleui_hs_bento_width_clock = 40,
+
+            simpleui_hs_quote_scale             = 80,
+            simpleui_hs_simpleui_quote_align    = "right",  -- see note on the double prefix above
+            simpleui_hs_bento_width_quote       = 60,
+
+            -- "currently" is deliberately left unconfigured here — it renders
+            -- with whatever sui_config.lua's applyFirstRunDefaults() (or the
+            -- user's own customization, if any) currently defines.
+
+            -- simpleui_reading_goal is deliberately left unconfigured here —
+            -- it uses the module's own default annual goal (12 books/year).
+            simpleui_reading_goals_layout          = "rings",
+            simpleui_hs_bento_width_reading_goals  = 40,
+            simpleui_hide_label_reading_goals      = true,
+            simpleui_hs_reading_goals_ring_content = "outside",  -- "Detail Below Ring"
+            simpleui_hs_reading_goals_scale        = 80,
+            simpleui_hs_reading_goals_item_label_scale = 130,
+
+            simpleui_hs_reading_stats_type        = "list",
+            simpleui_hs_bento_width_reading_stats = 60,
+            simpleui_bar_rs_text_scale_pct         = 140,
         }
     }
 }
@@ -286,16 +324,24 @@ function SUIPresets.applyBuiltin(id)
     SUISettings:set("simpleui_layout", bp.layout)
 
     local active_set = {}
+    local function entry_id(entry)
+        if type(entry) == "table" then return entry.id end
+        return entry
+    end
     for _, page in ipairs(bp.layout.pages) do
-        for _, mod_id in ipairs(page.modules) do
-            active_set[mod_id] = true
+        for _, entry in ipairs(page.modules) do
+            local mod_id = entry_id(entry)
+            if mod_id then active_set[mod_id] = true end
         end
     end
 
     local Registry = require("modules/moduleregistry")
     local flat_order = {}
     for _, page in ipairs(bp.layout.pages) do
-        for _, mod_id in ipairs(page.modules) do table.insert(flat_order, mod_id) end
+        for _, entry in ipairs(page.modules) do
+            local mod_id = entry_id(entry)
+            if mod_id then table.insert(flat_order, mod_id) end
+        end
     end
     for _, mod in ipairs(Registry.list()) do
         if not active_set[mod.id] then table.insert(flat_order, mod.id) end

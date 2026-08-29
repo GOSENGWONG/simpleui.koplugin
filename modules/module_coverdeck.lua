@@ -11,7 +11,6 @@ local Geom             = require("ui/geometry")
 local GestureRange     = require("ui/gesturerange")
 local InputContainer   = require("ui/widget/container/inputcontainer")
 local OverlapGroup     = require("ui/widget/overlapgroup")
-local TextWidget       = require("ui/widget/textwidget")
 local VerticalGroup    = require("ui/widget/verticalgroup")
 local Screen           = Device.screen
 local _ = require("infra/sui_i18n").translate
@@ -44,36 +43,9 @@ local _REF_INNER_W   = Screen:getWidth() - UI.SIDE_PAD * 2 - PAD * 2
 local _CENTER_W_PCT  = Screen:scaleBySize(140) / _REF_INNER_W
 local _CENTER_W_MIN  = Screen:scaleBySize(60)  -- floor so covers never collapse to unreadable size
 
--- ---------------------------------------------------------------------------
--- UTF-8 aware title truncation
--- ---------------------------------------------------------------------------
--- Counts Unicode codepoints, not bytes, so CJK/Arabic text truncates
--- correctly. Returns s unchanged if it is <= max_chars codepoints, otherwise
--- the first max_chars codepoints followed by "...".
-local function truncateTitle(s, max_chars)
-    if not s then return "" end
-    local count = 0
-    local i = 1
-    local last_safe = 0   -- byte offset of the last complete codepoint boundary
-    while i <= #s do
-        local byte = s:byte(i)
-        local char_len
-        if     byte >= 240 then char_len = 4
-        elseif byte >= 224 then char_len = 3
-        elseif byte >= 192 then char_len = 2
-        else                     char_len = 1
-        end
-        count = count + 1
-        if count == max_chars then
-            last_safe = i + char_len - 1
-        end
-        if count > max_chars then
-            return s:sub(1, last_safe) .. "..."
-        end
-        i = i + char_len
-    end
-    return s  -- fits within max_chars
-end
+-- Title/author/stats text is constrained to covers_block_w (full carousel
+-- footprint including side peeks) via max_width + truncate_with_ellipsis
+-- (same pattern as GridRenderer labels).
 
 -- ---------------------------------------------------------------------------
 -- Author list rendering
@@ -751,6 +723,10 @@ function M.build(w, ctx)
     local half_cw     = math.floor(center_w / 2)
     local offset_near = math.floor(center_w * 0.35)
     local offset_far  = math.floor(center_w * 0.60)
+    -- Full carousel footprint (left far edge to right far edge), clamped to
+    -- the overlap group width. Title/author/stats max_width uses this so text
+    -- never exceeds the cover block including side peeks.
+    local covers_block_w = math.min(inner_w, center_w + 2 * offset_far)
     local TOP_CLEAR   = 2
     local centerY     = math.floor(center_h / 2) + TOP_CLEAR
 
@@ -931,16 +907,17 @@ function M.build(w, ctx)
     local face_title = Font:getFace(SUIStyle.FACE_REGULAR, math.max(8, title_fs))
     local face_info  = Font:getFace(SUIStyle.FACE_REGULAR, math.max(7, info_fs))
 
-    -- Title widget
+    -- Title widget (capped to full cover block including side peeks)
     local title_widget
     if show_title then
         title_widget  = UI.makeColoredText{
-            text      = truncateTitle(bd.title, 30),
-            face      = face_title,
-            bold      = true,
-            fgcolor   = CLR_TEXT_EFF,
-            width     = inner_w,
-            alignment = "center",
+            text                   = bd.title or "",
+            face                   = face_title,
+            bold                   = true,
+            fgcolor                = CLR_TEXT_EFF,
+            max_width              = covers_block_w,
+            truncate_with_ellipsis = true,
+            alignment              = "center",
         }
     end
 
@@ -952,12 +929,12 @@ function M.build(w, ctx)
             local author_fs   = math.floor(SUIStyle.FS_SUBTITLE * scale * lbl_scale)
             local face_author = Font:getFace(SUIStyle.FACE_REGULAR, math.max(8, author_fs))
             author_widget = UI.makeColoredText{
-                text            = author_text,
-                face            = face_author,
-                fgcolor         = CLR_TEXT_SUB_EFF,
-                width           = inner_w,
-                alignment       = "center",
-                truncation_char = "…",
+                text                   = author_text,
+                face                   = face_author,
+                fgcolor                = CLR_TEXT_SUB_EFF,
+                max_width              = covers_block_w,
+                truncate_with_ellipsis = true,
+                alignment              = "center",
             }
         end
     end
@@ -1019,11 +996,12 @@ function M.build(w, ctx)
         end
 
         local stats_w = UI.makeColoredText{
-            text      = "",
-            face      = face_info,
-            fgcolor   = CLR_TEXT_SUB_EFF,
-            width     = inner_w,
-            alignment = "center",
+            text                   = "",
+            face                   = face_info,
+            fgcolor                = CLR_TEXT_SUB_EFF,
+            max_width              = covers_block_w,
+            truncate_with_ellipsis = true,
+            alignment              = "center",
         }
         local function _update(nb, nd)
             local stats_parts = {}

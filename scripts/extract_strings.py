@@ -21,6 +21,38 @@ from collections import defaultdict
 # in.
 PLUGIN_ROOT = pathlib.Path(__file__).resolve().parent.parent
 
+def strip_lua_line_comments(content):
+    """Blank out Lua "--" line comments, preserving line/column positions.
+
+    Tracks whether each character is inside a quoted string so a "--"
+    that appears in real code isn't mistaken for one sitting in a
+    comment. Once a comment starts, the rest of the line is replaced
+    with spaces rather than removed, so line numbers used for #:
+    locations stay accurate.
+    """
+    out_lines = []
+    for line in content.split('\n'):
+        in_string = None  # holds the active quote char, or None
+        comment_start = None
+        i = 0
+        while i < len(line):
+            ch = line[i]
+            if in_string:
+                if ch == '\\':
+                    i += 1  # skip the escaped character too
+                elif ch == in_string:
+                    in_string = None
+            elif ch in ('"', "'"):
+                in_string = ch
+            elif ch == '-' and line[i:i + 2] == '--':
+                comment_start = i
+                break
+            i += 1
+        if comment_start is not None:
+            line = line[:comment_start]
+        out_lines.append(line)
+    return '\n'.join(out_lines)
+
 def extract_strings():
     """Extract translatable strings from Lua files."""
     regular_strings = defaultdict(list)  # string -> [(file, line), ...]
@@ -39,6 +71,15 @@ def extract_strings():
         except Exception as e:
             print(f"Warning: Could not read {lua_file}: {e}")
             continue
+
+        # Doc comments (e.g. usage examples in a module's header) often show
+        # sample code that itself calls _(), which would otherwise be
+        # extracted as if it were a real, user-facing string. Strip Lua
+        # line comments before matching so only strings that actually run
+        # are collected. No string in this codebase contains "--", so
+        # truncating each line at its first unquoted "--" is safe and
+        # keeps line numbers unchanged.
+        content = strip_lua_line_comments(content)
 
         # #: locations in the .pot are plugin-root-relative (e.g.
         # "modules/module_recent.lua:42"), regardless of where the script

@@ -166,6 +166,7 @@ local CLASSIFY_RULES = {
       exact    = { simpleui_toggle_home_library = true },
     },
     -- Homescreen-scoped keys must classify before generic bar/qa prefixes.
+    -- Column width (bento grid) lives in simpleui_hs_bento_width_* / simpleui_cs_*_bento_width_*.
     { "home_screen",
       prefixes = {
           "simpleui_hs_", "simpleui_layout", "simpleui_cs_", "simpleui_custom_screens",
