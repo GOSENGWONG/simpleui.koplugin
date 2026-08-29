@@ -2472,10 +2472,6 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
 
     local topbar_on = SUISettings:nilOrTrue("simpleui_topbar_enabled")
 
-    self._header_body_idx   = nil
-    self._header_inner_w    = inner_w
-    self._header_body_ref   = body
-    self._header_is_wrapped = false
     self._clock_body_idx    = nil
     self._clock_body_ref    = body
     self._stats_mod_slots   = {}
@@ -2573,7 +2569,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
             return cell
         end
 
-        -- Records clock / header / book-mod slots against the cell itself.
+        -- Records clock / book-mod slots against the cell itself.
         -- Clock tick does body[idx][1] = new_widget with is_wrapped: body must
         -- be the cell VerticalGroup and idx the wrapper index inside it.
         local function _register_cell(cell)
@@ -2585,11 +2581,6 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                 self._clock_body_ref   = cell
                 self._clock_body_idx   = #cell
                 self._clock_is_wrapped = true
-            end
-            if mod.id == "header" then
-                self._header_body_ref   = cell
-                self._header_body_idx   = #cell
-                self._header_is_wrapped = true
             end
             if mod.is_book_mod then
                 self._book_mod_slots[mod.id] = {
@@ -3875,7 +3866,6 @@ function ScreenWidget:onCloseWidget()
     -- Invalidate debounce token so any scheduled callback becomes a no-op.
     self._pending_refresh_token = {}
     self._refresh_scheduled     = false
-    self._pending_cover_clear   = nil
 
     -- On tab-switch preserve book state and page for the next open;
     -- on real close discard stale data.
@@ -3903,13 +3893,8 @@ function ScreenWidget:onCloseWidget()
     self._total_pages        = nil
     self.page                = nil
     self.page_num            = nil
-    self._header_body_ref    = nil
-    self._header_body_idx    = nil
-    self._header_inner_w     = nil
-    self._header_is_wrapped  = nil
     self._ctx_menu           = nil
     self._ctx_cache          = nil
-    self._shown_once         = nil
     self._stats_need_refresh = nil
     self._body               = nil
     self._overlap            = nil
@@ -4189,16 +4174,9 @@ function ScreenEngine.refresh(keep_cache, books_only, stats_only)
     end
 end
 
-function ScreenEngine.refreshImmediate(keep_cache)
-    if ScreenEngine._instance then
-        ScreenEngine._instance:_refreshImmediate(keep_cache)
-    end
-end
-
 -- Immediately repaints whichever screen(s) are actually live right now —
 -- the built-in Homescreen if open, or a Custom Screen if that's what's open
--- instead. Unlike ScreenEngine.refreshImmediate() above (which only ever
--- touches the flat built-in-Homescreen instance), this is for callers
+-- instead. This is for callers
 -- reacting to state that isn't screen-specific (wifi icon, quick-action
 -- icons, style changes, ...) and so must reach whatever screen is currently
 -- on screen, not assume it's the Homescreen. No-op if nothing is live.

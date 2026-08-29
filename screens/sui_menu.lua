@@ -3990,10 +3990,17 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                     end,
                                     callback = function()
                                         if not IP then return end
-                                        if IP.apply(_name, QA2) then
+                                        -- Applying an icon preset touches every live screen
+                                        -- (titlebar, pagination, navbars, folder covers), so
+                                        -- this runs under the same shared "Applying preset…"
+                                        -- notice used for homescreen presets — see
+                                        -- infra/sui_core.lua's applyPresetWithNotice().
+                                        local ok = require("infra/sui_core").applyPresetWithNotice(function()
+                                            if not IP.apply(_name, QA2) then return false end
                                             SUISettings:set("simpleui_icon_active_preset", _name)
-                                            _reapplyAll()
-                                        else
+                                            return true
+                                        end, _reapplyAll)
+                                        if not ok then
                                             UIManager:show(InfoMessage():new{
                                                 text    = string.format(_("Preset \"%s\" not found."), _name),
                                                 timeout = 2,

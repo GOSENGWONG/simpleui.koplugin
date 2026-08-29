@@ -179,10 +179,9 @@ function SimpleUIPlugin:init()
                     "— restart recommended")
                 UIManager:scheduleIn(1, function()
                     local InfoMessage = require("ui/widget/infomessage")
-                    local _t = require("infra/sui_i18n").translate
                     UIManager:show(InfoMessage:new{
                         text = string.format(
-                            _t("Simple UI was updated (%s → %s).\n\nA restart is recommended to apply all changes cleanly."),
+                            _("Simple UI was updated (%s → %s).\n\nA restart is recommended to apply all changes cleanly."),
                             prev_version, current_version
                         ),
                         timeout = 6,
