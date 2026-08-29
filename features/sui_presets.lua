@@ -230,16 +230,18 @@ local BUILTIN_PRESETS = {
 
             -- simpleui_reading_goal is deliberately left unconfigured here —
             -- it uses the module's own default annual goal (12 books/year).
-            simpleui_reading_goals_layout          = "rings",
-            simpleui_hs_bento_width_reading_goals  = 35,
-            simpleui_hide_label_reading_goals      = true,
-            simpleui_hs_reading_goals_ring_content = "outside",  -- "Detail Below Ring"
-            simpleui_hs_reading_goals_scale        = 80,
+            simpleui_reading_goals_layout              = "rings",
+            simpleui_hs_bento_width_reading_goals      = 35,
+            simpleui_hide_label_reading_goals          = true,
+            simpleui_hs_reading_goals_ring_content     = "outside",  -- "Detail Below Ring"
+            simpleui_hs_reading_goals_scale            = 90,
             simpleui_hs_reading_goals_item_label_scale = 130,
 
+            -- Scale is left unconfigured so the module renders at its default
+            -- text size. Only "Today — Time" and "Streak" are shown.
             simpleui_hs_reading_stats_type        = "list",
             simpleui_hs_bento_width_reading_stats = 65,
-            simpleui_bar_rs_text_scale_pct         = 140,
+            simpleui_hs_reading_stats_items       = { "today_time", "streak" },
         }
     }
 }

@@ -11,6 +11,7 @@ local Geom             = require("ui/geometry")
 local GestureRange     = require("ui/gesturerange")
 local InputContainer   = require("ui/widget/container/inputcontainer")
 local OverlapGroup     = require("ui/widget/overlapgroup")
+local TextBoxWidget    = require("ui/widget/textboxwidget")
 local VerticalGroup    = require("ui/widget/verticalgroup")
 local Screen           = Device.screen
 local _ = require("infra/sui_i18n").translate
@@ -644,15 +645,41 @@ end
 
 -- Empty placeholder when the chosen source has no books (same pattern as
 -- Quick Actions / Featured Collection / Collections).
-local function _emptyPlaceholder(w, h)
+-- Uses a wrapping TextBoxWidget rather than the single-line TextWidget
+-- behind makeColoredText, since this message is long enough to need
+-- multiple lines at the module's own width; falls back to a plain
+-- TextBoxWidget when there's no wallpaper to composite over, mirroring
+-- module_currently.lua's own text elements.
+local function _emptyPlaceholder(w, h, has_wallpaper)
+    local face = Font:getFace(SUIStyle.FACE_REGULAR, SUIStyle.FS_BODY)
+    local line_h = math.floor(1.3 * face.size + 0.5)
+    local args = {
+        text      = _("No books to show yet — open a book to see it here."),
+        face      = face,
+        width     = w - PAD * 2,
+        height    = math.max(line_h, h - PAD * 2),
+        height_adjust = true,
+        height_overflow_show_ellipsis = true,
+        alignment = "center",
+        fgcolor   = CLR_TEXT_SUB,
+    }
+
+    local text_w
+    if has_wallpaper then
+        local ok_tbx, tbx = pcall(UI.makeAlphaTextBox, args)
+        if ok_tbx then
+            text_w = tbx
+        else
+            logger.warn("simpleui: module_coverdeck: makeAlphaTextBox failed, falling back to TextBoxWidget: " .. tostring(tbx))
+            text_w = TextBoxWidget:new(args)
+        end
+    else
+        text_w = TextBoxWidget:new(args)
+    end
+
     return CenterContainer:new{
         dimen = Geom:new{ w = w, h = h },
-        UI.makeColoredText{
-            text    = _("No books to show yet — open a book to see it here."),
-            face    = Font:getFace(SUIStyle.FACE_REGULAR, SUIStyle.FS_BODY),
-            fgcolor = CLR_TEXT_SUB,
-            width   = w - PAD * 2,
-        },
+        text_w,
     }
 end
 
@@ -670,12 +697,12 @@ function M.build(w, ctx)
     local fps = getFps(source, ctx)
     if not fps or #fps == 0 then
         logger.dbg(string.format("coverdeck: no books found (source=%s)", tostring(source)))
-        return _emptyPlaceholder(w, M.getHeight(ctx))
+        return _emptyPlaceholder(w, M.getHeight(ctx), ctx.has_wallpaper)
     end
 
     local SH = getSH()
     if not SH then
-        return _emptyPlaceholder(w, M.getHeight(ctx))
+        return _emptyPlaceholder(w, M.getHeight(ctx), ctx.has_wallpaper)
     end
 
     local CLR_TEXT_EFF     = SUIStyle.COLOR.text_primary

@@ -443,15 +443,41 @@ end
 
 -- Empty placeholder when history has no existing books (same pattern as
 -- Quick Actions / Featured Collection / Collections).
-local function _emptyPlaceholder(w, h)
+-- Uses a wrapping TextBoxWidget rather than the single-line TextWidget
+-- behind makeColoredText, since this message is long enough to need
+-- multiple lines at the module's own width; falls back to a plain
+-- TextBoxWidget when there's no wallpaper to composite over, same as
+-- the title/description elements in M.build below.
+local function _emptyPlaceholder(w, h, has_wallpaper)
+    local face = Font:getFace(SUIStyle.FACE_REGULAR, SUIStyle.FS_BODY)
+    local line_h = math.floor(1.3 * face.size + 0.5)
+    local args = {
+        text      = _("No books to show yet — open a book to see it here."),
+        face      = face,
+        width     = w - PAD * 2,
+        height    = math.max(line_h, h - PAD * 2),
+        height_adjust = true,
+        height_overflow_show_ellipsis = true,
+        alignment = "center",
+        fgcolor   = CLR_TEXT_SUB,
+    }
+
+    local text_w
+    if has_wallpaper then
+        local ok_tbx, tbx = pcall(UI.makeAlphaTextBox, args)
+        if ok_tbx then
+            text_w = tbx
+        else
+            logger.warn("simpleui: module_currently: makeAlphaTextBox failed, falling back to TextBoxWidget: " .. tostring(tbx))
+            text_w = TextBoxWidget:new(args)
+        end
+    else
+        text_w = TextBoxWidget:new(args)
+    end
+
     return CenterContainer:new{
         dimen = Geom:new{ w = w, h = h },
-        UI.makeColoredText{
-            text    = _("No books to show yet — open a book to see it here."),
-            face    = Font:getFace(SUIStyle.FACE_REGULAR, SUIStyle.FS_BODY),
-            fgcolor = CLR_TEXT_SUB,
-            width   = w - PAD * 2,
-        },
+        text_w,
     }
 end
 
@@ -460,12 +486,12 @@ end
 function M.build(w, ctx)
     Config.applyLabelToggle(M, _("Currently Reading"))
     if not ctx.current_fp then
-        return _emptyPlaceholder(w, M.getHeight(ctx))
+        return _emptyPlaceholder(w, M.getHeight(ctx), ctx.has_wallpaper)
     end
 
     local SH = getSH()
     if not SH then
-        return _emptyPlaceholder(w, M.getHeight(ctx))
+        return _emptyPlaceholder(w, M.getHeight(ctx), ctx.has_wallpaper)
     end
 
     -- Use pre-read settings bundle from ctx when available (normal HS path).

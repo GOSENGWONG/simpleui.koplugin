@@ -2221,13 +2221,17 @@ function SimpleUIPlugin:onCloseDocument()
         local function _partial_invalidate(bs)
             if not bs then return end
             -- Drop the entry for the closed book so prefetchBooks() re-reads it.
+            -- current_fp is deliberately left untouched: SH.getBookData() and
+            -- fetchBookStats() both fall back to a synchronous direct re-read
+            -- when their cache is empty, so the closed book's data is already
+            -- fresh (not stale) on the very next render — meaning there is no
+            -- need to blank current_fp while waiting for the next
+            -- prefetchBooks() call, and doing so only cost a visible one-frame
+            -- flash to the empty-state placeholder before the deferred
+            -- refresh replaced it with the resolved book.
             if bs.prefetched_data and closed_fp then
                 bs.prefetched_data[closed_fp] = nil
             end
-            -- current_fp will be re-resolved by the next prefetchBooks() call.
-            -- Setting it to nil ensures Currently Reading does not paint
-            -- stale progress data before the refresh completes.
-            bs.current_fp = nil
         end
         for _, id in ipairs(screen_ids) do
             if currently_active_for[id] then
@@ -2241,14 +2245,14 @@ function SimpleUIPlugin:onCloseDocument()
                     end
                     _partial_invalidate(ScreenEngine.getCachedBooksState(id))
                 end
-                -- When this screen is not live, the partially invalidated
-                -- flat _cached_books_state (with current_fp=nil) would be
-                -- passed to the next ScreenWidget:new{} on its next open.
-                -- Because the state is non-nil, _buildCtx() skips
-                -- prefetchBooks() entirely, leaving ctx.current_fp = nil and
-                -- causing Currently Reading to disappear. Fix: discard the
-                -- flat cached state so _buildCtx() is forced to call
-                -- prefetchBooks() from scratch on the next open.
+                -- When this screen is not live, the flat _cached_books_state
+                -- would otherwise be reused verbatim on the next
+                -- ScreenWidget:new{} — including its current_fp, which still
+                -- points at the just-closed book. Since a non-nil cached
+                -- state makes _buildCtx() skip prefetchBooks() entirely, that
+                -- stale current_fp would stick even after a different book
+                -- becomes "current" in the meantime. Discard it so the next
+                -- open is forced to call prefetchBooks() from scratch.
                 if not ScreenEngine.getInstance(id) then
                     ScreenEngine.setCachedBooksState(id, nil)
                 end
