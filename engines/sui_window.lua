@@ -3416,6 +3416,31 @@ function SUIWindow.makeSettingsScreens(buildRoot)
     }
 end
 
+--- Wraps a refresh function so it always repaints this SUIWindow screen
+--- afterwards, in addition to whatever fn already does (invalidating a
+--- cache, saving a layout, etc.).
+---
+--- A ctx_menu.refresh handed to a menu-item factory (makeGapItem,
+--- makeBentoWidthItem, ...) is what runs after a SpinWidget/ConfirmBox
+--- callback applies a new value. Inside a SUIWindow, the item's displayed
+--- value_func/text_func is only re-evaluated on repaint — refresh alone
+--- (e.g. one that just clears a homescreen cache) updates what's behind
+--- the window, not the window itself, so the change appears to "not
+--- apply" until the window is reopened. This is the single place that
+--- ties refresh to repaint, so every SUIWindow ctx_menu builds its
+--- refresh through here instead of each call site hand-writing its own
+--- `function() ...; ctx.repaint() end` and risking one that forgets to.
+---
+--- @param ctx table       — SUIWindow screen context (must expose repaint())
+--- @param fn  function|nil — optional extra work to run before repainting
+--- @return function
+function SUIWindow.withRepaint(ctx, fn)
+    return function()
+        if fn then fn() end
+        ctx.repaint()
+    end
+end
+
 --- Builds the standard ctx_menu table passed to plugin menu-builder functions.
 --- Centralises the repeated construction of UIManager, i18n, and overlay refs.
 ---
@@ -3423,23 +3448,86 @@ end
 --- functions can branch on it to return SUIWindow-optimised items (sui_build,
 --- sui_hidden) without affecting the native KOReader menu.
 ---
+--- This is the single shape every SUIWindow hands to a plugin/module's menu
+--- builder — windows should extend or override individual fields (pfx,
+--- refresh, ...) rather than constructing their own ctx_menu table from
+--- scratch, so a menu builder sees the same fields regardless of which
+--- window opened it.
+---
 --- @param ctx table   — SUIWindow screen context
 --- @return table
 function SUIWindow.makeCtxMenu(ctx)
     return {
-        is_sui       = true,          -- signals that we are inside a SUIWindow
-        pfx          = "simpleui_hs_",
-        pfx_qa       = "simpleui_hs_qa_",
-        refresh      = function() ctx.repaint() end,
-        show_arrange = function(params) ctx.push("arrange", params) end,
-        show_row_page= function(params) ctx.push("row_page", params) end,
-        UIManager    = require("ui/uimanager"),
-        _            = require("infra/sui_i18n").translate,
-        N_           = require("infra/sui_i18n").ngettext,
-        InfoMessage  = require("ui/widget/infomessage"),
-        SortWidget   = require("ui/widget/sortwidget"),
-        lock_overlay   = ctx.lockOverlay,
-        unlock_overlay = ctx.unlockOverlay,
+        is_sui           = true,          -- signals that we are inside a SUIWindow
+        pfx              = "simpleui_hs_",
+        pfx_qa           = "simpleui_hs_qa_",
+        refresh          = SUIWindow.withRepaint(ctx),
+        show_arrange     = function(params) ctx.push("arrange",     params) end,
+        show_row_page    = function(params) ctx.push("row_page",    params) end,
+        show_item_picker = function(params) ctx.push("item_picker", params) end,
+        UIManager        = require("ui/uimanager"),
+        _                = require("infra/sui_i18n").translate,
+        N_               = require("infra/sui_i18n").ngettext,
+        InfoMessage      = require("ui/widget/infomessage"),
+        SortWidget       = require("ui/widget/sortwidget"),
+        ConfirmBox       = require("ui/widget/confirmbox"),
+        MAX_LABEL_LEN    = require("infra/sui_config").MAX_LABEL_LEN,
+        lock_overlay     = ctx.lockOverlay,
+        unlock_overlay   = ctx.unlockOverlay,
+    }
+end
+
+--- Builds the full settings screen for one module: its own items
+--- (mod.getMenuItems) followed by the shared Top Margin / Column Width
+--- chrome (see Config.appendModuleChromeItems), wrapped as a MenuTable
+--- ready to return from a screens[] builder.
+---
+--- This is the single source of truth for "what a module's settings screen
+--- contains and how it's built" — every window that can open module
+--- settings (long-press on a module, the dedicated Settings ▸ Modules
+--- screen, ...) calls this instead of re-deriving its own ctx_menu/item
+--- list, so they can't drift apart on either the fields exposed to
+--- mod.getMenuItems or the chrome items appended after it.
+---
+--- @param ctx   table — SUIWindow screen context
+--- @param mod   table — module descriptor (id, name, no_top_margin, getMenuItems)
+--- @param opts  table|nil — {
+---   pfx           — settings-key prefix (default "simpleui_hs_")
+---   pfx_qa        — quick-action key prefix (default "simpleui_hs_qa_")
+---   extra_refresh — optional extra work to run on refresh, besides
+---                   repainting this window (e.g. saving a Custom Screen's
+---                   layout, or invalidating a live homescreen's caches)
+---   on_change     — optional extra work to run specifically when Top
+---                   Margin/Column Width change (e.g. invalidating a
+---                   different screen instance's module-list cache)
+--- }
+--- @return table — SUIWindow.MenuTable widget
+function SUIWindow.buildModuleSettingsScreen(ctx, mod, opts)
+    opts = opts or {}
+
+    local ctx_menu = SUIWindow.makeCtxMenu(ctx)
+    if opts.pfx    then ctx_menu.pfx    = opts.pfx    end
+    if opts.pfx_qa then ctx_menu.pfx_qa = opts.pfx_qa end
+    ctx_menu.refresh = SUIWindow.withRepaint(ctx, opts.extra_refresh)
+
+    local items = type(mod.getMenuItems) == "function" and mod.getMenuItems(ctx_menu) or {}
+    require("infra/sui_config").appendModuleChromeItems(items, {
+        mod       = mod,
+        pfx       = ctx_menu.pfx,
+        refresh   = ctx_menu.refresh,
+        on_change = opts.on_change,
+    })
+
+    return SUIWindow.MenuTable{
+        items          = items,
+        inner_w        = ctx.inner_w,
+        repaint        = function() ctx.repaint() end,
+        lock_overlay   = ctx.lockOverlay   or function() end,
+        unlock_overlay = ctx.unlockOverlay or function() end,
+        push_stack     = function(id, params)
+            if type(id) == "string" then ctx.push(id, params) else ctx.push("nested_menu", params) end
+        end,
+        on_close       = function() end,
     }
 end
 

@@ -1059,6 +1059,9 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                             -- Screen), not just the flat built-in-Homescreen instance.
                             local ok_se, ScreenEngine = pcall(require, "engines/sui_screen_engine")
                             if ok_se and ScreenEngine then ScreenEngine.refreshAllLiveImmediate(true) end
+                            -- Repaint the settings screen itself so this row's value_func
+                            -- picks up the new percentage now, not the next time it's opened.
+                            if ctx_menu and ctx_menu.refresh then ctx_menu.refresh() end
                             UIManager:show(ConfirmBox():new{
                                 text       = _("A restart is required to apply the new bar size across all layouts.\n\nRestart now?"),
                                 ok_text    = _("Restart"),
@@ -1339,6 +1342,9 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                             -- Screen), not just the flat built-in-Homescreen instance.
                             local ok_se, ScreenEngine = pcall(require, "engines/sui_screen_engine")
                             if ok_se and ScreenEngine then ScreenEngine.refreshAllLiveImmediate(true) end
+                            -- Repaint the settings screen itself so this row's value_func
+                            -- picks up the new percentage now, not the next time it's opened.
+                            if ctx_menu and ctx_menu.refresh then ctx_menu.refresh() end
                             UIManager:show(ConfirmBox():new{
                                 text       = _("A restart is required to apply the new bar size across all layouts.\n\nRestart now?"),
                                 ok_text    = _("Restart"),
@@ -1358,7 +1364,10 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 info          = _("Size of the tab icons.\n100% is the default size."),
                 get           = function() return Config.getIconScalePct() end,
                 set           = function(pct) Config.setIconScalePct(pct) end,
-                refresh       = function() UI.invalidateDimCache(); plugin:_rebuildAllNavbars() end,
+                refresh       = function()
+                    UI.invalidateDimCache(); plugin:_rebuildAllNavbars()
+                    if ctx_menu and ctx_menu.refresh then ctx_menu.refresh() end
+                end,
                 value_min     = Config.ICON_SCALE_MIN, value_max = Config.ICON_SCALE_MAX,
                 value_step    = Config.ICON_SCALE_STEP, default_value = Config.ICON_SCALE_DEF,
             }),
@@ -1368,7 +1377,10 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 info          = _("Size of the tab label text.\n100% is the default size."),
                 get           = function() return Config.getNavbarLabelScalePct() end,
                 set           = function(pct) Config.setNavbarLabelScalePct(pct) end,
-                refresh       = function() UI.invalidateDimCache(); plugin:_rebuildAllNavbars() end,
+                refresh       = function()
+                    UI.invalidateDimCache(); plugin:_rebuildAllNavbars()
+                    if ctx_menu and ctx_menu.refresh then ctx_menu.refresh() end
+                end,
                 value_min     = Config.NAVBAR_LABEL_SCALE_MIN, value_max = Config.NAVBAR_LABEL_SCALE_MAX,
                 value_step    = Config.NAVBAR_LABEL_SCALE_STEP, default_value = Config.NAVBAR_LABEL_SCALE_DEF,
             }),
@@ -1385,6 +1397,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     -- Screen), not just the flat built-in-Homescreen instance.
                     local ok_se, ScreenEngine = pcall(require, "engines/sui_screen_engine")
                     if ok_se and ScreenEngine then ScreenEngine.refreshAllLiveImmediate(true) end
+                    if ctx_menu and ctx_menu.refresh then ctx_menu.refresh() end
                 end,
                 value_min     = Config.BOT_MARGIN_MIN, value_max = Config.BOT_MARGIN_MAX,
                 value_step    = Config.BOT_MARGIN_STEP, default_value = Config.BOT_MARGIN_DEF,
@@ -2154,9 +2167,11 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
             local qa_items = {}
             local function _moduleSettingsItems(_mod)
                 local list = type(_mod.getMenuItems) == "function" and (_mod.getMenuItems(ctx_menu) or {}) or {}
-                list[#list + 1] = Config.makeBentoWidthItem({
-                    get     = function() return Config.getBentoWidth(_mod.id, ctx.pfx) end,
-                    set     = function(v) Config.setBentoWidth(v, _mod.id, ctx.pfx) end,
+                -- Top Margin + Column Width — same chrome as every other
+                -- module settings screen, see Config.appendModuleChromeItems.
+                Config.appendModuleChromeItems(list, {
+                    mod     = _mod,
+                    pfx     = ctx.pfx,
                     refresh = ctx_menu.refresh,
                 })
                 return list

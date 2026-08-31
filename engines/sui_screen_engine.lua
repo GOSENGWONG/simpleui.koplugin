@@ -2036,43 +2036,21 @@ function ScreenWidget:_updateFooter(current_page, total_pages, topbar_on)
 end
 
 -- ---------------------------------------------------------------------------
--- _getCtxMenu — lazy-initialised context table for module settings menus.
--- Cached after first call so the closure object is not reallocated per page turn.
+-- _refreshLiveData — invalidates this screen's cached module/config state
+-- and re-renders it. This is the one piece of "refresh" that is specific to
+-- ScreenWidget (as opposed to the generic ctx_menu fields SUIWindow.makeCtxMenu
+-- already provides) and is passed as extra_refresh into
+-- SUIWindow.buildModuleSettingsScreen.
 -- ---------------------------------------------------------------------------
-function ScreenWidget:_getCtxMenu()
-    if self._ctx_menu then return self._ctx_menu end
-    local c = setmetatable({
-        pfx           = self._pfx,
-        pfx_qa        = self._pfx_qa,
-        is_sui        = true,          -- signals that we are inside a SUIWindow
-        refresh       = function()
-            local live = _sget(self._id, "_instance")
-            if live then
-                live._enabled_mods_cache = nil
-                live._ctx_cache          = nil
-                live._cfg_cache          = nil
-                _sset(self._id, "_cfg_cache", nil)
-                live:_refresh(false)
-            end
-        end,
-        UIManager     = UIManager,
-        _             = _,
-        N_            = N_,
-        MAX_LABEL_LEN = Config.MAX_LABEL_LEN,
-        _cover_picker = nil,
-    }, {
-        __index = function(t, k)
-            if k == "InfoMessage" then
-                local v = require("ui/widget/infomessage")
-                rawset(t, k, v); return v
-            elseif k == "SortWidget" then
-                local v = require("ui/widget/sortwidget")
-                rawset(t, k, v); return v
-            end
-        end,
-    })
-    self._ctx_menu = c
-    return c
+function ScreenWidget:_refreshLiveData()
+    local live = _sget(self._id, "_instance")
+    if live then
+        live._enabled_mods_cache = nil
+        live._ctx_cache          = nil
+        live._cfg_cache          = nil
+        _sset(self._id, "_cfg_cache", nil)
+        live:_refresh(false)
+    end
 end
 
 -- ---------------------------------------------------------------------------
@@ -2164,50 +2142,12 @@ function ScreenWidget:_openModuleSettingsFor(mod)
         local SUIWindow = require("engines/sui_window")
 
         local function buildRoot(ctx)
-            local ctx_menu = screen:_getCtxMenu()
-            local local_ctx_menu = setmetatable({
-                refresh           = function() ctx_menu.refresh(); ctx.repaint() end,
-                show_arrange      = function(params) ctx.push("arrange",      params) end,
-                show_item_picker  = function(params) ctx.push("item_picker",  params) end,
-            }, { __index = ctx_menu })
-
-            local items    = type(mod.getMenuItems) == "function" and mod.getMenuItems(local_ctx_menu) or {}
-            if not mod.no_top_margin then
-                local gap_item = Config.makeGapItem({
-                    text_func = function()
-                        return _("Top Margin")
-                    end,
-                    title   = mod.name or mod.id,
-                    info    = _("Vertical space above this module.\n100% is the default spacing."),
-                    get     = function() return Config.getModuleGapPct(mod.id, self._pfx) end,
-                    set     = function(v)
-                        Config.setModuleGap(v, mod.id, self._pfx)
-                        screen._enabled_mods_cache = nil
-                    end,
-                    refresh = ctx_menu.refresh,
-                })
-                items[#items + 1] = gap_item
-            end
-            -- Column width (bento grid) — same chrome slot for every module.
-            items[#items + 1] = Config.makeBentoWidthItem({
-                get     = function() return Config.getBentoWidth(mod.id, self._pfx) end,
-                set     = function(v)
-                    Config.setBentoWidth(v, mod.id, self._pfx)
-                    screen._enabled_mods_cache = nil
-                end,
-                refresh = ctx_menu.refresh,
+            return SUIWindow.buildModuleSettingsScreen(ctx, mod, {
+                pfx           = self._pfx,
+                pfx_qa        = self._pfx_qa,
+                extra_refresh = function() screen:_refreshLiveData() end,
+                on_change     = function() screen._enabled_mods_cache = nil end,
             })
-            return SUIWindow.MenuTable{
-                items          = items,
-                inner_w        = ctx.inner_w,
-                repaint        = function() ctx.repaint() end,
-                lock_overlay   = ctx.lockOverlay,
-                unlock_overlay = ctx.unlockOverlay,
-                push_stack     = function(id, params)
-                    if type(id) == "string" then ctx.push(id, params) else ctx.push("nested_menu", params) end
-                end,
-                on_close       = function() end,
-            }
         end
 
         local function titleFn(ctx)
@@ -3893,7 +3833,6 @@ function ScreenWidget:onCloseWidget()
     self._total_pages        = nil
     self.page                = nil
     self.page_num            = nil
-    self._ctx_menu           = nil
     self._ctx_cache          = nil
     self._stats_need_refresh = nil
     self._body               = nil

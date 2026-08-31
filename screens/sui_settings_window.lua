@@ -257,7 +257,7 @@ local function buildScreens(st)
             pfx          = st.pfx,
             pfx_qa       = st.pfx_qa,
             is_sui       = true,           -- signals that we are inside a SUIWindow
-            refresh      = function() ctx.repaint() end,
+            refresh      = SUI.withRepaint(ctx),
             show_arrange      = function(params) ctx.push("arrange", params) end,
             show_row_page     = function(params) ctx.push("row_page", params) end,
             show_item_picker  = function(params) ctx.push("item_picker", params) end,
@@ -868,25 +868,22 @@ local function buildScreens(st)
     end
 
     -- ── 2.6. Module Settings ─────────────────────────────────────────────────
+    -- Delegates entirely to SUIWindow.buildModuleSettingsScreen — the single
+    -- source of truth also used by the long-press module settings window
+    -- (engines/sui_screen_engine.lua), so both windows show the exact same
+    -- content for the same module.
     local function buildModuleSettings(ctx)
         local mod = Registry.get(st.current_module_id)
         if not mod or not mod.getMenuItems then return {} end
 
-        local ctx_menu = makeCtxMenu(ctx)
-        -- Module settings additionally need access to SortWidget and an
-        -- on-change that also saves the layout.
-        ctx_menu.refresh     = function() LayoutService.save(st.layout, st.pfx, st.layout_key, st.screen_id); ctx.repaint() end
-        ctx_menu.show_arrange = function(params) ctx.push("arrange", params) end
-        ctx_menu.ConfirmBox  = require("ui/widget/confirmbox")
-
-        local menu_items = mod.getMenuItems(ctx_menu) or {}
-        -- Column width (bento grid) — same chrome as long-press module settings.
-        local Cfg = require("infra/sui_config")
-        menu_items[#menu_items + 1] = Cfg.makeBentoWidthItem({
-            get     = function() return Cfg.getBentoWidth(mod.id, st.pfx) end,
-            set     = function(v)
-                Cfg.setBentoWidth(v, mod.id, st.pfx)
-                -- Invalidate the live screen's module-list cache (bento fingerprint).
+        return SUI.buildModuleSettingsScreen(ctx, mod, {
+            pfx           = st.pfx,
+            pfx_qa        = st.pfx_qa,
+            extra_refresh = function()
+                LayoutService.save(st.layout, st.pfx, st.layout_key, st.screen_id)
+            end,
+            on_change     = function()
+                -- Invalidate the live screen's module-list cache (gap/bento fingerprint).
                 local SE = package.loaded["engines/sui_screen_engine"]
                     or package.loaded["screens/sui_homescreen"]
                 if SE and SE.getInstance then
@@ -896,9 +893,7 @@ local function buildScreens(st)
                     SE._instance._enabled_mods_cache = nil
                 end
             end,
-            refresh = ctx_menu.refresh,
         })
-        return makeMenuTable(ctx, menu_items)
     end
 
     -- ── 2.8. General Settings ────────────────────────────────────────────────

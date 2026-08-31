@@ -1173,6 +1173,51 @@ function M.makeBentoWidthItem(opts)
 end
 
 
+-- ---------------------------------------------------------------------------
+-- Module Settings Chrome — Top Margin + Column Width
+-- Every module's settings screen ends with these two items, regardless of
+-- which window built that screen (long-press on a module vs the Settings ▸
+-- Modules screen). Single source of truth for the pair, so the different
+-- windows that show module settings can't drift out of sync on which items
+-- are shown or how they're wired.
+--
+-- opts: {
+--   mod       — module descriptor (id, name, no_top_margin)
+--   pfx       — settings-key prefix for the screen the items belong to
+--   refresh   — ctx_menu-style refresh; must already repaint the caller's
+--               window (see SUIWindow.withRepaint) or the new value won't
+--               show until the window is reopened
+--   on_change — optional extra work to run after either value is set,
+--               e.g. invalidating a live screen's module-list cache
+-- }
+-- ---------------------------------------------------------------------------
+function M.appendModuleChromeItems(items, opts)
+    local mod, pfx, refresh, on_change = opts.mod, opts.pfx, opts.refresh, opts.on_change
+
+    if not mod.no_top_margin then
+        items[#items + 1] = M.makeGapItem({
+            text_func = function() return _("Top Margin") end,
+            title     = mod.name or mod.id,
+            info      = _("Vertical space above this module.\n100% is the default spacing."),
+            get       = function() return M.getModuleGapPct(mod.id, pfx) end,
+            set       = function(v)
+                M.setModuleGap(v, mod.id, pfx)
+                if on_change then on_change() end
+            end,
+            refresh   = refresh,
+        })
+    end
+    items[#items + 1] = M.makeBentoWidthItem({
+        get     = function() return M.getBentoWidth(mod.id, pfx) end,
+        set     = function(v)
+            M.setBentoWidth(v, mod.id, pfx)
+            if on_change then on_change() end
+        end,
+        refresh = refresh,
+    })
+    return items
+end
+
 -- Module Labels (Section Title) Toggle
 local function _labelHideKey(mod_id)
     return "simpleui_hide_label_" .. (mod_id or "")
