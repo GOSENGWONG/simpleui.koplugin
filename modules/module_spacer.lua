@@ -16,8 +16,10 @@ local SUISettings = require("infra/sui_store")
 -- Base spacer height at 100% scale.
 local _BASE_SPACER_H = Screen:scaleBySize(50)
 
--- Spacer's own scale limits — wider than the global SCALE_MAX (200).
-local _SCALE_MIN  = 10
+-- Spacer's own scale limits — wider than the global SCALE_MAX (200), and with
+-- no practical lower floor beyond 1% so narrow gaps can be fine-tuned. The
+-- actual rendered height is still floored at 2px in getHeight()/build().
+local _SCALE_MIN  = 1
 local _SCALE_MAX  = 400
 local _SCALE_STEP = 10
 local _SCALE_DEF  = 100
@@ -84,16 +86,17 @@ local function makeInstance(inst_id)
 
         return {
             Config.makeScaleItem({
-                text_func     = function() return _lc("Spacer Size") end,
-                title         = _lc("Spacer Size"),
-                info          = _lc("Height of the spacer.\n100% is the default size."),
-                get           = function() return _getScalePct(S.id, pfx) end,
-                set           = function(v) _setScale(v, S.id, pfx) end,
-                refresh       = refresh,
-                value_min     = _SCALE_MIN,
-                value_max     = _SCALE_MAX,
-                value_step    = _SCALE_STEP,
-                default_value = _SCALE_DEF,
+                text_func       = function() return _lc("Spacer Size") end,
+                title           = _lc("Spacer Size"),
+                info            = _lc("Height of the spacer.\n100% is the default size.\nTap the arrows for fine steps, hold for larger ones."),
+                get             = function() return _getScalePct(S.id, pfx) end,
+                set             = function(v) _setScale(v, S.id, pfx) end,
+                refresh         = refresh,
+                value_min       = _SCALE_MIN,
+                value_max       = _SCALE_MAX,
+                value_step      = 1,
+                value_hold_step = _SCALE_STEP,
+                default_value   = _SCALE_DEF,
             }),
         }
     end
