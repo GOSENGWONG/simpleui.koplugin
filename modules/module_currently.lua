@@ -1421,8 +1421,8 @@ local function _makeThumbScaleItem(ctx_menu)
     local pfx = ctx_menu.pfx
     local _lc = ctx_menu._
     return Config.makeScaleItem({
-        text_func = function() return _lc("Cover size") end,
-        title     = _lc("Cover size"),
+        text_func = function() return _lc("Cover Size") end,
+        title     = _lc("Cover Size"),
         info      = _lc("Scale for the cover thumbnail only.\n100% is the default size.\nWhen Dynamic Cover Size is on, this scales the cover relative to its current dynamic size instead, and the cover never shrinks below its 100% size."),
         get       = function() return Config.getThumbScalePct("currently", pfx) end,
         set       = function(v) Config.setThumbScale(v, "currently", pfx) end,
