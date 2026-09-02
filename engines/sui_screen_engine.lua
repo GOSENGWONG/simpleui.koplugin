@@ -4080,12 +4080,36 @@ function ScreenEngine.setCachedBooksState(id, v)
     _sset(id, "_cached_books_state", v)
 end
 
--- Gets/sets the flat, id-level _cfg_cache (per-module settings snapshot —
--- see ScreenWidget:_buildCtx). Mirrors get/setCachedBooksState above for
--- callers that force a full cold rebuild (both fields are always cleared
--- together elsewhere in this file) on a screen that isn't necessarily live.
+-- Gets/sets the per-screen _cfg_cache (module-settings snapshot used by
+-- ScreenWidget:_buildCtx). The store is written for closed screens; when a
+-- live instance exists it must be updated too — _buildCtx reads
+-- self._cfg_cache and never re-consults the store. Clearing (v == nil) also
+-- drops self._ctx_cache: ctx embeds the cfg table, so a kept-alive ctx would
+-- keep serving the pre-change main_order / visibility flags after
+-- refreshScreen(..., false) promotes to its keep_cache path whenever
+-- _body and _ctx_cache are both still set.
 function ScreenEngine.setCfgCache(id, v)
     _sset(id, "_cfg_cache", v)
+    local inst = _sget(id, "_instance")
+    if not inst then return end
+    inst._cfg_cache = v
+    if v == nil then
+        inst._ctx_cache = nil
+    end
+end
+
+-- Drop cfg (and optionally books state) on every known screen, then rebuild
+-- live ones. Call after module settings that the cfg snapshot captures
+-- (order, visibility, scales, …). Pass clear_books=true when book metadata
+-- must be re-fetched too (e.g. "Update Stats Now").
+function ScreenEngine.invalidateAllCfgAndRefresh(clear_books)
+    for _, id in ipairs(ScreenEngine.knownScreenIds()) do
+        if clear_books then
+            ScreenEngine.setCachedBooksState(id, nil)
+        end
+        ScreenEngine.setCfgCache(id, nil)
+        ScreenEngine.refreshScreen(id, false)
+    end
 end
 
 -- Flags screen `id` for a refresh next time it becomes visible — covers

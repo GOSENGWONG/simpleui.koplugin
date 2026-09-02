@@ -44,9 +44,42 @@ local _REF_INNER_W   = Screen:getWidth() - UI.SIDE_PAD * 2 - PAD * 2
 local _CENTER_W_PCT  = Screen:scaleBySize(140) / _REF_INNER_W
 local _CENTER_W_MIN  = Screen:scaleBySize(60)  -- floor so covers never collapse to unreadable size
 
+-- ---------------------------------------------------------------------------
+-- Carousel label truncation
+-- ---------------------------------------------------------------------------
 -- Title/author/stats text is constrained to covers_block_w (full carousel
--- footprint including side peeks) via max_width + truncate_with_ellipsis
--- (same pattern as GridRenderer labels).
+-- footprint including side peeks). build() reruns on every carousel swipe
+-- (see ScreenWidget:_refreshBookModSlot), so this truncates by an estimated
+-- character budget rather than TextWidget's max_width + truncate_with_ellipsis,
+-- which remeasures glyph-by-glyph against the font on every call. Counts
+-- Unicode codepoints, not bytes, so CJK/Arabic text truncates correctly.
+local _AVG_CHAR_WIDTH_RATIO = 0.55  -- rough glyph-advance-to-font-size ratio
+
+local function truncateToWidth(s, face, max_px)
+    if not s or s == "" then return s end
+    local max_chars = math.max(1, math.floor(max_px / (face.size * _AVG_CHAR_WIDTH_RATIO)))
+    local count = 0
+    local i = 1
+    local last_safe = 0  -- byte offset of the last complete codepoint boundary
+    while i <= #s do
+        local byte = s:byte(i)
+        local char_len
+        if     byte >= 240 then char_len = 4
+        elseif byte >= 224 then char_len = 3
+        elseif byte >= 192 then char_len = 2
+        else                     char_len = 1
+        end
+        count = count + 1
+        if count == max_chars then
+            last_safe = i + char_len - 1
+        end
+        if count > max_chars then
+            return s:sub(1, last_safe) .. "…"
+        end
+        i = i + char_len
+    end
+    return s  -- fits within max_chars
+end
 
 -- ---------------------------------------------------------------------------
 -- Author list rendering
@@ -93,8 +126,9 @@ local MAIN_ORDER_KEY        = "coverdeck_main_order"      -- pfx .. this
 -- for the same badge_key ("progress").
 local SETTING_SHOW_PROGRESS_BADGE  = "coverdeck_show_progress_badge"   -- pfx .. this; default OFF
 local SETTING_PROGRESS_BADGE_COLOR = "coverdeck_progress_badge_color"  -- pfx .. this; nil|"dark"|"light"
--- When progress badge is on: also paint it on right-hand peeks (nil/true)
--- or only on the centre cover (false). Default on.
+-- When progress badge is on: also paint it on right-hand peeks (true) or
+-- only on the centre cover (nil/false). Default off, same opt-in
+-- convention as SETTING_SHOW_PROGRESS_BADGE.
 local SETTING_PROGRESS_BADGE_ON_PEEKS = "coverdeck_progress_badge_on_peeks"
 
 -- Source values of the form COLLECTION_PREFIX .. collection_name select a
@@ -140,10 +174,10 @@ local function showProgressBadge(pfx)
     return SUISettings:readSetting(pfx .. SETTING_SHOW_PROGRESS_BADGE) == true
 end
 
--- Right-hand peeks also show the progress badge (default on). Only
+-- Right-hand peeks also show the progress badge (default off). Only
 -- meaningful when showProgressBadge is on.
 local function showProgressBadgeOnPeeks(pfx)
-    return SUISettings:nilOrTrue(pfx .. SETTING_PROGRESS_BADGE_ON_PEEKS)
+    return SUISettings:readSetting(pfx .. SETTING_PROGRESS_BADGE_ON_PEEKS) == true
 end
 
 -- nil ("Follow Library") / "dark" / "light" — mirrors
@@ -166,15 +200,11 @@ local function _showElem(pfx, key)
     return SUISettings:nilOrTrue(pfx .. "coverdeck_show_" .. key)
 end
 
--- Clears the per-screen config cache on every known screen so the next
--- build() picks up an Items change (show/hide, reorder) immediately,
--- instead of showing stale settings until KOReader restarts.
-local function _invalidateCfgCache(pfx)
+-- Items show/hide/reorder: rebuild every known screen from fresh settings.
+local function _invalidateCfgCache(_pfx)
     local ok, ScreenEngine = pcall(require, "engines/sui_screen_engine")
-    if not ok or not ScreenEngine then return end
-    for _, sid in ipairs(ScreenEngine.knownScreenIds()) do
-        ScreenEngine.setCfgCache(sid, nil)
-        ScreenEngine.refreshScreen(sid, false)
+    if ok and ScreenEngine and ScreenEngine.invalidateAllCfgAndRefresh then
+        ScreenEngine.invalidateAllCfgAndRefresh()
     end
 end
 
@@ -614,12 +644,15 @@ function M.reset()
     _bstats_cache_count = 0
 end
 
--- Clears the entire stats cache. Called from main.lua:onCloseDocument as a
--- fallback when the closed book's md5 could not be resolved; safe since
--- fetchBookStats() re-populates entries on demand.
+-- No-op: called from main.lua:onCloseDocument as a fallback when the closed
+-- book's md5 could not be resolved (the normal path is
+-- invalidateCacheForMd5, below). A full flush isn't needed here — every
+-- other book's cached stats are still valid, and the centre book's own
+-- entry gets a forced refetch on the very next stats-only refresh via
+-- M.updateStats' fetchBookStats(..., true) call. Wiping the whole cache
+-- would only force every carousel entry back to SQLite on the next swipe
+-- for no correctness gain.
 function M.invalidateCache()
-    _bstats_cache       = {}
-    _bstats_cache_count = 0
 end
 
 -- Removes only the cache entry for the given md5, leaving all other books
@@ -938,13 +971,12 @@ function M.build(w, ctx)
     local title_widget
     if show_title then
         title_widget  = UI.makeColoredText{
-            text                   = bd.title or "",
-            face                   = face_title,
-            bold                   = true,
-            fgcolor                = CLR_TEXT_EFF,
-            max_width              = covers_block_w,
-            truncate_with_ellipsis = true,
-            alignment              = "center",
+            text      = truncateToWidth(bd.title, face_title, covers_block_w),
+            face      = face_title,
+            bold      = true,
+            fgcolor   = CLR_TEXT_EFF,
+            width     = covers_block_w,
+            alignment = "center",
         }
     end
 
@@ -956,12 +988,11 @@ function M.build(w, ctx)
             local author_fs   = math.floor(SUIStyle.FS_SUBTITLE * scale * lbl_scale)
             local face_author = Font:getFace(SUIStyle.FACE_REGULAR, math.max(8, author_fs))
             author_widget = UI.makeColoredText{
-                text                   = author_text,
-                face                   = face_author,
-                fgcolor                = CLR_TEXT_SUB_EFF,
-                max_width              = covers_block_w,
-                truncate_with_ellipsis = true,
-                alignment              = "center",
+                text      = truncateToWidth(author_text, face_author, covers_block_w),
+                face      = face_author,
+                fgcolor   = CLR_TEXT_SUB_EFF,
+                width     = covers_block_w,
+                alignment = "center",
             }
         end
     end
@@ -1023,12 +1054,11 @@ function M.build(w, ctx)
         end
 
         local stats_w = UI.makeColoredText{
-            text                   = "",
-            face                   = face_info,
-            fgcolor                = CLR_TEXT_SUB_EFF,
-            max_width              = covers_block_w,
-            truncate_with_ellipsis = true,
-            alignment              = "center",
+            text      = "",
+            face      = face_info,
+            fgcolor   = CLR_TEXT_SUB_EFF,
+            width     = covers_block_w,
+            alignment = "center",
         }
         local function _update(nb, nd)
             local stats_parts = {}
@@ -1056,7 +1086,7 @@ function M.build(w, ctx)
                 end
             end
             local final_text = #stats_parts > 0 and table.concat(stats_parts, " · ") or ""
-            _updateColoredText(stats_w, final_text, CLR_TEXT_SUB_EFF)
+            _updateColoredText(stats_w, truncateToWidth(final_text, face_info, covers_block_w), CLR_TEXT_SUB_EFF)
         end
         _update(bstats, bd)
         table.insert(_cd_update_funcs, _update)
@@ -1309,8 +1339,8 @@ function M.getMenuItems(ctx_menu)
             refresh      = refresh,
         }),
         Config.makeScaleItem({
-            text_func = function() return _lc("Cover size") end,
-            title     = _lc("Cover size"),
+            text_func = function() return _lc("Cover Size") end,
+            title     = _lc("Cover Size"),
             info      = _lc("Scale for the cover thumbnails only.\n100% is the default size."),
             get       = function() return Config.getThumbScalePct("coverdeck", pfx) end,
             set       = function(v) Config.setThumbScale(v, "coverdeck", pfx) end,
@@ -1479,6 +1509,7 @@ function M.getMenuItems(ctx_menu)
                 if not active_set[k] then new_order[#new_order+1] = k end
             end
             SUISettings:saveSetting(pfx .. ELEM_ORDER_KEY, new_order)
+            _invalidateCfgCache(pfx)
             refresh()
         end
         if ctx_menu.show_arrange then
@@ -1506,7 +1537,9 @@ function M.getMenuItems(ctx_menu)
                         for _i2, k in ipairs(_getElemOrder(pfx)) do
                             if not active_set[k] then new_order[#new_order+1] = k end
                         end
+                        SUISettings:saveSetting(pfx .. "coverdeck_show_" .. added_key, true)
                         SUISettings:saveSetting(pfx .. ELEM_ORDER_KEY, new_order)
+                        _invalidateCfgCache(pfx)
                     end, ctx2)
                     ctx2.push("item_picker", { title = _lc("Add Item"), items = items })
                 end,
@@ -1637,6 +1670,7 @@ function M.getMenuItems(ctx_menu)
                                         if k ~= added_key then new_order[#new_order + 1] = k end
                                     end
                                     new_order[#new_order + 1] = added_key
+                                    SUISettings:saveSetting(pfx .. "coverdeck_show_" .. added_key, true)
                                     SUISettings:saveSetting(pfx .. MAIN_ORDER_KEY, new_order)
                                     _invalidateCfgCache(pfx)
                                 end, ctx2)
@@ -1732,18 +1766,9 @@ function M.getMenuItems(ctx_menu)
             local MCD = package.loaded["modules/module_coverdeck"]
             if MCD and MCD.invalidateCache then MCD.invalidateCache() end
             
-            -- Invalidate and repaint every known screen (built-in Homescreen
-            -- plus any Custom Screen touched this session), not just the
-            -- Homescreen — this module may be placed on a Custom Screen,
-            -- whose own _cached_books_state/_cfg_cache would otherwise stay
-            -- stale after "Update Stats Now" (see ScreenEngine.knownScreenIds).
             local ScreenEngine = package.loaded["engines/sui_screen_engine"]
-            if ScreenEngine then
-                for _, sid in ipairs(ScreenEngine.knownScreenIds()) do
-                    ScreenEngine.setCachedBooksState(sid, nil)
-                    ScreenEngine.setCfgCache(sid, nil)
-                    ScreenEngine.refreshScreen(sid, false)
-                end
+            if ScreenEngine and ScreenEngine.invalidateAllCfgAndRefresh then
+                ScreenEngine.invalidateAllCfgAndRefresh(true)
             end
             if ctx_menu and type(ctx_menu.refresh) == "function" then ctx_menu.refresh() elseif refresh then refresh() end
             local InfoMessage = ctx_menu and ctx_menu.InfoMessage or require("ui/widget/infomessage")

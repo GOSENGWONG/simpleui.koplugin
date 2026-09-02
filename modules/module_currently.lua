@@ -1421,8 +1421,8 @@ local function _makeThumbScaleItem(ctx_menu)
     local pfx = ctx_menu.pfx
     local _lc = ctx_menu._
     return Config.makeScaleItem({
-        text_func = function() return _lc("Cover size") end,
-        title     = _lc("Cover size"),
+        text_func = function() return _lc("Cover Size") end,
+        title     = _lc("Cover Size"),
         info      = _lc("Scale for the cover thumbnail only.\n100% is the default size.\nWhen Dynamic Cover Size is on, this scales the cover relative to its current dynamic size instead, and the cover never shrinks below its 100% size."),
         get       = function() return Config.getThumbScalePct("currently", pfx) end,
         set       = function(v) Config.setThumbScale(v, "currently", pfx) end,
@@ -1993,19 +1993,9 @@ function M.getMenuItems(ctx_menu)
                 local MCD = package.loaded["modules/module_coverdeck"]
                 if MCD and MCD.invalidateCache then MCD.invalidateCache() end
                 
-                -- Invalidate and repaint every known screen (built-in
-                -- Homescreen plus any Custom Screen touched this session),
-                -- not just the Homescreen — this module may be placed on a
-                -- Custom Screen, whose own _cached_books_state/_cfg_cache
-                -- would otherwise stay stale after "Update Stats Now" (see
-                -- ScreenEngine.knownScreenIds).
                 local ScreenEngine = package.loaded["engines/sui_screen_engine"]
-                if ScreenEngine then
-                    for _, sid in ipairs(ScreenEngine.knownScreenIds()) do
-                        ScreenEngine.setCachedBooksState(sid, nil)
-                        ScreenEngine.setCfgCache(sid, nil)
-                        ScreenEngine.refreshScreen(sid, false)
-                    end
+                if ScreenEngine and ScreenEngine.invalidateAllCfgAndRefresh then
+                    ScreenEngine.invalidateAllCfgAndRefresh(true)
                 end
                 if ctx_menu and type(ctx_menu.refresh) == "function" then ctx_menu.refresh() elseif refresh then refresh() end
                 local InfoMessage = ctx_menu and ctx_menu.InfoMessage or require("ui/widget/infomessage")

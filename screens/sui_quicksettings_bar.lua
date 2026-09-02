@@ -612,6 +612,12 @@ local function patchTouchMenu()
         -- Build panel (sets self._sui_qs_refs)
         local panel, refs = buildPanel(self)
         self._sui_qs_refs = refs
+
+        -- Native page handlers expect numeric pagination state. This panel is
+        -- a single fixed page, so keep page-key and swipe events safe.
+        self.page = 1
+        self.page_num = 1
+
         table.insert(self.item_group, panel)
 
         -- Footer (no pagination)

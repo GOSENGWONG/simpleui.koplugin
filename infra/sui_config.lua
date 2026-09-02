@@ -1682,6 +1682,29 @@ local function _enqueueCoverExtract(filepath, w, h)
     M._cover_extract_queue[#M._cover_extract_queue + 1] = filepath
 end
 
+-- True when BIM's cached thumbnail is smaller than this slot needs and the
+-- original cover can yield a larger one (Cover Browser list-mode specs, etc.).
+local function _coverTooSmall(bim, bookinfo, w, h)
+    if not (bim and bookinfo and bookinfo.has_cover) then return false end
+    if type(bim.isCachedCoverInvalid) ~= "function" then return false end
+    return bim.isCachedCoverInvalid(bookinfo, {
+        max_cover_w = w,
+        max_cover_h = h,
+    }) and true or false
+end
+
+-- Drop stretch + ref entries so a later put after re-extract can install the
+-- higher-quality bb (prefer-larger alone keeps same pixel-count upscales).
+local function _dropLocalCoverCaches(filepath)
+    SUICoverCache:drop(filepath)
+    local entry = _bim_ref_cache[filepath]
+    if not entry then return end
+    _removeRefOrderKey(filepath)
+    _bim_ref_cache[filepath] = nil
+    _bim_ref_bytes = _bim_ref_bytes - (entry.bytes or 0)
+    if _bim_ref_bytes < 0 then _bim_ref_bytes = 0 end
+end
+
 -- Stretches `raw_bb` (bookinfo.cover_bb — BookInfoManager's own persistent
 -- entry for this file, shared with KOReader core) to exactly
 -- target_w x target_h, aspect NOT preserved. Never hands raw_bb itself to
@@ -1714,14 +1737,7 @@ end
 function M.getStretchedCoverBB(filepath, w, h)
     if M.isCoverMissing(filepath) then return nil end
 
-    local cached = SUICoverCache:get(filepath)
-    if cached and cached:getWidth() >= w and cached:getHeight() >= h then
-        return cached
-    end
-
-    -- Reject non-regular-file paths (e.g. directories, ".." traversals)
-    -- before hitting the native extractor, which can segfault on invalid
-    -- input.
+    -- Reject non-regular-file paths before the extractor (can segfault).
     if _lfsMode(filepath) ~= "file" then _markNoCover(filepath); return nil end
 
     local bim = M.getBookInfoManager()
@@ -1735,13 +1751,26 @@ function M.getStretchedCoverBB(filepath, w, h)
     end
     if bookinfo and bookinfo.cover_fetched then
         if bookinfo.has_cover and bookinfo.cover_bb then
+            -- List-mode / undersized BIM thumbnail: show stretched placeholder
+            -- and re-extract larger. Drop local caches so the upgraded bb can
+            -- replace a same-size upscale (prefer-larger is pixel-count only).
+            if _coverTooSmall(bim, bookinfo, w, h) then
+                local placeholder = SUICoverCache:get(filepath)
+                _dropLocalCoverCaches(filepath)
+                _enqueueCoverExtract(filepath, w, h)
+                M.cover_extraction_pending = true
+                if placeholder and placeholder:getWidth() >= w
+                        and placeholder:getHeight() >= h then
+                    return placeholder
+                end
+                return _stretchBBToSize(bookinfo.cover_bb, w, h)
+            end
             M._cover_extract_pending[filepath] = nil
+            local cached = SUICoverCache:get(filepath)
+            if cached and cached:getWidth() >= w and cached:getHeight() >= h then
+                return cached
+            end
             local bb = _stretchBBToSize(bookinfo.cover_bb, w, h)
-            -- put() returns the bb now serving as the cache entry — our
-            -- fresh bb if it was inserted/upgraded, or a larger existing
-            -- entry if one was already resident (prefer-larger). Either
-            -- way this is the bb the caller should build its ImageWidget
-            -- from; see the "Stretch-only cover API" note above.
             return SUICoverCache:put(filepath, bb)
         else
             M._cover_extract_pending[filepath] = nil; _markNoCover(filepath); return nil
@@ -1768,17 +1797,15 @@ function M.getCroppedCoverBB(filepath, w, h, align)
     end
     if bookinfo and bookinfo.cover_fetched then
         if bookinfo.has_cover and bookinfo.cover_bb then
+            if _coverTooSmall(bim, bookinfo, w, h) then
+                _dropLocalCoverCaches(filepath)
+                _enqueueCoverExtract(filepath, w, h)
+                M.cover_extraction_pending = true
+                -- Crop placeholder from the small source (no ref cache).
+                return _scaleBBToSlot(bookinfo.cover_bb, w, h, align)
+            end
             M._cover_extract_pending[filepath] = nil
-            -- Same shared, bounded, uncropped per-book reference is used
-            -- regardless of `align` — cropping happens fresh from it on
-            -- every call, so different callers can legitimately ask for
-            -- different alignments of the SAME book without needing
-            -- separate cache entries per alignment. `align` defaults to
-            -- "center" (via _scaleBBToSlot's own default below) — that's
-            -- what Quad wants (centre-cropped quadrant, no directional
-            -- bias). CoverDeck's side/far "peek" slots pass "left"/"right"
-            -- explicitly instead — see module_coverdeck.lua's
-            -- buildCroppedCover.
+            -- Shared uncropped ref; crop fresh so callers can differ on align.
             local ref_bb = _getRefCoverBB(filepath, bookinfo.cover_bb)
             return _scaleBBToSlot(ref_bb, w, h, align)
         else

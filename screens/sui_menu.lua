@@ -2739,12 +2739,13 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         -- Shown only when the device maps a key to KOReader's "Home" name
         -- (PocketBook, reMarkable, Cervantes, Sony, some Kindles, …). Natively
         -- the Home key closes the reader into the file manager (or navigates
-        -- the FM to home_dir); this option redirects both paths to the
-        -- SimpleUI Home Screen, matching the "Go to Homescreen" gesture.
+        -- the FM to home_dir). This option redirects the physical Home key to
+        -- the SimpleUI Home Screen; the file browser title-bar home icon still
+        -- goes to the home folder.
         if Config.deviceHasHomeKey() then
             table.insert(items, 3, {
-                text           = _("Home Button Opens Home Screen"),
-                help_text      = _("Makes the device's Home button always open the SimpleUI Home Screen — while reading and while browsing files — instead of KOReader's native Home behaviour."),
+                text           = _("Home key opens Home Screen"),
+                help_text      = _("Makes the device's physical Home key open the SimpleUI Home Screen — while reading and while browsing files — instead of KOReader's native Home behaviour. The file browser title-bar home icon still goes to the home folder."),
                 checked_func   = function()
                     return SUISettings:isTrue("simpleui_home_key_opens_hs")
                 end,
