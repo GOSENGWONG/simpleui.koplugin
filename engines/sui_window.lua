@@ -447,6 +447,7 @@ function SUIWindow:show()
             local n = #win._kb_focusables
             if n > 0 then
                 win._kb_focus_idx = ((win._kb_focus_idx or 1) - 2) % n + 1
+                win._kb_focus_active = true
                 win:_repaint()
             end
             return true
@@ -455,6 +456,7 @@ function SUIWindow:show()
             local n = #win._kb_focusables
             if n > 0 then
                 win._kb_focus_idx = (win._kb_focus_idx or 0) % n + 1
+                win._kb_focus_active = true
                 win:_repaint()
             end
             return true
@@ -1038,9 +1040,17 @@ function SUIWindow:_repaint()
     -- (different params at different depths), so id alone isn't a reliable
     -- "did the screen change" signal — pair it with nav_stack depth, which
     -- always changes on push/pop but never on an in-place repaint.
+    --
+    -- _kb_focus_active mirrors upstream KOReader's FocusManager convention
+    -- (FOCUS_ONLY_ON_NT): the focus highlight stays hidden until the user
+    -- actually drives the D-pad, so touch input on a hasDPad+touch device
+    -- doesn't show a highlight box no one asked for. It resets alongside the
+    -- focus index on a real screen change and flips true the first time
+    -- onKbFocusUp/onKbFocusDown fires.
     local nav_depth = #self._nav_stack
     if self._kb_last_screen_id ~= frame.id or self._kb_last_nav_depth ~= nav_depth then
         self._kb_focus_idx = 1
+        self._kb_focus_active = false
         self._kb_last_screen_id  = frame.id
         self._kb_last_nav_depth  = nav_depth
     end
@@ -1533,13 +1543,18 @@ function SUIWindow.Input.tapable(widget, handlers, dimen)
     -- tap-driven items participate — matches the existing convention
     -- elsewhere in this file that a disabled row simply has no tap_fn.
     -- on_hold-only items aren't reachable this way yet (v1 scope).
+    --
+    -- The highlight frame itself only renders once _kb_focus_active is set
+    -- (see the _repaint/onKbFocusUp/onKbFocusDown comments), so it stays
+    -- hidden until the user actually presses Up/Down — same as upstream
+    -- KOReader's FocusManager on touch+D-pad devices.
     if handlers.on_tap and Device:hasDPad() then
         local win = _kbCurrent()
         if win then
             win._kb_focus_count = (win._kb_focus_count or 0) + 1
             local my_idx = win._kb_focus_count
             win._kb_focusables[my_idx] = handlers.on_tap
-            if win._kb_focus_idx == my_idx then
+            if win._kb_focus_idx == my_idx and win._kb_focus_active then
                 widget = FrameContainer:new{
                     dimen      = Geom:new{ w = dimen.w, h = dimen.h },
                     bordersize = SUIStyle.BORDER_SZ * 2,
