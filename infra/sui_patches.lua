@@ -823,9 +823,10 @@ function M.patchFileManagerClass(plugin)
 
             if this._navbar_container then
                 local t = Config.loadTabConfig()
-                -- _sui_return_to_book_folder_pending is set by closeReaderToHomescreen
-                -- when "Return to Book Folder" is on. Consume it now so it fires
-                -- exactly once per close, then honour it exactly like return_to_folder=true.
+                -- "Return to Book Folder" only applies to native reader closes
+                -- (KOReader onClose → showFileManager without an explicit SimpleUI
+                -- destination). Explicit paths (Homescreen, Library, …) never set
+                -- the pending flag and always force their own landing path.
                 local pending_folder = this._sui_return_to_book_folder_pending
                 this._sui_return_to_book_folder_pending = nil
                 local return_to_folder = pending_folder
@@ -1803,6 +1804,23 @@ function CoverTransition.scheduleAutoClose(delay)
         CoverTransition.close()
     end
     UIManager:scheduleIn(delay or 0.15, _ct_close_task)
+end
+
+-- Keep the close-side cover above a destination (HS/FM) raised in the same
+-- tick as onClose, so the transition stays visible until auto-close.
+function CoverTransition.ensureOnTop()
+    if not _ct_widget then return end
+    local stack = UIManager._window_stack
+    if not stack then return end
+    for i = 1, #stack do
+        if stack[i].widget == _ct_widget then
+            if i ~= #stack then
+                local entry = table.remove(stack, i)
+                table.insert(stack, entry)
+            end
+            return
+        end
+    end
 end
 
 -- ---------------------------------------------------------------------------
@@ -3794,29 +3812,22 @@ end
 -- Reader-close helpers for gesture actions
 -- ---------------------------------------------------------------------------
 
--- Close the reader and open the Homescreen afterwards, exactly as if
--- "Start with Homescreen" were active, regardless of the actual setting.
--- Safe to call when the reader is NOT open (no-op in that case).
 -- ---------------------------------------------------------------------------
 -- _prepareReaderClose
 --
--- Sets all pre-close flags before the actual onClose call.
--- Returns: file, return_to_folder, prev_action
+-- Flags for an explicit reader→Homescreen close.
+-- "Return to Book Folder" is intentionally NOT applied here — that setting
+-- only affects native KOReader closes (see patchUIManagerClose / FM onShow).
+-- Explicit SimpleUI destinations always win (HS, Library, History, …).
+-- Returns: file, prev_action
 -- ---------------------------------------------------------------------------
 local function _prepareReaderClose(plugin, readerui, via_gesture)
     local file = readerui.document and readerui.document.file
-    local return_to_folder = SUISettings:isTrue("simpleui_hs_return_to_book_folder")
     local fm_pre = liveFM()
 
-    -- lazy_refresh defers FM file-list scan until HS closes (I/O optimisation).
-    -- Skip when returning to book folder: FM path != home_dir, so a lazy
-    -- refresh-path would navigate away from the book's folder.
-    if fm_pre and not return_to_folder then
+    -- Defer FM file-list scan until HS closes (I/O optimisation).
+    if fm_pre then
         fm_pre._sui_lazy_refresh_path = true
-    end
-    -- Signal FM onShow hook: do NOT override the path back to home_dir.
-    if fm_pre and return_to_folder then
-        fm_pre._sui_return_to_book_folder_pending = true
     end
 
     local prev_action = plugin.active_action
@@ -3825,7 +3836,49 @@ local function _prepareReaderClose(plugin, readerui, via_gesture)
     -- to re-open the HS a second time while our close is in progress.
     readerui.tearing_down = true
 
-    return file, return_to_folder, prev_action
+    return file, prev_action
+end
+
+-- ---------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------
+-- Shared reader-exit helpers
+-- ---------------------------------------------------------------------------
+
+-- Move a widget to the top of the UIManager stack. Returns false if the
+-- widget is not on the stack.
+local function _promoteWidgetToTop(widget)
+    local stack = UIManager._window_stack
+    if not (stack and widget) then return false end
+    for i = 1, #stack do
+        if stack[i].widget == widget then
+            if i ~= #stack then
+                local entry = table.remove(stack, i)
+                table.insert(stack, entry)
+            end
+            return true
+        end
+    end
+    return false
+end
+
+-- Inject / refresh the Homescreen bottom bar on an existing instance.
+local function _injectHomescreenBar(plugin, inst, prev_action)
+    local tabs = Config.loadTabConfig()
+    Bottombar.setActiveAndRefreshFM(plugin, "homescreen", tabs)
+    Bottombar.replaceBar(inst, Bottombar.buildBarWidget("homescreen", tabs), tabs)
+    inst._navbar_injected = true
+    if prev_action ~= nil then
+        inst._navbar_prev_action = prev_action
+    end
+end
+
+-- Close the reader and restore the FileManager underneath.
+-- Does NOT set _suppress_closing_notice: that flag is reserved for
+-- reloadDocument (patchReloadDocument). Explicit exits must still show the
+-- "Closing book…" notice / cover transition when the user has them enabled.
+local function _teardownReader(readerui, file)
+    readerui:onClose(false)
+    readerui:showFileManager(file)
 end
 
 -- ---------------------------------------------------------------------------
@@ -3835,39 +3888,18 @@ end
 -- engines/sui_screen_engine.lua). When the reader opened, a parked HS was
 -- left alive at the bottom of the UIManager window stack instead of being
 -- torn down. This function:
---   1. Confirms `instance` is actually parked (bails out otherwise, so
---      callers can use it unconditionally).
---   2. Finds it on the window stack and moves it to the top (O(n)).
---   3. Re-injects a fresh navbar (new FM instance, correct tabs/bar).
---   4. Calls `_refresh(false)` to pick up whatever changed while the
---      reader was open (progress, book order, stats) — no full rebuild.
---   5. Scopes the repaint to the widget's own dimen.
+--   1. Confirms `instance` is actually parked (bails out otherwise).
+--   2. Moves it to the top of the window stack.
+--   3. Clears _parked, re-injects the navbar, refreshes data.
 --
 -- Returns true  → warm-path taken, caller must NOT build/show a fresh instance.
--- Returns false → nothing was parked, or it was evicted unexpectedly; caller
---                 falls back to its own cold-build path.
+-- Returns false → nothing was parked, or it was evicted unexpectedly.
 -- ---------------------------------------------------------------------------
 _raiseParkedScreen = function(plugin, screen_module, prev_action)
     local inst = screen_module and screen_module._instance
     if not (inst and inst._parked) then return false end
 
-    local stack = UIManager._window_stack
-    if not stack then inst._parked = nil; return false end
-    local found = false
-    for i = 1, #stack do
-        if stack[i].widget == inst then
-            if i ~= #stack then
-                local entry = table.remove(stack, i)
-                table.insert(stack, entry)
-            end
-            found = true
-            break
-        end
-    end
-    if not found then
-        -- Evicted from the stack unexpectedly (nothing else is supposed to
-        -- close a parked instance) — treat it as gone and let the caller
-        -- fall back to a cold build.
+    if not _promoteWidgetToTop(inst) then
         inst._parked = nil
         if screen_module._instance == inst then screen_module._instance = nil end
         return false
@@ -3875,13 +3907,6 @@ _raiseParkedScreen = function(plugin, screen_module, prev_action)
 
     -- Orientation may have changed while parked under the reader
     -- (onSetRotationMode ignores SetRotationMode while ReaderUI is open).
-    -- The parked tree then carries the wrong chrome: bottom bar offset,
-    -- topbar width, pagination footer, touch-zone ratios, self.dimen,
-    -- BlockNavbar _in_bar height, wrapper pools, etc. Patching each of
-    -- those is fragile — fall back to a cold reopen (warm-seeded via
-    -- onCloseWidget's intentional-close path) so init builds everything
-    -- for the current orientation. Soft-park still wins on the common
-    -- same-orientation reader round-trip.
     local cur_w = Screen:getWidth()
     if inst._layout_sw ~= nil and inst._layout_sw ~= cur_w then
         logger.dbg("simpleui[rotation]: raiseParked layout stale — cold reopen",
@@ -3892,7 +3917,6 @@ _raiseParkedScreen = function(plugin, screen_module, prev_action)
         if ok_wp and SUIWallpaper and SUIWallpaper.freeCache then
             SUIWallpaper.freeCache()
         end
-        -- Seed page/books for the cold open; drop orientation-bound cfg.
         inst._cfg_cache = nil
         inst._navbar_closing_intentionally = true
         UIManager:close(inst)
@@ -3901,25 +3925,15 @@ _raiseParkedScreen = function(plugin, screen_module, prev_action)
     end
 
     inst._parked = nil
-
-    -- Same orientation: re-inject navbar and refresh data without a full rebuild.
-    local tabs = Config.loadTabConfig()
-    Bottombar.setActiveAndRefreshFM(plugin, "homescreen", tabs)
+    _injectHomescreenBar(plugin, inst, prev_action)
     _ensureGoalCallback(plugin)
-    local new_bar = Bottombar.buildBarWidget("homescreen", tabs)
-    Bottombar.replaceBar(inst, new_bar, tabs)
-    inst._navbar_injected    = true
-    inst._navbar_prev_action = prev_action
-
     inst._on_qa_tap   = _makeQaTap(plugin)
     inst._on_goal_tap = plugin._goalTapCallback
 
     pcall(function() inst:_refresh(false) end)
 
-    -- Scope the dirty region to the widget's own dimen instead of the full
-    -- screen. On colour panels, a full-screen "ui" dirty can be promoted to
-    -- a full flash by the EPDC driver; the dimen-scoped form stays as a "ui"
-    -- waveform and merges cleanly with the single repaint queued by the caller.
+    -- Dimen-scoped dirty: avoids full-flash promotion on colour panels once
+    -- the instance is fully raised and dimen is current.
     UIManager:setDirty(inst, function()
         return "ui", inst.dimen
     end)
@@ -3928,18 +3942,11 @@ end
 
 -- Closes a soft-parked screen instance for real instead of leaving it
 -- dangling alive-but-hidden. Used by any reader-close path that will NOT
--- show the Homescreen this time (e.g. "Return to Book Folder", or landing
--- in the Library) — without this, a parked instance from the open side
--- would sit hidden with increasingly stale data until the user happened to
--- reach the Homescreen some other way, defeating the point of parking it
--- in the first place.
+-- show the Homescreen this time (e.g. "Return to Book Folder", Library).
 _dropParkedScreen = function(screen_module)
     local inst = screen_module and screen_module._instance
     if not (inst and inst._parked) then return end
     inst._parked = nil
-    -- Same warm-seed semantics as a normal onShowingReader close: preserve
-    -- _cached_books_state/_current_page/_cfg_cache for next time, discard
-    -- everything else.
     inst._navbar_closing_intentionally = true
     UIManager:close(inst)
 end
@@ -3947,115 +3954,91 @@ end
 -- ---------------------------------------------------------------------------
 -- _closeReaderToHomescreenSync
 --
--- Synchronous inner body: onClose(false) + showFileManager + optional HS.
--- Shared between closeReaderToHomescreen (gesture path, inside nextTick) and
--- wireReaderMenuFMTab (TouchMenu path, called directly from the callback).
+-- Shared by closeReaderToHomescreen (async nextTick) and wireReaderMenuFMTab
+-- (synchronous, so TouchMenu forceRePaint sees the destination already up).
 --
--- WHY THIS EXISTS:
---   TouchMenuItem:onTapSelect calls UIManager:forceRePaint() after the item
---   callback returns. If the reader close is deferred via nextTick, that flush
---   happens with the TouchMenu gone but the book still on screen — a visible
---   intermediate e-ink refresh. Native KOReader avoids this by running
---   onClose() + showFileManager() synchronously inside the callback, before
---   forceRePaint() fires. We mirror that with onClose(false) to suppress the
---   internal "full" flash that the original onClose() would have queued.
+-- Soft-park (fast, when cover-close transition is off):
+--   1. Inject bar + promote still-parked HS + full dirty (immediate paint).
+--      Keep _parked so ReaderUI onCloseWidget does not destroy it.
+--   2. Next tick: teardown reader, then _raiseParkedScreen (unpark + stats).
+--
+-- Cover-close enabled, or no parked instance: teardown first (cover paints
+-- over the book), then raise/show HS under the cover and re-assert cover on top.
 -- ---------------------------------------------------------------------------
-local function _closeReaderToHomescreenSync(plugin, readerui, file,
-                                             return_to_folder, prev_action)
+local function _closeReaderToHomescreenSync(plugin, readerui, file, prev_action)
     if UIManager._exit_code ~= nil then return end
-
-    readerui:onClose(false)
-    -- showFileManager(file) navigates the FM to the book's parent folder
-    -- (last_dir derived from file path) — mirrors native behaviour.
-    readerui:showFileManager(file)
 
     local HS = liveHS() or (function()
         local ok, m = pcall(require, "screens/sui_homescreen"); return ok and m
     end)()
 
-    -- When "Return to Book Folder" is on: close the reader and land in the FM
-    -- at the book's folder with no HS — identical to native KOReader. A
-    -- parked HS instance from the open side won't be shown this time —
-    -- close it for real rather than leaving it alive-hidden indefinitely.
-    if return_to_folder then
-        plugin.active_action = "home"
-        if HS then _dropParkedScreen(HS) end
+    if not HS then
+        _teardownReader(readerui, file)
         return
     end
 
-    -- Default path: raise a parked HS instance if soft-park left one alive
-    -- underneath, else build fresh (warm-seeded from
-    -- ScreenEngine._cached_books_state, same as before soft-park existed).
-    if not HS then return end
+    _closeOrphanedPopups(liveFM(), HS._instance)
 
-    local fm_ref = liveFM()
-    _closeOrphanedPopups(fm_ref, HS._instance)
+    local inst = HS._instance
+    -- Cover-close transition must paint over the book first. Skip HS-first
+    -- when it is enabled so onCloseDocument can show the cover on the
+    -- still-visible reader, then raise HS underneath the cover.
+    local cover_first = CoverTransition.isCloseEnabled()
 
-    if _raiseParkedScreen(plugin, HS, prev_action) then return end
-    if HS._instance then return end
-    _showHSCold(plugin, HS, prev_action)
+    if inst and inst._parked and not cover_first then
+        -- Immediate paint while still parked (survives onCloseWidget).
+        _injectHomescreenBar(plugin, inst, prev_action)
+        _promoteWidgetToTop(inst)
+        UIManager:setDirty(inst, "ui")
+
+        UIManager:nextTick(function()
+            if UIManager._exit_code ~= nil then return end
+            local RUI2 = package.loaded["apps/reader/readerui"]
+            if not (RUI2 and RUI2.instance == readerui) then return end
+
+            _teardownReader(readerui, file)
+            if not _raiseParkedScreen(plugin, HS, prev_action) then
+                if not HS._instance then
+                    _showHSCold(plugin, HS, prev_action)
+                end
+            end
+        end)
+        return
+    end
+
+    -- Close-first: book (and optional cover) visible, then raise/show HS.
+    _teardownReader(readerui, file)
+    if not _raiseParkedScreen(plugin, HS, prev_action) then
+        if not HS._instance then
+            _showHSCold(plugin, HS, prev_action)
+        end
+    end
+    -- HS raise in the same tick would bury the cover; keep cover on top.
+    if CoverTransition.isShowing() then
+        CoverTransition.ensureOnTop()
+    end
 end
 
--- via_gesture: true (default) for gesture-triggered closes, false for menu-triggered.
--- Controls plugin._closing_via_gesture so onCloseDocument shows the closing notice
--- only when the mode warrants it (e.g. "gesture_only" must not fire for menu closes).
---
--- Uses nextTick so the gesture event handler returns before onClose runs.
--- Safe for gestures because no forceRePaint() follows the gesture callback.
--- For the TouchMenu path, wireReaderMenuFMTab calls _closeReaderToHomescreenSync
--- directly (synchronous) to match native KOReader's single-repaint behaviour.
+-- via_gesture controls the closing-notice mode ("gesture_only" vs menu).
+-- Gesture / dispatcher / hardware Home: nextTick (no forceRePaint follows).
+-- TouchMenu FM tab: calls _closeReaderToHomescreenSync directly (sync).
 function M.closeReaderToHomescreen(plugin, via_gesture)
     if via_gesture == nil then via_gesture = true end
     local RUI = package.loaded["apps/reader/readerui"]
     if not (RUI and RUI.instance) then return end
     local readerui = RUI.instance
 
-    local file, return_to_folder, prev_action =
+    local file, prev_action =
         _prepareReaderClose(plugin, readerui, via_gesture)
 
-    -- -----------------------------------------------------------------------
-    -- Flash elimination (#35 equivalent).
-    --
-    -- Previous sequence (caused FM flash):
-    --   readerui:onClose()        → queues UIManager:close(self.dialog, "full")
-    --   readerui:showFileManager()→ FM lands on stack
-    --   [event loop drains → FM painted with "full" flash]
-    --   scheduleIn(0) fires       → HS raised, "ui" repaint follows
-    --
-    -- New sequence (flash-free, gesture path):
-    --   nextTick fires (same event-loop batch as the gesture):
-    --     onClose(false)          → suppresses internal "full" refresh;
-    --                               onCloseDocument fires + flushes "Closing…" notice
-    --     showFileManager         → FM ready synchronously
-    --     _raiseParkedScreen/_showHSCold → HS raised (warm) or rebuilt (warm-seeded)
-    --                               in the same tick
-    --   [event loop drains → single "ui" repaint of HS or FM]
-    -- -----------------------------------------------------------------------
     UIManager:nextTick(function()
-        -- Guard: another book opened between gesture and nextTick (edge case).
         local RUI2 = package.loaded["apps/reader/readerui"]
         if RUI2 and RUI2.instance and RUI2.instance ~= readerui then return end
-        _closeReaderToHomescreenSync(plugin, readerui, file,
-                                     return_to_folder, prev_action)
+        _closeReaderToHomescreenSync(plugin, readerui, file, prev_action)
     end)
 end
 
--- ---------------------------------------------------------------------------
--- wireReaderMenuFMTab
---
--- Replaces the native "File browser" tab callback in ReadingMenu with one
--- that mirrors native KOReader's synchronous close sequence:
---   onTapCloseMenu → onClose(false) → showFileManager [→ HS if needed]
---
--- The original plugin version deferred to nextTick here, which caused a
--- visible intermediate flash: TouchMenuItem:onTapSelect calls forceRePaint()
--- after the callback, flushing the e-ink with the menu closed but the reader
--- still visible before the nextTick had a chance to run.
---
--- onClose(false) suppresses the "full" refresh that onClose() would queue,
--- preventing the FM from flashing before the HS appears — same technique as
--- the gesture path, but without the nextTick wrapper.
--- ---------------------------------------------------------------------------
+
 -- Suppress the "Closing book…" notice during document reloads triggered by
 -- formatting changes (font size, margins, line spacing, etc.).
 --
@@ -4178,32 +4161,33 @@ function M.wireReaderMenuFMTab(plugin, readerui)
     if not (items and items.filemanager) then return end
 
     items.filemanager.callback = function()
-        -- Mirrors native KOReader's synchronous sequence exactly:
-        --   onTapCloseMenu → onClose(false) → showFileManager [→ HS]
-        --
-        -- We must NOT defer to nextTick here. TouchMenuItem:onTapSelect calls
-        -- UIManager:forceRePaint() after this callback returns. If the reader
-        -- close is deferred, that flush happens with the TouchMenu gone but the
-        -- book still on screen — an unwanted intermediate e-ink refresh.
-        -- Running synchronously means forceRePaint sees the HS/FM already in
-        -- place (same as native), producing a single clean transition.
-        --
-        -- The pre-notice block (our_msg) that previously bridged the
-        -- "TouchMenu-close gap" is no longer needed: onCloseDocument fires
-        -- synchronously inside onClose(false) and handles its own notice
-        -- flushing. The suppress flag (_suppress_closing_notice) was only
-        -- needed to prevent a duplicate; it is no longer set here.
+        -- Synchronous close: TouchMenuItem:onTapSelect forceRePaint()s after
+        -- this callback, so the destination must already be on the stack.
 
-        -- Close the TouchMenu (synchronous, queues a repaint but does not
-        -- flush — the flush will happen after this entire callback returns).
         if menu_ref.onTapCloseMenu then menu_ref:onTapCloseMenu() end
 
-        -- Run the reader close synchronously (no nextTick).
-        -- via_gesture=false: menu-triggered, "gesture_only" notice mode skipped.
-        local file, return_to_folder, prev_action =
+        -- Native TouchMenu exit is the only path that honours
+        -- "Return to Book Folder". Explicit SimpleUI destinations
+        -- (gesture Home, QA Home, QA Library, …) never consult it.
+        if SUISettings:isTrue("simpleui_hs_return_to_book_folder") then
+            local file = readerui.document and readerui.document.file
+            local fm_pre = liveFM()
+            if fm_pre then
+                fm_pre._sui_return_to_book_folder_pending = true
+            end
+            plugin._closing_via_gesture = false
+            readerui.tearing_down = true
+            readerui:onClose(false)
+            readerui:showFileManager(file)
+            local HS = liveHS()
+            if HS then _dropParkedScreen(HS) end
+            plugin.active_action = "home"
+            return
+        end
+
+        local file, prev_action =
             _prepareReaderClose(plugin, readerui, false)
-        _closeReaderToHomescreenSync(plugin, readerui, file,
-                                     return_to_folder, prev_action)
+        _closeReaderToHomescreenSync(plugin, readerui, file, prev_action)
     end
     menu_ref._simpleui_fm_tab_wrapped = true
 end
@@ -4251,31 +4235,25 @@ end
 -- Homescreen appearing on top — equivalent to the user closing the reader
 -- when "return to book folder" / "Start with Homescreen" are both off.
 -- Safe to call when the reader is NOT open (no-op in that case).
+-- Close the reader and land on the Library (FM at home_dir) with no
+-- Homescreen on top. Safe when the reader is not open (no-op).
 function M.closeReaderToLibrary(plugin)
     local RUI = package.loaded["apps/reader/readerui"]
     if not (RUI and RUI.instance) then return end
     local readerui = RUI.instance
 
-    -- _navbar_closing_intentionally on the widget makes the patched
-    -- UIManager.close skip the entire HS re-open block (see the guard at the
-    -- top of that block). This is the same flag used by tab-navigation to
-    -- suppress the HS when closing overlays intentionally.
+    -- Skip HS re-open in patchUIManagerClose (same flag as tab-nav closes).
     readerui._navbar_closing_intentionally = true
 
     local file = readerui.document and readerui.document.file
     plugin._closing_via_gesture = true
+    readerui.tearing_down = true
     readerui:onClose()
-    -- onClose() calls UIManager:close(self.dialog) which runs synchronously,
-    -- so the flag has already been consumed. No need to clear it.
     readerui:showFileManager(file)
 
-    -- A parked HS instance from the open side won't be shown this time —
-    -- close it for real (see _dropParkedScreen) rather than leaving it
-    -- alive-hidden indefinitely with increasingly stale data.
     local HS = liveHS()
     if HS then _dropParkedScreen(HS) end
 
-    -- After the FM appears, navigate to home_dir and rebuild the navbar.
     UIManager:scheduleIn(0, function()
         local fm_ref = liveFM()
         if not fm_ref then return end
@@ -4301,7 +4279,7 @@ function M.closeReaderToLibrary(plugin)
     end)
 end
 
--- ---------------------------------------------------------------------------
+
 -- Wallpaper in File Manager and fullscreen overlays
 -- Paints the SimpleUI homescreen wallpaper behind the FM, Collections,
 -- History, and other fullscreen surfaces when the "Show in FM" setting is on.

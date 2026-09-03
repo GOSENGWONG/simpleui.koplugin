@@ -1421,6 +1421,26 @@ function M.navigate(plugin, action_id, fm_self, tabs, force)
         hs_inst._navbar_closing_intentionally = true
         pcall(function() UIManager:close(hs_inst) end)
         hs_inst._navbar_closing_intentionally = nil
+
+        -- Reader still under the homescreen: leave it before any FM action
+        -- so closing the screen does not simply reveal the open book.
+        local RUI = package.loaded["apps/reader/readerui"]
+        if RUI and RUI.instance and action_id ~= "homescreen" then
+            local ok_p, Patches = pcall(require, "infra/sui_patches")
+            if ok_p and Patches and Patches.closeReaderToLibrary then
+                Patches.closeReaderToLibrary(plugin)
+                if action_id == "home" then return end
+                UIManager:scheduleIn(0.05, function()
+                    local FM2 = package.loaded["apps/filemanager/filemanager"]
+                    local live_fm = FM2 and FM2.instance
+                    if not live_fm then return end
+                    local live_plugin = live_fm._simpleui_plugin or plugin
+                    live_plugin:_navigate(action_id, live_fm, tabs, false)
+                end)
+                return
+            end
+        end
+
         -- Update the FM bar. indicator_tab was resolved at the top of navigate()
         -- and already stored in plugin.active_action.
         if fm._navbar_container then

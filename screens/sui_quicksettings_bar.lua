@@ -188,8 +188,13 @@ local function buildPanel(touch_menu)
 
                     local FM  = package.loaded["apps/filemanager/filemanager"]
                     local fm  = FM and FM.instance
-                    local plugin = fm and fm._simpleui_plugin
-                    
+                    local RUI = package.loaded["apps/reader/readerui"]
+                    local in_reader = RUI and RUI.instance ~= nil
+                    -- FM.instance may be nil inside the reader; the plugin is
+                    -- registered on ReaderUI as readerui.simpleui in that case.
+                    local plugin = (fm and fm._simpleui_plugin)
+                        or (in_reader and RUI.instance.simpleui)
+
                     if not plugin then
                         local ctx = { fm = fm }
                         if not stay_open then
@@ -204,16 +209,9 @@ local function buildPanel(touch_menu)
                         end
                         return stay_open
                     end
-                    
-                    local RUI = package.loaded["apps/reader/readerui"]
-                    local in_reader = RUI and RUI.instance
-                    -- Inside the reader, FM.instance may be nil, so fall back to
-                    -- the plugin instance registered on ReaderUI.
-                    local plugin_resolved = plugin
-                        or (in_reader and in_reader.simpleui)
 
                     if stay_open then
-                        local ctx = { plugin = plugin_resolved, fm = fm }
+                        local ctx = { plugin = plugin, fm = fm }
                         local ok, err = pcall(QA.execute, _aid, ctx)
                         if not ok then
                             logger.warn("simpleui QSBar: execute error", _aid, tostring(err))
@@ -225,46 +223,47 @@ local function buildPanel(touch_menu)
                     UIManager:scheduleIn(0, function()
                         local FM_live = package.loaded["apps/filemanager/filemanager"]
                         local fm_live = FM_live and FM_live.instance
-                        local plugin_live = fm_live and fm_live._simpleui_plugin or plugin
+                        local RUI_live = package.loaded["apps/reader/readerui"]
+                        local still_in_reader = RUI_live and RUI_live.instance ~= nil
+                        local plugin_live = (fm_live and fm_live._simpleui_plugin)
+                            or (still_in_reader and RUI_live.instance.simpleui)
+                            or plugin
 
-                        if in_reader and not is_in_place then
+                        if still_in_reader and not is_in_place then
+                            local Patches = require("infra/sui_patches")
                             if _aid == "homescreen" then
-                                require("infra/sui_patches").closeReaderToHomescreen(plugin_live)
+                                Patches.closeReaderToHomescreen(plugin_live, false)
+                            elseif _aid == "home" then
+                                Patches.closeReaderToLibrary(plugin_live)
                             else
-                                local readerui = RUI.instance
-                                local file = readerui.document and readerui.document.file
-                                plugin_live._closing_via_gesture = true
-                                readerui._navbar_closing_intentionally = true
-                                readerui:onClose()
-                                readerui:showFileManager(file)
-                                UIManager:scheduleIn(0, function()
-                                    local FM_new = package.loaded["apps/filemanager/filemanager"]
-                                    local fm_new = FM_new and FM_new.instance
-                                    local plugin_new = fm_new and fm_new._simpleui_plugin or plugin_live
-                                    plugin_new:_navigate(_aid, fm_new, _Config().loadTabConfig(), false)
-                                end)
-                            end
-                        else
-                            if is_in_place then
-                                local ctx = { plugin = plugin_live, fm = fm_live }
-                                local ok, err = pcall(QA.execute, _aid, ctx)
-                                if not ok then logger.warn("simpleui QSBar: execute error", _aid, tostring(err)) end
-                            else
-                                local fm_self = fm_live
-                                local UI = package.loaded["infra/sui_core"]
-                                if UI then
-                                    local stack = UI.getWindowStack()
-                                    for i = #stack, 1, -1 do
-                                        local w = stack[i].widget
-                                        if w and w._navbar_injected and w.name ~= "homescreen" then
-                                            fm_self = w
-                                            break
-                                        end
-                                    end
+                                -- Close into FM, then replay the action on the new instance.
+                                Patches.closeReaderToLibrary(plugin_live)
+                                if _aid ~= "home" then
+                                    UIManager:scheduleIn(0.05, function()
+                                        local FM_new = package.loaded["apps/filemanager/filemanager"]
+                                        local fm_new = FM_new and FM_new.instance
+                                        if not fm_new then return end
+                                        local plugin_new = fm_new._simpleui_plugin or plugin_live
+                                        plugin_new:_navigate(_aid, fm_new, _Config().loadTabConfig(), false)
+                                    end)
                                 end
-                                plugin_live:_navigate(_aid, fm_self, _Config().loadTabConfig(), false)
+                            end
+                            return
+                        end
+
+                        local fm_self = fm_live
+                        local UI = package.loaded["infra/sui_core"]
+                        if UI then
+                            local stack = UI.getWindowStack()
+                            for i = #stack, 1, -1 do
+                                local w = stack[i].widget
+                                if w and w._navbar_injected and w.name ~= "homescreen" then
+                                    fm_self = w
+                                    break
+                                end
                             end
                         end
+                        plugin_live:_navigate(_aid, fm_self, _Config().loadTabConfig(), false)
                     end)
                     return stay_open
                 end,

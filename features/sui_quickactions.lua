@@ -620,17 +620,19 @@ local function _registerBuiltins()
             icon  = Config.ICON.library,
             is_in_place = false,
             execute = function(ctx)
-                -- Always prefer the live FM instance: ctx.fm may be stale
-                -- after the reader closes and the FM is recreated. The fallback
-                -- in navigate() resolves the live FM when _navbar_container is
-                -- absent, but a partially-destroyed old instance can still pass
-                -- that check while having no file_chooser.
-                local FM2   = package.loaded["apps/filemanager/filemanager"]
-                local fm    = (FM2 and FM2.instance) or ctx.fm or _liveFM()
+                local plugin = ctx.plugin or _simpleui_plugin()
+                local RUI = package.loaded["apps/reader/readerui"]
+                if RUI and RUI.instance and plugin then
+                    local ok_p, Patches = pcall(require, "infra/sui_patches")
+                    if ok_p and Patches and Patches.closeReaderToLibrary then
+                        Patches.closeReaderToLibrary(plugin)
+                        return
+                    end
+                end
+                -- Prefer the live FM: ctx.fm may be stale after a reader close.
+                local FM2 = package.loaded["apps/filemanager/filemanager"]
+                local fm  = (FM2 and FM2.instance) or ctx.fm or _liveFM()
                 if not _goHome(fm) then
-                    -- file_chooser not yet created (transitional state after
-                    -- returning from the reader) — schedule for the next cycle
-                    -- and re-resolve the live instance at that point.
                     UIManager:scheduleIn(0, function()
                         local FM3 = package.loaded["apps/filemanager/filemanager"]
                         local live_fm = (FM3 and FM3.instance) or fm
@@ -648,6 +650,16 @@ local function _registerBuiltins()
             is_in_place = false,
             execute = function(ctx)
                 local plugin = ctx.plugin or _simpleui_plugin()
+                -- Never layer the Homescreen over an open ReaderUI — close the
+                -- reader first via the shared flash-free path.
+                local RUI = package.loaded["apps/reader/readerui"]
+                if RUI and RUI.instance and plugin then
+                    local ok_p, Patches = pcall(require, "infra/sui_patches")
+                    if ok_p and Patches and Patches.closeReaderToHomescreen then
+                        Patches.closeReaderToHomescreen(plugin, false)
+                        return
+                    end
+                end
                 local ok_hs, HS = pcall(require, "screens/sui_homescreen")
                 if ok_hs and HS and type(HS.show) == "function" then
                     local saved_page = HS._current_page or 1
@@ -662,7 +674,7 @@ local function _registerBuiltins()
                         end
                     end
                     local on_goal_tap = plugin and plugin._goalTapCallback or nil
-                      if plugin then
+                    if plugin then
                         local ok_bb, BB = pcall(require, "screens/sui_bottombar")
                         if ok_bb and BB and BB.setActiveAndRefreshFM then
                             local tabs = Config.loadTabConfig()
