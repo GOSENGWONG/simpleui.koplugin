@@ -529,6 +529,17 @@ local function _showPowerDialog(plugin)
         BB.setTempTabActive(plugin, "power", false, prev_action)
     end
 
+    -- Preserve ButtonDialog's region refresh (flashui on movable.dimen) so the
+    -- dialog pixels are cleared on e-ink, then run _clear for tab restore.
+    local function _onCloseWidget(dialog)
+        if dialog and dialog.movable and dialog.movable.dimen then
+            UIManager:setDirty(nil, function()
+                return "flashui", dialog.movable.dimen
+            end)
+        end
+        _clear()
+    end
+
     -- Close the dialog. For process-ending actions, set the exit flag first so
     -- navigate / _doShowHS cannot reopen the Homescreen before the stack empties.
     local function _dismiss(leaving)
@@ -541,17 +552,29 @@ local function _showPowerDialog(plugin)
         if d then UIManager:close(d) end
     end
 
-    -- Status toast while the stack tears down (same idea as "Closing book…").
-    -- timeout=0 keeps it until UIManager quits. The process-ending event is
-    -- deferred one tick and preceded by forceRePaint so the toast actually
-    -- lands on e-ink before Exit/Restart empties the window stack.
+    -- Close and fully paint away the power dialog first, then show the sticky
+    -- notice on the next tick so the two never overlap. Exit/Restart run one
+    -- tick later, after the notice has been painted.
     local function _leaveWithNotice(text, event_name)
         _dismiss(true)
-        local InfoMessage = require("ui/widget/infomessage")
-        UIManager:show(InfoMessage:new{ text = text, timeout = 0 })
         UIManager:forceRePaint()
         UIManager:nextTick(function()
-            UIManager:broadcastEvent(Event:new(event_name))
+            local InfoMessage = require("ui/widget/infomessage")
+            local Font        = require("ui/font")
+            local Size        = require("ui/size")
+            local RenderText  = require("ui/rendertext")
+            local face        = Font:getFace("infofont")
+            local text_w      = RenderText:sizeUtf8Text(0, Screen:getWidth(), face, text, true, 0, true).x
+            local width       = math.ceil(text_w + Size.padding.large * 4)
+            UIManager:show(InfoMessage:new{
+                text    = text,
+                timeout = 0,
+                width   = width,
+            })
+            UIManager:forceRePaint()
+            UIManager:nextTick(function()
+                UIManager:broadcastEvent(Event:new(event_name))
+            end)
         end)
     end
 
@@ -586,7 +609,7 @@ local function _showPowerDialog(plugin)
     plugin._power_dialog = ButtonDialog:new{
         width              = dialog_w,
         tap_close_callback = _clear,
-        onCloseWidget      = _clear,
+        onCloseWidget      = _onCloseWidget,
         buttons            = buttons,
     }
     UIManager:show(plugin._power_dialog)
