@@ -147,17 +147,37 @@ local function _makeQaTap(plugin_ref) -- luacheck: ignore plugin_ref
     return UI.makeQaTap()
 end
 
+-- Dismiss the "Closing book…" notice once the Homescreen is visible.
+-- The notice is created in SimpleUIPlugin:onCloseDocument and held on
+-- plugin._closing_notice so it can be removed here instead of relying solely
+-- on its timeout=0.0 (which can leave the toast on top of the HS).
+local function closeClosingNotice(plugin)
+    if not plugin then return end
+    local notice = plugin._closing_notice
+    if not notice then return end
+    plugin._closing_notice = nil
+    pcall(function() UIManager:close(notice) end)
+end
+
+-- True once Exit/Restart has started. _exit_code is only set after the
+-- window stack is empty, so reopen guards must use this earlier flag.
+local function isAppExiting()
+    return UIManager._simpleui_exiting or UIManager._exit_code ~= nil
+end
+
 -- Cold-path HS show: activate the homescreen tab in the FM bar, then call
 -- HS.show() with the standard callbacks.  Sets _navbar_prev_action on the
 -- freshly-created instance.
 -- Caller must guard against HS._instance already being set (warm path).
 local function _showHSCold(plugin_ref, HS_ref, prev_action)
+    if isAppExiting() then return end
     local tabs = Config.loadTabConfig()
     Bottombar.setActiveAndRefreshFM(plugin_ref, "homescreen", tabs)
     _ensureGoalCallback(plugin_ref)
     HS_ref.show(_makeQaTap(plugin_ref), plugin_ref._goalTapCallback)
     local inst = HS_ref._instance
     if inst then inst._navbar_prev_action = prev_action end
+    closeClosingNotice(plugin_ref)
 end
 
 -- Close all non-fullscreen widgets on the stack except the FM.
@@ -2310,15 +2330,24 @@ function M.patchUIManagerShow(plugin)
         -- Close the homescreen when a different fullscreen widget appears on top.
         -- Exclude widgets that claim covers_fullscreen but are mere popups with no
         -- title_bar and no name (e.g. VocabBuilder's MenuDialog).
+        -- Soft-parked HS under the system ScreenSaver is left alive when
+        -- KEEP_PARKED_ACROSS_SUSPEND is set (see ScreenEngine), so the
+        -- post-wakeup book-close path can still raise instead of cold-rebuild.
         if _show_depth == 0 and widget and widget.covers_fullscreen
                 and (widget.title_bar or widget.name)
                 and widget.name ~= "homescreen"
                 and widget ~= plugin.ui
                 and not widget._sui_keep_homescreen then
+            local SE = package.loaded["engines/sui_screen_engine"]
+            local keep_parked = SE and SE.SOFT_PARK_ENABLED
+                and SE.KEEP_PARKED_ACROSS_SUSPEND
             local stack = UI.getWindowStack()
             for _, entry in ipairs(stack) do
                 local w = entry.widget
                 if w and w.name == "homescreen" then
+                    if keep_parked and w._parked then
+                        break
+                    end
                     w._navbar_closing_intentionally = true
                     w._navbar_closing_from_module   = true
                     UIManager:close(w)
@@ -2370,6 +2399,7 @@ function M.patchUIManagerClose(plugin)
     -- Show the homescreen after any fullscreen widget closes, if conditions allow.
     -- Defined once at patch-install time so it is not recreated on every close().
     local function _doShowHS(fm, plugin_ref)
+        if isAppExiting() then return end
         local HS = liveHS()
         if not HS or HS._instance then return end
 
@@ -2579,7 +2609,7 @@ function M.patchUIManagerClose(plugin)
                 -- through to the HS-reopen path, and it is unaffected since
                 -- its left icon is never "check".
                 and widget.title_bar_left_icon ~= "check"
-                and UIManager._exit_code == nil then
+                and not isAppExiting() then
             widget._navbar_hs_scheduled = true
             local fm = liveFM()
             local other_open = false
@@ -2619,7 +2649,7 @@ function M.patchUIManagerClose(plugin)
                             local fm_ref = liveFM()
                             if fm_ref then fm_ref._sui_lazy_refresh_path = true end
                             UIManager:nextTick(function()
-                                if UIManager._exit_code ~= nil then return end
+                                if isAppExiting() then return end
                                 -- If the FM is already gone, the app is exiting
                                 -- (exit from reader: FM closes before this tick runs).
                                 if not liveFM() then return end
@@ -2646,7 +2676,7 @@ function M.patchUIManagerClose(plugin)
                     end
                 else
                     UIManager:scheduleIn(0, function()
-                        if UIManager._exit_code ~= nil then return end
+                        if isAppExiting() then return end
                         local fm2 = liveFM()
                         if not fm2 then return end  -- FM gone = app is exiting
                         local RUI = package.loaded["apps/reader/readerui"]
@@ -3071,11 +3101,11 @@ function M.showHSAfterResume(plugin, force)
         return
     end
 
-    if UIManager._exit_code ~= nil then return end
+    if isAppExiting() then return end
 
     -- Defer until the event loop has settled after the resume chain.
     UIManager:scheduleIn(0, function()
-        if UIManager._exit_code ~= nil then return end
+        if isAppExiting() then return end
         local RUI2 = package.loaded["apps/reader/readerui"]
         if RUI2 and RUI2.instance then return end
         local HS2 = liveHS()
@@ -3896,6 +3926,7 @@ end
 -- Returns false → nothing was parked, or it was evicted unexpectedly.
 -- ---------------------------------------------------------------------------
 _raiseParkedScreen = function(plugin, screen_module, prev_action)
+    if isAppExiting() then return false end
     local inst = screen_module and screen_module._instance
     if not (inst and inst._parked) then return false end
 
@@ -3937,6 +3968,7 @@ _raiseParkedScreen = function(plugin, screen_module, prev_action)
     UIManager:setDirty(inst, function()
         return "ui", inst.dimen
     end)
+    closeClosingNotice(plugin)
     return true
 end
 
@@ -3966,7 +3998,7 @@ end
 -- over the book), then raise/show HS under the cover and re-assert cover on top.
 -- ---------------------------------------------------------------------------
 local function _closeReaderToHomescreenSync(plugin, readerui, file, prev_action)
-    if UIManager._exit_code ~= nil then return end
+    if isAppExiting() then return end
 
     local HS = liveHS() or (function()
         local ok, m = pcall(require, "screens/sui_homescreen"); return ok and m
@@ -3992,7 +4024,7 @@ local function _closeReaderToHomescreenSync(plugin, readerui, file, prev_action)
         UIManager:setDirty(inst, "ui")
 
         UIManager:nextTick(function()
-            if UIManager._exit_code ~= nil then return end
+            if isAppExiting() then return end
             local RUI2 = package.loaded["apps/reader/readerui"]
             if not (RUI2 and RUI2.instance == readerui) then return end
 
@@ -4937,6 +4969,7 @@ end
 
 
 function M.installAll(plugin)
+    UIManager._simpleui_exiting = nil
     M.patchPurgeDir(plugin)
     local ok_fm, FileManager = pcall(require, "apps/filemanager/filemanager")
     if ok_fm and FileManager then M.patchDeleteFile(FileManager, plugin) end

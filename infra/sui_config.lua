@@ -1908,46 +1908,71 @@ function M.invalidateTopbarConfigCache() _topbar_cfg_menu_cache = nil end
 
 -- Stats Database
 local _SQ3, _lfs_mod, _indexes_created = nil, nil, false
+-- Blocks openStatsDB while a Statistics cloud sync is running.
+-- Set by ScreenEngine.prepareForStatsSync; cleared by finishStatsSync.
+local _stats_sync_guard = false
+
 function M.getStatsDbPath() return DataStorage:getSettingsDir() .. "/statistics.sqlite3" end
 
--- Single source of truth for resolving a book's `md5` (partial_md5_checksum)
--- to its `book.id` in statistics.sqlite3. A %s placeholder for the md5
--- value — meant to be embedded via string.format(), either standalone or
--- nested inside a larger query (e.g. a CTE), not executed as-is.
---
--- ORDER BY last_open DESC: the same file can end up with more than one row
--- in `book` (e.g. after being moved/renamed and re-indexed). Ordering by
--- last_open picks the row that was most recently active, deterministically,
--- instead of whichever row a plain LIMIT 1 happens to visit first.
---
--- Every query in this plugin that resolves a book id from an md5 should go
--- through this constant rather than inlining the WHERE/ORDER BY itself, so
--- the tie-break rule only ever needs to change in one place.
+-- Resolves book.md5 → book.id. ORDER BY last_open DESC picks the most
+-- recently active row when the same file has more than one entry.
+-- Embed via string.format; do not execute as-is.
 M.BOOK_ID_BY_MD5_SQL = "SELECT id FROM book WHERE md5 = '%s' ORDER BY last_open DESC LIMIT 1"
 
-function M.openStatsDB()
+local function _ensureSqlite()
     if not _SQ3 then
         local ok, s = pcall(require, "lua-ljsqlite3/init")
-        if not ok or not s then return nil end
+        if not ok or not s then return false end
         _SQ3 = s
     end
     if not _lfs_mod then
         local ok, l = pcall(require, "libs/libkoreader-lfs")
-        if not ok or not l then return nil end
+        if not ok or not l then return false end
         _lfs_mod = l
     end
+    return true
+end
+
+-- Merges the WAL into the main DB file so a plain copy/upload of
+-- statistics.sqlite3 includes every committed row. Uses a private handle
+-- that is not subject to _stats_sync_guard.
+function M.checkpointStatsDB()
+    if not _ensureSqlite() then return end
+    local db_path = M.getStatsDbPath()
+    if not _lfs_mod.attributes(db_path, "mode") then return end
+    local ok, conn = pcall(_SQ3.open, db_path)
+    if not (ok and conn) then return end
+    pcall(function()
+        conn:exec("PRAGMA busy_timeout = 3000;")
+        conn:exec("PRAGMA wal_checkpoint(TRUNCATE);")
+        conn:close()
+    end)
+end
+
+function M.beginStatsSyncGuard()
+    _stats_sync_guard = true
+end
+
+function M.endStatsSyncGuard()
+    _stats_sync_guard = false
+end
+
+function M.isStatsSyncGuarded()
+    return _stats_sync_guard
+end
+
+-- Opens statistics.sqlite3 for read queries. Returns nil when a cloud sync
+-- is in progress or the DB is unavailable. Callers that keep the handle
+-- open must release it before any Statistics sync
+-- (ScreenEngine.prepareForStatsSync).
+function M.openStatsDB()
+    if _stats_sync_guard then return nil end
+    if not _ensureSqlite() then return nil end
     local db_path = M.getStatsDbPath()
     if not _lfs_mod.attributes(db_path, "mode") then return nil end
     local ok, conn = pcall(_SQ3.open, db_path)
     if not (ok and conn) then return nil end
-    -- statistics.sqlite3 is also written to by KOReader's own ReadingStats
-    -- plugin during an active reading session. Without a busy timeout, a
-    -- query that lands while that write is in progress fails immediately
-    -- with "database is locked" instead of waiting for it to finish; the
-    -- caller then silently keeps whatever it had cached before. Setting a
-    -- busy timeout here makes SQLite retry internally for up to the given
-    -- window before giving up, so a transient write no longer surfaces as a
-    -- query failure.
+    -- Retry briefly when the Statistics plugin is mid-write.
     pcall(function() conn:exec("PRAGMA busy_timeout = 3000;") end)
     if not _indexes_created then
         local idx_ok = pcall(function()

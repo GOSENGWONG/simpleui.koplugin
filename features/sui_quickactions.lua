@@ -513,7 +513,7 @@ end
 -- Uses _Bottombar().setTempTabActive to update the bar indicator while the
 -- dialog is open — that is a legitimate navbar operation, not action logic.
 local function _showPowerDialog(plugin)
-    if plugin._power_dialog then return end  -- guard: ignore double-tap
+    if plugin._power_dialog then return end
     local ButtonDialog  = require("ui/widget/buttondialog")
     local dialog_w      = math.floor(Screen:getWidth() * 0.42)
     local prev_action   = plugin.active_action
@@ -521,50 +521,66 @@ local function _showPowerDialog(plugin)
 
     BB.setTempTabActive(plugin, "power", true, prev_action)
 
-    local _quitting = false
+    -- When true, _clear skips tab restore (process is ending via Exit/Restart).
+    local _leaving = false
     local function _clear()
         plugin._power_dialog = nil
-        if _quitting then return end
+        if _leaving then return end
         BB.setTempTabActive(plugin, "power", false, prev_action)
+    end
+
+    -- Close the dialog. For process-ending actions, set the exit flag first so
+    -- navigate / _doShowHS cannot reopen the Homescreen before the stack empties.
+    local function _dismiss(leaving)
+        _leaving = leaving and true or false
+        if leaving then
+            UIManager._simpleui_exiting = true
+        end
+        local d = plugin._power_dialog
+        plugin._power_dialog = nil
+        if d then UIManager:close(d) end
+    end
+
+    -- Status toast while the stack tears down (same idea as "Closing book…").
+    -- timeout=0 keeps it until UIManager quits. The process-ending event is
+    -- deferred one tick and preceded by forceRePaint so the toast actually
+    -- lands on e-ink before Exit/Restart empties the window stack.
+    local function _leaveWithNotice(text, event_name)
+        _dismiss(true)
+        local InfoMessage = require("ui/widget/infomessage")
+        UIManager:show(InfoMessage:new{ text = text, timeout = 0 })
+        UIManager:forceRePaint()
+        UIManager:nextTick(function()
+            UIManager:broadcastEvent(Event:new(event_name))
+        end)
     end
 
     local buttons = {}
     if Device:canRestart() then
         buttons[#buttons + 1] = {{ text = _("Restart"), callback = function()
-            _quitting = true
-            local d = plugin._power_dialog; plugin._power_dialog = nil
-            UIManager:close(d)
-            -- Broadcast "Restart" (same event native KOReader's Exit menu uses)
-            -- instead of calling UIManager:restartKOReader() directly. This
-            -- routes through DeviceListener:onExit → FileManagerMenu:exitOrRestart
-            -- → self.ui:onClose(), which properly tears down the widget stack
-            -- (closing any still-open screen, e.g. Collections) before
-            -- restarting. Calling restartKOReader() directly skipped that
-            -- teardown, so pending in-memory-only changes — like a collection
-            -- just created but not yet flushed to disk — were lost.
-            UIManager:broadcastEvent(Event:new("Restart"))
+            -- Native path: DeviceListener:onRestart → exitOrRestart → restartKOReader.
+            _leaveWithNotice(_("Restarting…"), "Restart")
         end }}
     end
     if Device:canReboot() then
         buttons[#buttons + 1] = {{ text = _("Reboot"), callback = function()
-            local d = plugin._power_dialog; plugin._power_dialog = nil
-            UIManager:close(d); UIManager:askForReboot()
+            -- Confirm dialog may cancel; restore the tab, then ask.
+            _dismiss(false)
+            UIManager:askForReboot()
         end }}
     end
     if Device:canSuspend() then
         buttons[#buttons + 1] = {{ text = _("Sleep"), callback = function()
-            _quitting = true
-            local d = plugin._power_dialog; plugin._power_dialog = nil
-            UIManager:close(d); UIManager:flushSettings(); UIManager:suspend()
+            -- Session continues after wakeup — restore the tab, then suspend.
+            _dismiss(false)
+            UIManager:flushSettings()
+            UIManager:suspend()
         end }}
     end
     buttons[#buttons + 1] = {{ text = _("Quit"), callback = function()
-        _quitting = true
-        local d = plugin._power_dialog; plugin._power_dialog = nil
-        UIManager:close(d)
-        -- Broadcast "Exit" (same event native KOReader's Exit menu uses)
-        -- instead of calling UIManager:quit() directly — see note above.
-        UIManager:broadcastEvent(Event:new("Exit"))
+        -- "Quitting" not "Shutting down": KOReader exits to the host OS;
+        -- device power-off is a separate action when the device supports it.
+        _leaveWithNotice(_("Quitting…"), "Exit")
     end }}
 
     plugin._power_dialog = ButtonDialog:new{

@@ -1328,6 +1328,9 @@ local function _executeInPlace(action_id, plugin, fm)
 end
 
 function M.navigate(plugin, action_id, fm_self, tabs, force)
+    -- Do not navigate or reopen screens while KOReader is quitting.
+    if UIManager._simpleui_exiting or UIManager._exit_code ~= nil then return end
+
     -- When the HS tab is tapped from inside the reader, route through
     -- closeReaderToHomescreen so onClose(false) suppresses the reader's
     -- internal "full" refresh — same flash-free path as the gesture handler.

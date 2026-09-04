@@ -2596,7 +2596,9 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         keep_menu_open = true,
                         checked_func = function()
                             local mode = SUISettings:readSetting("simpleui_hs_closing_notice_mode")
-                            if not mode then return SUISettings:nilOrTrue("simpleui_hs_closing_notice") end
+                            if not mode then
+                                return SUISettings:readSetting("simpleui_hs_closing_notice") == true
+                            end
                             return mode == "always"
                         end,
                         callback = function()
@@ -2620,7 +2622,9 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         keep_menu_open = true,
                         checked_func = function()
                             local mode = SUISettings:readSetting("simpleui_hs_closing_notice_mode")
-                            if not mode then return not SUISettings:nilOrTrue("simpleui_hs_closing_notice") end
+                            if not mode then
+                                return SUISettings:readSetting("simpleui_hs_closing_notice") ~= true
+                            end
                             return mode == "never"
                         end,
                         callback = function()
