@@ -47,12 +47,15 @@ local _CENTER_W_MIN  = Screen:scaleBySize(60)  -- floor so covers never collapse
 -- ---------------------------------------------------------------------------
 -- Carousel label truncation
 -- ---------------------------------------------------------------------------
--- Title/author/stats text is constrained to covers_block_w (full carousel
--- footprint including side peeks). build() reruns on every carousel swipe
--- (see ScreenWidget:_refreshBookModSlot), so this truncates by an estimated
--- character budget rather than TextWidget's max_width + truncate_with_ellipsis,
--- which remeasures glyph-by-glyph against the font on every call. Counts
--- Unicode codepoints, not bytes, so CJK/Arabic text truncates correctly.
+-- Title/author text is constrained to covers_block_w (full carousel
+-- footprint including side peeks). Stats use a separate budget (95% of
+-- the module page width) so the line can run wider than the covers.
+-- build() reruns on every carousel swipe (see
+-- ScreenWidget:_refreshBookModSlot), so this truncates by an estimated
+-- character budget rather than TextWidget's max_width +
+-- truncate_with_ellipsis, which remeasures glyph-by-glyph against the
+-- font on every call. Counts Unicode codepoints, not bytes, so
+-- CJK/Arabic text truncates correctly.
 local _AVG_CHAR_WIDTH_RATIO = 0.55  -- rough glyph-advance-to-font-size ratio
 
 local function truncateToWidth(s, face, max_px)
@@ -784,9 +787,12 @@ function M.build(w, ctx)
     local offset_near = math.floor(center_w * 0.35)
     local offset_far  = math.floor(center_w * 0.60)
     -- Full carousel footprint (left far edge to right far edge), clamped to
-    -- the overlap group width. Title/author/stats max_width uses this so text
-    -- never exceeds the cover block including side peeks.
+    -- the overlap group width. Title/author max_width uses this so those
+    -- lines stay within the cover block including side peeks.
     local covers_block_w = math.min(inner_w, center_w + 2 * offset_far)
+    -- Stats may run wider than the covers; truncate only past 95% of the
+    -- module page width.
+    local stats_max_w = math.floor(w * 0.95)
     local TOP_CLEAR   = 2
     local centerY     = math.floor(center_h / 2) + TOP_CLEAR
 
@@ -1057,7 +1063,7 @@ function M.build(w, ctx)
             text      = "",
             face      = face_info,
             fgcolor   = CLR_TEXT_SUB_EFF,
-            width     = covers_block_w,
+            width     = stats_max_w,
             alignment = "center",
         }
         local function _update(nb, nd)
@@ -1086,7 +1092,7 @@ function M.build(w, ctx)
                 end
             end
             local final_text = #stats_parts > 0 and table.concat(stats_parts, " · ") or ""
-            _updateColoredText(stats_w, truncateToWidth(final_text, face_info, covers_block_w), CLR_TEXT_SUB_EFF)
+            _updateColoredText(stats_w, truncateToWidth(final_text, face_info, stats_max_w), CLR_TEXT_SUB_EFF)
         end
         _update(bstats, bd)
         table.insert(_cd_update_funcs, _update)
@@ -1771,9 +1777,7 @@ function M.getMenuItems(ctx_menu)
                 ScreenEngine.invalidateAllCfgAndRefresh(true)
             end
             if ctx_menu and type(ctx_menu.refresh) == "function" then ctx_menu.refresh() elseif refresh then refresh() end
-            local InfoMessage = ctx_menu and ctx_menu.InfoMessage or require("ui/widget/infomessage")
-            local UIM = ctx_menu and ctx_menu.UIManager or require("ui/uimanager")
-            UIM:show(InfoMessage:new{ text = _lc("Stats updated successfully."), timeout = 2 })
+            UI.Notify.toast(_lc("Stats updated successfully."), 2)
         end,
     }
     return menu

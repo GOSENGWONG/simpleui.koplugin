@@ -113,8 +113,6 @@ local function makeInstance(inst_id)
         local pfx          = ctx_menu.pfx
         local SortWidget   = ctx_menu.SortWidget
         local _UIManager   = ctx_menu.UIManager
-        local InfoMessage  = ctx_menu.InfoMessage
-
         local items = {}
 
         -- Choosing the target collection (single-select, radio). Implemented as
@@ -216,8 +214,7 @@ local function makeInstance(inst_id)
                     keep_menu_open = true,
                     callback = function()
                         if #list < 2 then
-                            _UIManager:show(InfoMessage:new{
-                                text = _lc("Add at least 2 books to arrange."), timeout = 2 })
+                            UI.Notify.toast(_lc("Add at least 2 books to arrange."), 2)
                             return
                         end
                         local sort_items = {}

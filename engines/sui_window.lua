@@ -3483,7 +3483,6 @@ function SUIWindow.makeCtxMenu(ctx)
         UIManager        = require("ui/uimanager"),
         _                = require("infra/sui_i18n").translate,
         N_               = require("infra/sui_i18n").ngettext,
-        InfoMessage      = require("ui/widget/infomessage"),
         SortWidget       = require("ui/widget/sortwidget"),
         ConfirmBox       = require("ui/widget/confirmbox"),
         MAX_LABEL_LEN    = require("infra/sui_config").MAX_LABEL_LEN,

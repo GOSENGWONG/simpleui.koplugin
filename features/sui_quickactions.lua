@@ -104,11 +104,7 @@ local function _guardedSetIcon(path, on_valid, on_invalid)
     if safe then
         on_valid(safe)
     else
-        local InfoMessage = require("ui/widget/infomessage")
-        UIManager:show(InfoMessage:new{
-            text    = _("Unsupported icon format.\nPlease use a PNG or SVG file."),
-            timeout = 3,
-        })
+        UI.Notify.toast(_("Unsupported icon format.\nPlease use a PNG or SVG file."))
         if on_invalid then on_invalid() end
     end
 end
@@ -169,8 +165,7 @@ end
 
 -- showUnavailable helper used inside execute closures.
 local function _unavailToast(msg)
-    local InfoMessage = require("ui/widget/infomessage")
-    UIManager:show(InfoMessage:new{ text = msg, timeout = 3 })
+    UI.Notify.toast(msg)
 end
 
 -- Helper: resolve the live FileManager instance.
@@ -250,12 +245,12 @@ end
 local function _doWifiToggle(plugin)
     local ok_hw, has_wifi = pcall(function() return Device:hasWifiToggle() end)
     if not (ok_hw and has_wifi) then
-        UIManager:show(require("ui/widget/infomessage"):new{ text = _("WiFi not available on this device."), timeout = 2 })
+        UI.Notify.toast(_("WiFi not available on this device."), 2)
         return
     end
     local ok_nm, NetworkMgr = pcall(require, "ui/network/manager")
     if not ok_nm or not NetworkMgr then
-        UIManager:show(require("ui/widget/infomessage"):new{ text = _("Network manager unavailable."), timeout = 2 })
+        UI.Notify.toast(_("Network manager unavailable."), 2)
         return
     end
     local ok_state, wifi_on = pcall(function() return NetworkMgr:isWifiOn() end)
@@ -263,7 +258,7 @@ local function _doWifiToggle(plugin)
     if wifi_on then
         Config.wifi_optimistic = false
         pcall(function() NetworkMgr:turnOffWifi() end)
-        UIManager:show(require("ui/widget/infomessage"):new{ text = _("Wi-Fi off"), timeout = 1 })
+        UI.Notify.toast(_("Wi-Fi off"), 1)
     else
         Config.wifi_optimistic = true
         local ok_on, err = pcall(function() NetworkMgr:turnOnWifi() end)
@@ -391,9 +386,7 @@ end
 local function _showFrontlightDialog(plugin)
     local ok_f, has_fl = pcall(function() return Device:hasFrontlight() end)
     if not ok_f or not has_fl then
-        UIManager:show(require("ui/widget/infomessage"):new{
-            text = _("Frontlight not available on this device."), timeout = 2,
-        })
+        UI.Notify.toast(_("Frontlight not available on this device."), 2)
         return
     end
     local widget = require("ui/widget/frontlightwidget"):new{}
@@ -559,19 +552,7 @@ local function _showPowerDialog(plugin)
         _dismiss(true)
         UIManager:forceRePaint()
         UIManager:nextTick(function()
-            local InfoMessage = require("ui/widget/infomessage")
-            local Font        = require("ui/font")
-            local Size        = require("ui/size")
-            local RenderText  = require("ui/rendertext")
-            local face        = Font:getFace("infofont")
-            local text_w      = RenderText:sizeUtf8Text(0, Screen:getWidth(), face, text, true, 0, true).x
-            local width       = math.ceil(text_w + Size.padding.large * 4)
-            UIManager:show(InfoMessage:new{
-                text    = text,
-                timeout = 0,
-                width   = width,
-            })
-            UIManager:forceRePaint()
+            UI.Notify.sticky(text, { compact = true })
             UIManager:nextTick(function()
                 UIManager:broadcastEvent(Event:new(event_name))
             end)
@@ -1645,12 +1626,8 @@ function QA.sui_show_custom_qa_list(plugin, ctx_menu, ctx)
         footer_enabled = function() return #Config.getCustomQAList() < MAX_CUSTOM_QA end,
         footer_action = function(ctx2)
             if #Config.getCustomQAList() >= MAX_CUSTOM_QA then
-                local InfoMessage = require("ui/widget/infomessage")
-                ctx_menu.UIManager:show(InfoMessage:new{
-                    text    = string.format(ctx_menu.N_("The maximum of %d quick action has been reached. Delete one first.",
-                              "The maximum of %d quick actions has been reached. Delete one first.", MAX_CUSTOM_QA), MAX_CUSTOM_QA),
-                    timeout = 2,
-                })
+                UI.Notify.toast(string.format(N_("The maximum of %d quick action has been reached. Delete one first.",
+                          "The maximum of %d quick actions has been reached. Delete one first.", MAX_CUSTOM_QA), MAX_CUSTOM_QA), 2)
                 return
             end
             QA.showQuickActionDialog(plugin, nil, function()
@@ -1845,7 +1822,7 @@ function QA.sui_build_qa_icons(plugin, ctx_menu, ctx)
                             local safe = ok_ss and SUIStyle and SUIStyle.safeIconPath(path, nil)
                             if safe then on_valid(safe)
                             else
-                                ctx_menu.UIManager:show(ctx_menu.InfoMessage:new{ text = _("Unsupported icon format.\nPlease use a PNG or SVG file."), timeout = 3 })
+                                UI.Notify.toast(_("Unsupported icon format.\nPlease use a PNG or SVG file."))
                             end
                         end
                         
@@ -2102,7 +2079,6 @@ end
 
 local function _showNerdIconInput(current_icon, on_select, on_cancel)
     local InputDialog = require("ui/widget/inputdialog")
-    local InfoMessage = require("ui/widget/infomessage")
     local current_hex = ""
     if current_icon then
         current_hex = current_icon:match("^nerd:([0-9A-Fa-f]+)$") or ""
@@ -2141,16 +2117,10 @@ local function _showNerdIconInput(current_icon, on_select, on_cancel)
                                     on_select,
                                     function() UIManager:nextTick(_openInputDlg) end)
                             else
-                                UIManager:show(InfoMessage:new{
-                                    text    = _("Codepoint out of valid Unicode range (0–10FFFF)."),
-                                    timeout = 3,
-                                })
+                                UI.Notify.toast(_("Codepoint out of valid Unicode range (0–10FFFF)."))
                             end
                         else
-                            UIManager:show(InfoMessage:new{
-                                text    = _("Invalid input. Please enter 1–6 hexadecimal digits (0–9, A–F)."),
-                                timeout = 3,
-                            })
+                            UI.Notify.toast(_("Invalid input. Please enter 1–6 hexadecimal digits (0–9, A–F)."))
                         end
                     end,
                 },
@@ -2366,7 +2336,6 @@ end
 
 function QA.showQuickActionDialog(plugin, qa_id, on_done)
     local MultiInputDialog = require("ui/widget/multiinputdialog")
-    local InfoMessage      = require("ui/widget/infomessage")
     local ButtonDialog     = require("ui/widget/buttondialog")
 
     local getNonFavColl    = Config.getNonFavoritesCollections
@@ -2523,7 +2492,7 @@ function QA.showQuickActionDialog(plugin, qa_id, on_done)
                   { text = _("Save"), is_enter_default = true,
                     callback = function()
                         if not current_action_type then
-                            UIManager:show(InfoMessage:new{ text = _("Please select an action."), timeout = 3 })
+                            UI.Notify.toast(_("Please select an action."))
                             return
                         end
                         local inputs = active_dialog:getFields()
@@ -2552,7 +2521,7 @@ function QA.showQuickActionDialog(plugin, qa_id, on_done)
     local function openFolderPicker()
         local ok_pc, PathChooser = pcall(require, "ui/widget/pathchooser")
         if not ok_pc or not PathChooser then
-            UIManager:show(InfoMessage:new{ text = _("Path chooser not available."), timeout = 3 })
+            UI.Notify.toast(_("Path chooser not available."))
             if active_dialog then UIManager:show(active_dialog) else cancelActionPicker() end
             return
         end
@@ -2598,7 +2567,7 @@ function QA.showQuickActionDialog(plugin, qa_id, on_done)
     local function openPluginPicker()
         local plugin_actions = _scanFMPlugins()
         if #plugin_actions == 0 then
-            UIManager:show(InfoMessage:new{ text = _("No plugins found."), timeout = 3 })
+            UI.Notify.toast(_("No plugins found."))
             cancelActionPicker()
             return
         end
@@ -2624,7 +2593,7 @@ function QA.showQuickActionDialog(plugin, qa_id, on_done)
     local function openDispatcherPicker()
         local actions = _scanDispatcherActions()
         if #actions == 0 then
-            UIManager:show(InfoMessage:new{ text = _("No system actions found."), timeout = 3 })
+            UI.Notify.toast(_("No system actions found."))
             cancelActionPicker()
             return
         end
@@ -2953,7 +2922,6 @@ end
 -- ---------------------------------------------------------------------------
 
 function QA.makeMenuItems(plugin, ctx_menu)
-    local InfoMessage = require("ui/widget/infomessage")
     local ConfirmBox  = require("ui/widget/confirmbox")
     local InputDialog = require("ui/widget/inputdialog")
 
@@ -2967,11 +2935,7 @@ function QA.makeMenuItems(plugin, ctx_menu)
             enabled_func = function() return #Config.getCustomQAList() < MAX_CUSTOM_QA end,
             callback     = function(_menu_self, suppress_refresh)
                 if #Config.getCustomQAList() >= MAX_CUSTOM_QA then
-                    UIManager:show(InfoMessage:new{
-                        text    = string.format(N_("The maximum of %d quick action has been reached. Delete one first.",
-                                  "The maximum of %d quick actions has been reached. Delete one first.", MAX_CUSTOM_QA), MAX_CUSTOM_QA),
-                        timeout = 2,
-                    })
+                    UI.Notify.toast(string.format(N_("The maximum of %d quick action has been reached. Delete one first.", "The maximum of %d quick actions has been reached. Delete one first.", MAX_CUSTOM_QA), MAX_CUSTOM_QA), 2)
                     return
                 end
                 if suppress_refresh then suppress_refresh() end
@@ -3088,8 +3052,7 @@ function QA.executeCustomQA(action_id, fm, show_unavailable_fn)
         if show_unavailable_fn then
             show_unavailable_fn(msg)
         else
-            local InfoMessage = require("ui/widget/infomessage")
-            UIManager:show(InfoMessage:new{ text = msg, timeout = 3 })
+            UI.Notify.toast(msg)
         end
     end
 

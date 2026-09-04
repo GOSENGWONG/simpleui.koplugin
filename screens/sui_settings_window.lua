@@ -53,6 +53,7 @@
 local Device      = require("device")
 local Geom        = require("ui/geometry")
 local UIManager   = require("ui/uimanager")
+local UI         = require("infra/sui_core")
 local _           = require("infra/sui_i18n").translate
 
 local SUI         = require("engines/sui_window")
@@ -264,7 +265,6 @@ local function buildScreens(st)
             UIManager    = UIManager,
             _            = _,
             N_           = require("infra/sui_i18n").ngettext,
-            InfoMessage  = require("ui/widget/infomessage"),
             SortWidget   = SortWidget,
             lock_overlay   = ctx.lockOverlay,
             unlock_overlay = ctx.unlockOverlay,
@@ -733,8 +733,7 @@ local function buildScreens(st)
                                 end
                             end
                             if #picker_items == 0 then
-                                local InfoMessage = require("ui/widget/infomessage")
-                                UIManager:show(InfoMessage:new{ text = _("No other pages available."), timeout = 2 })
+                                UI.Notify.toast(_("No other pages available."), 2)
                                 return
                             end
                             ctx.push("item_picker", { title = _("Move to page"), items = picker_items })

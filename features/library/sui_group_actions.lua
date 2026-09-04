@@ -23,6 +23,7 @@
 --     args.empty_message  -- shown instead of the dialog when paths is empty
 
 local _ = require("infra/sui_i18n").translate
+local UI = require("infra/sui_core")
 local CoverOverrides = require("features/library/sui_cover_overrides")
 
 local GroupActions = {}
@@ -30,14 +31,9 @@ local GroupActions = {}
 function GroupActions.openCoverPicker(args)
     local UIManager    = require("ui/uimanager")
     local ButtonDialog = require("ui/widget/buttondialog")
-    local InfoMessage  = require("ui/widget/infomessage")
-
-    local items = args.items or {}
+        local items = args.items or {}
     if #items == 0 then
-        UIManager:show(InfoMessage:new{
-            text = args.empty_message or _("No books found."),
-            timeout = 2,
-        })
+        UI.Notify.toast(args.empty_message or _("No books found."), 2)
         return
     end
 
@@ -86,16 +82,12 @@ end
 
 function GroupActions.createCollection(args)
     local UIManager   = require("ui/uimanager")
-    local InfoMessage = require("ui/widget/infomessage")
-    local InputDialog = require("ui/widget/inputdialog")
+        local InputDialog = require("ui/widget/inputdialog")
     local T           = require("ffi/util").template
 
     local paths = args.paths or {}
     if #paths == 0 then
-        UIManager:show(InfoMessage:new{
-            text = args.empty_message or _("No books found."),
-            timeout = 2,
-        })
+        UI.Notify.toast(args.empty_message or _("No books found."), 2)
         return
     end
 
@@ -118,9 +110,7 @@ function GroupActions.createCollection(args)
                     UIManager:close(input_dialog)
 
                     if RC.coll[name] then
-                        UIManager:show(InfoMessage:new{
-                            text = T(_("Collection already exists: %1"), name),
-                        })
+                        UI.Notify.toast(T(_("Collection already exists: %1"), name))
                         return
                     end
 
@@ -134,10 +124,7 @@ function GroupActions.createCollection(args)
                     end
                     RC:write({ [name] = true })
 
-                    UIManager:show(InfoMessage:new{
-                        text    = T(_("Collection \"%1\" created with %2 books."), name, count),
-                        timeout = 3,
-                    })
+                    UI.Notify.toast(T(_("Collection \"%1\" created with %2 books."), name, count))
                 end,
             },
         }},

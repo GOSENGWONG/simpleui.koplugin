@@ -21,8 +21,6 @@ local function Geom()            _Geom            = _Geom            or require(
 local function Font()            _Font            = _Font            or require("ui/font");                             return _Font            end
 local Blitbuffer      = require("ffi/blitbuffer")
 local UIManager       = require("ui/uimanager")
-local _InfoMessage
-local function InfoMessage() _InfoMessage = _InfoMessage or require("ui/widget/infomessage"); return _InfoMessage end
 local Device          = require("device")
 local Screen          = Device.screen
 local logger          = require("logger")
@@ -1253,7 +1251,7 @@ end
 -- ---------------------------------------------------------------------------
 
 local function showUnavailable(msg)
-    UIManager:show(InfoMessage():new{ text = msg, timeout = 3 })
+    UI.Notify.toast(msg)
 end
 
 local function setActiveAndRefreshFM(plugin, action_id, tabs)
@@ -1822,10 +1820,7 @@ end
 -- window if called directly from somewhere else.
 function M.showFloatingBarWindow(fm)
     if M.isBarInjectedOnCurrentScreen() then
-        UIManager:show(InfoMessage():new{
-            text    = _("The navigation bar is already available on this screen."),
-            timeout = 2,
-        })
+        UI.Notify.toast(_("The navigation bar is already available on this screen."), 2)
         return
     end
 

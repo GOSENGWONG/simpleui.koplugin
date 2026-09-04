@@ -26,6 +26,7 @@ local Screen     = Device.screen
 local Font       = require("ui/font")
 local Geom       = require("ui/geometry")
 local UIManager  = require("ui/uimanager")
+local UI         = require("infra/sui_core")
 local logger     = require("logger")
 
 local CenterContainer   = require("ui/widget/container/centercontainer")
@@ -1041,9 +1042,8 @@ function QSBar.makeMenuItems(ctx_menu)
         callback       = function()
             local slots = getSlots()
             if #slots < 2 then
-                local InfoMessage = require("ui/widget/infomessage")
                 local UIM = (ctx_menu and ctx_menu.UIManager) or UIManager
-                UIM:show(InfoMessage:new{ text = _("Add at least 2 actions to arrange."), timeout = 3 })
+                UI.Notify.toast(_("Add at least 2 actions to arrange."), 2)
                 return
             end
             local sort_items = {}
@@ -1091,12 +1091,7 @@ function QSBar.makeMenuItems(ctx_menu)
                     table.remove(slots, pos)
                 else
                     if #slots >= MAX_SLOTS then
-                        local InfoMessage = require("ui/widget/infomessage")
-                        local UIM = (ctx_menu and ctx_menu.UIManager) or UIManager
-                        UIM:show(InfoMessage:new{
-                            text = string.format(N_("Maximum of %d slot reached. Remove one first.", "Maximum of %d slots reached. Remove one first.", MAX_SLOTS), MAX_SLOTS),
-                            timeout = 3,
-                        })
+                        UI.Notify.toast(string.format(N_("Maximum of %d slot reached. Remove one first.", "Maximum of %d slots reached. Remove one first.", MAX_SLOTS), MAX_SLOTS), 2)
                         return
                     end
                     slots[#slots + 1] = _id
@@ -1182,9 +1177,7 @@ function QSBar.makeMenuItems(ctx_menu)
                                         on_tap = function(picker_ctx)
                                             local cur = getSlots()
                                             if #cur >= MAX_SLOTS then
-                                                local InfoMessage = require("ui/widget/infomessage")
-                                                local UIM = ctx_menu and ctx_menu.UIManager or require("ui/uimanager")
-                                                UIM:show(InfoMessage:new{ text = _("Maximum slots reached."), timeout = 2 })
+                                                UI.Notify.toast(string.format(N_("Maximum of %d slot reached. Remove one first.", "Maximum of %d slots reached. Remove one first.", MAX_SLOTS), MAX_SLOTS), 2)
                                                 return
                                             end
                                             cur[#cur + 1] = entry.id

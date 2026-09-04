@@ -667,7 +667,6 @@ function SUIPresets.makeMenuItems(opts)
     local unlock_overlay = opts.unlock_overlay or function() end
 
     local UIManager   = require("ui/uimanager")
-    local function InfoMessage()  return require("ui/widget/infomessage")  end
     local function ConfirmBox()   return require("ui/widget/confirmbox")   end
     local function InputDialog()  return require("ui/widget/inputdialog")  end
     local T = require("ffi/util").template
@@ -741,10 +740,7 @@ function SUIPresets.makeMenuItems(opts)
                     return true
                 end)
                 if not ok then
-                    showDialog(InfoMessage():new{
-                        text    = string.format(_("Preset \"%s\" not found."), _name),
-                        timeout = 2,
-                    })
+                    UI.Notify.toast(string.format(_("Preset \"%s\" not found."), _name), 2)
                 end
             end,
         }
@@ -822,7 +818,7 @@ function SUIPresets.makeMenuItems(opts)
                                                         return true
                                                     end, ctx2.repaint)
                                                     if not ok then
-                                                        showDialog(InfoMessage():new{ text = string.format(_("Preset \"%s\" not found."), _name), timeout = 2 })
+                                                        UI.Notify.toast(string.format(_("Preset \"%s\" not found."), _name), 2)
                                                     end
                                                 end,
                                             }
@@ -861,27 +857,18 @@ function SUIPresets.makeMenuItems(opts)
                             local name = dialog:getInputText()
                             name = name and name:match("^%s*(.-)%s*$") or ""
                             if name == "" then
-                                showDialog(InfoMessage():new{
-                                    text    = _("Please enter a name for the preset."),
-                                    timeout = 2,
-                                })
+                                UI.Notify.toast(_("Please enter a name for the preset."), 2)
                                 return
                             end
                             if isBuiltinName(name) then
-                                showDialog(InfoMessage():new{
-                                    text    = _("This name is reserved by a built-in preset."),
-                                    timeout = 2,
-                                })
+                                UI.Notify.toast(_("This name is reserved by a built-in preset."), 2)
                                 return
                             end
                             local function doSave()
                                 SUIPresets.save(name)
                                 SUISettings:set("simpleui_hs_active_preset", name)
                                 closeDialog(dialog)
-                                showDialog(InfoMessage():new{
-                                    text    = string.format(_("Preset \"%s\" saved."), name),
-                                    timeout = 2,
-                                })
+                                UI.Notify.toast(string.format(_("Preset \"%s\" saved."), name), 2)
                                 UIManager:nextTick(on_save)
                             end
                             if SUIPresets.exists(name) then
@@ -924,7 +911,7 @@ function SUIPresets.makeMenuItems(opts)
                                         unlock_overlay()
                                         SUIPresets.save(_name)
                                         SUISettings:set("simpleui_hs_active_preset", _name)
-                                        showDialog(InfoMessage():new{ text = string.format(_("Preset \"%s\" updated."), _name), timeout = 2 })
+                                        UI.Notify.toast(string.format(_("Preset \"%s\" updated."), _name), 2)
                                         UIManager:nextTick(on_save)
                                     end,
                                     cancel_callback = function() unlock_overlay() end,
@@ -942,11 +929,11 @@ function SUIPresets.makeMenuItems(opts)
                                             new_name = new_name and new_name:match("^%s*(.-)%s*$") or ""
                                             if new_name == "" or new_name == _name then closeDialog(d); return end
                                             if isBuiltinName(new_name) then
-                                                showDialog(InfoMessage():new{ text = _("This name is reserved by a built-in preset."), timeout = 2 })
+                                                UI.Notify.toast(_("This name is reserved by a built-in preset."), 2)
                                                 return
                                             end
                                             if SUIPresets.exists(new_name) then
-                                                showDialog(InfoMessage():new{ text = string.format(_("A preset named \"%s\" already exists."), new_name), timeout = 2 })
+                                                UI.Notify.toast(string.format(_("A preset named \"%s\" already exists."), new_name), 2)
                                                 return
                                             end
                                             SUIPresets.rename(_name, new_name)
@@ -1028,11 +1015,11 @@ function SUIPresets.makeMenuItems(opts)
                                                                     new_name = new_name and new_name:match("^%s*(.-)%s*$") or ""
                                                                     if new_name == "" or new_name == _name then closeDialog(d); return end
                                                             if isBuiltinName(new_name) then
-                                                                UIManager:show(InfoMessage():new{ text = _("This name is reserved by a built-in preset."), timeout = 2 })
+                                                                UI.Notify.toast(_("This name is reserved by a built-in preset."), 2)
                                                                 return
                                                             end
                                                                     if SUIPresets.exists(new_name) then
-                                                                        showDialog(InfoMessage():new{ text = string.format(_("A preset named \"%s\" already exists."), new_name), timeout = 2 })
+                                                                        UI.Notify.toast(string.format(_("A preset named \"%s\" already exists."), new_name), 2)
                                                                         return
                                                                     end
                                                                     SUIPresets.rename(_name, new_name)
@@ -1056,7 +1043,7 @@ function SUIPresets.makeMenuItems(opts)
                                                                 unlock_overlay()
                                                                 SUIPresets.save(_name)
                                                                 SUISettings:set("simpleui_hs_active_preset", _name)
-                                                                showDialog(InfoMessage():new{ text = string.format(_("Preset \"%s\" updated."), _name), timeout = 2 })
+                                                                UI.Notify.toast(string.format(_("Preset \"%s\" updated."), _name), 2)
                                                                 ctx2.repaint()
                                                                 UIManager:nextTick(on_save)
                                                             end,
@@ -1102,16 +1089,10 @@ function SUIPresets.makeMenuItems(opts)
                         callback = function()
                             local imported_name, err = SUIPresets.import(_f.path)
                             if imported_name then
-                                showDialog(InfoMessage():new{
-                                    text    = string.format(_("Preset \"%s\" imported."), imported_name),
-                                    timeout = 3,
-                                })
+                                UI.Notify.toast(string.format(_("Preset \"%s\" imported."), imported_name))
                                 UIManager:nextTick(on_save)
                             else
-                                showDialog(InfoMessage():new{
-                                    text    = _("Error importing preset: ") .. tostring(err),
-                                    timeout = 4,
-                                })
+                                UI.Notify.toast(_("Error importing preset: ") .. tostring(err), 4)
                             end
                         end,
                     }
@@ -1135,15 +1116,9 @@ function SUIPresets.makeMenuItems(opts)
                         callback = function()
                             local filepath, err = SUIPresets.export(_name)
                             if filepath then
-                                UIManager:show(InfoMessage():new{
-                                    text    = string.format(_("Preset exported to:\n%s"), filepath),
-                                    timeout = 4,
-                                })
+                                UI.Notify.toast(string.format(_("Preset exported to:\n%s"), filepath), 4)
                             else
-                                UIManager:show(InfoMessage():new{
-                                    text    = _("Error exporting preset: ") .. tostring(err),
-                                    timeout = 4,
-                                })
+                                UI.Notify.toast(_("Error exporting preset: ") .. tostring(err), 4)
                             end
                         end,
                     }

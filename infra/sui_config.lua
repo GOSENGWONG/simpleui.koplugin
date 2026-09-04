@@ -920,11 +920,7 @@ function M.makeScaleItem(opts)
         callback       = function()
             if enabled_func and not enabled_func() then
                 local UIManager   = require("ui/uimanager")
-                local InfoMessage = require("ui/widget/infomessage")
-                UIManager:show(InfoMessage:new{
-                    text    = _("Disable \"Lock Scale\" first to set a per-module scale."),
-                    timeout = 3,
-                })
+                UI.Notify.toast(_("Disable \"Lock Scale\" first to set a per-module scale."))
                 return
             end
             local SpinWidget = require("ui/widget/spinwidget")

@@ -189,14 +189,13 @@ local ScreenEngine = { _instance = nil, _cs_state = {} }
 -- Soft-park (reader round-trip optimisation)
 --
 -- Internal-only kill switch — NOT a persisted SUISettings value and NOT
--- exposed in any menu. When true (default), ScreenWidget:onShowingReader
--- keeps the Homescreen's widget tree, bitmaps and cached state alive,
--- hidden underneath the reader, instead of tearing it all down and
--- rebuilding cold on every reader round-trip (see
--- ScreenWidget:onShowingReader below and _raiseParkedScreen in
--- infra/sui_patches.lua). Flip to false during development/bisecting to
--- restore the always-cold-close behaviour this replaces.
-ScreenEngine.SOFT_PARK_ENABLED = true
+-- exposed in any menu. When true, ScreenWidget:onShowingReader keeps the
+-- Homescreen's widget tree, bitmaps and cached state alive, hidden
+-- underneath the reader, instead of tearing it all down and rebuilding
+-- cold on every reader round-trip (see ScreenWidget:onShowingReader
+-- below and _raiseParkedScreen in infra/sui_patches.lua). Default is
+-- false (cold close); flip to true to enable soft-park.
+ScreenEngine.SOFT_PARK_ENABLED = false
 
 -- When true (default) and SOFT_PARK_ENABLED is also true, a soft-parked
 -- Homescreen is left alive under the system ScreenSaver instead of being
@@ -2779,10 +2778,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                     if _sget(self_ref._id, "_instance") ~= self_ref then return end
                     if (self_ref._layout_sw or Screen:getWidth()) ~= snap_sw then return end
                     if (self_ref._layout_content_h or UI.getContentHeight()) ~= snap_avail_h then return end
-                    UIManager:show(require("ui/widget/infomessage"):new{
-                        text    = _("Modules exceed the visible area.\nMove some to another page or adjust the scale."),
-                        timeout = 4,
-                    })
+                    UI.Notify.toast(_("Modules exceed the visible area.\nMove some to another page or adjust the scale."), 4)
                 end)
             end
         else

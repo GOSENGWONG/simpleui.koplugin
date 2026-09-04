@@ -3,7 +3,6 @@
 
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local UIManager       = require("ui/uimanager")
-local InfoMessage     = require("ui/widget/infomessage")
 local logger          = require("logger")
 local Dispatcher      = require("dispatcher")
 
@@ -178,14 +177,10 @@ function SimpleUIPlugin:init()
                 logger.info("simpleui: updated from", prev_version, "to", current_version,
                     "— restart recommended")
                 UIManager:scheduleIn(1, function()
-                    local InfoMessage = require("ui/widget/infomessage")
-                    UIManager:show(InfoMessage:new{
-                        text = string.format(
+                    UI.Notify.toast(string.format(
                             _("Simple UI was updated (%s → %s).\n\nA restart is recommended to apply all changes cleanly."),
                             prev_version, current_version
-                        ),
-                        timeout = 6,
-                    })
+                        ), 6)
                 end)
             end
             SUISettings:set("simpleui_loaded_version", current_version)
@@ -1337,10 +1332,7 @@ end
 -- that check (Bottombar.showFloatingBarWindow repeats it defensively too).
 function SimpleUIPlugin:onSimpleUINavbarWindow()
     if Bottombar.isBarInjectedOnCurrentScreen() then
-        UIManager:show(InfoMessage:new{
-            text    = _("The navigation bar is already available on this screen."),
-            timeout = 2,
-        })
+        UI.Notify.toast(_("The navigation bar is already available on this screen."), 2)
         return true
     end
     Bottombar.showFloatingBarWindow()
@@ -1874,13 +1866,13 @@ function SimpleUIPlugin:onCloseDocument()
     -- timeout=0.0 schedules the InfoMessage to close itself on the next tick.
     --
     -- Migration: if simpleui_hs_closing_notice_mode is absent, fall back to the
-    -- old boolean simpleui_hs_closing_notice. Explicit true → "always"; anything
-    -- else (nil or false) → "never". Default when neither key exists is "never".
+    -- old boolean simpleui_hs_closing_notice. Explicit false → "never"; anything
+    -- else (true or unset) → "always". Default when neither key exists is "always".
     do
         local notice_mode = SUISettings:readSetting("simpleui_hs_closing_notice_mode")
         if not notice_mode then
-            notice_mode = SUISettings:readSetting("simpleui_hs_closing_notice") == true
-                and "always" or "never"
+            notice_mode = SUISettings:readSetting("simpleui_hs_closing_notice") == false
+                and "never" or "always"
         end
 
         local suppress = is_reload or cover_shown
@@ -1890,24 +1882,13 @@ function SimpleUIPlugin:onCloseDocument()
             -- UIManager:show() respects honor_silent_mode on InfoMessage, which
             -- means the notice is silently dropped when the Dispatcher has put
             -- the UIManager into silent mode to batch multiple gesture actions.
-            -- We bypass silent mode here by temporarily clearing it, showing the
-            -- notice and flushing it to the screen, then restoring the flag.
-            -- This is safe because forceRePaint() runs synchronously and the
-            -- InfoMessage is a non-blocking toast (timeout=0.0 auto-closes it);
-            -- no other widget draw or event dispatch occurs between the two lines.
+            -- Bypass silent mode for the sticky show + repaint, then restore.
             local was_silent = UIManager:isInSilentMode()
             if was_silent then UIManager:setSilentMode(false) end
-            -- Keep a reference so the notice can be dismissed as soon as the
-            -- destination Homescreen becomes visible (see closeClosingNotice
-            -- in sui_patches). timeout=0.0 remains as a safety net for paths
-            -- that never raise the HS.
-            local notice = InfoMessage:new{
-                text    = _("Closing book…"),
-                timeout = 0.0,
-            }
-            self._closing_notice = notice
-            UIManager:show(notice)
-            UIManager:forceRePaint()
+            -- Hold the widget so closeClosingNotice (sui_patches) can dismiss it
+            -- when the Homescreen becomes visible. timeout=0.0 is a safety net
+            -- for paths that never raise the HS.
+            self._closing_notice = UI.Notify.sticky(_("Closing book…"), { timeout = 0.0 })
             if was_silent then UIManager:setSilentMode(true) end
         end
     end

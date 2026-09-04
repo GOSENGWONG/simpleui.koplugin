@@ -49,6 +49,8 @@ local _      = require("infra/sui_i18n").translate
 
 local SUISettings = require("infra/sui_store")
 
+local UI = require("infra/sui_core")
+
 local Backup = {}
 
 Backup.FORMAT_VERSION = 1
@@ -873,30 +875,19 @@ end
 --- Export with the persisted scope, showing progress/result toasts.
 --- Returns filepath or nil.
 function Backup.runQuickExport()
-    local UIManager = require("ui/uimanager")
-    local InfoMessage = require("ui/widget/infomessage")
-    UIManager:show(InfoMessage:new{
-        text = _("Creating backup…"),
-        timeout = 1,
-    })
+    UI.Notify.toast(_("Creating backup…"), 1)
     local dir = Backup.getBackupsDir()
     if not dir then
-        UIManager:show(InfoMessage:new{ text = _("Could not determine backup folder."), timeout = 3 })
+        UI.Notify.toast(_("Could not determine backup folder."))
         return nil
     end
     local filepath = dir .. "/" .. Backup.suggestedFilename()
     local ok, result = pcall(Backup.export, filepath)
     if not ok or not result then
-        UIManager:show(InfoMessage:new{
-            text = _("Backup failed.") .. ((type(result) == "string") and ("\n" .. result) or ""),
-            timeout = 4,
-        })
+        UI.Notify.toast(_("Backup failed.") .. ((type(result) == "string") and ("\n" .. result) or ""), 4)
         return nil
     end
-    UIManager:show(InfoMessage:new{
-        text = _("Backup created:") .. "\n" .. result,
-        timeout = 5,
-    })
+    UI.Notify.toast(_("Backup created:") .. "\n" .. result, 5)
     return result
 end
 
@@ -934,11 +925,10 @@ end
 --- SUIWindow nested menu so category toggles appear immediately.
 local function _loadBackupFile(filepath, ctx_menu)
     local UIManager   = require("ui/uimanager")
-    local InfoMessage = require("ui/widget/infomessage")
 
     local parsed, err = Backup.parse(filepath)
     if not parsed then
-        UIManager:show(InfoMessage:new{ text = err or _("Not a valid backup file."), timeout = 4 })
+        UI.Notify.toast(err or _("Not a valid backup file."), 4)
         return
     end
 
@@ -948,7 +938,7 @@ local function _loadBackupFile(filepath, ctx_menu)
         if yes then any = true; break end
     end
     if not any then
-        UIManager:show(InfoMessage:new{ text = _("This backup contains no settings or files."), timeout = 4 })
+        UI.Notify.toast(_("This backup contains no settings or files."), 4)
         return
     end
 
@@ -956,18 +946,14 @@ local function _loadBackupFile(filepath, ctx_menu)
     if ctx_menu and ctx_menu.refresh then
         ctx_menu.refresh()
     end
-    UIManager:show(InfoMessage:new{
-        text    = _("Backup loaded. Choose what to import, then tap \"Restore Selected…\"."),
-        timeout = 4,
-    })
+    UI.Notify.toast(_("Backup loaded. Choose what to import, then tap \"Restore Selected…\"."), 4)
 end
 
 local function _startImportFlow(ctx_menu)
     local UIManager = require("ui/uimanager")
-    local InfoMessage = require("ui/widget/infomessage")
     local dir = Backup.getBackupsDir()
     if not dir then
-        UIManager:show(InfoMessage:new{ text = _("Could not determine backup folder."), timeout = 3 })
+        UI.Notify.toast(_("Could not determine backup folder."))
         return
     end
     local AssetBrowser = require("engines/sui_asset_browser")
@@ -985,7 +971,6 @@ end
 --- Confirm staged import (with full summary), restore, prompt restart.
 local function _confirmRestore(ctx_menu)
     local UIManager   = require("ui/uimanager")
-    local InfoMessage = require("ui/widget/infomessage")
     local ConfirmBox = ctx_menu and ctx_menu.ConfirmBox or require("ui/widget/confirmbox")
 
     local pend = _pending_import
@@ -998,7 +983,7 @@ local function _confirmRestore(ctx_menu)
         if on then any_selected = true; break end
     end
     if not any_selected then
-        UIManager:show(InfoMessage:new{ text = _("Nothing selected to import."), timeout = 3 })
+        UI.Notify.toast(_("Nothing selected to import."))
         return
     end
 
@@ -1011,7 +996,7 @@ local function _confirmRestore(ctx_menu)
         ok_callback = function()
             local ok_r, rerr = Backup.restore(pend.parsed, pend.filter)
             if not ok_r then
-                UIManager:show(InfoMessage:new{ text = rerr or _("Restore failed."), timeout = 5 })
+                UI.Notify.toast(rerr or _("Restore failed."), 5)
                 return
             end
             _pending_import = nil
@@ -1063,7 +1048,6 @@ end
 
 function Backup.makeMenuItems(ctx_menu)
     local UIManager   = require("ui/uimanager")
-    local InfoMessage = require("ui/widget/infomessage")
     local InputDialog = require("ui/widget/inputdialog")
 
     local items = {}
@@ -1096,7 +1080,7 @@ function Backup.makeMenuItems(ctx_menu)
         callback  = function()
             local dir = Backup.getBackupsDir()
             if not dir then
-                UIManager:show(InfoMessage:new{ text = _("Could not determine backup folder."), timeout = 3 })
+                UI.Notify.toast(_("Could not determine backup folder."))
                 return
             end
             local suggested = Backup.suggestedFilename()
@@ -1121,19 +1105,13 @@ function Backup.makeMenuItems(ctx_menu)
                             if not name:match("%.sui$") then name = name .. ".sui" end
                             UIManager:close(dialog)
                             local filepath = dir .. "/" .. name
-                            UIManager:show(InfoMessage:new{ text = _("Creating backup…"), timeout = 1 })
+                            UI.Notify.toast(_("Creating backup…"), 1)
                             local ok, result = pcall(Backup.export, filepath)
                             if ok and result then
-                                UIManager:show(InfoMessage:new{
-                                    text    = _("Backup created:") .. "\n" .. result
-                                        .. "\n\n" .. _("Copy this file somewhere safe (e.g. over USB)."),
-                                    timeout = 8,
-                                })
+                                UI.Notify.toast(_("Backup created:") .. "\n" .. result
+                                        .. "\n\n" .. _("Copy this file somewhere safe (e.g. over USB)."), 8)
                             else
-                                UIManager:show(InfoMessage:new{
-                                    text    = _("Backup failed.") .. ((type(result) == "string") and ("\n" .. result) or ""),
-                                    timeout = 5,
-                                })
+                                UI.Notify.toast(_("Backup failed.") .. ((type(result) == "string") and ("\n" .. result) or ""), 5)
                             end
                         end,
                     },

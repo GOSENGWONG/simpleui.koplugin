@@ -156,7 +156,7 @@ local function closeClosingNotice(plugin)
     local notice = plugin._closing_notice
     if not notice then return end
     plugin._closing_notice = nil
-    pcall(function() UIManager:close(notice) end)
+    UI.Notify.close(notice)
 end
 
 -- True once Exit/Restart has started. _exit_code is only set after the
@@ -193,15 +193,6 @@ local function _closeOrphanedPopups(fm_ref, hs_inst)
         end
     end
     for _, w in ipairs(to_close) do UIManager:close(w) end
-end
-
--- Show an InfoMessage using UIManager directly (avoids capturing the local
--- UIManager upvalue inside patchCollections closures where it may be stale).
-local function _showInfoMsg(text, timeout)
-    local ok, IM = pcall(require, "ui/widget/infomessage")
-    if ok and IM then
-        UIManager:show(IM:new{ text = text, timeout = timeout or 2 })
-    end
 end
 
 -- ---------------------------------------------------------------------------
@@ -1313,7 +1304,7 @@ function M.patchCollections(plugin)
             -- Prevent renaming the TBR collection — its name is the plugin's key.
             local TBR = package.loaded["modules/module_tbr"]
             if TBR and old_name == TBR.TBR_COLL_NAME then
-                _showInfoMsg(_("The «To Be Read» collection cannot be renamed."))
+                UI.Notify.toast(_("The «To Be Read» collection cannot be renamed."), 2)
                 return  -- abort
             end
             local result = orig_rename(rc_self, old_name, new_name, ...)

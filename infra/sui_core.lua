@@ -1006,6 +1006,93 @@ function M.BarInjection.allIds()
 end
 
 -- ---------------------------------------------------------------------------
+-- Notify — shared InfoMessage helpers.
+--
+-- Central place for the two notice behaviours used across Simple UI:
+--
+--   toast   — auto-dismiss feedback (errors, validation, success).
+--             Default timeout is 3 seconds; pass a longer value when the
+--             message needs more reading time (e.g. backup paths, errors).
+--   sticky  — stays until closed or timeout=0 tick; optional forceRePaint
+--             so the message is visible on e-ink before blocking work.
+--   close   — safe dismiss for a sticky held by the caller.
+--
+-- Callers keep translated strings at the call site. This module only owns
+-- the show/close/repaint mechanics so timeouts and e-ink flush stay consistent.
+--
+-- Higher-level helpers built on Notify:
+--   applyPresetWithNotice  — sticky "Applying preset…" around a work fn
+--   StatsWindows.showLoadingNotice — sticky loading toast (setting-gated)
+-- ---------------------------------------------------------------------------
+
+M.Notify = {}
+
+local function _uim()
+    return require("ui/uimanager")
+end
+
+local function _infoMessage()
+    return require("ui/widget/infomessage")
+end
+
+--- Auto-dismiss toast.
+-- @param text string  Already-translated message.
+-- @param timeout number|nil  Seconds visible (default 3).
+-- @return widget  The InfoMessage instance (rarely needed).
+function M.Notify.toast(text, timeout)
+    local notice = _infoMessage():new{
+        text    = text,
+        timeout = timeout or 3,
+    }
+    _uim():show(notice)
+    return notice
+end
+
+--- Sticky notice (timeout 0 by default). Optional compact width and repaint.
+--
+-- opts:
+--   timeout  number   dismiss delay; 0 / 0.0 means next-tick auto-close
+--                     (InfoMessage default sticky behaviour). Default 0.
+--   repaint  boolean  call forceRePaint after show so e-ink shows the
+--                     notice before the caller blocks. Default true.
+--   compact  boolean  shrink width to the text plus padding (power-style).
+--   width    number   explicit width; ignored when compact is true.
+-- @return widget  The InfoMessage (hold this to close later via Notify.close).
+function M.Notify.sticky(text, opts)
+    opts = opts or {}
+    local UIManager = _uim()
+    local params = {
+        text    = text,
+        timeout = opts.timeout ~= nil and opts.timeout or 0,
+    }
+
+    if opts.compact then
+        local Font       = require("ui/font")
+        local Size       = require("ui/size")
+        local RenderText = require("ui/rendertext")
+        local face       = Font:getFace("infofont")
+        local text_w     = RenderText:sizeUtf8Text(
+            0, Screen:getWidth(), face, text, true, 0, true).x
+        params.width = math.ceil(text_w + Size.padding.large * 4)
+    elseif opts.width then
+        params.width = opts.width
+    end
+
+    local notice = _infoMessage():new(params)
+    UIManager:show(notice)
+    if opts.repaint ~= false then
+        UIManager:forceRePaint()
+    end
+    return notice
+end
+
+--- Close a notice returned by toast/sticky. Safe if notice is nil or already gone.
+function M.Notify.close(notice)
+    if not notice then return end
+    pcall(function() _uim():close(notice) end)
+end
+
+-- ---------------------------------------------------------------------------
 -- Shared "Applying preset…" blocking notice.
 --
 -- Single implementation for any preset-apply flow (Homescreen presets,
@@ -1026,25 +1113,19 @@ end
 --- nextTick alongside closing the notice, so any screen rebuild it
 --- triggers has a chance to finish before the notice disappears.
 function M.applyPresetWithNotice(apply_fn, on_applied, sync_repaint)
-    local UIManager   = require("ui/uimanager")
-    local InfoMessage = require("ui/widget/infomessage")
+    local UIManager = _uim()
     local _ = require("infra/sui_i18n").translate
 
-    local notice = InfoMessage:new{
-        text    = _("Applying preset…"),
-        timeout = 0.0,
-    }
-    UIManager:show(notice)
-    UIManager:forceRePaint()
+    local notice = M.Notify.sticky(_("Applying preset…"))
 
     if not apply_fn() then
-        UIManager:close(notice)
+        M.Notify.close(notice)
         return false
     end
     if sync_repaint then sync_repaint() end
     UIManager:nextTick(function()
         if on_applied then on_applied() end
-        UIManager:close(notice)
+        M.Notify.close(notice)
     end)
     return true
 end

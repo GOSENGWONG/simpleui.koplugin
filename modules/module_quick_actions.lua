@@ -320,13 +320,7 @@ local function makeInstance(inst_id)
             end
             if not found then
                 if #items >= MAX_QA then
-                    local InfoMessage = ctx_menu.InfoMessage or require("ui/widget/infomessage")
-                    local uim = ctx_menu.UIManager or UIManager
-                    uim:show(InfoMessage:new{
-                        text    = string.format(N_("The maximum of %d action per module has been reached. Remove one first.",
-                                  "The maximum of %d actions per module has been reached. Remove one first.", MAX_QA), MAX_QA),
-                        timeout = 2,
-                    })
+                    UI.Notify.toast(string.format(N_("The maximum of %d action per module has been reached. Remove one first.", "The maximum of %d actions per module has been reached. Remove one first.", MAX_QA), MAX_QA), 2)
                     return
                 end
                 new_items[#new_items + 1] = id
@@ -347,9 +341,7 @@ local function makeInstance(inst_id)
             callback       = function()
                 local qa_ids = getItems()
                 if #qa_ids < 2 then
-                    local InfoMessage = ctx_menu.InfoMessage or require("ui/widget/infomessage")
-                    local uim = ctx_menu.UIManager or UIManager
-                    uim:show(InfoMessage:new{ text = _("Add at least 2 actions to arrange."), timeout = 2 })
+                    UI.Notify.toast(_("Add at least 2 actions to arrange."), 2)
                     return
                 end
                 local pool_labels = {}
@@ -460,13 +452,7 @@ local function makeInstance(inst_id)
                                                 on_tap = function(picker_ctx)
                                                     local cur = getItems()
                                                     if #cur >= MAX_QA then
-                                                        local InfoMessage = ctx_menu.InfoMessage or require("ui/widget/infomessage")
-                                                        local uim = ctx_menu.UIManager or require("ui/uimanager")
-                                                        local N_ = ctx_menu.N_ or require("infra/sui_i18n").ngettext
-                                                        uim:show(InfoMessage:new{
-                                                            text = string.format(N_("The maximum of %d action per module has been reached. Remove one first.",
-                                                                   "The maximum of %d actions per module has been reached. Remove one first.", MAX_QA), MAX_QA), timeout = 2,
-                                                        })
+                                                        UI.Notify.toast(string.format(N_("The maximum of %d action per module has been reached. Remove one first.", "The maximum of %d actions per module has been reached. Remove one first.", MAX_QA), MAX_QA), 2)
                                                         return
                                                     end
                                                     cur[#cur + 1] = _id

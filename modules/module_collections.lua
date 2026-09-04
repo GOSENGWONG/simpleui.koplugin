@@ -320,17 +320,16 @@ end
 -- ---------------------------------------------------------------------------
 local function openCollectionCoverPicker(coll_name, refresh_fn)
     local ok_rc, rc = pcall(require, "readcollection")
-    local InfoMessage = require("ui/widget/infomessage")
     if not (ok_rc and rc) then return end
     local coll = rc.coll and rc.coll[coll_name]
     if not coll then
-        UIManager:show(InfoMessage:new{ text = _("Collection is empty."), timeout = 2 }); return
+        UI.Notify.toast(_("Collection is empty."), 2); return
     end
     local fps = {}
     for fp in pairs(coll) do fps[#fps + 1] = fp end
     table.sort(fps)
     if #fps == 0 then
-        UIManager:show(InfoMessage:new{ text = _("Collection is empty."), timeout = 2 }); return
+        UI.Notify.toast(_("Collection is empty."), 2); return
     end
     local overrides     = getCoverOverrides()
     local ButtonDialog  = require("ui/widget/buttondialog")
@@ -1180,7 +1179,6 @@ end
 -- ---------------------------------------------------------------------------
 local function extraMenuItemsBefore(ctx_menu)
     local _UIManager  = ctx_menu.UIManager
-    local InfoMessage = ctx_menu.InfoMessage
     local SortWidget  = ctx_menu.SortWidget
     local refresh     = ctx_menu.refresh
     local _lc         = ctx_menu._
@@ -1191,8 +1189,7 @@ local function extraMenuItemsBefore(ctx_menu)
         callback = function()
             local cur_sel = getVisibleCollections()
             if #cur_sel < 2 then
-                _UIManager:show(InfoMessage:new{
-                    text = _lc("Select at least 2 collections to arrange."), timeout = 2 })
+                UI.Notify.toast(_lc("Select at least 2 collections to arrange."), 2)
                 return
             end
             local sort_items = {}
@@ -1292,7 +1289,6 @@ end
 -- ---------------------------------------------------------------------------
 local function extraMenuItemsAfter(ctx_menu)
     local _UIManager  = ctx_menu.UIManager
-    local InfoMessage = ctx_menu.InfoMessage
     local refresh     = ctx_menu.refresh
     local _lc         = ctx_menu._
     local N_lc        = ctx_menu.N_

@@ -664,10 +664,7 @@ local function _makeDateCard(inner_w, PAD_H,
                     callback         = function()
                         local val = dlg:getInputText()
                         if not _isValidDateStr(val) then
-                            local InfoMessage = require("ui/widget/infomessage")
-                            UIManager:show(InfoMessage:new{
-                                text = _("Please enter a date in YYYY-MM-DD format."),
-                            })
+                            UI.Notify.toast(_("Please enter a date in YYYY-MM-DD format."))
                             return
                         end
                         UIManager:close(dlg)
@@ -785,10 +782,7 @@ function StatsWindows.showFinishedBooksDialog(initial_page)
     local books = _getFinishedBooksThisYear()
 
     if #books == 0 then
-        local InfoMessage = require("ui/widget/infomessage")
-        UIManager:show(InfoMessage:new{
-            text = string.format(_("No books finished in %s"), year_str),
-        })
+        UI.Notify.toast(string.format(_("No books finished in %s"), year_str))
         return
     end
 
@@ -862,10 +856,7 @@ function StatsWindows.showFinishedBooksDialog(initial_page)
                 on_tap       = book.filepath and function()
                     local d, err = _fetchBookStatsData(book)
                     if not d then
-                        local InfoMessage = require("ui/widget/infomessage")
-                        UIManager:show(InfoMessage:new{
-                            text = err or _("Unknown error."),
-                        })
+                        UI.Notify.toast(err or _("Unknown error."))
                         return
                     end
                     ctx.push("book_stats", { book = book, stats = d })
@@ -2497,14 +2488,7 @@ function StatsWindows.showLoadingNotice()
     if ok_ss and SUISettings and not SUISettings:nilOrTrue("simpleui_stats_loading_notice") then
         return nil
     end
-    local ok_im, InfoMessage = pcall(require, "ui/widget/infomessage")
-    if not ok_im or not InfoMessage then return nil end
-    local notice = InfoMessage:new{
-        text    = _("Loading statistics…"),
-        timeout = 0.0,
-    }
-    UIManager:show(notice)
-    UIManager:forceRePaint()
+    local notice = UI.Notify.sticky(_("Loading statistics…"), { timeout = 0.0 })
     StatsWindows._loading_notice = notice
     return notice
 end
@@ -3088,10 +3072,7 @@ function StatsWindows.showStreakManagerWindow()
         -- why, so tapping any cell always does *something* instead of
         -- silently nothing.
         local function explainFreezeMechanic()
-            local InfoMessage = require("ui/widget/infomessage")
-            UIManager:show(InfoMessage:new{
-                text = _("Freezes can only cover a single missed day, and only right after an active one. Tap yesterday's cell to use one, when eligible."),
-            })
+            UI.Notify.toast(_("Freezes can only cover a single missed day, and only right after an active one. Tap yesterday's cell to use one, when eligible."))
         end
 
         -- Tap handler for the yesterday cell: shows a confirmation dialog
@@ -3099,11 +3080,8 @@ function StatsWindows.showStreakManagerWindow()
         -- InfoMessage otherwise (no freezes banked, or yesterday doesn't
         -- qualify as a gap to bridge) — never silently does nothing.
         local function promptUseFreezeForYesterday()
-            local InfoMessage = require("ui/widget/infomessage")
             if freezes_available <= 0 then
-                UIManager:show(InfoMessage:new{
-                    text = _("You don't have any freezes available yet."),
-                })
+                UI.Notify.toast(_("You don't have any freezes available yet."))
                 return
             end
             if not gap_eligible then
@@ -3115,7 +3093,7 @@ function StatsWindows.showStreakManagerWindow()
                 else
                     msg = _("A freeze can only bridge a single missed day right after an active one — yesterday doesn't qualify.")
                 end
-                UIManager:show(InfoMessage:new{ text = msg })
+                UI.Notify.toast(msg)
                 return
             end
             local ConfirmBox = require("ui/widget/confirmbox")
@@ -3584,10 +3562,7 @@ function StatsWindows.showBookStatsFromFile(filepath)
     -- Fetch statistics; bail with an InfoMessage if none exist.
     local d, err = _fetchBookStatsData(book)
     if not d then
-        local InfoMessage = require("ui/widget/infomessage")
-        UIManager:show(InfoMessage:new{
-            text = err or _("No statistics found for this book."),
-        })
+        UI.Notify.toast(err or _("No statistics found for this book."))
         return
     end
 
@@ -3963,7 +3938,7 @@ function StatsWindows.showBookStatsFromFile(filepath)
         screens  = { __root__ = buildStatsScreen },
     }
     if StatsWindows._loading_notice then
-        UIManager:close(StatsWindows._loading_notice)
+        UI.Notify.close(StatsWindows._loading_notice)
         StatsWindows._loading_notice = nil
     end
     win:show()

@@ -664,7 +664,6 @@ end
 function M.getMenuItems(ctx_menu)
     local pfx         = ctx_menu.pfx
     local _UIManager  = ctx_menu.UIManager
-    local InfoMessage = ctx_menu.InfoMessage
     local SortWidget  = ctx_menu.SortWidget
     local refresh     = ctx_menu.refresh
     local _lc         = ctx_menu._
@@ -681,9 +680,8 @@ function M.getMenuItems(ctx_menu)
         for _, v in ipairs(cur) do if v == id then found = true else new_items[#new_items+1] = v end end
         if not found then
             if #cur >= MAX_RS then
-                _UIManager:show(InfoMessage:new{
-                    text = string.format(N_lc("The maximum of %d stat per row has been reached. Remove one first.",
-                           "The maximum of %d stats per row has been reached. Remove one first.", MAX_RS), MAX_RS), timeout = 2 })
+                UI.Notify.toast(string.format(N_lc("The maximum of %d stat per row has been reached. Remove one first.",
+                           "The maximum of %d stats per row has been reached. Remove one first.", MAX_RS), MAX_RS), 2)
                 return
             end
             new_items[#new_items+1] = id
@@ -697,7 +695,7 @@ function M.getMenuItems(ctx_menu)
             callback = function()
                 local rs_ids = getItems()
                 if #rs_ids < 2 then
-                    _UIManager:show(InfoMessage:new{ text = _lc("Add at least 2 stats to arrange."), timeout = 2 }); return
+                    UI.Notify.toast(_lc("Add at least 2 stats to arrange."), 2); return
                 end
                 local sort_items = {}
                 for _, id in ipairs(rs_ids) do
@@ -760,13 +758,10 @@ function M.getMenuItems(ctx_menu)
                                             on_tap = function(picker_ctx)
                                                 local cur = getItems()
                                                 if #cur >= MAX_RS then
-                                                    local InfoMessage = ctx_menu.InfoMessage or require("ui/widget/infomessage")
                                                     local uim = ctx_menu.UIManager or require("ui/uimanager")
                                                     local N_ = ctx_menu.N_ or require("infra/sui_i18n").ngettext
-                                                    uim:show(InfoMessage:new{
-                                                        text = string.format(N_("The maximum of %d stat per row has been reached. Remove one first.",
-                                                               "The maximum of %d stats per row has been reached. Remove one first.", MAX_RS), MAX_RS), timeout = 2,
-                                                    })
+                                                    UI.Notify.toast(string.format(N_("The maximum of %d stat per row has been reached. Remove one first.",
+                                                               "The maximum of %d stats per row has been reached. Remove one first.", MAX_RS), MAX_RS), 2)
                                                     return
                                                 end
                                                 cur[#cur + 1] = _id
@@ -951,9 +946,7 @@ function M.getMenuItems(ctx_menu)
                 ScreenEngine.invalidateAllCfgAndRefresh(true)
             end
             if ctx_menu and type(ctx_menu.refresh) == "function" then ctx_menu.refresh() elseif refresh then refresh() end
-            local InfoMessage = ctx_menu and ctx_menu.InfoMessage or require("ui/widget/infomessage")
-            local UIM = ctx_menu and ctx_menu.UIManager or require("ui/uimanager")
-            UIM:show(InfoMessage:new{ text = _lc("Stats updated successfully."), timeout = 2 })
+            UI.Notify.toast(_lc("Stats updated successfully."), 2)
         end,
     }
 

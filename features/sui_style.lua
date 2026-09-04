@@ -1056,11 +1056,7 @@ function M.makeMenuItems(plugin)
                             M.setIcon(slot.id, safe)
                             _refresh(slot.group)
                         else
-                            local _InfoMessage = require("ui/widget/infomessage")
-                            UIManager:show(_InfoMessage:new{
-                                text    = _("Unsupported icon format.\nPlease use a PNG or SVG file."),
-                                timeout = 3,
-                            })
+                            require("infra/sui_core").Notify.toast(_("Unsupported icon format.\nPlease use a PNG or SVG file."))
                         end
                     end,
                     type(slot.label) == "function" and slot.label() or slot.label,
@@ -1247,14 +1243,14 @@ function M.sui_build_system_icons(plugin, ctx_menu, ctx)
                                     if ipath == nil then on_valid(nil); return end
                                     local safe = M.safeIconPath(ipath, nil)
                                     if not safe then
-                                        ctx_menu.UIManager:show(ctx_menu.InfoMessage:new{ text = _("Unsupported icon format.\nPlease use a PNG or SVG file."), timeout = 3 })
+                                        require("infra/sui_core").Notify.toast(_("Unsupported icon format.\nPlease use a PNG or SVG file."))
                                         return
                                     end
                                     if slot.group == "sui_tabbar_icons" then
                                         local ext = safe:match("%.([^.]+)$")
                                         ext = ext and ext:lower()
                                         if ext ~= "svg" and ext ~= "png" then
-                                            ctx_menu.UIManager:show(ctx_menu.InfoMessage:new{ text = _("Tab bar icons must be PNG or SVG."), timeout = 3 })
+                                            require("infra/sui_core").Notify.toast(_("Tab bar icons must be PNG or SVG."))
                                             return
                                         end
                                     end

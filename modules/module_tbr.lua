@@ -41,7 +41,7 @@ local _ = require("infra/sui_i18n").translate
 
 local logger    = require("logger")
 local UIManager = require("ui/uimanager")
-local InfoMessage = require("ui/widget/infomessage")
+local UI = require("infra/sui_core")
 local BookList  = require("ui/widget/booklist")
 
 local SUISettings = require("infra/sui_store")
@@ -295,8 +295,6 @@ local function arrangeMenuItems(ctx_menu)
     local refresh       = ctx_menu.refresh
     local SortWidget    = ctx_menu.SortWidget
     local _UIManager    = ctx_menu.UIManager
-    local InfoMessage   = ctx_menu.InfoMessage
-
     -- Same labels/order as module_feat_coll.lua's Sort menu, reused verbatim
     -- so the two share one translation instead of forking near-duplicate
     -- strings. Built from ctx_menu._ (not a module-level _()) so relabeling
@@ -362,8 +360,7 @@ local function arrangeMenuItems(ctx_menu)
                     callback = function()
                         local list = getTBRList()
                         if #list < 2 then
-                            _UIManager:show(InfoMessage:new{
-                                text = _lc("Add at least 2 books to arrange."), timeout = 2 })
+                            UI.Notify.toast(_lc("Add at least 2 books to arrange."), 2)
                             return
                         end
                         local sort_items = {}
@@ -600,9 +597,7 @@ function M.genTBRButton(file, close_cb)
                 -- (nothing changed, so the caller's refresh is a no-op) and
                 -- explain why, instead of silently doing nothing.
                 if close_cb then close_cb() end
-                UIManager:show(InfoMessage:new{
-                    text = _("This book is marked as Finished, so it can't be added to To Be Read.\nChange its status to Reading or On Hold first."),
-                })
+                UI.Notify.toast(_("This book is marked as Finished, so it can't be added to To Be Read.\nChange its status to Reading or On Hold first."))
                 return
             else
                 addTBR(file)

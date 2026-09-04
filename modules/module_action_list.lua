@@ -273,15 +273,7 @@ function M.getMenuItems(ctx_menu)
         end
         if not found then
             if #cur >= MAX_AL then
-                local InfoMessage = ctx_menu.InfoMessage or require("ui/widget/infomessage")
-                local uim = ctx_menu.UIManager or require("ui/uimanager")
-                uim:show(InfoMessage:new{
-                    text    = string.format(
-                        N_("The maximum of %d action per module has been reached. Remove one first.",
-                           "The maximum of %d actions per module has been reached. Remove one first.",
-                           MAX_AL), MAX_AL),
-                    timeout = 2,
-                })
+                UI.Notify.toast(string.format(N_("The maximum of %d action per module has been reached. Remove one first.", "The maximum of %d actions per module has been reached. Remove one first.", MAX_AL), MAX_AL), 2)
                 return
             end
             new[#new + 1] = id
@@ -303,9 +295,7 @@ function M.getMenuItems(ctx_menu)
         callback       = function()
             local qa_ids = getItems()
             if #qa_ids < 2 then
-                local InfoMessage = ctx_menu.InfoMessage or require("ui/widget/infomessage")
-                local uim = ctx_menu.UIManager or require("ui/uimanager")
-                uim:show(InfoMessage:new{ text = _lc("Add at least 2 actions to arrange."), timeout = 2 })
+                UI.Notify.toast(_lc("Add at least 2 actions to arrange."), 2)
                 return
             end
             local pool_labels = {}
@@ -410,13 +400,7 @@ function M.getMenuItems(ctx_menu)
                                         on_tap = function(picker_ctx)
                                             local cur = getItems()
                                             if #cur >= MAX_AL then
-                                                local InfoMessage = ctx_menu.InfoMessage or require("ui/widget/infomessage")
-                                                local uim = ctx_menu.UIManager or require("ui/uimanager")
-                                                local N_ = ctx_menu.N_ or require("infra/sui_i18n").ngettext
-                                                uim:show(InfoMessage:new{
-                                                    text = string.format(N_("The maximum of %d action per module has been reached. Remove one first.",
-                                                           "The maximum of %d actions per module has been reached. Remove one first.", MAX_AL), MAX_AL), timeout = 2,
-                                                })
+                                                UI.Notify.toast(string.format(N_("The maximum of %d action per module has been reached. Remove one first.", "The maximum of %d actions per module has been reached. Remove one first.", MAX_AL), MAX_AL), 2)
                                                 return
                                             end
                                             cur[#cur + 1] = _id
