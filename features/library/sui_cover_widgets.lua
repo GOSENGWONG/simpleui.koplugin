@@ -65,6 +65,7 @@ local OverlapGroup    = require("ui/widget/overlapgroup")
 local Screen          = require("device").screen
 local TextBoxWidget   = require("ui/widget/textboxwidget")
 local TextWidget      = require("ui/widget/textwidget")
+local RenderText     = require("ui/rendertext")
 local AlphaContainer  = require("ui/widget/container/alphacontainer")
 local BottomContainer = require("ui/widget/container/bottomcontainer")
 local TopContainer    = require("ui/widget/container/topcontainer")
@@ -143,26 +144,46 @@ function CoverWidgets.buildProgressBadgeDesc(eff_size, status, percent_finished,
 
     local text_color  = dark and SUIStyle.COLOR.surface or SUIStyle.COLOR.text_primary
     local text_widget = nil
+    -- Cap label width at 95% of the banner body so "100%" and wide icons
+    -- stay inside the pentagon on small covers. Measure with RenderText
+    -- (TextWidget:getSize can under-report bold widths) and shrink the
+    -- font until the glyph advance fits.
+    local max_text_w  = math.max(1, math.floor(bw * 0.95))
 
+    local function fitTextWidget(text, face_name, start_sz, bold)
+        local font_sz = math.max(7, start_sz)
+        -- TextWidget bold uses FreeType embolden, which widens glyphs beyond
+        -- the regular-face advance reported by sizeUtf8Text. Scale the
+        -- measured width up so the fit accounts for that.
+        local bold_scale = bold and 1.10 or 1.0
+        local Screen = require("device").screen
+        while font_sz > 7 do
+            local face = Font:getFace(face_name, font_sz)
+            -- sizeUtf8Text(x, width, face, text, kerning, bold) — 6 args.
+            local measured = RenderText:sizeUtf8Text(
+                0, Screen:getWidth(), face, text, true, bold
+            )
+            local w = measured and measured.x or 0
+            if w * bold_scale <= max_text_w then
+                break
+            end
+            font_sz = font_sz - 1
+        end
+        return TextWidget:new{
+            text    = text,
+            face    = Font:getFace(face_name, font_sz),
+            bold    = bold,
+            fgcolor = text_color,
+            padding = 0,
+        }
+    end
+
+    local start_sz = math.max(7, math.floor(eff_size * 0.26))
     if status == "abandoned" then
-        local font_sz = math.max(7, math.floor(eff_size * 0.26))
-        text_widget = TextWidget:new{
-            text    = "\u{EAE3}",
-            face    = Font:getFace(SUIStyle.FACE_ICONS, font_sz),
-            bold    = false,
-            fgcolor = text_color,
-            padding = 0,
-        }
+        text_widget = fitTextWidget("\u{EAE3}", SUIStyle.FACE_ICONS, start_sz, false)
     elseif percent_finished ~= nil and status ~= "complete" then
-        local pct     = math.floor(percent_finished * 100 + 0.5)
-        local font_sz = math.max(7, math.floor(eff_size * 0.26))
-        text_widget = TextWidget:new{
-            text    = pct .. "%",
-            face    = Font:getFace(SUIStyle.FACE_REGULAR, font_sz),
-            bold    = true,
-            fgcolor = text_color,
-            padding = 0,
-        }
+        local pct = math.floor(percent_finished * 100 + 0.5)
+        text_widget = fitTextWidget(pct .. "%", SUIStyle.FACE_REGULAR, start_sz, true)
     end
 
     return {
