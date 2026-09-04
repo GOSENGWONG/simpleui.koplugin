@@ -201,8 +201,9 @@ end
 --
 -- When "Preserve deleted books in statistics" is enabled (default: on) and a
 -- book whose summary.status == "complete" is deleted via the KOReader file
--- manager, this module records a minimal entry so the book continues to be
--- counted in books_year / books_total on the homescreen.
+-- manager (single file or as part of a folder delete), this module records a
+-- minimal entry so the book continues to be counted in books_year /
+-- books_total on the homescreen.
 --
 -- Storage: a single key "simpleui_deleted_books" inside the existing
 -- sui_settings.lua file.  Value is a table keyed by partial_md5_checksum:

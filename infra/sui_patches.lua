@@ -4815,13 +4815,52 @@ function M.patchPurgeDir(plugin)
     end
 end
 
--- (kept for teardown symmetry — no longer does folder-level guarding)
+-- Preserve finished books in statistics before sidecars are purged.
+-- Applies to single-file deletes and to folder deletes (recursive walk
+-- before purgeDir). DocSettings lives in the .sdr; once that is gone the
+-- status is unrecoverable, so the snapshot must happen first.
 function M.patchDeleteFile(FileManager, plugin)
     if FileManager._simpleui_deleteFile_patched then return end
     FileManager._simpleui_deleteFile_patched = true
 
     local orig_deleteFile = FileManager.deleteFile
     if plugin then plugin._orig_fm_deleteFile = orig_deleteFile end
+
+    --- Snapshot one finished book into DeletedBooks (no-op if not complete).
+    local function preserveFinishedBook(filepath)
+        local DB = SUISettings.DeletedBooks
+        if not DB or not DB.isEnabled() then return end
+        local ok_DS, DocSettings = pcall(require, "docsettings")
+        if not ok_DS or not DocSettings then return end
+        local ds = DocSettings:open(filepath)
+        local summary = ds:readSetting("summary")
+        if type(summary) ~= "table" or summary.status ~= "complete" then
+            pcall(function() ds:close() end)
+            return
+        end
+        local md5 = ds:readSetting("partial_md5_checksum")
+        if not md5 then
+            pcall(function() ds:close() end)
+            return
+        end
+        local doc_props = ds:readSetting("doc_props")
+        local title   = doc_props and doc_props.title   or ""
+        local authors = doc_props and doc_props.authors or ""
+        -- Derive year from summary.modified (same source as countMarkedReadBoth).
+        local year = 0
+        local mod = summary.modified
+        if type(mod) == "number" then
+            year = tonumber(os.date("%Y", mod)) or 0
+        elseif type(mod) == "string" and #mod >= 4 then
+            year = tonumber(mod:sub(1, 4)) or 0
+        elseif type(mod) == "table" and mod.year then
+            year = mod.year
+        end
+        pcall(function() ds:close() end)
+        DB.add(md5, title, authors, year)
+        logger.dbg("simpleui: preserved deleted finished book in stats:",
+            title, "(md5:", md5, "year:", year, ")")
+    end
 
     FileManager.deleteFile = function(fm_self, file, is_file)
         if not is_file then
@@ -4835,47 +4874,22 @@ function M.patchDeleteFile(FileManager, plugin)
                 -- Return true so post_delete_callback fires and FM refreshes.
                 return true
             end
-        end
-
-        -- Preserve finished books in statistics before the sidecar is purged.
-        -- DocSettings.updateLocation (called inside orig_deleteFile) deletes the
-        -- .sdr, which is the only place summary.status lives.  We snapshot the
-        -- relevant fields here, before the delete, so countMarkedReadBoth can
-        -- continue counting this book even after the file and sidecar are gone.
-        if is_file then
+            -- Folder delete: KOReader uses purgeDir once and never calls
+            -- deleteFile per book. Walk the tree first so finished books
+            -- still land in DeletedBooks.
             pcall(function()
                 local DB = SUISettings.DeletedBooks
                 if not DB or not DB.isEnabled() then return end
-                local ok_DS, DocSettings = pcall(require, "docsettings")
-                if not ok_DS or not DocSettings then return end
-                local ds = DocSettings:open(file)
-                local summary = ds:readSetting("summary")
-                if type(summary) ~= "table" or summary.status ~= "complete" then
-                    pcall(function() ds:close() end)
-                    return
-                end
-                local md5 = ds:readSetting("partial_md5_checksum")
-                if not md5 then
-                    pcall(function() ds:close() end)
-                    return
-                end
-                local doc_props = ds:readSetting("doc_props")
-                local title   = doc_props and doc_props.title   or ""
-                local authors = doc_props and doc_props.authors or ""
-                -- Derive year from summary.modified (same source as countMarkedReadBoth).
-                local year = 0
-                local mod = summary.modified
-                if type(mod) == "number" then
-                    year = tonumber(os.date("%Y", mod)) or 0
-                elseif type(mod) == "string" and #mod >= 4 then
-                    year = tonumber(mod:sub(1, 4)) or 0
-                elseif type(mod) == "table" and mod.year then
-                    year = mod.year
-                end
-                pcall(function() ds:close() end)
-                DB.add(md5, title, authors, year)
-                logger.dbg("simpleui: preserved deleted finished book in stats:", title, "(md5:", md5, "year:", year, ")")
+                local util = require("util")
+                local ok_dr, DocumentRegistry = pcall(require, "document/documentregistry")
+                util.findFiles(file, function(fpath)
+                    if ok_dr and DocumentRegistry and DocumentRegistry:hasProvider(fpath) then
+                        pcall(preserveFinishedBook, fpath)
+                    end
+                end, true)
             end)
+        else
+            pcall(preserveFinishedBook, file)
         end
 
         return orig_deleteFile(fm_self, file, is_file)
