@@ -10,12 +10,13 @@
 -- means every function below can be exercised and reasoned about in
 -- isolation from the settings system and the monkeypatch machinery.
 --
--- The only per-item state kept here is the font-size cache used by
--- buildFolderNameWidget (binary-searching the largest font that fits a
--- folder name is not cheap, so results are cached) and the rendered-ribbon
--- Blitbuffer cache (rotating text pixel-by-pixel is expensive, cached by
--- dimensions+label+colors). Both are cleared via the public clear*Cache()
--- functions, which sui_foldercovers.lua calls from M.invalidateCache().
+-- Cached state kept here: the font-size cache used by buildFolderNameWidget
+-- (binary-searching the largest font that fits a folder name is not cheap),
+-- the rendered-ribbon Blitbuffer cache (rotating text pixel-by-pixel is
+-- expensive, keyed by dimensions+label+colors), and a reusable 8-bit mask
+-- for progress-pentagon AA paints. All are cleared via the public
+-- clear*Cache() functions, which sui_foldercovers.lua calls from
+-- M.invalidateCache().
 --
 -- Public API
 -- ----------
@@ -48,6 +49,7 @@
 --   CoverWidgets.installWidget(item, widget)
 --   CoverWidgets.clearRibbonCache()
 --   CoverWidgets.clearFontSizeCache()
+--   CoverWidgets.clearPentagonMaskCache()
 
 local _  = require("infra/sui_i18n").translate
 local BD = require("ui/bidi")
@@ -73,8 +75,13 @@ local RightContainer  = require("ui/widget/container/rightcontainer")
 local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
 local SUIStyle        = require("features/sui_style")
+local AAPaint         = require("infra/sui_aa_paint")
 
 local CoverWidgets = {}
+
+-- Scratch 8-bit mask reused across progress-badge paints (border, fill, check).
+-- Resized when a larger badge appears; freed by clearPentagonMaskCache().
+local _pentagon_mask_bb
 
 -- ---------------------------------------------------------------------------
 -- Shared geometry constants
@@ -95,44 +102,62 @@ local _BADGE_MARGIN_R_BASE = Screen:scaleBySize(4)
 local _LABEL_ALPHA = 0.75
 
 -- ── Progress pentagon badge ──────────────────────────────────────────────────
--- Drawn directly onto the cover Blitbuffer (no intermediate buffer) so pixels
--- outside the pentagon are never written and the cover art shows through the
--- triangular tip without a white rectangle artefact.
---
 -- Shape: downward-pointing pentagon (rectangle body + triangular tip).
 -- States: "complete" → checkmark; percent_finished set → "42%"; otherwise bare.
+--
+-- Edges are coverage-AA'd via infra/sui_aa_paint into a scratch 8-bit mask,
+-- then composited with colorblitFromRGB32. Uncovered mask pixels stay
+-- transparent, so cover art shows through the triangular tip.
 
+local function _ensurePentagonMask(w, h)
+    if _pentagon_mask_bb
+            and _pentagon_mask_bb:getWidth() >= w
+            and _pentagon_mask_bb:getHeight() >= h then
+        return _pentagon_mask_bb
+    end
+    if _pentagon_mask_bb then _pentagon_mask_bb:free() end
+    _pentagon_mask_bb = Blitbuffer.new(w, h, Blitbuffer.TYPE_BB8)
+    return _pentagon_mask_bb
+end
+
+function CoverWidgets.clearPentagonMaskCache()
+    if _pentagon_mask_bb then
+        _pentagon_mask_bb:free()
+        _pentagon_mask_bb = nil
+    end
+end
+
+-- Paints a filled AA pentagon of size (bw × bh) in `color` at (bx, by) on `bb`.
 local function pentagonPaintRect(bb, bx, by, bw, bh, color)
-    local rect_h = math.floor(bh * 30 / 42)
-    local tip_h  = bh - rect_h
-    bb:paintRect(bx, by, bw, rect_h, color)
-    for row = 0, tip_h - 1 do
-        local frac = (row + 1) / tip_h
-        local rw   = math.max(2, math.floor(bw * (1 - frac)))
-        local rx   = bx + math.floor((bw - rw) / 2)
-        bb:paintRect(rx, by + rect_h + row, rw, 1, color)
-    end
+    if bw <= 0 or bh <= 0 then return end
+    local mask = _ensurePentagonMask(bw, bh)
+    mask:fill(SUIStyle.COLOR.surface)
+    AAPaint.paintDownPentagonFill(mask, 0, 0, bw, bh, 0, 0, bw - 1, bh - 1)
+    mask:invertRect(0, 0, bw, bh)
+    bb:colorblitFromRGB32(mask, bx, by, 0, 0, bw, bh, color)
 end
 
-local function drawCheckLine(bb, x0, y0, x1, y1, tk, color)
-    local steps = math.max(math.abs(x1 - x0), math.abs(y1 - y0))
-    if steps == 0 then steps = 1 end
-    for i = 0, steps do
-        local t = i / steps
-        bb:paintRect(
-            math.floor(x0 + t * (x1 - x0)),
-            math.floor(y0 + t * (y1 - y0)),
-            tk, tk, color)
-    end
-end
-
+-- AA checkmark via capsule strokes (same primitive as the analogue clock hands).
 local function pentagonPaintCheck(bb, bx, by, bw, bh, color)
     local tk = math.max(2, math.floor(math.min(bw, bh) / 8))
-    local lx0 = bx + math.floor(bw * 0.08); local ly0 = by + math.floor(bh * 0.62)
-    local lx1 = bx + math.floor(bw * 0.30); local ly1 = by + math.floor(bh * 0.82)
-    local rx1  = bx + math.floor(bw * 0.82); local ry1 = by + math.floor(bh * 0.18)
-    drawCheckLine(bb, lx0, ly0, lx1, ly1, tk, color)
-    drawCheckLine(bb, lx1, ly1, rx1, ry1, tk, color)
+    local lx0 = bx + bw * 0.08; local ly0 = by + bh * 0.62
+    local lx1 = bx + bw * 0.30; local ly1 = by + bh * 0.82
+    local rx1 = bx + bw * 0.82; local ry1 = by + bh * 0.18
+    local pad = math.ceil(tk / 2) + 1
+    local minx = math.floor(math.min(lx0, lx1, rx1) - pad)
+    local maxx = math.ceil (math.max(lx0, lx1, rx1) + pad)
+    local miny = math.floor(math.min(ly0, ly1, ry1) - pad)
+    local maxy = math.ceil (math.max(ly0, ly1, ry1) + pad)
+    local mw = maxx - minx + 1
+    local mh = maxy - miny + 1
+    if mw <= 0 or mh <= 0 then return end
+    local mask = _ensurePentagonMask(mw, mh)
+    mask:fill(SUIStyle.COLOR.surface)
+    local x1c, y1c = mw - 1, mh - 1
+    AAPaint.paintCapsule(mask, lx0 - minx, ly0 - miny, lx1 - minx, ly1 - miny, tk, 0, 0, x1c, y1c)
+    AAPaint.paintCapsule(mask, lx1 - minx, ly1 - miny, rx1 - minx, ry1 - miny, tk, 0, 0, x1c, y1c)
+    mask:invertRect(0, 0, mw, mh)
+    bb:colorblitFromRGB32(mask, minx, miny, 0, 0, mw, mh, color)
 end
 
 -- Returns a descriptor table for the progress badge, or nil when too small.
@@ -199,13 +224,14 @@ function CoverWidgets.buildProgressBadgeDesc(eff_size, status, percent_finished,
 end
 
 -- Draw the progress badge described by `desc` directly onto `bb` at (ox, oy).
+-- Border uses text_primary so the top edge matches the cover border it sits on.
 function CoverWidgets.drawProgressBadge(bb, ox, oy, desc)
     local bw         = desc.bw
     local bh         = desc.bh
     local fr         = desc.border
     local fill_color = desc.dark and SUIStyle.COLOR.text_primary or SUIStyle.COLOR.surface
     local text_color = desc.dark and SUIStyle.COLOR.surface or SUIStyle.COLOR.text_primary
-    local brd_color  = SUIStyle.BADGE_BORDER_CLR
+    local brd_color  = SUIStyle.COLOR.text_primary
 
     pentagonPaintRect(bb, ox,      oy,      bw + 2 * fr, bh + 2 * fr, brd_color)
     pentagonPaintRect(bb, ox + fr, oy + fr, bw,          bh,          fill_color)

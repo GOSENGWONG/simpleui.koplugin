@@ -1,8 +1,9 @@
 -- sui_aa_paint.lua — Simple UI
 -- Shared anti-aliasing primitives for widgets that paint curved shapes
--- (circles, rounded rects, capsule strokes) directly into an offscreen 8-bit
--- buffer, in BLACK ink, ahead of compositing via infra/sui_core.lua's
--- UI.paintWithAlphaMask (the same role TextWidget:paintTo plays for text).
+-- (circles, rounded rects, capsule strokes, downward pentagons) directly
+-- into an offscreen 8-bit buffer, in BLACK ink, ahead of compositing via
+-- infra/sui_core.lua's UI.paintWithAlphaMask (the same role TextWidget:paintTo
+-- plays for text) or an equivalent local colorblitFromRGB32 pass.
 --
 -- Coverage-based, not supersampled: for every candidate pixel, this computes
 -- how far the pixel's centre sits from the shape's edge and blends ink into
@@ -11,8 +12,9 @@
 -- size and scaling down would not actually smooth anything.
 --
 -- Used by modules/module_clock.lua (analogue clock face),
--- modules/module_reading_goals.lua (goal progress rings), and
--- engines/sui_quickactions_render.lua (quick-action tile background/border).
+-- modules/module_reading_goals.lua (goal progress rings),
+-- engines/sui_quickactions_render.lua (quick-action tile background/border),
+-- and features/library/sui_cover_widgets.lua (progress pentagon badge).
 
 local Blitbuffer = require("ffi/blitbuffer")
 
@@ -194,6 +196,63 @@ function M.paintRingProgress(bb, cx, cy, outer_r, thickness, fraction, x0, y0, x
         paintCap(0)
         if fraction < 1 then
             paintCap(fraction * two_pi)
+        end
+    end
+end
+
+-- Signed distance from (px,py) to the edge of a downward-pointing pentagon
+-- whose top-left is (0,0) and size is (w,h). Body is a rectangle of height
+-- h * 30/42; the remaining height is a centred triangular tip. Negative =
+-- inside, positive = outside. Convex, so SDF = max of outward half-plane
+-- distances for the five edges.
+local function _downPentagonSDF(px, py, w, h)
+    local rect_h = h * (30 / 42)
+    local hw = w * 0.5
+    -- Outward signed distance for each edge (CCW vertices).
+    -- Top:    (0,0) → (w,0)
+    local d = -py
+    -- Right:  (w,0) → (w,rect_h)
+    local d_right = px - w
+    if d_right > d then d = d_right end
+    -- Right diagonal: (w,rect_h) → (hw,h)
+    do
+        local ex, ey = hw - w, h - rect_h
+        local len = math.sqrt(ex * ex + ey * ey)
+        if len > 0 then
+            local nx, ny = ey / len, -ex / len
+            local dd = (px - w) * nx + (py - rect_h) * ny
+            if dd > d then d = dd end
+        end
+    end
+    -- Left diagonal: (hw,h) → (0,rect_h)
+    do
+        local ex, ey = 0 - hw, rect_h - h
+        local len = math.sqrt(ex * ex + ey * ey)
+        if len > 0 then
+            local nx, ny = ey / len, -ex / len
+            local dd = (px - hw) * nx + (py - h) * ny
+            if dd > d then d = dd end
+        end
+    end
+    -- Left:   (0,rect_h) → (0,0)
+    local d_left = -px
+    if d_left > d then d = d_left end
+    return d
+end
+
+-- Paints an anti-aliased filled downward-pointing pentagon (x,y,w,h) onto
+-- `bb`. Geometry matches the library progress badge: rectangular body over
+-- the top 30/42 of height, centred triangular tip below.
+function M.paintDownPentagonFill(bb, x, y, w, h, x0, y0, x1, y1)
+    if w <= 0 or h <= 0 then return end
+    local minx = math.floor(x - 1)
+    local maxx = math.floor(x + w + 1)
+    local miny = math.floor(y - 1)
+    local maxy = math.floor(y + h + 1)
+    for py = miny, maxy do
+        for px = minx, maxx do
+            local d = _downPentagonSDF(px + 0.5 - x, py + 0.5 - y, w, h)
+            M.blendPixel(bb, px, py, 0.5 - d, x0, y0, x1, y1)
         end
     end
 end

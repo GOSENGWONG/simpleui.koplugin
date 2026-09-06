@@ -499,8 +499,9 @@ end
 
 function M.invalidateCache()
     _itc = nil
-    -- Ribbon Blitbuffer cache now lives in sui_cover_widgets.lua.
+    -- Ribbon / pentagon scratch buffers live in sui_cover_widgets.lua.
     CoverWidgets.clearRibbonCache()
+    CoverWidgets.clearPentagonMaskCache()
 end
 
 -- Public wrapper for the FileChooser item-table cache invalidation.
@@ -1852,7 +1853,7 @@ function M.install()
 
         -- Progress pentagon badge (top-right).
         -- Drawn directly onto bb so pixels outside the pentagon are never written.
-        -- Offset upward by `border` so the badge top edge sits on the cover border.
+        -- Top edge flush with the cover FrameContainer top (same as modules).
         if self._fc_overlay_progress then
             local prog_desc = self._fc_progress_bb
             if prog_desc then
@@ -1864,7 +1865,7 @@ function M.install()
                 else
                     badge_x = fx + fw - rect_w - _BADGE_RIGHT_INSET
                 end
-                CoverWidgets.drawProgressBadge(bb, badge_x, fy - fr, prog_desc)
+                CoverWidgets.drawProgressBadge(bb, badge_x, fy, prog_desc)
             end
         end
 
@@ -2281,6 +2282,7 @@ function M.uninstall()
     _lmc_cnt = 0
     CoverWidgets.clearFontSizeCache()
     CoverWidgets.clearRibbonCache()
+    CoverWidgets.clearPentagonMaskCache()
 
     local ListMenuItem = _getListMenuItem()
     if ListMenuItem and ListMenuItem._simpleui_lm_patched then
