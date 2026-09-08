@@ -1353,8 +1353,8 @@ function M.getMenuItems(ctx_menu)
             refresh   = refresh,
         }),
         Config.makeScaleItem({
-            text_func = function() return _lc("Text size") end,
-            title     = _lc("Text size"),
+            text_func = function() return _lc("Text Size") end,
+            title     = _lc("Text Size"),
             info      = _lc("Scale for title and statistics text.\n100% is the default size."),
             get       = function() return Config.getItemLabelScalePct("coverdeck", pfx) end,
             set       = function(v) Config.setItemLabelScale(v, "coverdeck", pfx) end,
