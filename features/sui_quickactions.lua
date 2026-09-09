@@ -174,6 +174,28 @@ local function _liveFM()
     return FM and FM.instance
 end
 
+-- ── ctx.fm validation (read this before adding a new in-place action) ──────
+-- ctx.fm passed into execute(ctx) is "whatever widget owns the bar/grid that
+-- was tapped" — it is NOT guaranteed to be the FileManager. Depending on
+-- where an action is triggered from, it can be the Homescreen, a Custom
+-- Screen, Collections, History, or any other injected widget.
+--
+-- Any action that touches FileManager-only state (file_chooser,
+-- filesearcher, collections, history, openRandomFile, ...) must resolve a
+-- genuine FM through _resolveFM() below instead of trusting ctx.fm as-is —
+-- a wrong-but-truthy ctx.fm silently skips the live-FM fallback and makes
+-- the action look "not available" from every screen except the FM itself.
+--
+-- `field` names a FileManager-only field/method that proves a widget really
+-- is (or behaves like) the FileManager. Returns nil if neither ctx.fm nor
+-- the live FM instance qualifies — callers decide what "no FM at all" means
+-- for them (toast, or recover one, e.g. by exiting the Reader).
+local function _resolveFM(ctx, field)
+    local w = ctx.fm
+    if w and w[field] then return w end
+    return _liveFM()
+end
+
 -- Helper: resolve the live SimpleUIPlugin instance. Tries the given fm first
 -- (set as fm._simpleui_plugin during plugin init), then the live FM, then
 -- ReaderUI (where the plugin is registered as readerui.simpleui).
@@ -778,18 +800,14 @@ local function _registerBuiltins()
             is_async_in_place = true,
             execute = function(ctx)
                 local su = ctx.show_unavailable or _unavailToast
-                -- ctx.fm is "whatever widget owns the bottom bar that was
-                -- tapped" (see sui_bottombar.registerTouchZones), NOT
-                -- necessarily the FileManager — it can be the homescreen,
-                -- Collections, History, etc. when random_document is tapped
-                -- from their injected bars. Only trust it if it actually
-                -- behaves like a FileManager (has openRandomFile); otherwise
-                -- fall back to the live FM instance (which stays alive
-                -- underneath the homescreen even while hidden — see the
-                -- window-stack sink notes in sui_bottombar._executeInPlace).
-                local function isFM(w) return w and w.openRandomFile end
-                local fm = isFM(ctx.fm) and ctx.fm or _liveFM()
-                if not isFM(fm) then fm = nil end
+                -- See _resolveFM()'s doc comment above: ctx.fm can be the
+                -- homescreen, Collections, History, etc. when this is
+                -- tapped from their injected bars, so it must be validated
+                -- rather than trusted as-is. The live FM instance stays
+                -- alive underneath the homescreen even while hidden — see
+                -- the window-stack sink notes in
+                -- sui_bottombar._executeInPlace.
+                local fm = _resolveFM(ctx, "openRandomFile")
                 -- FileManager:openRandomFile only touches `self` to recurse
                 -- on the "Another" button (self:openRandomFile(...)) — it
                 -- never reads anything off self. So it's safe to call on the
@@ -848,6 +866,31 @@ local function _registerBuiltins()
                     end
                 end
                 _showBookmarkBrowserSourceDialog(_bb_ui)
+            end,
+        },
+        {
+            id    = "search_library",
+            label = _("Search"),
+            icon  = Config.ICON.ko_search,
+            is_in_place = true,
+            -- is_async_in_place: opens a widget that outlives this execute()
+            -- call (the search dialog, then its results list) — same
+            -- reasoning as bookmark_browser above.
+            is_async_in_place = true,
+            -- Unlike random_document, this doesn't touch any FileManager
+            -- state (file_chooser, filesearcher, ...) — it works entirely
+            -- off the configured home folder and the library's own cached
+            -- metadata, opening a book by path directly. So there's no
+            -- ctx.fm to resolve or Reader-exit fallback needed here; it
+            -- behaves identically from the Homescreen, the Reader, or the
+            -- FileManager.
+            execute = function(ctx)
+                local ok, LibrarySearch = pcall(require, "features/library/sui_library_search")
+                if not ok or not LibrarySearch then
+                    (ctx.show_unavailable or _unavailToast)(_("Search Library not available."))
+                    return
+                end
+                LibrarySearch.show()
             end,
         },
         {

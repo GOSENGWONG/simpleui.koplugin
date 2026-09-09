@@ -122,6 +122,7 @@ M.ALL_ACTIONS = {
     { id = "random_document",  label = _("Random"),           icon = M.ICON.random      },
     { id = "favorites",        label = _("Favorites"),        icon = M.ICON.ko_star     },
     { id = "bookmark_browser", label = _("Bookmarks"),        icon = M.ICON.ko_bookmark },
+    { id = "search_library",   label = _("Search"),           icon = M.ICON.ko_search   },
     { id = "wifi_toggle",      label = _("Wi-Fi"),            icon = M.ICON.ko_wifi     },
     { id = "frontlight",       label = _("Brightness"),       icon = M.ICON.frontlight  },
     { id = "night_mode",       label = _("Night Mode"),       icon = M.ICON.night       },

@@ -1020,6 +1020,12 @@ end
 -- Callers keep translated strings at the call site. This module only owns
 -- the show/close/repaint mechanics so timeouts and e-ink flush stay consistent.
 --
+-- Convention: this is the only entry point for one-off notices anywhere in
+-- Simple UI. Call sites should not require("ui/widget/infomessage") and
+-- show it directly — go through Notify.toast/sticky instead, even for a
+-- single, simple message, so timeout defaults and e-ink repaint behaviour
+-- stay uniform across the plugin.
+--
 -- Higher-level helpers built on Notify:
 --   applyPresetWithNotice  — sticky "Applying preset…" around a work fn
 --   StatsWindows.showLoadingNotice — sticky loading toast (setting-gated)
