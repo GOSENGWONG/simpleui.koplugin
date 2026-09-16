@@ -424,6 +424,84 @@ function SH.getCroppedBookCover(filepath, w, h, align)
 end
 
 -- ---------------------------------------------------------------------------
+-- Progress badge helpers — single drawing path for the progress pentagon.
+-- Used by single-cover modules (Currently Reading, Coverdeck) and by the
+-- book-grid engine so the badge looks identical everywhere.
+--
+-- buildProgressBadgeWidget(bd, eff_size, color) → widget|nil
+--   Pure builder. color is "dark"|"light"|nil (nil follows Library).
+--   Book-grid callers place the widget into their multi-badge OverlapGroup.
+--
+-- applyProgressBadge(cover_widget, bd, cw, ch, color, ref_w, ref_h)
+--   Convenience for single-cover modules: computes size/margin, builds
+--   the badge, wraps in OverlapGroup. ref_w/ref_h keep size consistent
+--   on narrower peeks.
+-- ---------------------------------------------------------------------------
+local _CoverWidgets = nil
+local function getCoverWidgets()
+    if not _CoverWidgets then
+        local ok, m = pcall(require, "features/library/sui_cover_widgets")
+        if ok and m then _CoverWidgets = m end
+    end
+    return _CoverWidgets
+end
+
+local _FC = nil
+local function getFC()
+    if not _FC then
+        local ok, m = pcall(require, "features/library/sui_foldercovers")
+        if ok and m then _FC = m end
+    end
+    return _FC
+end
+
+local function _resolveProgressBadgeDark(color)
+    local resolved = color
+    if not resolved then
+        local fc = getFC()
+        resolved = (fc and fc.getBadgeColorProgress and fc.getBadgeColorProgress()) or "dark"
+    end
+    return resolved == "dark"
+end
+
+-- Builds the progress pentagon widget (or nil). Callers that compose
+-- multiple badges (book grid) place it themselves; single-cover callers
+-- use applyProgressBadge instead.
+function SH.buildProgressBadgeWidget(bd, eff_size, color)
+    local has_progress = (bd.percent or 0) > 0 or bd.status == "complete" or bd.status == "abandoned"
+    if not has_progress then return nil end
+    local CW = getCoverWidgets()
+    if not CW then return nil end
+    local dark = _resolveProgressBadgeDark(color)
+    local desc = CW.buildProgressBadgeDesc(eff_size, bd.status, bd.percent, SUIStyle.BADGE_BORDER_SZ, dark)
+    return CW.buildProgressBadgeWidget(desc)
+end
+
+function SH.applyProgressBadge(cover_widget, bd, cw, ch, color, ref_w, ref_h)
+    local edge_margin, eff_size
+    if ref_h and ref_h > 0 and ref_w and ref_w > 0 then
+        local scale   = ch / ref_h
+        local ref_min = math_min(ref_w, ref_h)
+        edge_margin   = math_max(1, math_floor(ref_min * 0.08 * scale))
+        eff_size      = math_max(8, math_floor(ref_min * 0.14 * scale))
+    else
+        local cell_min = math_min(cw, ch)
+        edge_margin    = math_max(1, math_floor(cell_min * 0.08))
+        eff_size       = math_max(8, math_floor(cell_min * 0.14))
+    end
+
+    local wg = SH.buildProgressBadgeWidget(bd, eff_size, color)
+    if not wg then return cover_widget end
+
+    local sz = wg:getSize()
+    wg.overlap_offset = { cw - sz.w - edge_margin, 0 }
+
+    local overlap = OverlapGroup:new{ dimen = Geom:new{ w = cw, h = ch }, cover_widget }
+    overlap[#overlap + 1] = wg
+    return overlap
+end
+
+-- ---------------------------------------------------------------------------
 -- formatTimeLeft
 -- ---------------------------------------------------------------------------
 function SH.formatTimeLeft(pct, pages, avg_time)

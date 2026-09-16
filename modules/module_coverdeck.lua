@@ -307,79 +307,17 @@ local function getSH()
 end
 
 -- ---------------------------------------------------------------------------
--- Progress badge (pentagon) — same drawing primitive as the book-grid
--- modules' progress badge (see engines/sui_book_grid.lua's
--- GridRenderer.applyBadges), so a book's read/complete/abandoned status
--- looks identical everywhere in the app. Coverdeck is a single-instance
--- module (no per-instance id like the grid modules use), so there is no
--- per-instance size override here — only color, via
+-- Progress badge (pentagon) — delegated to the shared helper so the
+-- drawing primitive matches every other progress badge in the app.
+-- Coverdeck is a single-instance module (no per-instance id), so there
+-- is no per-instance size override — only color, via
 -- getProgressBadgeColorOverride/setProgressBadgeColor above.
 -- ---------------------------------------------------------------------------
-local _CoverWidgets = nil
-local function getCoverWidgets()
-    if not _CoverWidgets then
-        local ok, m = pcall(require, "features/library/sui_cover_widgets")
-        if ok and m then _CoverWidgets = m end
-    end
-    return _CoverWidgets
-end
-
-local _FC = nil
-local function getFC()
-    if not _FC then
-        local ok, m = pcall(require, "features/library/sui_foldercovers")
-        if ok and m then _FC = m end
-    end
-    return _FC
-end
-
--- Overlays the progress pentagon on `cover_widget` when the book has a
--- status worth showing (in progress, complete, or abandoned). Returns
--- `cover_widget` unchanged otherwise — same "not started" convention as
--- GridRenderer.applyBadges.
--- ref_w/ref_h (optional): centre-cover size. When set (right-hand peeks),
--- badge edge and right inset follow the full-cover formula scaled by
--- ch/ref_h — the same height ratio the peek cover uses vs the centre —
--- so size and margin stay visually consistent instead of shrinking with
--- the narrow crop width.
 local function applyProgressBadge(cover_widget, bd, cw, ch, pfx, ref_w, ref_h)
-    local has_progress = (bd.percent or 0) > 0 or bd.status == "complete" or bd.status == "abandoned"
-    if not has_progress then return cover_widget end
-
-    local CW = getCoverWidgets()
-    if not CW then return cover_widget end
-
-    local fc    = getFC()
+    local SH = getSH()
+    if not SH or not SH.applyProgressBadge then return cover_widget end
     local color = getProgressBadgeColorOverride(pfx)
-        or (fc and fc.getBadgeColorProgress and fc.getBadgeColorProgress())
-        or "dark"
-    local dark = color == "dark"
-
-    local edge_margin, eff_size
-    if ref_h and ref_h > 0 and ref_w and ref_w > 0 then
-        local scale   = ch / ref_h
-        local ref_min = math.min(ref_w, ref_h)
-        edge_margin   = math.max(1, math.floor(ref_min * 0.08 * scale))
-        eff_size      = math.max(8, math.floor(ref_min * 0.14 * scale))
-    else
-        local cell_min = math.min(cw, ch)
-        edge_margin    = math.max(1, math.floor(cell_min * 0.08))
-        eff_size       = math.max(8, math.floor(cell_min * 0.14))
-    end
-
-    local desc = CW.buildProgressBadgeDesc(eff_size, bd.status, bd.percent, SUIStyle.BADGE_BORDER_SZ, dark)
-    local wg   = CW.buildProgressBadgeWidget(desc)
-    if not wg then return cover_widget end
-
-    -- Flush with the top edge, inset from the right — matches the corner
-    -- badges' placement convention in applyBadges (and the scaled centre
-    -- margin when ref_w/ref_h are set).
-    local sz = wg:getSize()
-    wg.overlap_offset = { cw - sz.w - edge_margin, 0 }
-
-    local overlap = OverlapGroup:new{ dimen = Geom:new{ w = cw, h = ch }, cover_widget }
-    overlap[#overlap + 1] = wg
-    return overlap
+    return SH.applyProgressBadge(cover_widget, bd, cw, ch, color, ref_w, ref_h)
 end
 
 -- ---------------------------------------------------------------------------

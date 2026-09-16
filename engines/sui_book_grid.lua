@@ -503,13 +503,15 @@ function GridRenderer.applyBadges(cover_widget, bd, fp, cw, ch, badges_cfg, pfx,
     end
 
     -- Progress pentagon / New badge (top-right, mutually exclusive).
+    -- Progress uses the shared builder so the pentagon matches single-cover
+    -- modules (Currently Reading, Coverdeck) exactly.
     local has_progress = show_progress
         and ((bd.percent or 0) > 0 or bd.status == "complete" or bd.status == "abandoned")
     if has_progress then
-        local dark = GridRenderer.getBadgeColor(pfx, id, "progress", fc.getBadgeColorProgress) == "dark"
+        local color = GridRenderer.getBadgeColor(pfx, id, "progress", fc.getBadgeColorProgress)
         local eff_size = math.max(8, math.floor(cell_min * 0.14 * corner_badge_scale))
-        local desc = CW.buildProgressBadgeDesc(eff_size, bd.status, bd.percent, SUIStyle.BADGE_BORDER_SZ, dark)
-        local wg = CW.buildProgressBadgeWidget(desc)
+        local SH = getSH()
+        local wg = SH and SH.buildProgressBadgeWidget and SH.buildProgressBadgeWidget(bd, eff_size, color)
         if wg then
             local sz = wg:getSize()
             -- Flush with the top edge (0, not margin); wider inset from

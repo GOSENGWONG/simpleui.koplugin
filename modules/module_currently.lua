@@ -96,6 +96,26 @@ local function getBarStyle(pfx)
     return SUISettings:readSetting(pfx .. BAR_STYLE_KEY) or "with_pct"
 end
 
+-- Progress badge (pentagon overlay on the cover) — same drawing primitive
+-- and settings shape as the Coverdeck / book-grid progress badge.
+-- Opt-in (unset == off). Color override nil means "Follow Library".
+local SETTING_SHOW_PROGRESS_BADGE  = "currently_show_progress_badge"
+local SETTING_PROGRESS_BADGE_COLOR = "currently_progress_badge_color"
+
+local function showProgressBadge(pfx)
+    return SUISettings:readSetting(pfx .. SETTING_SHOW_PROGRESS_BADGE) == true
+end
+
+local function getProgressBadgeColorOverride(pfx)
+    local v = SUISettings:readSetting(pfx .. SETTING_PROGRESS_BADGE_COLOR)
+    if v == "dark" or v == "light" then return v end
+    return nil
+end
+
+local function setProgressBadgeColor(pfx, v)
+    SUISettings:saveSetting(pfx .. SETTING_PROGRESS_BADGE_COLOR, v)
+end
+
 -- Setting key for stats layout: "default" (one line per stat) or "compact" (single row with · separator + ETA)
 local STATS_STYLE_KEY = "currently_stats_style"
 
@@ -1073,6 +1093,14 @@ function M.build(w, ctx)
     local cover = SH.getBookCover(ctx.current_fp, cover_w, cover_h)
                   or SH.coverPlaceholder(bd.title, bd.authors, cover_w, cover_h)
 
+    -- Optional progress pentagon on the cover (same primitive as Coverdeck
+    -- and the book-grid modules). Applied after the cover is resolved so
+    -- late loads in updateCovers can re-apply it the same way.
+    if showProgressBadge(pfx) and SH.applyProgressBadge then
+        local color = getProgressBadgeColorOverride(pfx)
+        cover = SH.applyProgressBadge(cover, bd, cover_w, cover_h, color)
+    end
+
     local full_h = content_h + box.inset_v
 
     -- Layout: cover on left, text column on right.
@@ -1192,10 +1220,17 @@ function M.updateCovers(widget, _ctx)
     local SH = getSH()
     if not SH then return true end
 
+    local pfx = (_ctx and _ctx.pfx) or ""
+    local show_badge = showProgressBadge(pfx)
     local all_done = true
     for _, slot in ipairs(tappable._cover_slots) do
         local new_cover = SH.getBookCover(slot.fp, slot.w, slot.h)
         if new_cover then
+            if show_badge and SH.applyProgressBadge then
+                local bd = SH.getBookData(slot.fp, _ctx and _ctx.prefetched and _ctx.prefetched[slot.fp])
+                local color = getProgressBadgeColorOverride(pfx)
+                new_cover = SH.applyProgressBadge(new_cover, bd, slot.w, slot.h, color)
+            end
             slot.container[slot.idx] = new_cover
         elseif not Config.isCoverMissing(slot.fp) then
             all_done = false
@@ -1947,6 +1982,30 @@ function M.getMenuItems(ctx_menu)
             },
     }
 
+    local progress_badge_group = {
+        {
+            text           = _lc("Progress Badge"),
+            checked_func   = function() return showProgressBadge(pfx) end,
+            keep_menu_open = true,
+            callback       = function()
+                SUISettings:saveSetting(pfx .. SETTING_SHOW_PROGRESS_BADGE, not showProgressBadge(pfx))
+                refresh()
+            end,
+        },
+        Config.makeRadioSubmenuItem{
+            text         = _lc("Progress Badge Color"),
+            enabled_func = function() return showProgressBadge(pfx) end,
+            options      = {
+                { value = nil,     label = _lc("Follow Library") },
+                { value = "dark",  label = _lc("Dark") },
+                { value = "light", label = _lc("Light") },
+            },
+            get          = function() return getProgressBadgeColorOverride(pfx) end,
+            set          = function(v) setProgressBadgeColor(pfx, v) end,
+            refresh      = refresh,
+        },
+    }
+
     local progress_stats_entry = {
             text_func      = function() return _lc("Progress and Stats") end,
             sub_item_table = {
@@ -1967,6 +2026,13 @@ function M.getMenuItems(ctx_menu)
                         _makeStyleRadioItem(_lc("Compact"), pfx .. STATS_STYLE_KEY, "compact",
                             function() return getStatsStyle(pfx) end, refresh),
                     },
+                },
+                {
+                    text_func  = function() return _lc("Progress Badge") end,
+                    value_func = function()
+                        return showProgressBadge(pfx) and _lc("On") or _lc("Off")
+                    end,
+                    sub_item_table = progress_badge_group,
                 },
             },
     }
@@ -2031,6 +2097,11 @@ function M.updateStats(widget, ctx)
     -- mirroring the identity check module_recent.updateStats() already
     -- does for its own fp list.
     if ctx.current_fp ~= fp then return false end
+
+    -- Progress badge is composited into the cover widget tree at build time.
+    -- Percent/status changes on the badge require a full rebuild.
+    local pfx = (ctx and ctx.pfx) or ""
+    if showProgressBadge(pfx) then return false end
 
     local bstats
     local pre = ctx.currently_book_stats
