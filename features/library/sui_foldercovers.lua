@@ -1836,7 +1836,7 @@ function M.install()
                     local cell_min = math.min(self.width or fw, self.height or fh)
                     local dark = M.getBadgeColorSeries() == "dark"
                     local new_wg = CoverWidgets.buildRectBadgeWidget(
-                        "#" .. bi.series_index, false, cell_min, dark, false)
+                        "#" .. bi.series_index, false, cell_min, dark, false, M.getBadgeScale())
                     if new_wg then self._fc_series_widget = new_wg; wg = new_wg end
                 end
             end
