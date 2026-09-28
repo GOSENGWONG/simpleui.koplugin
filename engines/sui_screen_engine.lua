@@ -2198,6 +2198,9 @@ end
 -- Wrappers are allocated once per mod.id per Homescreen lifetime and updated
 -- in-place on subsequent page turns (zero new allocations).
 -- ---------------------------------------------------------------------------
+-- Returns the chrome-wrapped widget to mount and the module's own widget as
+-- returned by mod.build() (the one per-module updaters operate on). On a build
+-- error returns nil plus the error message.
 function ScreenWidget:_buildModWidget(mod, col_w, ctx)
     local ModuleChrome = require("features/sui_module_chrome")
     local chrome = ModuleChrome.resolve(self._pfx, mod.id)
@@ -2210,7 +2213,7 @@ function ScreenWidget:_buildModWidget(mod, col_w, ctx)
         return nil, widget
     end
     if not widget then return nil end
-    return ModuleChrome.wrap(widget, chrome, col_w, (ctx and ctx.landscape_factor) or 1)
+    return ModuleChrome.wrap(widget, chrome, col_w, (ctx and ctx.landscape_factor) or 1), widget
 end
 
 function ScreenWidget:_makeModWrapper(mod, widget, inner_w)
@@ -2495,13 +2498,14 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
         -- _register_cell once the cell's real parent is known.
         local function _emit_mod(mod, col_w)
             if mod.has_covers then page_has_covers = true end
-            local widget, err = self:_buildModWidget(mod, col_w, ctx)
-            if err and not widget then
-                logger.warn("simpleui: screen (" .. tostring(self._id) .. "): build failed for "
-                            .. tostring(mod.id) .. ": " .. tostring(err))
+            local widget, content = self:_buildModWidget(mod, col_w, ctx)
+            if not widget then
+                if content then
+                    logger.warn("simpleui: screen (" .. tostring(self._id) .. "): build failed for "
+                                .. tostring(mod.id) .. ": " .. tostring(content))
+                end
                 return nil
             end
-            if not widget then return nil end
 
             local cell = VerticalGroup:new{ align = "left" }
             if mod.label then
@@ -2519,7 +2523,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
             cell[#cell+1] = self:_makeModWrapper(mod, widget, col_w)
 
             if mod.has_covers and type(mod.updateCovers) == "function" then
-                self._cover_mod_slots[mod.id] = { mod = mod, widget = widget }
+                self._cover_mod_slots[mod.id] = { mod = mod, widget = content }
             end
             if type(mod.updateStats) == "function" then
                 self._stats_mod_slots[mod.id] = { mod = mod, widget = widget }
@@ -2999,42 +3003,18 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
                                 else
                                     UIManager:setDirty(self, "ui")
                                 end
+                                -- An in-place update can shift npages without the
+                                -- current page's own slice changing (see
+                                -- GridRenderer.updateStats), so the header follows.
+                                self:_syncBookModLabel(id)
                             else
-                                -- Fallback: full rebuild (module has no updateStats,
-                                -- or updateStats returned false because the book's
-                                -- identity changed — see module_currently/
-                                -- module_coverdeck.updateStats).
-                                local new_widget = self:_buildModWidget(slot.mod, slot.col_w, self._ctx_cache)
-                                if new_widget then
-                                    if slot.has_menu then
-                                        local wrapper = self._wrapper_pool[id]
-                                        if wrapper then
-                                            wrapper[1] = new_widget
-                                            -- Keep slot.widget pointed at the live widget
-                                            -- (mirrors _refreshBookModSlot), so the next
-                                            -- updateStats(slot.widget, ctx) operates on the
-                                            -- widget actually in the tree.
-                                            slot.widget = new_widget
-                                            UIManager:setDirty(self, function() return "ui", wrapper.dimen, true end)
-                                        end
-                                    else
-                                        slot.parent[slot.index] = new_widget
-                                        slot.widget = new_widget
-                                        UIManager:setDirty(self, function() return "ui", new_widget.dimen, true end)
-                                    end
-                                end
+                                -- Full rebuild (module has no updateStats, or it
+                                -- returned false because the book's identity changed).
+                                -- _refreshBookModSlot is the single path that also
+                                -- keeps the cover-poll slot on the mounted widget,
+                                -- flushes newly queued covers and syncs the header.
+                                self:_refreshBookModSlot(id)
                             end
-
-                            -- Keeps this module's "x/y" page indicator and
-                            -- chevrons in sync regardless of which branch
-                            -- above ran: an in-place updateStats can shift
-                            -- npages without the current page's own slice
-                            -- changing (see GridRenderer.updateStats), and a
-                            -- full rebuild here — unlike _refreshBookModSlot's
-                            -- swipe/chevron path — never touched the header
-                            -- widget on its own. Same pattern as
-                            -- _refreshBookModSlot; see _syncBookModLabel.
-                            self:_syncBookModLabel(id)
                         end
                     end
 
@@ -3190,7 +3170,7 @@ function ScreenWidget:_refreshBookModSlot(mod_id)
     local slot = self._book_mod_slots[mod_id]
     if not slot or not slot.mod or type(slot.mod.build) ~= "function" then return false end
 
-    local new_widget = self:_buildModWidget(slot.mod, slot.col_w, self._ctx_cache)
+    local new_widget, new_content = self:_buildModWidget(slot.mod, slot.col_w, self._ctx_cache)
     if not new_widget then return false end
 
     if slot.has_menu then
@@ -3210,11 +3190,13 @@ function ScreenWidget:_refreshBookModSlot(mod_id)
         local rtype = self:_bookModRefreshType(mod_id)
         UIManager:setDirty(self, function() return rtype, new_widget.dimen, true end)
     end
-    -- Keep the cover-poll slot pointing at the currently visible widget, so
-    -- covers still pending extraction on the newly-shown page get swapped
-    -- into it rather than into the old, now-orphaned widget.
-    if self._cover_mod_slots and self._cover_mod_slots[mod_id] then
-        self._cover_mod_slots[mod_id].widget = new_widget
+    -- Point the cover-poll slot at the currently visible widget, so covers
+    -- still pending extraction get swapped into it rather than into the old,
+    -- now-orphaned widget. The poll drops a slot once its module is resolved,
+    -- so the slot is registered again here.
+    if self._cover_mod_slots and slot.mod.has_covers
+            and type(slot.mod.updateCovers) == "function" then
+        self._cover_mod_slots[mod_id] = { mod = slot.mod, widget = new_content }
     end
 
     -- slot.mod.build() above can have queued brand-new files for cover
