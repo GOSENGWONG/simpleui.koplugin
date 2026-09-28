@@ -230,6 +230,19 @@ local function buildPanel(touch_menu)
                             or (still_in_reader and RUI_live.instance.simpleui)
                             or plugin
 
+                        -- In-place actions run directly against the current UI
+                        -- (ReaderUI when no FileManager is live) and never navigate.
+                        if still_in_reader and is_in_place then
+                            local ok, err = pcall(QA.execute, _aid, {
+                                plugin = plugin_live,
+                                fm     = fm_live or RUI_live.instance,
+                            })
+                            if not ok then
+                                logger.warn("simpleui QSBar: execute error", _aid, tostring(err))
+                            end
+                            return
+                        end
+
                         if still_in_reader and not is_in_place then
                             local Patches = require("infra/sui_patches")
                             if _aid == "homescreen" then
