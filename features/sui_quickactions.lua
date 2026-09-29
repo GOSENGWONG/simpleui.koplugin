@@ -1525,7 +1525,6 @@ function QA.performResetAllQAIcons(plugin)
     for _k, a in ipairs(Config.ALL_ACTIONS) do
         SUISettings:del("simpleui_action_" .. a.id .. "_icon")
     end
-    SUISettings:del("simpleui_action_wifi_toggle_off_icon")
     for _i, qa_id in ipairs(QA.getCustomQAList()) do
         local cfg = SUISettings:get("simpleui_qa_" .. qa_id)
         if type(cfg) == "table" then
@@ -2833,7 +2832,6 @@ function QA.makeIconsMenuItems(plugin)
             for _k, a in ipairs(Config.ALL_ACTIONS) do
                 SUISettings:del("simpleui_action_" .. a.id .. "_icon")
             end
-            SUISettings:del("simpleui_action_wifi_toggle_off_icon")
             for _i, qa_id in ipairs(QA.getCustomQAList()) do
                 local cfg = SUISettings:get("simpleui_qa_" .. qa_id)
                 if type(cfg) == "table" then

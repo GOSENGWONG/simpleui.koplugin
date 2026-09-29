@@ -248,7 +248,7 @@ M.SLOTS = {
         id         = "sui_tab_navigation",
         label      = function() return _("Tab: Reader Navigation") end,
         group      = "sui_tabbar_icons",
-        tab_id     = "navigation",
+        tab_id     = "navi",
         default_ko = "appbar.navigation",
     },
     {
@@ -262,7 +262,7 @@ M.SLOTS = {
         id         = "sui_tab_filebrowser",
         label      = function() return _("Tab: Back to File Browser") end,
         group      = "sui_tabbar_icons",
-        tab_id     = "filebrowser",
+        tab_id     = "filemanager",
         default_ko = "appbar.filebrowser",
     },
     {
@@ -1869,14 +1869,6 @@ local function _isIconFile(fname)
         or fname:match("%.[Pp][Nn][Gg]$") ~= nil
 end
 
-local _ACTION_SET = {
-    library=true, homescreen=true, collections=true, history=true, continue=true,
-    favorites=true, bookmark_browser=true, wifi_toggle=true, frontlight=true,
-    night_mode=true,
-    stats_calendar=true, power=true, browse_authors=true, browse_series=true, browse_tags=true,
-    settings=true,
-}
-
 -- Maps icon-pack filename identifiers to internal action ids when they differ.
 -- "sui_action_library.svg" is the public icon name for the "home" (Library) action.
 local _ICON_ID_ALIAS = { library = "home", settings = "sui_settings" }
@@ -1887,9 +1879,11 @@ local function _filenameToKey(fname)
         if s.id == stem then return "simpleui_sysicon_" .. stem, "sysicon" end
     end
     local action_id = stem:match("^sui_action_(.+)$")
-    if action_id and _ACTION_SET[action_id] then
+    if action_id then
         local internal_id = _ICON_ID_ALIAS[action_id] or action_id
-        return "simpleui_action_" .. internal_id .. "_icon", "action"
+        if require("infra/sui_config").ACTION_BY_ID[internal_id] then
+            return "simpleui_action_" .. internal_id .. "_icon", "action"
+        end
     end
     return nil, nil
 end
