@@ -61,21 +61,40 @@ local function _pctStr(pct)
     return string.format("%.0f%%", (pct or 0) * 100)
 end
 
-local function _compactDims(scale)
+-- Text elements with a user-selectable font family and size scale.
+--   label   year / month / day name
+--   value   percentage
+--   detail  progress detail (x of y)
+local TEXT_ELEMS = { "label", "value", "detail" }
+
+local function _elemFs(base, min_fs, scale, style)
+    return math.max(min_fs, math.floor(base * scale * (style and style.scale or 1)))
+end
+
+-- Sets the font faces and the text styles on a dims table.
+-- Returns `d`.
+local function _applyFaces(d, styles, label_fs, value_fs, detail_fs)
+    d.styles   = styles
+    d.face_lbl = SUIStyle.getFamilyFace(styles.label.family,  label_fs)
+    d.face_pct = SUIStyle.getFamilyFace(styles.value.family,  value_fs)
+    d.face_det = SUIStyle.getFamilyFace(styles.detail.family, detail_fs)
+    return d
+end
+
+local function _compactDims(scale, styles)
     scale = scale or 1.0
-    local row_fs = math.max(7, math.floor(_BASE_ROW_FS * scale))
-    local sub_fs = math.max(6, math.floor(_BASE_SUB_FS * scale))
-    return {
-        row_fs   = row_fs,
-        sub_fs   = sub_fs,
-        face_row = Font:getFace(SUIStyle.FACE_REGULAR, row_fs),
-        face_sub = Font:getFace(SUIStyle.FACE_REGULAR,         sub_fs),
+    local label_fs  = _elemFs(_BASE_ROW_FS, 7, scale, styles and styles.label)
+    local value_fs  = _elemFs(_BASE_ROW_FS, 7, scale, styles and styles.value)
+    local detail_fs = _elemFs(_BASE_SUB_FS, 6, scale, styles and styles.detail)
+    return _applyFaces({
+        row_fs   = label_fs,
+        sub_fs   = detail_fs,
         row_h    = math.max(8, math.floor(_BASE_ROW_H   * scale)),
         row_gap  = math.max(4, math.floor(_BASE_ROW_GAP * scale)),
         bar_h    = math.max(1, math.floor(_BASE_BAR_H   * scale)),
         lbl_w    = math.max(20, math.floor(_BASE_LBL_W  * scale)),
         col_gap  = math.max(2, math.floor(_BASE_COL_GAP * scale)),
-    }
+    }, styles, label_fs, value_fs, detail_fs)
 end
 
 local function _getYearStr()  return os.date("%Y") end
@@ -183,32 +202,35 @@ end
 -- total, plus a single sidecar scan for books_year + books_total together.
 -- build() reads ctx.stats.* — no DB or cache logic here.
 
--- _lbl_w_cache is kept here because it depends on font size, not on stats data.
+-- _lbl_w_cache holds measured text widths per face, then per text. It depends
+-- on the font, not on stats data. Faces are shared per font family and size,
+-- so a different size or family never hits a stale entry; weak keys let
+-- entries of discarded faces go away.
 -- Declared before _invalidateLblCache so the upvalue is properly in scope.
--- Cleared by M.invalidateCache() and M.reset(); the font-size key is the real
--- invalidation guard — a different font_size produces a different key so stale
--- entries from a previous scale are simply never hit.
-local _lbl_w_cache = {}
+-- Cleared by M.invalidateCache() and M.reset().
+local function _newLblCache()
+    return setmetatable({}, { __mode = "k" })
+end
+local _lbl_w_cache = _newLblCache()
 local function _invalidateLblCache()
-    _lbl_w_cache = {}
+    _lbl_w_cache = _newLblCache()
 end
 
 
 -- Computes all layout metrics for the default layout at the given scale factor.
--- Pre-resolves font faces so buildGoalRow doesn't call Font:getFace on every render.
-local function _scaledDims(scale)
+-- Pre-resolves font faces so buildGoalRow doesn't look them up on every render.
+local function _scaledDims(scale, styles)
     scale = scale or 1.0
-    local row_h   = math.max(8,  math.floor(_BASE_ROW_H   * scale))
-    local sub_h   = math.max(8,  math.floor(_BASE_SUB_H   * scale))
-    local sub_gap = math.max(1,  math.floor(_BASE_SUB_GAP * scale))
-    local bot_pad = math.max(4,  math.floor(_BASE_BOT_PAD * scale))
-    local row_fs  = math.max(7,  math.floor(_BASE_ROW_FS  * scale))
-    local sub_fs  = math.max(6,  math.floor(_BASE_SUB_FS  * scale))
-    return {
-        row_fs     = row_fs,
-        sub_fs     = sub_fs,
-        face_row   = Font:getFace(SUIStyle.FACE_REGULAR, row_fs),
-        face_sub   = Font:getFace(SUIStyle.FACE_REGULAR,         sub_fs),
+    local row_h     = math.max(8,  math.floor(_BASE_ROW_H   * scale))
+    local sub_h     = math.max(8,  math.floor(_BASE_SUB_H   * scale))
+    local sub_gap   = math.max(1,  math.floor(_BASE_SUB_GAP * scale))
+    local bot_pad   = math.max(4,  math.floor(_BASE_BOT_PAD * scale))
+    local label_fs  = _elemFs(_BASE_ROW_FS, 7, scale, styles and styles.label)
+    local value_fs  = _elemFs(_BASE_ROW_FS, 7, scale, styles and styles.value)
+    local detail_fs = _elemFs(_BASE_SUB_FS, 6, scale, styles and styles.detail)
+    return _applyFaces({
+        row_fs     = label_fs,
+        sub_fs     = detail_fs,
         row_h      = row_h,
         sub_h      = sub_h,
         sub_gap    = sub_gap,
@@ -220,7 +242,7 @@ local function _scaledDims(scale)
         pct_w      = math.max(16, math.floor(Screen:scaleBySize(32) * scale)),
         min_bar_w  = math.max(20, math.floor(Screen:scaleBySize(40) * scale)),
         goal_row_h = row_h + sub_gap + sub_h + bot_pad,
-    }
+    }, styles, label_fs, value_fs, detail_fs)
 end
 
 -- Returns total pixel height for n compact rows including inter-row gap.
@@ -233,16 +255,20 @@ end
 -- returns the smallest lbl_w that fits all of them, with a minimum floor.
 -- Called once per M.build so both rows share the same column width.
 local function _measureLblW(labels, face, floor_w)
-    local max_w = 0
-    local fs    = face.size  -- integer; unique per font/size combination
+    local max_w   = 0
+    local widths  = _lbl_w_cache[face]
+    if not widths then
+        widths = {}
+        _lbl_w_cache[face] = widths
+    end
     for _, lbl in ipairs(labels) do
-        local key    = tostring(lbl) .. "|" .. fs
-        local cached = _lbl_w_cache[key]
+        local key    = tostring(lbl)
+        local cached = widths[key]
         if not cached then
             local tw = TextWidget:new{ text = lbl, face = face, bold = true }
             cached   = tw:getSize().w
             tw:free()
-            _lbl_w_cache[key] = cached
+            widths[key] = cached
         end
         if cached > max_w then max_w = cached end
     end
@@ -281,7 +307,7 @@ local function _buildInnerCompact(inner_w, lbl_w, pct_w, label_str, pct, pct_str
         align = "center",
         vcenter_left(UI.makeColoredText{
             text    = label_str,
-            face    = cd.face_row,
+            face    = cd.face_lbl,
             bold    = true,
             fgcolor = eff_blk,
             width   = lbl_w,
@@ -291,7 +317,7 @@ local function _buildInnerCompact(inner_w, lbl_w, pct_w, label_str, pct, pct_str
         HorizontalSpan:new{ width = BAR_PCT_GAP },
         vcenter_left(UI.makeColoredText{
             text    = pct_str,
-            face    = cd.face_row,
+            face    = cd.face_pct,
             bold    = true,
             fgcolor = eff_blk,
             width   = PCT_W,
@@ -299,7 +325,7 @@ local function _buildInnerCompact(inner_w, lbl_w, pct_w, label_str, pct, pct_str
         HorizontalSpan:new{ width = PCT_DETAIL_GAP },
         vcenter_right(UI.makeColoredText{
             text      = detail_str,
-            face      = cd.face_sub,
+            face      = cd.face_det,
             fgcolor   = clr_sub or CLR_TEXT_SUB,
             width     = DETAIL_W,
             alignment = "right",
@@ -363,7 +389,7 @@ local function _buildInnerDefault(inner_w, label_str, pct, pct_str, detail_str, 
             align = "center",
             UI.makeColoredText{
                 text    = label_str,
-                face    = d.face_row,
+                face    = d.face_lbl,
                 bold    = true,
                 fgcolor = clr_blk_eff,
                 width   = d.lbl_w,
@@ -373,7 +399,7 @@ local function _buildInnerDefault(inner_w, label_str, pct, pct_str, detail_str, 
             HorizontalSpan:new{ width = BAR_PCT_GAP },
             UI.makeColoredText{
                 text      = pct_str,
-                face      = d.face_row,
+                face      = d.face_pct,
                 bold      = true,
                 fgcolor   = clr_blk_eff,
                 width     = PCT_W,
@@ -383,7 +409,7 @@ local function _buildInnerDefault(inner_w, label_str, pct, pct_str, detail_str, 
         VerticalSpan:new{ width = d.sub_gap },
         UI.makeColoredText{
             text    = detail_str,
-            face    = d.face_sub,
+            face    = d.face_det,
             fgcolor = clr_sub_eff,
             width   = inner_w,
         },
@@ -430,35 +456,31 @@ local _BASE_CARD_DET_FS = math.max(12, (SUIStyle.FS_DETAIL or 15) - 2)
 
 -- scale: module scale (ring geometry). text_scale: independent text size
 -- (ring hole % / detail / under-ring label). Both default to 1.0.
-local function _cardsDims(scale, text_scale)
+local function _cardsDims(scale, text_scale, styles)
     scale = scale or 1.0
     local ts = (text_scale or 1.0) * scale
-    local pct_fs = math.max(9,  math.floor(_BASE_CARD_PCT_FS * ts))
-    local lbl_fs = math.max(8,  math.floor(_BASE_CARD_LBL_FS * ts))
-    local det_fs = math.max(7,  math.floor(_BASE_CARD_DET_FS * ts))
+    local pct_fs = _elemFs(_BASE_CARD_PCT_FS, 9, ts, styles and styles.value)
+    local lbl_fs = _elemFs(_BASE_CARD_LBL_FS, 8, ts, styles and styles.label)
+    local det_fs = _elemFs(_BASE_CARD_DET_FS, 7, ts, styles and styles.detail)
     local sw = Screen:getWidth()
     -- Ring geometry follows module scale only; type follows module × text scale.
-    return {
+    return _applyFaces({
         card_w     = math.max(1, math.floor(sw * 0.25 * scale)),
         card_gap   = math.max(1, math.floor(sw * 0.05 * scale)),
-        face_pct   = Font:getFace(SUIStyle.FACE_REGULAR, pct_fs),
-        face_lbl   = Font:getFace(SUIStyle.FACE_REGULAR, lbl_fs),
-        face_det   = Font:getFace(SUIStyle.FACE_REGULAR, det_fs),
         pct_fs     = pct_fs,
         lbl_fs     = lbl_fs,
         det_fs     = det_fs,
         text_gap   = math.max(2, math.floor(Screen:scaleBySize(4) * ts)),
-    }
+    }, styles, lbl_fs, pct_fs, det_fs)
 end
 
 -- Ring diameter for the rings layout.
 -- Full-width row: each card is 25% of screen width × scale.
 -- Bento column (< 100%): at scale 1.0 cards fill the column (capped at the
 -- full-row 25% size); module scale multiplies ring, gap and type together.
-local function _ringsCardW(scale, inner_w, n, pfx)
+local function _ringsCardW(scale, inner_w, n, pfx, styles)
     scale = scale or 1.0
-    local text_scale = Config.getItemLabelScale("reading_goals", pfx or "")
-    local cd = _cardsDims(scale, text_scale)
+    local cd = _cardsDims(scale, 1, styles)
     local sw = Screen:getWidth()
     -- Unscaled bases so scale applies once, uniformly.
     local max_1 = math.max(1, math.floor(sw * 0.25))
@@ -590,8 +612,8 @@ local function _buildGoalCardInner(card_w, _card_h, label_str, pct, pct_str, det
     local max_det_fs = math.max(7, math.floor(content_w * 0.28))
     local pct_fs = math.min(d.pct_fs, max_pct_fs)
     local det_fs = math.min(d.det_fs, max_det_fs)
-    local face_pct = Font:getFace(SUIStyle.FACE_REGULAR, pct_fs)
-    local face_det = Font:getFace(SUIStyle.FACE_REGULAR, det_fs)
+    local face_pct = SUIStyle.getFamilyFace(d.styles.value.family,  pct_fs)
+    local face_det = SUIStyle.getFamilyFace(d.styles.detail.family, det_fs)
     local gap_h = math.max(1, math.min(math.floor(d.text_gap / 2), math.floor(content_w * 0.08)))
 
     local pct_widget = UI.makeColoredText{
@@ -874,6 +896,7 @@ M.name        = _("Reading Goals")
 M.label       = _("Reading Goals")
 M.enabled_key = "reading_goals_enabled"
 M.default_on  = true
+M.text_elems  = TEXT_ELEMS
 
 M.showAnnualGoalDialog      = showAnnualGoalDialog
 M.showAnnualPhysicalDialog  = showAnnualPhysicalDialog
@@ -904,7 +927,8 @@ function M.build(w, ctx)
     if not show_ann and not show_mon and not show_day then return nil end
 
     local ok, res = pcall(function()
-    local scale = Config.getModuleScale("reading_goals", ctx.pfx) * (ctx.landscape_factor or 1)
+    local scale  = Config.getModuleScale("reading_goals", ctx.pfx) * (ctx.landscape_factor or 1)
+    local styles = Config.resolveTextStyles(ctx, M.id, TEXT_ELEMS)
     -- Frame border / solid background — same optional box every other
     -- homescreen module offers (module_currently.lua, module_heatmap.lua):
     -- a border, a filled background, or both, each adding PAD to every edge.
@@ -938,7 +962,7 @@ function M.build(w, ctx)
         end
         local n = #active
         if n == 0 then return nil end
-        local card_w, gap, cd = _ringsCardW(scale, inner_w, n, ctx.pfx)
+        local card_w, gap, cd = _ringsCardW(scale, inner_w, n, ctx.pfx, styles)
         local ring_content = getRingContent(ctx.pfx)
         local ring_align   = getRingAlign(ctx.pfx)
         local card_h = _ringCardApproxHeight(card_w, cd, ring_content)
@@ -1007,7 +1031,7 @@ function M.build(w, ctx)
 
     elseif layout == "compact" then
         -- scale already includes ctx.landscape_factor.
-        local cd = _compactDims(scale)
+        local cd = _compactDims(scale, styles)
         -- Capture year/month strings once — avoids repeated os.date calls.
         local year_str  = _getYearStr()
         local month_str = _getMonthStr()
@@ -1024,12 +1048,12 @@ function M.build(w, ctx)
         if show_ann and ann_pct_str ~= "" then pct_strs[#pct_strs+1] = ann_pct_str end
         if show_mon and mon_pct_str ~= "" then pct_strs[#pct_strs+1] = mon_pct_str end
         if show_day and day_pct_str ~= "" then pct_strs[#pct_strs+1] = day_pct_str end
-        local pct_w = _measureLblW(pct_strs, cd.face_row, Screen:scaleBySize(28))
+        local pct_w = _measureLblW(pct_strs, cd.face_pct, Screen:scaleBySize(28))
         local rendered_count = 0
         for _i, k in ipairs(_getElemOrder(ctx.pfx)) do
             if k == "annual" and show_ann then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = cd.row_gap } end
-                local lbl_w = _measureLblW({ year_str }, cd.face_row, cd.lbl_w)
+                local lbl_w = _measureLblW({ year_str }, cd.face_lbl, cd.lbl_w)
                 cd.lbl_w = lbl_w
                 local row_widget, row_update_fn = buildCompactGoalRow(
                     inner_w, lbl_w, pct_w, year_str, ann_pct, ann_pct_str, ann_detail,
@@ -1048,7 +1072,7 @@ function M.build(w, ctx)
                 rendered_count = rendered_count + 1
             elseif k == "monthly" and show_mon then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = cd.row_gap } end
-                local lbl_w = _measureLblW({ month_str }, cd.face_row, cd.lbl_w)
+                local lbl_w = _measureLblW({ month_str }, cd.face_lbl, cd.lbl_w)
                 cd.lbl_w = lbl_w
                 local row_widget, row_update_fn = buildCompactGoalRow(
                     inner_w, lbl_w, pct_w, month_str, mon_pct, mon_pct_str, mon_detail,
@@ -1061,7 +1085,7 @@ function M.build(w, ctx)
                 rendered_count = rendered_count + 1
             elseif k == "daily" and show_day then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = cd.row_gap } end
-                local lbl_w = _measureLblW({ _("Today") }, cd.face_row, cd.lbl_w)
+                local lbl_w = _measureLblW({ _("Today") }, cd.face_lbl, cd.lbl_w)
                 local row_widget, row_update_fn = buildCompactGoalRow(
                     inner_w, lbl_w, pct_w, _("Today"), day_pct, day_pct_str, day_detail,
                     function() showDailySettingsDialog() end, cd, CLR_TEXT_SUB_EFF, CLR_TEXT_BLK_EFF)
@@ -1074,7 +1098,7 @@ function M.build(w, ctx)
             end
         end
     else
-        local d        = _scaledDims(scale)
+        local d        = _scaledDims(scale, styles)
         -- Capture year/month strings once — avoids repeated os.date calls.
         local year_str  = _getYearStr()
         local month_str = _getMonthStr()
@@ -1083,7 +1107,7 @@ function M.build(w, ctx)
             if k == "annual" and show_ann then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = d.row_gap } end
                 local pct, pct_str, detail = _annualData(books_read)
-                local ann_lbl_w = _measureLblW({ year_str }, d.face_row, d.lbl_w)
+                local ann_lbl_w = _measureLblW({ year_str }, d.face_lbl, d.lbl_w)
                 d.lbl_w = ann_lbl_w
                 local row_widget, row_update_fn = buildGoalRow(
                     inner_w, year_str, pct, pct_str, detail,
@@ -1103,7 +1127,7 @@ function M.build(w, ctx)
             elseif k == "monthly" and show_mon then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = d.row_gap } end
                 local pct, pct_str, detail = _monthlyData(month_secs)
-                local mon_lbl_w = _measureLblW({ month_str }, d.face_row, d.lbl_w)
+                local mon_lbl_w = _measureLblW({ month_str }, d.face_lbl, d.lbl_w)
                 d.lbl_w = mon_lbl_w
                 local row_widget, row_update_fn = buildGoalRow(
                     inner_w, month_str, pct, pct_str, detail,
@@ -1117,7 +1141,7 @@ function M.build(w, ctx)
             elseif k == "daily" and show_day then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = d.row_gap } end
                 local pct, pct_str, detail = _dailyData(today_secs)
-                local day_lbl_w = _measureLblW({ _("Today") }, d.face_row, d.lbl_w)
+                local day_lbl_w = _measureLblW({ _("Today") }, d.face_lbl, d.lbl_w)
                 d.lbl_w = day_lbl_w
                 local row_widget, row_update_fn = buildGoalRow(
                     inner_w, _("Today"), pct, pct_str, detail,
@@ -1206,6 +1230,7 @@ function M.getHeight(_ctx)
     local lf = (_ctx and _ctx.landscape_factor) or (UI.isLandscape() and UI.getLandscapeFactor() or 1)
     local label_h = require("infra/sui_config").getScaledLabelH()
     local scale = Config.getModuleScale("reading_goals", pfx) * lf
+    local styles = Config.resolveTextStyles(_ctx, M.id, TEXT_ELEMS)
     local h = 0
     local layout = getLayout()
     if layout == "rings" then
@@ -1221,12 +1246,12 @@ function M.getHeight(_ctx)
             end
             approx_inner = math.max(1, math.floor(content_w * bw / 100))
         end
-        local card_w, _, cd = _ringsCardW(scale, approx_inner, n, pfx)
+        local card_w, _, cd = _ringsCardW(scale, approx_inner, n, pfx, styles)
         h = top_gap + _ringCardApproxHeight(card_w, cd, getRingContent(pfx))
     elseif layout == "compact" then
-        h = _compactRowsHeight(n, _compactDims(scale))
+        h = _compactRowsHeight(n, _compactDims(scale, styles))
     else
-        local d = _scaledDims(scale)
+        local d = _scaledDims(scale, styles)
         h = n * d.goal_row_h + (n > 1 and (n - 1) * d.row_gap or 0)
     end
     do
@@ -1260,34 +1285,22 @@ local function _makeScaleItem(ctx_menu)
     })
 end
 
--- Text size inside the rings (%, detail, under-ring label).
-local function _makeTextScaleItem(ctx_menu)
-    local pfx = ctx_menu.pfx
-    local _lc = ctx_menu._
-    return Config.makeScaleItem({
-        text_func    = function() return _lc("Text Size") end,
-        enabled_func = function() return getLayout() == "rings" end,
-        title        = _lc("Text Size"),
-        info         = _lc("Scale for the text inside the rings.\n100% is the default size."),
-        get          = function() return Config.getItemLabelScalePct("reading_goals", pfx) end,
-        set          = function(v) Config.setItemLabelScale(v, "reading_goals", pfx) end,
-        refresh      = ctx_menu.refresh,
-    })
-end
 
 -- Returns the settings menu items for this module
 function M.getMenuItems(ctx_menu)
     local refresh = ctx_menu.refresh
     local _lc     = ctx_menu._
     local N_lc    = ctx_menu.N_
-    local size_item = {
-        text_func      = function() return _lc("Size") end,
-        sub_item_table = {
-            _makeScaleItem(ctx_menu),
-            _makeTextScaleItem(ctx_menu),
-        },
+    local text_opts = {
+        mod_id  = M.id,
+        elems   = TEXT_ELEMS,
+        labels  = { label = _lc("Label"), value = _lc("Percentage"), detail = _lc("Detail") },
+        info    = _lc("Size of this text.\n100% is the default size."),
+        pfx     = ctx_menu.pfx,
+        refresh = refresh,
+        _lc     = _lc,
     }
-    return {
+    local rows = {
         {
             text = _lc("Goals"),
             sub_item_table = {
@@ -1481,7 +1494,6 @@ function M.getMenuItems(ctx_menu)
                 }
             end or nil,
         },
-        size_item,
         {
             text_func = function()
                 local p = getAnnualPhysical()
@@ -1611,6 +1623,35 @@ function M.getMenuItems(ctx_menu)
             end,
         },
     }
+    local content_rows, appearance_extra, behaviour_rows = {}, {}, {}
+    for _, row in ipairs(rows) do
+        local label = row.text
+        if type(label) ~= "string" and row.text_func then
+            local ok, v = pcall(row.text_func)
+            if ok then label = v end
+        end
+        label = label or ""
+        if label == _lc("Appearance") then
+            if row.sub_item_table then
+                for _, sub in ipairs(row.sub_item_table) do
+                    appearance_extra[#appearance_extra + 1] = sub
+                end
+            end
+        elseif label == _lc("Update Stats Now") then
+            behaviour_rows[#behaviour_rows + 1] = row
+        else
+            content_rows[#content_rows + 1] = row
+        end
+    end
+    return Config.buildModuleMenu({
+        content = content_rows,
+        appearance = {
+            size  = { _makeScaleItem(ctx_menu) },
+            text  = text_opts,
+            extra = #appearance_extra > 0 and appearance_extra or nil,
+        },
+        behaviour = #behaviour_rows > 0 and behaviour_rows or nil,
+    }, ctx_menu)
 end
 
 return M

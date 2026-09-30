@@ -832,7 +832,8 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
 
 
     local function makeTopbarMenu(ctx_menu)
-        return {
+        local Config = require("infra/sui_config")
+        local flat = {
             {
                 text_func    = function()
                     return _("Enable Status Bar")
@@ -1097,6 +1098,36 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 end,
             },
         }
+        local master = { flat[1] }
+        local item_rows, size_rows, appearance_extra, behaviour = {}, {}, {}, {}
+        local size_labels = { [_("Bar Size")] = true, [_("Icon Size")] = true }
+        for i = 2, #flat do
+            local row = flat[i]
+            local label = row.text
+            if type(label) ~= "string" and row.text_func then
+                local ok, v = pcall(row.text_func)
+                if ok then label = v end
+            end
+            label = label or ""
+            if label == _("Items") then
+                item_rows[#item_rows + 1] = row
+            elseif type(label) == "string" and size_labels[label] then
+                size_rows[#size_rows + 1] = row
+            elseif label == _("Settings on Long Tap") then
+                behaviour[#behaviour + 1] = row
+            else
+                appearance_extra[#appearance_extra + 1] = row
+            end
+        end
+        return Config.buildModuleMenu({
+            master     = master,
+            items      = item_rows,
+            appearance = {
+                size  = #size_rows > 0 and size_rows or nil,
+                extra = #appearance_extra > 0 and appearance_extra or nil,
+            },
+            behaviour  = behaviour,
+        }, ctx_menu)
     end
 
     -- -----------------------------------------------------------------------
@@ -1104,7 +1135,8 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
     -- -----------------------------------------------------------------------
 
     local function makeNavbarMenu(ctx_menu)
-        return {
+        local Config = require("infra/sui_config")
+        local flat = {
             {
                 text_func    = function()
                     return _("Enable Navigation Bar")
@@ -1368,6 +1400,15 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 value_min     = Config.NAVBAR_LABEL_SCALE_MIN, value_max = Config.NAVBAR_LABEL_SCALE_MAX,
                 value_step    = Config.NAVBAR_LABEL_SCALE_STEP, default_value = Config.NAVBAR_LABEL_SCALE_DEF,
             }),
+            Config.makeChromeLabelFontItem({
+                bar     = "navbar",
+                title   = _("Label Font"),
+                _lc     = _,
+                refresh = function()
+                    UI.invalidateDimCache(); plugin:_rebuildAllNavbars()
+                    if ctx_menu and ctx_menu.refresh then ctx_menu.refresh() end
+                end,
+            }),
             Config.makeScaleItem({
                 text_func     = function() return _("Bottom Margin") end,
                 title         = _("Bottom Margin"),
@@ -1399,8 +1440,40 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 end,
             },
         }
+        -- Canonical chrome order: Master → Items → Appearance → Behaviour
+        local master = { flat[1] }
+        local items  = { flat[2] }
+        local behaviour = { flat[#flat] }
+        local size_rows, appearance_extra = {}, {}
+        local size_labels = {
+            [_("Bar Size")] = true,
+            [_("Icon Size")] = true,
+            [_("Label Size")] = true,
+            [_("Bottom Margin")] = true,
+        }
+        for i = 3, #flat - 1 do
+            local row = flat[i]
+            local label = row.text
+            if type(label) ~= "string" and row.text_func then
+                local ok, v = pcall(row.text_func)
+                if ok then label = v end
+            end
+            if type(label) == "string" and size_labels[label] then
+                size_rows[#size_rows + 1] = row
+            else
+                appearance_extra[#appearance_extra + 1] = row
+            end
+        end
+        return Config.buildModuleMenu({
+            master     = master,
+            items      = items,
+            appearance = {
+                size  = #size_rows > 0 and size_rows or nil,
+                extra = #appearance_extra > 0 and appearance_extra or nil,
+            },
+            behaviour  = behaviour,
+        }, ctx_menu)
     end
-
     plugin._makeNavbarMenu = makeNavbarMenu
     plugin._makeTopbarMenu = makeTopbarMenu
 
@@ -1761,6 +1834,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
     end
 
     local function makeTitleBarMenu(ctx_menu)
+        local Config = require("infra/sui_config")
         local function sizeItem(label, key)
             return {
                 text         = label,
@@ -1773,7 +1847,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 end,
             }
         end
-        return {
+        local flat = {
             {
                 text_func    = function()
                     return _("Enable Title Bar")
@@ -1831,6 +1905,34 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 },
             },
         }
+        local master, item_rows, size_rows, appearance_extra = {}, {}, {}, {}
+        for _, row in ipairs(flat) do
+            local label = row.text
+            if type(label) ~= "string" and row.text_func then
+                local ok, v = pcall(row.text_func)
+                if ok then label = v end
+            end
+            label = label or ""
+            if type(label) == "string" and label:find("Enable", 1, true) then
+                master[#master + 1] = row
+            elseif label == _("Library Buttons") or label == _("Sub-page Buttons") then
+                item_rows[#item_rows + 1] = row
+            elseif label == _("Button Size") then
+                size_rows[#size_rows + 1] = row
+            elseif row.dim or (type(label) == "string" and label:upper() == label and #label > 0) then
+                -- Section labels (e.g. APPEARANCE) are dropped; hierarchy provides structure.
+            else
+                appearance_extra[#appearance_extra + 1] = row
+            end
+        end
+        return Config.buildModuleMenu({
+            master     = master,
+            items      = item_rows,
+            appearance = {
+                size  = #size_rows > 0 and size_rows or nil,
+                extra = #appearance_extra > 0 and appearance_extra or nil,
+            },
+        }, ctx_menu)
     end
 
     plugin._makeTitleBarMenu = makeTitleBarMenu

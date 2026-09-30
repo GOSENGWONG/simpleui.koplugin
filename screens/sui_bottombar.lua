@@ -7,7 +7,7 @@
 -- are a single nil-check + table field read, with zero I/O.
 local _FrameContainer, _CenterContainer, _HorizontalGroup, _VerticalGroup
 local _VerticalSpan, _LineWidget, _OverlapGroup, _TextWidget, _ImageWidget
-local _Geom, _Font
+local _Geom
 local function FrameContainer()  _FrameContainer  = _FrameContainer  or require("ui/widget/container/framecontainer");  return _FrameContainer  end
 local function CenterContainer() _CenterContainer = _CenterContainer or require("ui/widget/container/centercontainer"); return _CenterContainer end
 local function HorizontalGroup() _HorizontalGroup = _HorizontalGroup or require("ui/widget/horizontalgroup");           return _HorizontalGroup end
@@ -18,7 +18,6 @@ local function OverlapGroup()    _OverlapGroup    = _OverlapGroup    or require(
 local function TextWidget()      _TextWidget      = _TextWidget      or require("ui/widget/textwidget");                return _TextWidget      end
 local function ImageWidget()     _ImageWidget     = _ImageWidget     or require("ui/widget/imagewidget");               return _ImageWidget     end
 local function Geom()            _Geom            = _Geom            or require("ui/geometry");                         return _Geom            end
-local function Font()            _Font            = _Font            or require("ui/font");                             return _Font            end
 local Blitbuffer      = require("ffi/blitbuffer")
 local UIManager       = require("ui/uimanager")
 local Device          = require("device")
@@ -298,6 +297,10 @@ function M.LABEL_FS()    return _cached("lbl_fs",  function()
     local base = (ok and ss and ss.FS_DETAIL) or 15  -- FS_DETAIL (15)
     return math.floor(base * _getNavbarScale() * (_getLabelScalePct() / 100))
 end) end
+-- Label face: the chosen font family at the label size, resolved once per cache cycle.
+function M.LABEL_FACE()  return _cached("lbl_face", function()
+    return _SUIStyle().getFamilyFace(Config.getChromeLabelFamily("navbar"), M.LABEL_FS())
+end) end
 function M.INDIC_H()     return _cached("indic_h", function() return math.floor(Screen:scaleBySize(3)  * _getNavbarScale()) end) end
 
 -- Structural dimensions — not affected by the size setting.
@@ -549,7 +552,7 @@ function M.buildTabCell(action_id, active, tab_w, mode)
         tab_w                    = tab_w,
         bar_h                    = M.BAR_H(),
         icon_sz                  = M.ICON_SZ(),
-        label_fs                 = M.LABEL_FS(),
+        lbl_face                 = M.LABEL_FACE(),
         icon_txt_sp              = M.ICON_TXT_SP(),
         indic_h                  = M.INDIC_H(),
         mode                     = mode,
@@ -603,7 +606,7 @@ function M.buildNavpagerArrowCell(is_prev, enabled, tab_w, mode)
         end
         tw = TextWidget():new{
             text    = label,
-            face    = Font():getFace(SUIStyle.FACE_REGULAR, M.LABEL_FS()),
+            face    = M.LABEL_FACE(),
             fgcolor = color,
         }
         vg[#vg + 1] = tw

@@ -463,6 +463,12 @@ end
 -- Layer 2 — declarative per-layout builders
 -- ===========================================================================
 
+-- Label face of a cell or row: the caller's resolved face when given, else
+-- the default UI face at spec.lbl_fs.
+local function _labelFace(spec)
+    return spec.lbl_face or Font():getFace(SUIStyle().FACE_REGULAR, spec.lbl_fs or 15)
+end
+
 -- Builds one "cell": an icon inside a buildFrame, with an optional label
 -- underneath, optionally tappable. Used by the Quick Actions Row module and
 -- the Quick Settings bar, whose cells differ in sizing, whether a label is
@@ -481,7 +487,8 @@ end
 --   fgcolor                  — icon/label color (default SUIStyle.COLOR.text_primary).
 --   icon_opts                — forwarded to buildIcon (see its doc comment).
 --   show_label, lbl_sp, lbl_h, lbl_fs, lbl_face  — label row, shown below the
---     frame when show_label is true.
+--     frame when show_label is true. lbl_face is a resolved font face; without
+--     it the default UI face at lbl_fs is used.
 --   lbl_w                    — label CenterContainer width (default frame_sz).
 --   lbl_width                — sets TextWidget.width directly (wrapping, no
 --     truncation) — used by the Quick Settings bar.
@@ -523,7 +530,7 @@ function QARenderer.buildCell(action_id, spec)
             dimen = Geom():new{ w = lbl_w, h = spec.lbl_h or 0 },
             TextWidget():new{
                 text                   = entry.label,
-                face                   = Font():getFace(spec.lbl_face or style.FACE_REGULAR, spec.lbl_fs or 15),
+                face                   = _labelFace(spec),
                 fgcolor                = fgcolor,
                 width                  = spec.lbl_width,
                 max_width              = spec.lbl_max_width,
@@ -548,7 +555,7 @@ end
 --   inner_w, row_h            — required.
 --   show_icon, icon_sz, icon_gap, icon_opts  — icon column, omitted entirely
 --     when show_icon is false.
---   lbl_fs, lbl_face          — label text.
+--   lbl_fs, lbl_face          — label text; same convention as buildCell.
 --   fgcolor                   — icon/label color.
 --   align                     — "left" / "right" / anything else → centered.
 --   on_tap_fn, tap_event_name — tap dispatch, same convention as buildCell.
@@ -568,7 +575,7 @@ function QARenderer.buildListRow(action_id, spec)
 
     local label_tw = ui.makeColoredText{
         text    = entry.label,
-        face    = Font():getFace(spec.lbl_face or style.FACE_REGULAR, spec.lbl_fs),
+        face    = _labelFace(spec),
         fgcolor = fgcolor,
         width   = text_w,
         padding = 0,
@@ -620,7 +627,8 @@ end
 -- the icon entirely on failure; that gap is now filled consistently.
 --
 -- spec fields:
---   tab_w, bar_h, icon_sz, label_fs, icon_txt_sp, indic_h  — required sizing.
+--   tab_w, bar_h, icon_sz, icon_txt_sp, indic_h  — required sizing.
+--   lbl_face    — font face of the tab label; same convention as buildCell.
 --   mode        — "icons" / "text" / "both".
 --   bar_style   — "default" (draws the active-indicator line) / "framed"
 --     (raster icons render via buildFramedIcon) / anything else (no indicator).
@@ -668,7 +676,7 @@ function QARenderer.buildTabCell(action_id, active, spec)
         end
         vg[#vg + 1] = TextWidget():new{
             text    = entry.label,
-            face    = Font():getFace(style.FACE_REGULAR, spec.label_fs),
+            face    = _labelFace(spec),
             fgcolor = item_fg,
             bold    = active or false,
         }

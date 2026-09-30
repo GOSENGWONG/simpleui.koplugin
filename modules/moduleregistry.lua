@@ -31,6 +31,11 @@
 --                             (equivalent to belonging to _COVER_MOD_IDS)
 --   M.is_book_mod    bool?    true → suppresses the "No books opened yet" empty-state
 --                             (equivalent to "currently"/"recent"/"coverdeck")
+--   M.text_elems     string[]?  ids of the text elements with a user-selectable
+--                             font family and size scale (see Config.makeTextStyleMenu).
+--                             Each style is { family, scale }. The screen engine reads
+--                             them into ctx.cfg[M.id].text; render multiplies scale into
+--                             the element font size.
 --
 --   M.isEnabled(pfx)         → bool         (optional; replaces enabled_key)
 --   M.build(w, ctx)          → widget | nil
@@ -416,7 +421,7 @@ function Registry.purgeInstanceSettings(inst_id, pfx)
     -- "_scale_pct" / "_item_label_scale_pct" entries in this list never matched
     -- any saved key (pre-existing bug, fixed here).
     local suffixes = { "_enabled", "_shape", "_bg", "_items", "_labels",
-                       "_scale", "_gap_pct", "_item_label_scale",
+                       "_scale", "_gap_pct", "_item_label_scale", "_text_font_label",
                        -- used by Featured Collection / sui_book_grid.lua:
                        "_coll_name", "_thumb_scale",
                        "_show_progress", "_show_text", "_show_overlay",

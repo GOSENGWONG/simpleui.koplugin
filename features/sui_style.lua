@@ -1708,6 +1708,16 @@ local function _ensureFonts()
     end
 end
 
+-- Regular-weight face of the installed family `name` at `size`, or nil when
+-- the family is unknown or cannot be loaded. Requires _ensureFonts().
+local function familyFace(name, size)
+    local entry = _fonts and _fonts[name]
+    local Font  = _reqFont()
+    if not (entry and Font) then return nil end
+    local ok, face = pcall(Font.getFace, Font, entry.regular, size)
+    return ok and face or nil
+end
+
 -- ── Apply ────────────────────────────────────────────────────────────────
 
 -- Refreshes the class-level font face defaults on KOReader's TitleBar widget.
@@ -1785,7 +1795,6 @@ function M.makeFontMenuItems()
         _fonts     = _fonts     or {}
         _replaced  = _replaced  or {}
     end
-    local Font      = _reqFont()
     local UIManager = _reqUIManager()
 
     local function _isEnabled()
@@ -1835,11 +1844,7 @@ function M.makeFontMenuItems()
                 -- Hide this entry in SUIWindow until the custom-font toggle is on.
                 sui_hidden = function() return not _isEnabled() end,
                 -- Render the menu entry in that font face when supported.
-                font_func = Font and function(size)
-                    local fd = _fonts[_name]
-                    if not fd then return nil end
-                    return Font:getFace(fd.regular, size)
-                end or nil,
+                font_func = function(size) return familyFace(_name, size) end,
                 -- Grey-out the currently selected entry.
                 enabled_func = function()
                     return not (_isEnabled() and _name == _currentName())
@@ -1857,6 +1862,78 @@ function M.makeFontMenuItems()
         end
     end
 
+    return items
+end
+
+-- ── Per-element font families ────────────────────────────────────────────
+
+--- Face for a user-chosen font family at `size`. A nil/empty family, or one
+--- that is no longer installed, yields the default UI face.
+function M.getFamilyFace(family, size)
+    if family and family ~= "" then
+        _ensureFonts()
+        local face = familyFace(family, size)
+        if face then return face end
+    end
+    return _reqFont():getFace(M.FACE_REGULAR, size)
+end
+
+--- Real line height of `face` in pixels (ascender + descender), as a
+--- TextWidget would measure it. Falls back to an estimate from the point
+--- size when the font engine cannot answer.
+function M.faceHeight(face)
+    if face.ftsize then
+        local ok, h = pcall(function() return face.ftsize:getHeightAndAscender() end)
+        if ok and h then return math.ceil(h) end
+    end
+    return math.ceil(face.size * 1.8)
+end
+
+--- Line height to reserve for text of `size` in `family`: the measured face
+--- height for a chosen family, `nominal` for the default face.
+function M.lineReserve(family, size, nominal)
+    if not family then return nominal end
+    return M.faceHeight(M.getFamilyFace(family, size))
+end
+
+--- Radio items to pick a font family: "Default" (clears the choice) followed
+--- by every installed family, each drawn in its own face.
+---   get()      → chosen family name, or nil for the default
+---   set(name)  → persists the choice (nil clears it)
+---   refresh()  → repaints whatever displays the choice
+function M.makeFamilyMenuItems(get, set, refresh)
+    _ensureFonts()
+    local function isDefault()
+        local chosen = get()
+        return chosen == nil or _fonts[chosen] == nil
+    end
+    local function pick(name)
+        return function()
+            set(name)
+            refresh()
+        end
+    end
+
+    local items = {
+        {
+            text           = _("Default"),
+            radio          = true,
+            keep_menu_open = true,
+            checked_func   = isDefault,
+            callback       = pick(nil),
+        },
+    }
+    for _i, name in ipairs(_font_list) do
+        local family = name   -- upvalue capture
+        items[#items + 1] = {
+            text           = family,
+            radio          = true,
+            keep_menu_open = true,
+            checked_func   = function() return get() == family end,
+            font_func      = function(size) return familyFace(family, size) end,
+            callback       = pick(family),
+        }
+    end
     return items
 end
 

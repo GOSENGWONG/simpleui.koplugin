@@ -376,6 +376,10 @@ M.name        = _("Currently Reading")
 M.label       = _("Currently Reading")
 M.enabled_key = "currently_enabled"
 M.default_on  = true
+
+-- Text elements with a user-selectable font family and size.
+M.text_elems = { "title", "author", "series", "description", "stats" }
+
 M.has_covers  = true   -- activates e-ink dithering and cover poll
 M.is_book_mod = true   -- suppresses empty-state when active
 
@@ -387,15 +391,22 @@ M.is_book_mod = true   -- suppresses empty-state when active
 -- estimate the reserved height before those widgets exist), so computing
 -- them in one place means a future change to a base constant or a
 -- clamp/floor value can't silently drift between the two call sites.
+-- `styles` holds the user's per-element text style (see Config.readTextStyles);
+-- Per-element text style scale multiplies the element's font size on top of
+-- the module layout scale.
 -- ---------------------------------------------------------------------------
-local function _scaledLayoutDims(scale, lbl_scale)
+local function _scaledLayoutDims(scale, _lbl_scale, styles)
+    local function fs(base, min_fs, style)
+        return math.max(min_fs, math.floor(base * scale * (style and style.scale or 1)))
+    end
     return {
-        title_fs  = math.max(8, math.floor(_BASE_TITLE_FS  * scale * lbl_scale)),
-        author_fs = math.max(8, math.floor(_BASE_AUTHOR_FS * scale * lbl_scale)),
-        series_fs = math.max(7, math.floor(_BASE_SERIES_FS * scale * lbl_scale)),
-        desc_fs   = math.max(8, math.floor(_BASE_DESC_FS   * scale * lbl_scale)),
-        pct_fs    = math.max(8, math.floor(_BASE_PCT_FS    * scale * lbl_scale)),
-        stats_fs  = math.max(7, math.floor(_BASE_STATS_FS  * scale * lbl_scale)),
+        title_fs  = fs(_BASE_TITLE_FS,  8, styles.title),
+        author_fs = fs(_BASE_AUTHOR_FS, 8, styles.author),
+        series_fs = fs(_BASE_SERIES_FS, 7, styles.series),
+        desc_fs   = fs(_BASE_DESC_FS,   8, styles.description),
+        -- percent + stats share the Progress Text text style (family + scale).
+        pct_fs    = fs(_BASE_PCT_FS,    8, styles.stats),
+        stats_fs  = fs(_BASE_STATS_FS,  7, styles.stats),
 
         bar_h          = math.max(1, math.floor(_BASE_BAR_H          * scale)),
         title_gap      = math.max(1, math.floor(_BASE_TITLE_GAP      * scale)),
@@ -405,6 +416,20 @@ local function _scaledLayoutDims(scale, lbl_scale)
         bar_gap_before = math.max(1, math.floor(_BASE_BAR_GAP_BEFORE * scale)),
         bar_gap_after  = math.max(1, math.floor(_BASE_BAR_GAP_AFTER  * scale)),
         pct_gap        = math.max(1, math.floor(_BASE_PCT_GAP        * scale)),
+    }
+end
+
+-- _resolveFaces — the font face of every text element, shared by build() and
+-- getHeight() for the same reason as _scaledLayoutDims. Elements with a
+-- user-chosen family use it; the rest use the default UI face.
+local function _resolveFaces(LD, styles)
+    return {
+        title  = SUIStyle.getFamilyFace(styles.title.family,       LD.title_fs),
+        author = SUIStyle.getFamilyFace(styles.author.family,      LD.author_fs),
+        series = SUIStyle.getFamilyFace(styles.series.family,      LD.series_fs),
+        desc   = SUIStyle.getFamilyFace(styles.description.family, LD.desc_fs),
+        pct    = SUIStyle.getFamilyFace(styles.stats.family, LD.pct_fs),
+        stats  = SUIStyle.getFamilyFace(styles.stats.family, LD.stats_fs),
     }
 end
 
@@ -566,25 +591,21 @@ function M.build(w, ctx)
 
     -- Scale gaps and font sizes (layout scale × text scale where applicable).
     -- See _scaledLayoutDims for the shared formulas (also used by getHeight()).
-    local LD = _scaledLayoutDims(scale, lbl_scale)
+    local styles = Config.resolveTextStyles(ctx, M.id, M.text_elems)
+    local LD = _scaledLayoutDims(scale, lbl_scale, styles)
     local title_gap, author_gap, series_gap, desc_gap =
         LD.title_gap, LD.author_gap, LD.series_gap, LD.desc_gap
     local bar_gap_before, bar_gap_after, pct_gap, bar_h =
         LD.bar_gap_before, LD.bar_gap_after, LD.pct_gap, LD.bar_h
-    local title_fs, author_fs, series_fs, desc_fs, pct_fs, stats_fs =
-        LD.title_fs, LD.author_fs, LD.series_fs, LD.desc_fs, LD.pct_fs, LD.stats_fs
 
     -- cover_gap has no getHeight() counterpart (getHeight doesn't need the
     -- cover/text spacing), so it stays computed directly here.
     local cover_gap = math.max(0, math.floor(_BASE_COVER_GAP * scale * (getCoverGapPct(pfx) / 100)))
 
     -- Resolve font faces once so they are not re-created per element.
-    local face_title  = Font:getFace(SUIStyle.FACE_REGULAR, title_fs)
-    local face_author = Font:getFace(SUIStyle.FACE_REGULAR, author_fs)
-    local face_series = Font:getFace(SUIStyle.FACE_REGULAR, series_fs)
-    local face_desc   = Font:getFace(SUIStyle.FACE_REGULAR, desc_fs)
-    local face_pct    = Font:getFace(SUIStyle.FACE_REGULAR, pct_fs)
-    local face_s      = Font:getFace(SUIStyle.FACE_REGULAR, stats_fs)
+    local FC = _resolveFaces(LD, styles)
+    local face_title, face_author, face_series, face_desc, face_pct, face_s =
+        FC.title, FC.author, FC.series, FC.desc, FC.pct, FC.stats
 
     -- Use prefetched book data. After onCloseDocument, _cached_books_state is
     -- cleared and prefetchBooks() re-reads the sidecar, so this is always fresh.
@@ -650,9 +671,11 @@ function M.build(w, ctx)
     local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
     local CLR_PH_EFF       = CLR_PLACEHOLDER
 
-    -- Pre-resolve the inline-pct font face once for buildProgressBarWithPct.
-    local face_inlinepct = Font:getFace(SUIStyle.FACE_REGULAR,
-        math.max(7, math.floor(_BASE_INLINEPCT_FS * scale * lbl_scale)))
+    -- Inline pct on the progress bar uses the same Progress Text style as
+    -- standalone percent / stats lines.
+    local face_inlinepct = SUIStyle.getFamilyFace(
+        styles.stats.family,
+        math.max(7, math.floor(_BASE_INLINEPCT_FS * scale * (styles.stats.scale or 1))))
 
     -- Builds the text column (title/author/series/description/progress bar/
     -- stats) at the given width `tw`. Every element inside is either
@@ -1290,33 +1313,18 @@ function M.getHeight(_ctx)
 
     -- Measure real line heights using the same font faces as build().
     -- See _scaledLayoutDims for the shared formulas (also used by build()).
-    local LD = _scaledLayoutDims(scale, lbl_scale)
-    local title_fs, author_fs, series_fs, desc_fs, pct_fs, stats_fs =
-        LD.title_fs, LD.author_fs, LD.series_fs, LD.desc_fs, LD.pct_fs, LD.stats_fs
+    local styles = Config.resolveTextStyles(_ctx, M.id, M.text_elems)
+    local LD = _scaledLayoutDims(scale, lbl_scale, styles)
+    local FC = _resolveFaces(LD, styles)
     local bar_h, bar_gap_b, bar_gap_a, title_gap, author_gap, series_gap, desc_gap, pct_gap =
         LD.bar_h, LD.bar_gap_before, LD.bar_gap_after, LD.title_gap, LD.author_gap, LD.series_gap, LD.desc_gap, LD.pct_gap
 
-    -- Ask the font engine for the real line height (includes ascender+descender).
-    -- face.size is just the font's point size (a plain number); the actual
-    -- freetype face object is face.ftsize, whose :getHeightAndAscender() is
-    -- the real API (see how ui/widget/textwidget.lua's own updateSize()
-    -- measures line height).
-    local function faceH(fs)
-        local ok, face = pcall(Font.getFace, Font, "smallinfofont", fs)
-        if ok and face and face.ftsize then
-            local ok2, h = pcall(function() return face.ftsize:getHeightAndAscender() end)
-            if ok2 and h then return math.ceil(h) end
-        end
-        -- fallback: font size * 1.8 approximates typical line height
-        return math.ceil(fs * 1.8)
-    end
-
-    local title_lh  = faceH(title_fs)
-    local author_lh = faceH(author_fs)
-    local series_lh = faceH(series_fs)
-    local desc_lh   = faceH(desc_fs)
-    local pct_lh    = faceH(pct_fs)
-    local stats_lh  = faceH(stats_fs)
+    local title_lh  = SUIStyle.faceHeight(FC.title)
+    local author_lh = SUIStyle.faceHeight(FC.author)
+    local series_lh = SUIStyle.faceHeight(FC.series)
+    local desc_lh   = SUIStyle.faceHeight(FC.desc)
+    local pct_lh    = SUIStyle.faceHeight(FC.pct)
+    local stats_lh  = SUIStyle.faceHeight(FC.stats)
 
     -- Build the element list using real (measured) line heights, mirroring
     -- build()'s own gap_before ordering. is_desc tags the description entry
@@ -1465,18 +1473,6 @@ local function _makeThumbScaleItem(ctx_menu)
     })
 end
 
-local function _makeTextScaleItem(ctx_menu)
-    local pfx = ctx_menu.pfx
-    local _lc = ctx_menu._
-    return Config.makeScaleItem({
-        text_func = function() return _lc("Text Size") end,
-        title     = _lc("Text Size"),
-        info      = _lc("Scale for all text elements (title, author, progress, time).\n100% is the default size."),
-        get       = function() return Config.getItemLabelScalePct("currently", pfx) end,
-        set       = function(v) Config.setItemLabelScale(v, "currently", pfx) end,
-        refresh   = ctx_menu.refresh,
-    })
-end
 
 
 local function _makeCoverGapItem(ctx_menu)
@@ -1946,22 +1942,26 @@ function M.getMenuItems(ctx_menu)
             end or nil,
     }
 
-    local size_entry = {
-            text_func      = function() return _lc("Size") end,
-            sub_item_table = {
-                _makeScaleItem(ctx_menu),
-                _makeTextScaleItem(ctx_menu),
-                thumb,
-                gap_item,
-            },
+    local size_items = {
+        _makeScaleItem(ctx_menu),
+        thumb,
+        gap_item,
     }
 
-    local appearance_entry = {
-            text_func      = function() return _lc("Appearance") end,
-            separator      = true,
-            sub_item_table = {
-                Config.makeLabelToggleItem("currently", _("Currently Reading"), refresh, _lc),
-                                            },
+    local text_opts = {
+        mod_id  = M.id,
+        elems   = M.text_elems,
+        labels  = {
+            title       = _lc("Title"),
+            author      = _lc("Author"),
+            series      = _lc("Series"),
+            description = _lc("Description"),
+            stats       = _lc("Progress Text"),
+        },
+        info    = _lc("Size of this text.\n100% is the default size."),
+        pfx     = pfx,
+        refresh = refresh,
+        _lc     = _lc,
     }
 
     local progress_badge_group = {
@@ -2049,16 +2049,21 @@ function M.getMenuItems(ctx_menu)
             end,
     }
 
-    local menu = {
-        _makeLayoutItem(ctx_menu),
-        items_entry,
-        size_entry,
-        appearance_entry,
-        progress_stats_entry,
+    local appearance_extra = {
+        Config.makeLabelToggleItem("currently", _("Currently Reading"), refresh, _lc),
     }
-    menu[#menu+1] = cover_hold_entry
-    menu[#menu+1] = update_stats_entry
-    return menu
+
+    return Config.buildModuleMenu({
+        items   = { items_entry },
+        content = { _makeLayoutItem(ctx_menu) },
+        appearance = {
+            size  = size_items,
+            text  = text_opts,
+            extra = appearance_extra,
+        },
+        badges    = { progress_stats_entry },
+        behaviour = { cover_hold_entry, update_stats_entry },
+    }, ctx_menu)
 end
 
 function M.updateStats(widget, ctx)

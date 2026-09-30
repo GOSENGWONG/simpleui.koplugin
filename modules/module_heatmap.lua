@@ -372,12 +372,19 @@ local function _makeAppearanceItem(ctx_menu)
 end
 
 function M.getMenuItems(ctx_menu)
-    return {
-        _makeViewItem(ctx_menu),
-        _makeWeeksItem(ctx_menu),
-        _makeScaleItem(ctx_menu),
-        _makeAppearanceItem(ctx_menu),
-    }
+    local Config = require("infra/sui_config")
+    local appearance = _makeAppearanceItem(ctx_menu)
+    local extra = appearance and appearance.sub_item_table or { appearance }
+    return Config.buildModuleMenu({
+        content = {
+            _makeViewItem(ctx_menu),
+            _makeWeeksItem(ctx_menu),
+        },
+        appearance = {
+            size  = { _makeScaleItem(ctx_menu) },
+            extra = extra,
+        },
+    }, ctx_menu)
 end
 
 return M

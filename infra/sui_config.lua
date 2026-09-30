@@ -891,6 +891,276 @@ function M.setItemLabelScale(pct, mod_id, pfx)
     SUISettings:set(_itemLabelKey(mod_id, pfx), _clamp(pct))
 end
 
+-- Per-element text style: a font family and a size scale for one text
+-- element (title, author, ...) of a module. An unset family means the default
+-- UI font; an unset scale means 100%.
+local TEXT_FONT_INFIX  = "_text_font_"
+local TEXT_SCALE_INFIX = "_text_scale_"
+
+local function _textKey(infix, mod_id, elem, pfx)
+    return (pfx or "simpleui_hs_") .. mod_id .. infix .. elem
+end
+
+function M.getTextStyle(mod_id, elem, pfx)
+    local family = SUISettings:get(_textKey(TEXT_FONT_INFIX, mod_id, elem, pfx))
+    local n      = tonumber(SUISettings:get(_textKey(TEXT_SCALE_INFIX, mod_id, elem, pfx)))
+    return {
+        family = (type(family) == "string" and family ~= "") and family or nil,
+        scale  = n and _clamp(n) / 100 or 1.0,
+    }
+end
+
+-- Text style of every element in `elems` (a list of element ids), keyed by id.
+function M.readTextStyles(mod_id, elems, pfx)
+    local styles = {}
+    for _i, elem in ipairs(elems) do
+        styles[elem] = M.getTextStyle(mod_id, elem, pfx)
+    end
+    return styles
+end
+
+-- Text styles of a module: the screen's pre-read settings bundle when `ctx`
+-- carries one, a direct settings read otherwise.
+function M.resolveTextStyles(ctx, mod_id, elems)
+    local bundle = ctx and ctx.cfg and ctx.cfg[mod_id]
+    return bundle and bundle.text or M.readTextStyles(mod_id, elems, ctx and ctx.pfx)
+end
+
+function M.getTextStyleScalePct(mod_id, elem, pfx)
+    local n = tonumber(SUISettings:get(_textKey(TEXT_SCALE_INFIX, mod_id, elem, pfx)))
+    return n and _clamp(n) or SCALE_DEF
+end
+
+function M.setTextStyleScale(pct, mod_id, elem, pfx)
+    SUISettings:set(_textKey(TEXT_SCALE_INFIX, mod_id, elem, pfx), _clamp(pct))
+end
+
+-- family == nil clears the choice.
+function M.setTextStyleFont(family, mod_id, elem, pfx)
+    local key = _textKey(TEXT_FONT_INFIX, mod_id, elem, pfx)
+    if family then SUISettings:set(key, family) else SUISettings:del(key) end
+end
+
+-- Menu entry with a "Font" picker and a "Size" spinner for one text element.
+-- With opts.family_only the entry is the font picker alone, for elements
+-- whose size is controlled elsewhere.
+-- opts: { title, info, mod_id, elem, pfx, refresh, _lc, family_only }
+function M.makeTextStyleItem(opts)
+    local mod_id, elem, pfx, refresh = opts.mod_id, opts.elem, opts.pfx, opts.refresh
+    local _lc = opts._lc or _
+
+    local function family() return M.getTextStyle(mod_id, elem, pfx).family end
+    local function familyLabel() return family() or _lc("Default") end
+    local function familyMenuItems()
+        return require("features/sui_style").makeFamilyMenuItems(
+            family,
+            function(name) M.setTextStyleFont(name, mod_id, elem, pfx) end,
+            refresh)
+    end
+
+    if opts.family_only then
+        return {
+            text                = opts.title,
+            value_func          = familyLabel,
+            sub_item_table_func = familyMenuItems,
+        }
+    end
+
+    -- Font + Size are independent controls: no value on the parent row
+    -- (chevron only), so the user is not shown a single ambiguous summary.
+    return {
+        text           = opts.title,
+        sub_item_table = {
+            {
+                text                = _lc("Font"),
+                value_func          = familyLabel,
+                sub_item_table_func = familyMenuItems,
+            },
+            M.makeScaleItem({
+                text_func = function() return _lc("Size") end,
+                title     = opts.title,
+                info      = opts.info,
+                get       = function() return M.getTextStyleScalePct(mod_id, elem, pfx) end,
+                set       = function(v) M.setTextStyleScale(v, mod_id, elem, pfx) end,
+                refresh    = refresh,
+                value_step = 5,
+            }),
+        },
+    }
+end
+
+-- "Fonts" submenu entry: one text-style item per element of `opts.elems`.
+-- opts: { mod_id, elems, labels, pfx, refresh, _lc, info, family_only }
+--   elems   list of element ids, in menu order
+--   labels  element id → translated menu title
+function M.makeTextStyleMenu(opts)
+    local _lc = opts._lc or _
+    local items = {}
+    for _i, elem in ipairs(opts.elems) do
+        items[#items + 1] = M.makeTextStyleItem({
+            mod_id      = opts.mod_id,
+            elem        = elem,
+            title       = opts.labels[elem],
+            info        = opts.info,
+            pfx         = opts.pfx,
+            refresh     = opts.refresh,
+            _lc         = _lc,
+            family_only = opts.family_only,
+        })
+    end
+    local title = opts.section_title or _lc("Text")
+    return {
+        text_func      = function() return title end,
+        sub_item_table = items,
+    }
+end
+
+-- Typography block: one element → a single entry (Label / element title);
+-- several elements → a "Text" submenu. Layout scales do not belong here.
+-- opts: same as makeTextStyleMenu (mod_id, elems, labels, pfx, refresh, _lc, info, family_only)
+function M.makeTextSection(opts)
+    local elems = opts.elems
+    if not elems or #elems == 0 then return nil end
+    local _lc = opts._lc or _
+    if #elems == 1 then
+        local elem = elems[1]
+        return M.makeTextStyleItem({
+            mod_id      = opts.mod_id,
+            elem        = elem,
+            title       = (opts.labels and opts.labels[elem]) or _lc("Label"),
+            info        = opts.info,
+            pfx         = opts.pfx,
+            refresh     = opts.refresh,
+            _lc         = _lc,
+            family_only = opts.family_only,
+        })
+    end
+    return M.makeTextStyleMenu(opts)
+end
+
+-- Flatten a section folder when it would wrap a single child.
+local function _asSection(title, rows)
+    if not rows or #rows == 0 then return nil end
+    if #rows == 1 then return rows[1] end
+    return {
+        text_func      = function() return title end,
+        sub_item_table = rows,
+    }
+end
+
+local function _resolveRows(rows)
+    if rows == nil then return nil end
+    if type(rows) == "function" then rows = rows() end
+    if type(rows) ~= "table" or #rows == 0 then return nil end
+    return rows
+end
+
+-- Build a module settings menu in canonical order:
+--   Items → Content → Appearance → Progress and Badges → Behaviour
+-- spec fields (all optional):
+--   items, content, badges, behaviour  → list of menu rows (or function → list)
+--   appearance = {
+--     size   → layout proportion rows (Scale, Cover, Gap, …); never per-element text size
+--     text   → opts for makeTextSection (mod_id, elems, labels, …)
+--     extra  → Frame, Alignment, Button Type, Clock Style, …
+--   }
+-- ctx: { _, refresh, … }  (_ used for section titles)
+function M.buildModuleMenu(spec, ctx)
+    local _lc = (ctx and (ctx._ or ctx.translate)) or _
+    local out = {}
+
+    local function push_top(title, rows)
+        rows = _resolveRows(rows)
+        if not rows then return end
+        local entry = _asSection(title, rows)
+        if entry then out[#out + 1] = entry end
+    end
+
+    -- Master rows (e.g. Enable … on chrome bars) stay unwrapped at the top.
+    do
+        local master = _resolveRows(spec.master)
+        if master then
+            for _i, row in ipairs(master) do out[#out + 1] = row end
+        end
+    end
+
+    -- Items: a single pre-built entry (sub_item_table and/or sui_build) is
+    -- already the "Items" row — push it as-is so SUI keeps sui_build and the
+    -- classic submenu is not unwrapped into the section.
+    do
+        local rows = _resolveRows(spec.items)
+        if rows then
+            local one = rows[1]
+            if #rows == 1 and one and (one.sui_build or one.sub_item_table or one.sub_item_table_func) then
+                out[#out + 1] = one
+            else
+                local entry = _asSection(_lc("Items"), rows)
+                if entry then out[#out + 1] = entry end
+            end
+        end
+    end
+    push_top(_lc("Content"), spec.content)
+
+    do
+        local app = spec.appearance or {}
+        local rows = {}
+        local size_rows = _resolveRows(app.size)
+        if size_rows then
+            local size_entry = _asSection(_lc("Proportions"), size_rows)
+            if size_entry then rows[#rows + 1] = size_entry end
+        end
+        if app.text then
+            local text_entry = M.makeTextSection(app.text)
+            if text_entry then rows[#rows + 1] = text_entry end
+        end
+        local extra = _resolveRows(app.extra)
+        if extra then
+            for _i, row in ipairs(extra) do rows[#rows + 1] = row end
+        end
+        if #rows > 0 then
+            local entry = _asSection(_lc("Appearance"), rows)
+            if entry then out[#out + 1] = entry end
+        end
+    end
+
+    push_top(_lc("Progress and Badges"), spec.badges)
+    push_top(_lc("Behaviour"), spec.behaviour)
+
+    return out
+end
+
+-- Label text style of the global chrome bars. A bar is not tied to a screen,
+-- so its style is keyed with the global prefix and a storage id instead of a
+-- screen prefix. The ids keep the keys under each bar's own settings prefix
+-- ("simpleui_bar_", "simpleui_qs_bar_"), which the backup categories match on.
+local CHROME_PFX  = "simpleui_"
+local CHROME_ELEM = "label"
+local CHROME_BARS = { navbar = "bar", quick_settings = "qs_bar" }
+
+local function _chromeBarId(bar)
+    return assert(CHROME_BARS[bar], "unknown chrome bar: " .. tostring(bar))
+end
+
+-- Font family chosen for the labels of `bar` ("navbar" | "quick_settings"),
+-- or nil for the default.
+function M.getChromeLabelFamily(bar)
+    return M.getTextStyle(_chromeBarId(bar), CHROME_ELEM, CHROME_PFX).family
+end
+
+-- Font-only picker entry for the labels of a chrome bar.
+-- opts: { bar, title, refresh, _lc }
+function M.makeChromeLabelFontItem(opts)
+    return M.makeTextStyleItem({
+        title       = opts.title,
+        mod_id      = _chromeBarId(opts.bar),
+        elem        = CHROME_ELEM,
+        pfx         = CHROME_PFX,
+        refresh     = opts.refresh,
+        _lc         = opts._lc,
+        family_only = true,
+    })
+end
+
 -- Reset Scales
 function M.resetAllScales(pfx, pfx_qa)
     SUISettings:del(MODULE_SCALE_KEY)
@@ -914,6 +1184,16 @@ function M.resetAllScales(pfx, pfx_qa)
             end
         end
     end
+    -- Per-element text sizes are scales too. Collect first: the store
+    -- forbids mutation while iterating its keys.
+    local scale_pfx, text_scales = pfx or "simpleui_hs_", {}
+    for key in SUISettings:iterateKeys() do
+        if type(key) == "string" and key:sub(1, #scale_pfx) == scale_pfx
+           and key:find(TEXT_SCALE_INFIX, #scale_pfx + 1, true) then
+            text_scales[#text_scales + 1] = key
+        end
+    end
+    for _i, key in ipairs(text_scales) do SUISettings:del(key) end
     if pfx_qa then
         for slot = 1, 3 do
             SUISettings:del(pfx_qa .. slot .. "_scale")

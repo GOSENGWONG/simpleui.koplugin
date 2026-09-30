@@ -20,6 +20,9 @@
 -- goes through sui_group_actions / sui_cover_overrides instead of a local
 -- copy. That's the actual reuse win here.
 --
+-- Books are grouped by FilterState's series key, so spelling variants of one
+-- series name (case, spacing, a trailing " #n") share a single group.
+--
 -- Depends on sui_foldercovers for: isEnabled(), getSeriesGrouping(),
 -- resolveStyle(), invalidateItemTableCache() (the FileChooser item-table
 -- cache is a cross-cutting concern that lives with the strip-patch install).
@@ -39,6 +42,7 @@ local FileChooser    = require("ui/widget/filechooser")
 local CoverOverrides = require("features/library/sui_cover_overrides")
 local GroupActions   = require("features/library/sui_group_actions")
 local FolderCovers   = require("features/library/sui_foldercovers")
+local FilterState    = require("features/library/sui_filter_state")
 
 local SeriesGrouping = {}
 
@@ -150,10 +154,11 @@ local function sgProcessItemTable(item_table, file_chooser)
             if (item.is_file or item.file) and item.path then
                 book_count = book_count + 1
                 local doc_props = item.doc_props or BookInfoManager:getDocProps(item.path)
-                local sname = doc_props and doc_props.series
-                if sname and sname ~= "\u{FFFF}" then
-                    item._sg_series_index = doc_props.series_index or 0
-                    if not series_map[sname] then
+                local sname, suffix_index = FilterState.parseSeries(doc_props and doc_props.series)
+                if sname then
+                    local skey = FilterState.seriesKey(sname)
+                    item._sg_series_index = doc_props.series_index or suffix_index or 0
+                    if not series_map[skey] then
                         local base_path  = item.path:match("(.*/)") or ""
                         local group_attr = {}
                         if item.attr then
@@ -180,11 +185,11 @@ local function sgProcessItemTable(item_table, file_chooser)
                             },
                             suffix = item.suffix,
                         }
-                        series_map[sname]         = group_item
+                        series_map[skey]          = group_item
                         group_item._sg_list_index = #processed + 1
                         processed[#processed + 1] = group_item
                     else
-                        local si = series_map[sname].series_items
+                        local si = series_map[skey].series_items
                         si[#si + 1] = item
                     end
                     handled = true

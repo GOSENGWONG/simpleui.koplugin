@@ -6,8 +6,8 @@
 --   • Browse by Series
 --   • Browse by Tags
 --
--- All metadata access goes through sui_metadata_source (SQL + Calibre
--- enrichment, cached per filter trail) and all path encode/decode goes
+-- All metadata access goes through sui_metadata_source (bookinfo + Calibre
+-- rows, cached per filter trail) and all path encode/decode goes
 -- through sui_virtual_path (plain-text segments — see that file's header
 -- for the encoding). Cover-picker, create-collection, and cover-override
 -- storage go through sui_group_actions / sui_cover_overrides, shared with
@@ -18,7 +18,7 @@
 -- filters (e.g. author → then narrow by tag within that author). Nothing
 -- in this file's UI currently exposes a "narrow further" action from a
 -- file_list, so today's behaviour is unchanged — but the path grammar,
--- the SQL layer, and the facet-count computation are all trail-aware, so
+-- the row filtering, and the facet-count computation are all trail-aware, so
 -- adding that affordance later is a UI-only change, not a data-layer one.
 --
 -- Settings key: "simpleui_browsemeta_mode"
@@ -53,7 +53,7 @@ local GroupActions     = require("features/library/sui_group_actions")
 local M = {}
 
 -- Display labels — a presentation concern, deliberately not part of
--- FilterState.DIMENSIONS (which only knows about SQL columns).
+-- FilterState.DIMENSIONS (which only knows about row fields).
 local DIM_LABELS = {
     author = _("Authors"),
     series = _("Series"),
@@ -267,7 +267,7 @@ function M.getAuthorBookCount(fc, author_name)
 
     local fs = FilterState.new(base)
     FilterState.addFilter(fs, "author", author_name)
-    local rows  = MetadataSource.getMatchingFiles(bim, base, fs, { recursive = true })
+    local rows  = MetadataSource.getMatchingFiles(bim, base, fs)
     local count = 0
     for _, row in ipairs(rows) do
         local fullpath, fname = row[1], row[2]
@@ -334,7 +334,7 @@ end
 local function _resolveLeafBooks(fc, base_dir, filter_state)
     local ok_bim, bim = pcall(require, "bookinfomanager")
     if not ok_bim or not bim then return {} end
-    local rows = MetadataSource.getMatchingFiles(bim, base_dir, filter_state, { recursive = true })
+    local rows = MetadataSource.getMatchingFiles(bim, base_dir, filter_state)
     local out  = {}
     for _, row in ipairs(rows) do
         local fullpath, fname = row[1], row[2]
@@ -440,57 +440,32 @@ local function _getVirtualList(fc, path, collate)
     if not ok_bim or not bim then return dirs, files end
 
     if level == "dim_list" then
-        local values = MetadataSource.getFacetValues(bim, base_dir, active_dimension, filter_state, { recursive = true })
+        local values = MetadataSource.getFacetValues(bim, base_dir, active_dimension, filter_state)
         local overrides = SUISettings:readSetting("simpleui_fc_covers") or {}
 
-        -- Real (validated) per-value counts + representative file, built in
-        -- ONE pass below instead of once per dimension value.
+        -- Real (validated) per-group counts and a representative file, built
+        -- in ONE pass over the matching rows (a cache hit after
+        -- getFacetValues). A row only counts when its file exists on disk and
+        -- passes fc:show_file: the facet counts may include stale bookinfo
+        -- entries or files the chooser hides. Groups are matched by entry.key.
         --
-        -- The previous approach re-derived this per entry: a fresh
-        -- MetadataSource.getMatchingFiles() call scoped to that single value
-        -- (a brand new SQL query — cache miss, since the value is part of
-        -- the cache key) followed by an lfs.attributes() stat() on every row
-        -- it returned. With N distinct authors/series/tags that's N extra
-        -- SQL queries plus roughly one stat() per (book, value) pair — for a
-        -- library of a few thousand books split across a few hundred
-        -- authors, that's enough synchronous disk I/O to freeze the UI for
-        -- a very long time.
-        --
-        -- The existence-on-disk + fc:show_file check itself is still
-        -- necessary (the SQL count in entry[2] may be higher when the
-        -- bookinfo DB has stale entries for deleted files, or fc's
-        -- extension/hidden-file filter hides something) — it's just moved
-        -- to run once over the SAME row set getFacetValues already fetched
-        -- with a single query (this call is a guaranteed cache hit, see
-        -- MetadataSource.getMatchingFiles), instead of once per value.
-        --
-        -- Only built when collate is truthy — matches the original code's
-        -- own gating (see the `if collate then` below): a falsy collate
-        -- means the caller only wants a cheap item COUNT (mirrors
-        -- FileChooser:getList's own "collate == nil count only" path in
-        -- KOReader core), so this whole pass, expensive or not, must still
-        -- be skipped entirely in that case, same as before.
+        -- Only built when collate is truthy: a falsy collate means the caller
+        -- only wants a cheap item COUNT (mirrors FileChooser:getList's own
+        -- "collate == nil count only" path in KOReader core).
         local real_counts, real_reprs = {}, {}
         if collate then
             local definition = FilterState.DIMENSIONS[active_dimension]
-            local all_rows   = MetadataSource.getMatchingFiles(bim, base_dir, filter_state, { recursive = true })
-            for _, row in ipairs(all_rows) do
+            local current_path
+            local function count(key)
+                real_counts[key] = (real_counts[key] or 0) + 1
+                if not real_reprs[key] then real_reprs[key] = current_path end
+            end
+            for _, row in ipairs(MetadataSource.getMatchingFiles(bim, base_dir, filter_state)) do
                 local fullpath, fname = row[1], row[2]
                 local attr = lfs.attributes(fullpath)
                 if attr and attr.mode == "file" and fc:show_file(fname, fullpath) then
-                    local raw = row[definition.column]
-                    if definition.multi_value and raw and raw:find("\n", 1, true) then
-                        for token in raw:gmatch("[^\n]+") do
-                            if token ~= "" then
-                                real_counts[token] = (real_counts[token] or 0) + 1
-                                if not real_reprs[token] then real_reprs[token] = fullpath end
-                            end
-                        end
-                    else
-                        local key = raw or false
-                        real_counts[key] = (real_counts[key] or 0) + 1
-                        if not real_reprs[key] then real_reprs[key] = fullpath end
-                    end
+                    current_path = fullpath
+                    FilterState.eachFacetValue(row, definition, count)
                 end
             end
         end
@@ -501,8 +476,8 @@ local function _getVirtualList(fc, path, collate)
             local vpath = VirtualPath.buildLeaf(base_dir, filter_state, active_dimension, val)
 
             if collate then
-                local real_count = real_counts[val] or 0
-                local real_repr  = real_reprs[val]
+                local real_count = real_counts[entry.key] or 0
+                local real_repr  = real_reprs[entry.key]
 
                 -- Skip virtual folders whose every book has been deleted from
                 -- disk — showing an empty virtual folder would confuse the
@@ -540,7 +515,7 @@ local function _getVirtualList(fc, path, collate)
     end
 
     if level == "file_list" then
-        local rows = MetadataSource.getMatchingFiles(bim, base_dir, filter_state, { recursive = true })
+        local rows = MetadataSource.getMatchingFiles(bim, base_dir, filter_state)
         -- active_dimension is nil here (see the comment above) — the
         -- dimension actually being browsed is the last one resolved into
         -- the trail, e.g. browsing Author > "Terry Pratchett" leaves
@@ -557,7 +532,7 @@ local function _getVirtualList(fc, path, collate)
             local attr = lfs.attributes(fullpath)
             if attr and attr.mode == "file" and fc:show_file(fname, fullpath) then
                 local item = fc:getListItem(path, fname, fullpath, attr, collate)
-                -- Forward metadata from the SQL row so CoverBrowser and
+                -- Forward metadata from the resolved row so CoverBrowser and
                 -- list-view renderers can display title/author/series
                 -- without re-reading the sidecar.
                 if row.title or row.authors or row.series then

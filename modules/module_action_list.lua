@@ -145,7 +145,7 @@ local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, c
             show_icon      = show_icons,
             icon_sz        = d.icon_sz,
             icon_gap       = d.icon_gap,
-            lbl_fs         = d.fs,
+            lbl_face       = d.lbl_face,
             fgcolor        = clr_blk,
             align          = align,
             icon_opts      = icon_opts,
@@ -219,6 +219,7 @@ M.id         = MOD_ID
 M.name       = _("Action List")
 M.label      = nil
 M.default_on = false
+M.text_elems = { "label" }
 
 function M.isEnabled(pfx)
     return SUISettings:readSetting(pfx .. MOD_SUFFIX .. "_enabled") == true
@@ -228,6 +229,23 @@ function M.setEnabled(pfx, on)
     SUISettings:saveSetting(pfx .. MOD_SUFFIX .. "_enabled", on)
 end
 
+local _label_scale_migrated = {}
+
+local function _migrateLabelScale(mod_id, pfx)
+    pfx = pfx or "simpleui_hs_"
+    local tag = pfx .. mod_id
+    if _label_scale_migrated[tag] then return end
+    _label_scale_migrated[tag] = true
+    local text_key = pfx .. mod_id .. "_text_scale_label"
+    if SUISettings:get(text_key) == nil then
+        local pct = Config.getItemLabelScalePct(mod_id, pfx)
+        if pct ~= Config.SCALE_DEF then
+            Config.setTextStyleScale(pct, mod_id, "label", pfx)
+        end
+    end
+    SUISettings:del(pfx .. mod_id .. "_item_label_scale")
+end
+
 function M.build(w, ctx)
     if not M.isEnabled(ctx.pfx) then return nil end
     local qa_ids    = SUISettings:readSetting(ctx.pfx .. ITEMS_KEY) or {}
@@ -235,8 +253,10 @@ function M.build(w, ctx)
     local align     = getAlignment(ctx.pfx, MOD_SUFFIX)
     local lf        = ctx.landscape_factor or 1
     local d         = _getDims(Config.getModuleScale(MOD_ID, ctx.pfx) * lf)
-    local lbl_scale = Config.getItemLabelScale(MOD_ID, ctx.pfx) * lf
-    d.fs = math.max(8, math.floor(d.fs * lbl_scale))
+    _migrateLabelScale(MOD_ID, ctx.pfx)
+    local styles = Config.resolveTextStyles(ctx, MOD_ID, M.text_elems)
+    d.fs = math.max(8, math.floor(d.fs * lf * (styles.label.scale or 1)))
+    d.lbl_face = SUIStyle.getFamilyFace(styles.label.family, d.fs)
     return buildListWidget(w, qa_ids, show_icons, align, ctx.on_qa_tap, d)
 end
 
@@ -436,14 +456,6 @@ function M.getMenuItems(ctx_menu)
                 set          = function(v) Config.setModuleScale(v, MOD_ID, pfx) end,
                 refresh      = refresh,
             }),
-            Config.makeScaleItem({
-                text_func    = function() return _lc("Text Size") end,
-                title        = _lc("Text Size"),
-                info         = _lc("Scale for the label text.\n100% is the default size."),
-                get          = function() return Config.getItemLabelScalePct(MOD_ID, pfx) end,
-                set          = function(v) Config.setItemLabelScale(v, MOD_ID, pfx) end,
-                refresh      = refresh,
-            }),
         },
     }
 
@@ -481,7 +493,40 @@ function M.getMenuItems(ctx_menu)
         },
     }
 
-    return items
+    -- Partition into canonical sections (Items already first in `items`).
+    local item_rows, size_rows, extra_rows = {}, {}, {}
+    for _, row in ipairs(items) do
+        local label = row.text or (row.text_func and row.text_func()) or ""
+        if label == _lc("Size") or (row.text_func and row.text_func() == _lc("Size")) then
+            if row.sub_item_table then
+                for _, s in ipairs(row.sub_item_table) do size_rows[#size_rows+1] = s end
+            else
+                size_rows[#size_rows+1] = row
+            end
+        elseif label == _lc("Label") then
+            -- Typography lives in appearance.text (not duplicated here).
+        elseif label == _lc("Show Icon") or label == _lc("Alignment") or (row.text_func and row.text_func() == _lc("Alignment")) then
+            extra_rows[#extra_rows+1] = row
+        else
+            item_rows[#item_rows+1] = row
+        end
+    end
+    return Config.buildModuleMenu({
+        items = item_rows,
+        appearance = {
+            size  = #size_rows > 0 and size_rows or nil,
+            text  = {
+                mod_id  = MOD_ID,
+                elems   = M.text_elems,
+                labels  = { label = _lc("Label") },
+                info    = _lc("Size of this text.\n100% is the default size."),
+                pfx     = pfx,
+                refresh = refresh,
+                _lc     = _lc,
+            },
+            extra = extra_rows,
+        },
+    }, ctx_menu)
 end
 
 M.invalidateCustomQACache = QA.invalidateCustomQACache

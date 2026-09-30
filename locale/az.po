@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: simpleui\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-09 10:54\n"
+"POT-Creation-Date: 2026-09-30 10:39\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -15,27 +15,27 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: modules/module_reading_goals.lua:1325
+#: modules/module_reading_goals.lua:1358
 msgid "  Set Goal  (%d hr/month)"
 msgstr "  Məqsəd təyin et  (%d saat/ay)"
 
-#: modules/module_reading_goals.lua:1345
+#: modules/module_reading_goals.lua:1378
 msgid "  Set Goal  (%d min/day)"
 msgstr "  Məqsəd təyin et  (%d dəq/gün)"
 
-#: modules/module_reading_goals.lua:1305
+#: modules/module_reading_goals.lua:1338
 msgid "  Set Goal  (%s)"
 msgstr "  Məqsəd təyin et  (%s)"
 
-#: modules/module_reading_goals.lua:1324 modules/module_reading_goals.lua:1344
+#: modules/module_reading_goals.lua:1357 modules/module_reading_goals.lua:1377
 msgid "  Set Goal  (disabled)"
 msgstr "  Məqsəd təyin et  (söndürülüb)"
 
-#: modules/module_coverdeck.lua:110 modules/module_currently.lua:347
+#: modules/module_coverdeck.lua:110 modules/module_currently.lua:367
 msgid " et al."
 msgstr " və b."
 
-#: engines/sui_book_grid.lua:480 features/library/sui_foldercovers.lua:1222
+#: engines/sui_book_grid.lua:495 features/library/sui_foldercovers.lua:1249
 msgid " p."
 msgstr " səh."
 
@@ -47,37 +47,37 @@ msgstr "Oxunan % (artan)"
 msgid "% Read (descending)"
 msgstr "Oxunan % (azalan)"
 
-#: modules/module_heatmap.lua:222
+#: modules/module_heatmap.lua:225
 msgid "%1 weeks"
 msgstr "%1 həftə"
 
-#: engines/sui_book_grid.lua:1823 engines/sui_book_grid.lua:1828
+#: engines/sui_book_grid.lua:1841 engines/sui_book_grid.lua:1846
 msgid "%1 × %2"
 msgstr "%1 × %2"
 
-#: features/sui_backup.lua:665
+#: features/sui_backup.lua:666
 msgid "%d files (%s)"
 msgstr "%d fayl (%s)"
 
-#: modules/module_reading_goals.lua:1424
+#: modules/module_reading_goals.lua:1457
 msgid "%d hr/month"
 msgstr "%d saat/ay"
 
-#: modules/module_reading_goals.lua:1439
+#: modules/module_reading_goals.lua:1472
 msgid "%d min/day"
 msgstr "%d dəq/gün"
 
-#: features/sui_backup.lua:663
+#: features/sui_backup.lua:664
 msgid "%d settings"
 msgstr "%d parametr"
 
-#: engines/sui_book_grid.lua:888
+#: engines/sui_book_grid.lua:904
 msgid "%d%%"
 msgstr "%d%%"
 
-#: modules/module_coverdeck.lua:1075 modules/module_new_books.lua:138
-#: modules/module_currently.lua:833 modules/module_currently.lua:842
-#: engines/sui_book_grid.lua:947 engines/sui_book_grid.lua:959
+#: modules/module_coverdeck.lua:1026 modules/module_new_books.lua:138
+#: modules/module_currently.lua:873 modules/module_currently.lua:882
+#: engines/sui_book_grid.lua:963 engines/sui_book_grid.lua:975
 msgid "%d%% Read"
 msgstr "%d%% oxunub"
 
@@ -85,23 +85,23 @@ msgstr "%d%% oxunub"
 msgid "%d/%d days · %d/%d min to next freeze"
 msgstr "%d/%d gün · növbəti dondurmaya %d/%d dəq"
 
-#: modules/module_currently.lua:938
+#: modules/module_currently.lua:978
 msgid "%s left"
 msgstr "%s qalıb"
 
-#: modules/module_reading_goals.lua:835 modules/module_reading_goals.lua:855
-#: modules/module_coverdeck.lua:1080 modules/module_currently.lua:876
-#: modules/module_currently.lua:877 modules/module_currently.lua:936
-#: modules/module_currently.lua:950
+#: modules/module_reading_goals.lua:854 modules/module_reading_goals.lua:874
+#: modules/module_coverdeck.lua:1031 modules/module_currently.lua:916
+#: modules/module_currently.lua:917 modules/module_currently.lua:976
+#: modules/module_currently.lua:990
 msgid "%s read"
 msgstr "%s oxunub"
 
-#: modules/module_coverdeck.lua:1086 modules/module_currently.lua:899
-#: modules/module_currently.lua:903
+#: modules/module_coverdeck.lua:1037 modules/module_currently.lua:939
+#: modules/module_currently.lua:943
 msgid "%s remaining"
 msgstr "%s qalıb"
 
-#: modules/module_reading_stats.lua:386 modules/module_quick_actions.lua:485
+#: modules/module_reading_stats.lua:436 modules/module_quick_actions.lua:507
 msgid "(%d/%d — at limit)"
 msgstr "(%d/%d — həddə çatıb)"
 
@@ -109,11 +109,28 @@ msgstr "(%d/%d — həddə çatıb)"
 msgid "(collection not found)"
 msgstr "(kolleksiya tapılmadı)"
 
+#: screens/sui_menu.lua:2352
+msgid ""
+"0% transparent, 100% solid. Applies to the native page bar in Library, "
+"History, Collections and similar screens."
+msgstr ""
+
+#: screens/sui_menu.lua:2334
+msgid ""
+"0% transparent, 100% solid. Rounded background behind title bar buttons "
+"(back, search, menu, …)."
+msgstr ""
+
+#: infra/sui_config.lua:1170
+msgid ""
+"0% transparent, 100% solid. Values in between add a scrim over the wallpaper."
+msgstr ""
+
 #: modules/module_collections.lua:1347
 msgid "4-Cover Grid"
 msgstr "4 üzlüklü tor"
 
-#: screens/sui_menu.lua:2888
+#: screens/sui_menu.lua:2907
 msgid "4-Cover Grid (Mosaic View Only)"
 msgstr "4 üzlüklü tor (yalnız mozaika görünüşündə)"
 
@@ -125,12 +142,12 @@ msgstr ""
 "Dondurma yalnız oxuduğunuz gündən dərhal sonrakı bir buraxılmış günü əvəz "
 "edə bilər — dünən bu şərtə uyğun deyil."
 
-#: features/sui_presets.lua:936 features/sui_presets.lua:1022
-#: screens/sui_menu.lua:4084 screens/sui_menu.lua:4169
+#: features/sui_presets.lua:941 features/sui_presets.lua:1027
+#: screens/sui_menu.lua:4103 screens/sui_menu.lua:4188
 msgid "A preset named \"%s\" already exists."
 msgstr "\"%s\" adlı hazır quruluş artıq mövcuddur."
 
-#: features/sui_presets.lua:877 screens/sui_menu.lua:4030
+#: features/sui_presets.lua:882 screens/sui_menu.lua:4049
 msgid ""
 "A preset named \"%s\" already exists.\n"
 "Overwrite it?"
@@ -149,7 +166,7 @@ msgstr ""
 "\n"
 "İndi yenidən başladılsın?"
 
-#: screens/sui_menu.lua:4340
+#: screens/sui_menu.lua:4359
 msgid ""
 "A restart is required to apply the new text size everywhere.\n"
 "\n"
@@ -167,12 +184,12 @@ msgstr "KOReader üçün sadə interfeys"
 msgid "ALL TIME"
 msgstr "Bütün dövr"
 
-#: screens/sui_menu.lua:4593 screens/sui_settings_window.lua:365
-#: screens/sui_settings_window.lua:1082
+#: screens/sui_menu.lua:4612 screens/sui_settings_window.lua:365
+#: screens/sui_settings_window.lua:1086
 msgid "About"
 msgstr "Haqqında"
 
-#: features/sui_quickactions.lua:2496 features/sui_quickactions.lua:2542
+#: features/sui_quickactions.lua:2509 features/sui_quickactions.lua:2555
 msgid "Action"
 msgstr "Əməl"
 
@@ -180,56 +197,56 @@ msgstr "Əməl"
 msgid "Action List"
 msgstr "Əməllər siyahısı"
 
-#: features/sui_quickactions.lua:2746
+#: features/sui_quickactions.lua:2759
 msgid "Action Type"
 msgstr "Əməlin növü"
 
-#: features/sui_quickactions.lua:1202
+#: features/sui_quickactions.lua:1216
 msgid "Action error: %s"
 msgstr "Əməl xətası: %s"
 
-#: features/sui_quickactions.lua:2518
+#: features/sui_quickactions.lua:2531
 msgid "Action name…"
 msgstr "Əməlin adı…"
 
-#: features/sui_quickactions.lua:1195
+#: features/sui_quickactions.lua:1209
 msgid "Action not available: %s"
 msgstr "Əməl əlçatan deyil: %s"
 
-#: screens/sui_quicksettings_bar.lua:1168
-#: screens/sui_quicksettings_bar.lua:1193
+#: screens/sui_quicksettings_bar.lua:1181
+#: screens/sui_quicksettings_bar.lua:1206
 msgid "Add Action"
 msgstr "Əməl əlavə et"
 
-#: screens/sui_menu.lua:1598 screens/sui_menu.lua:1636
+#: screens/sui_menu.lua:1607 screens/sui_menu.lua:1645
 msgid "Add Button"
 msgstr "Düymə əlavə et"
 
-#: modules/module_action_list.lua:387 modules/module_action_list.lua:417
-#: modules/module_reading_stats.lua:749 modules/module_reading_stats.lua:778
-#: modules/module_reading_goals.lua:1370 modules/module_reading_goals.lua:1399
-#: modules/module_coverdeck.lua:1528 modules/module_coverdeck.lua:1550
-#: modules/module_coverdeck.lua:1665 modules/module_coverdeck.lua:1683
-#: modules/module_currently.lua:1647 modules/module_currently.lua:1694
-#: modules/module_quick_actions.lua:439 modules/module_quick_actions.lua:469
-#: engines/sui_screen_engine.lua:2165 engines/sui_window.lua:850
+#: modules/module_action_list.lua:390 modules/module_action_list.lua:420
+#: modules/module_reading_stats.lua:803 modules/module_reading_stats.lua:832
+#: modules/module_reading_goals.lua:1403 modules/module_reading_goals.lua:1432
+#: modules/module_coverdeck.lua:1480 modules/module_coverdeck.lua:1502
+#: modules/module_coverdeck.lua:1617 modules/module_coverdeck.lua:1635
+#: modules/module_currently.lua:1687 modules/module_currently.lua:1734
+#: modules/module_quick_actions.lua:461 modules/module_quick_actions.lua:491
+#: engines/sui_screen_engine.lua:2173 engines/sui_window.lua:869
 #: screens/sui_menu.lua:978 screens/sui_menu.lua:1015 screens/sui_menu.lua:1207
-#: screens/sui_menu.lua:1247 screens/sui_menu.lua:2034
-#: screens/sui_menu.lua:2064 screens/sui_quicksettings_bar.lua:978
-#: screens/sui_settings_window.lua:1090
+#: screens/sui_menu.lua:1247 screens/sui_menu.lua:2043
+#: screens/sui_menu.lua:2073 screens/sui_quicksettings_bar.lua:991
+#: screens/sui_settings_window.lua:1094
 msgid "Add Item"
 msgstr "Element əlavə et"
 
-#: screens/sui_settings_window.lua:1087 screens/sui_settings_window.lua:1230
+#: screens/sui_settings_window.lua:1091 screens/sui_settings_window.lua:1234
 msgid "Add Module"
 msgstr "Modul əlavə et"
 
-#: screens/sui_settings_window.lua:1193
+#: screens/sui_settings_window.lua:1197
 msgid "Add Page"
 msgstr "Səhifə əlavə et"
 
-#: modules/module_action_list.lua:298 modules/module_quick_actions.lua:344
-#: screens/sui_menu.lua:1954 screens/sui_quicksettings_bar.lua:1046
+#: modules/module_action_list.lua:301 modules/module_quick_actions.lua:366
+#: screens/sui_menu.lua:1963 screens/sui_quicksettings_bar.lua:1059
 msgid "Add at least 2 actions to arrange."
 msgstr "Sıralamaq üçün ən azı 2 əməl əlavə edin."
 
@@ -237,7 +254,7 @@ msgstr "Sıralamaq üçün ən azı 2 əməl əlavə edin."
 msgid "Add at least 2 books to arrange."
 msgstr "Sıralamaq üçün ən azı 2 kitab əlavə edin."
 
-#: modules/module_reading_stats.lua:698
+#: modules/module_reading_stats.lua:752
 msgid "Add at least 2 stats to arrange."
 msgstr "Sıralamaq üçün ən azı 2 statistik göstərici əlavə edin."
 
@@ -245,53 +262,54 @@ msgstr "Sıralamaq üçün ən azı 2 statistik göstərici əlavə edin."
 msgid "Add to To Be Read"
 msgstr "Oxunacaqlara əlavə et"
 
-#: modules/module_quote.lua:1554 modules/module_action_list.lua:460
-#: modules/module_reading_stats.lua:846 modules/module_clock.lua:1193
-#: modules/module_quick_actions.lua:645
+#: modules/module_quote.lua:1564 modules/module_action_list.lua:473
+#: modules/module_reading_stats.lua:908 modules/module_clock.lua:1227
+#: modules/module_quick_actions.lua:675
 msgid "Alignment"
 msgstr "Düzləndirmə"
 
-#: engines/sui_window.lua:3409 screens/sui_settings_window.lua:852
+#: engines/sui_window.lua:3428 screens/sui_settings_window.lua:856
 msgid "All items have already been added."
 msgstr "Bütün elementlər artıq əlavə edilib."
 
-#: screens/sui_settings_window.lua:830
+#: screens/sui_settings_window.lua:834
 msgid "All modules have already been added."
 msgstr "Bütün modullar artıq əlavə edilib."
 
-#: features/sui_quickactions.lua:3527
+#: features/sui_quickactions.lua:3539
 msgid "All recent books are finished."
 msgstr "Son kitabların hamısı oxunub bitirilib."
 
-#: modules/module_reading_stats.lua:118
+#: modules/module_reading_stats.lua:138
 msgid "All time — Books"
 msgstr "Bütün dövr — kitablar"
 
-#: modules/module_reading_stats.lua:117
+#: modules/module_reading_stats.lua:137
 msgid "All time — Time"
 msgstr "Bütün dövr — vaxt"
 
-#: screens/sui_menu.lua:2560
+#: screens/sui_menu.lua:2577
 msgid "Always"
 msgstr "Həmişə"
 
-#: modules/module_clock.lua:1165 modules/module_clock.lua:1184
+#: modules/module_clock.lua:1199 modules/module_clock.lua:1218
 msgid "Analogue"
 msgstr "Əqrəbli"
 
-#: modules/module_reading_goals.lua:1292 modules/module_reading_goals.lua:1358
-#: modules/module_reading_goals.lua:1395 modules/module_reading_goals.lua:1412
+#: modules/module_reading_goals.lua:1325 modules/module_reading_goals.lua:1391
+#: modules/module_reading_goals.lua:1428 modules/module_reading_goals.lua:1445
 msgid "Annual Goal"
 msgstr "İllik məqsəd"
 
-#: modules/module_reading_goals.lua:743
+#: modules/module_reading_goals.lua:762
 msgid "Annual Reading Goal"
 msgstr "İllik oxu məqsədi"
 
-#: modules/module_heatmap.lua:352 modules/module_reading_goals.lua:1507
-#: modules/module_currently.lua:1925 modules/module_quick_actions.lua:571
-#: engines/sui_book_grid.lua:1888 screens/sui_menu.lua:1814
-#: screens/sui_menu.lua:1817
+#: modules/module_heatmap.lua:358 modules/module_reading_goals.lua:1541
+#: modules/module_currently.lua:1980 modules/module_quick_actions.lua:602
+#: engines/sui_book_grid.lua:1888 features/sui_module_chrome.lua:221
+#: features/sui_module_chrome.lua:224 features/sui_module_chrome.lua:268
+#: screens/sui_menu.lua:1823 screens/sui_menu.lua:1826
 msgid "Appearance"
 msgstr "Görünüş"
 
@@ -299,12 +317,13 @@ msgstr "Görünüş"
 msgid "Appearance & Style"
 msgstr "Görünüş və üslub"
 
-#: modules/module_clock.lua:1237 infra/sui_config.lua:938
-#: infra/sui_config.lua:972 infra/sui_config.lua:1087 infra/sui_config.lua:1160
+#: modules/module_clock.lua:1271 infra/sui_config.lua:1131
+#: infra/sui_config.lua:1179 infra/sui_config.lua:1213
+#: infra/sui_config.lua:1328 infra/sui_config.lua:1401
 #: screens/sui_menu.lua:1040 screens/sui_menu.lua:1317
-#: screens/sui_menu.lua:2406 screens/sui_menu.lua:2478
-#: screens/sui_menu.lua:2510 screens/sui_menu.lua:2936
-#: screens/sui_menu.lua:3297 screens/sui_menu.lua:4334
+#: screens/sui_menu.lua:2423 screens/sui_menu.lua:2495
+#: screens/sui_menu.lua:2527 screens/sui_menu.lua:2955
+#: screens/sui_menu.lua:3316 screens/sui_menu.lua:4353
 msgid "Apply"
 msgstr "Tətbiq et"
 
@@ -316,7 +335,7 @@ msgstr "Hazır quruluş tətbiq edilir…"
 msgid "Apr"
 msgstr "Apr"
 
-#: modules/module_clock.lua:62 screens/sui_stats_windows.lua:2815
+#: modules/module_clock.lua:61 screens/sui_stats_windows.lua:2815
 msgid "April"
 msgstr "Aprel"
 
@@ -326,13 +345,13 @@ msgstr "Aprel"
 msgid "Arrange"
 msgstr "Sırala"
 
-#: modules/module_action_list.lua:318 modules/module_quick_actions.lua:362
-#: screens/sui_menu.lua:1958
+#: modules/module_action_list.lua:321 modules/module_quick_actions.lua:384
+#: screens/sui_menu.lua:1967
 msgid "Arrange %s"
 msgstr "%s sıralansın"
 
-#: screens/sui_menu.lua:1554 screens/sui_menu.lua:1561
-#: screens/sui_menu.lua:1738 screens/sui_menu.lua:1753
+#: screens/sui_menu.lua:1563 screens/sui_menu.lua:1570
+#: screens/sui_menu.lua:1747 screens/sui_menu.lua:1762
 msgid "Arrange Buttons"
 msgstr "Düymələri sırala"
 
@@ -340,26 +359,26 @@ msgstr "Düymələri sırala"
 msgid "Arrange Collection"
 msgstr "Kolleksiyanı sırala"
 
-#: modules/module_action_list.lua:291 modules/module_coverdeck.lua:1605
-#: modules/module_coverdeck.lua:1611 modules/module_currently.lua:1520
-#: modules/module_currently.lua:1563 modules/module_quick_actions.lua:337
-#: engines/sui_screen_engine.lua:2164 screens/sui_menu.lua:694
-#: screens/sui_menu.lua:761 screens/sui_menu.lua:768 screens/sui_menu.lua:1948
-#: screens/sui_topbar.lua:507 screens/sui_bottombar.lua:820
-#: screens/sui_quicksettings_bar.lua:977 screens/sui_quicksettings_bar.lua:1038
-#: screens/sui_settings_window.lua:1111
+#: modules/module_action_list.lua:294 modules/module_coverdeck.lua:1557
+#: modules/module_coverdeck.lua:1563 modules/module_currently.lua:1560
+#: modules/module_currently.lua:1603 modules/module_quick_actions.lua:359
+#: engines/sui_screen_engine.lua:2172 screens/sui_menu.lua:694
+#: screens/sui_menu.lua:761 screens/sui_menu.lua:768 screens/sui_menu.lua:1957
+#: screens/sui_topbar.lua:586 screens/sui_bottombar.lua:930
+#: screens/sui_quicksettings_bar.lua:990 screens/sui_quicksettings_bar.lua:1051
+#: screens/sui_settings_window.lua:1115
 msgid "Arrange Items"
 msgstr "Elementləri sırala"
 
-#: screens/sui_quicksettings_bar.lua:1062
+#: screens/sui_quicksettings_bar.lua:1075
 msgid "Arrange Quick Settings"
 msgstr "Sürətli parametrləri sırala"
 
-#: modules/module_reading_stats.lua:709
+#: modules/module_reading_stats.lua:763
 msgid "Arrange Reading Stats"
 msgstr "Oxu statistikasını sırala"
 
-#: modules/module_coverdeck.lua:1626
+#: modules/module_coverdeck.lua:1578
 msgid "Arrange Statistics"
 msgstr "Statistikanı sırala"
 
@@ -371,7 +390,7 @@ msgstr "Vərəqləri sırala"
 msgid "Arrange To Be Read List"
 msgstr "Oxunacaqlar siyahısını sırala"
 
-#: features/sui_presets.lua:137
+#: features/sui_presets.lua:141
 msgid "At a Glance"
 msgstr "Bir baxışda"
 
@@ -379,11 +398,13 @@ msgstr "Bir baxışda"
 msgid "Aug"
 msgstr "Avq"
 
-#: modules/module_clock.lua:63 screens/sui_stats_windows.lua:2816
+#: modules/module_clock.lua:62 screens/sui_stats_windows.lua:2816
 msgid "August"
 msgstr "Avqust"
 
-#: modules/module_coverdeck.lua:156 modules/module_currently.lua:280
+#: modules/module_quote.lua:1591 modules/module_coverdeck.lua:156
+#: modules/module_coverdeck.lua:1653 modules/module_currently.lua:300
+#: modules/module_currently.lua:1969
 msgid "Author"
 msgstr "Müəllif"
 
@@ -392,28 +413,28 @@ msgstr "Müəllif"
 msgid "Author (A–Z)"
 msgstr "Müəllif (A–Z)"
 
-#: screens/sui_menu.lua:4396
+#: screens/sui_menu.lua:4415
 msgid "Author: %s"
 msgstr "Müəllif: %s"
 
-#: features/sui_quickactions.lua:990 infra/sui_config.lua:132
+#: features/sui_quickactions.lua:1004 infra/sui_config.lua:133
 #: features/library/sui_library_browse.lua:58
 msgid "Authors"
 msgstr "Müəlliflər"
 
-#: modules/module_collections.lua:1356 screens/sui_menu.lua:2899
+#: modules/module_collections.lua:1356 screens/sui_menu.lua:2918
 msgid "Auto (Single ↔ 4-Cover Grid)"
 msgstr "Avtomatik (tək ↔ 4 üzlüklü tor)"
 
-#: modules/module_collections.lua:339 features/library/sui_group_actions.lua:48
+#: modules/module_collections.lua:339 features/library/sui_group_actions.lua:51
 msgid "Auto (first book)"
 msgstr "Avtomatik (ilk kitab)"
 
-#: screens/sui_menu.lua:2363
+#: screens/sui_menu.lua:2384
 msgid "Auto-rotate"
 msgstr "Avtomatik döndərmə"
 
-#: screens/sui_menu.lua:4401
+#: screens/sui_menu.lua:4420
 msgid "Automatic Update Check"
 msgstr "Yeniləmələrin avtomatik yoxlanması"
 
@@ -434,33 +455,43 @@ msgstr "Geri"
 msgid "Back Button"
 msgstr "Geri düyməsi"
 
-#: features/sui_quickactions.lua:978
+#: features/sui_module_chrome.lua:201 features/sui_module_chrome.lua:245
+#: features/sui_module_chrome.lua:256
+msgid "Background Opacity"
+msgstr ""
+
+#: features/sui_module_chrome.lua:257
+#, fuzzy
+msgid "Background width"
+msgstr "Bütöv fon"
+
+#: features/sui_quickactions.lua:992
 msgid "Backup"
 msgstr "Ehtiyat nüsxə"
 
-#: screens/sui_menu.lua:4423
+#: screens/sui_menu.lua:4442
 msgid "Backup & Restore"
 msgstr "Ehtiyat nüsxə və bərpa"
 
-#: features/sui_backup.lua:641
+#: features/sui_backup.lua:642
 msgid "Backup created"
 msgstr "Ehtiyat nüsxə yaradıldı"
 
-#: features/sui_backup.lua:890 features/sui_backup.lua:1111
+#: features/sui_backup.lua:891 features/sui_backup.lua:1112
 msgid "Backup created:"
 msgstr "Ehtiyat nüsxə yaradıldı:"
 
-#: features/sui_backup.lua:887 features/sui_backup.lua:1114
+#: features/sui_backup.lua:888 features/sui_backup.lua:1115
 msgid "Backup failed."
 msgstr "Ehtiyat nüsxə yaradıla bilmədi."
 
-#: features/sui_backup.lua:949
+#: features/sui_backup.lua:950
 msgid "Backup loaded. Choose what to import, then tap \"Restore Selected…\"."
 msgstr ""
 "Ehtiyat nüsxə yükləndi. İdxal ediləcəkləri seçin, sonra \"Seçilənləri bərpa "
 "et…\" düyməsinə toxunun."
 
-#: features/sui_backup.lua:1007
+#: features/sui_backup.lua:1008
 msgid ""
 "Backup restored.\n"
 "Restart KOReader now to finish applying all changes?"
@@ -469,39 +500,39 @@ msgstr ""
 "Bütün dəyişiklikləri tətbiq etməyi tamamlamaq üçün KOReader indi yenidən "
 "başladılsın?"
 
-#: features/sui_backup.lua:583
+#: features/sui_backup.lua:584
 msgid ""
 "Backup was made by a newer SimpleUI version. Please update this plugin first."
 msgstr ""
 "Ehtiyat nüsxə daha yeni Simple UI versiyası ilə yaradılıb. Əvvəlcə bu "
 "qoşmanı yeniləyin."
 
-#: modules/module_collections.lua:1378 engines/sui_book_grid.lua:2057
-#: screens/sui_menu.lua:3201 screens/sui_menu.lua:3210
-#: screens/sui_menu.lua:3216
+#: modules/module_collections.lua:1378 engines/sui_book_grid.lua:2058
+#: screens/sui_menu.lua:3220 screens/sui_menu.lua:3229
+#: screens/sui_menu.lua:3235
 msgid "Badge"
 msgstr "Nişan"
 
 #: modules/module_collections.lua:1422 modules/module_collections.lua:1425
-#: engines/sui_book_grid.lua:1990 engines/sui_book_grid.lua:1992
-#: screens/sui_menu.lua:2929
+#: engines/sui_book_grid.lua:1991 engines/sui_book_grid.lua:1993
+#: screens/sui_menu.lua:2948
 msgid "Badge Size"
 msgstr "Nişan ölçüsü"
 
-#: screens/sui_menu.lua:2917
+#: screens/sui_menu.lua:2936
 msgid "Badges"
 msgstr "Nişanlar"
 
-#: screens/sui_menu.lua:3134 screens/sui_menu.lua:3143
-#: screens/sui_menu.lua:3149 features/library/sui_foldercovers.lua:309
+#: screens/sui_menu.lua:3153 screens/sui_menu.lua:3162
+#: screens/sui_menu.lua:3168 features/library/sui_foldercovers.lua:309
 msgid "Banner"
 msgstr "Zolaq"
 
-#: engines/sui_book_grid.lua:1939
+#: engines/sui_book_grid.lua:1940
 msgid "Bar"
 msgstr "Panel"
 
-#: engines/sui_book_grid.lua:1941
+#: engines/sui_book_grid.lua:1942
 msgid "Bar + Text"
 msgstr "Panel + mətn"
 
@@ -513,26 +544,27 @@ msgstr "Panel ölçüsü"
 msgid "Bar Style"
 msgstr "Panel üslubu"
 
-#: modules/module_quick_actions.lua:597 screens/sui_menu.lua:1288
-#: screens/sui_quicksettings_bar.lua:1270
+#: modules/module_quick_actions.lua:628 screens/sui_menu.lua:1288
+#: screens/sui_quicksettings_bar.lua:1289
 msgid "Bare"
 msgstr "Çərçivəsiz"
 
-#: features/sui_backup.lua:114 screens/sui_menu.lua:4555
-#: screens/sui_settings_window.lua:330 screens/sui_settings_window.lua:1079
+#: features/sui_backup.lua:114 screens/sui_menu.lua:4574
+#: screens/sui_settings_window.lua:330 screens/sui_settings_window.lua:1083
 msgid "Bars"
 msgstr "Panellər"
 
-#: modules/module_clock.lua:239 infra/sui_config.lua:170
+#: modules/module_clock.lua:238 modules/module_clock.lua:1188
+#: infra/sui_config.lua:195
 msgid "Battery"
 msgstr "Batareya"
 
-#: modules/module_clock.lua:1031 modules/module_clock.lua:1033
+#: modules/module_clock.lua:1056 modules/module_clock.lua:1058
 msgid "Battery Size"
 msgstr "Batareya ölçüsü"
 
-#: screens/sui_menu.lua:2764 screens/sui_settings_window.lua:414
-#: screens/sui_settings_window.lua:1092
+#: screens/sui_menu.lua:2783 screens/sui_settings_window.lua:418
+#: screens/sui_settings_window.lua:1096
 msgid "Behaviour"
 msgstr "Davranış"
 
@@ -540,15 +572,19 @@ msgstr "Davranış"
 msgid "Best streak"
 msgstr "Ən uzun ardıcıllıq"
 
-#: screens/sui_menu.lua:2603
+#: infra/sui_config.lua:193
+msgid "Bluetooth"
+msgstr ""
+
+#: screens/sui_menu.lua:2620
 msgid "Book Cover Transition"
 msgstr "Kitab üzlüyü keçidi"
 
-#: features/sui_quickactions.lua:2268
+#: features/sui_quickactions.lua:2281
 msgid "Book Info"
 msgstr "Kitab məlumatı"
 
-#: infra/sui_config.lua:1276
+#: infra/sui_config.lua:1527
 msgid "Book Menu"
 msgstr "Kitab menyusu"
 
@@ -556,7 +592,7 @@ msgstr "Kitab menyusu"
 msgid "Book Statistics"
 msgstr "Kitab statistikası"
 
-#: main.lua:1134
+#: main.lua:1151
 msgid "Book statistics"
 msgstr "Kitab statistikası"
 
@@ -564,15 +600,15 @@ msgstr "Kitab statistikası"
 msgid "Book-browser settings"
 msgstr "Kitab brauzerinin parametrləri"
 
-#: features/sui_quickactions.lua:490
+#: features/sui_quickactions.lua:504
 msgid "Bookmark browser"
 msgstr "Əlfəcin brauzeri"
 
-#: features/sui_quickactions.lua:424
-msgid "Bookmark browser not available."
-msgstr "Əlfəcin brauzeri əlçatan deyil."
+#: features/sui_quickactions.lua:438
+msgid "Bookmark browser requires a newer KOReader. Please update."
+msgstr ""
 
-#: features/sui_quickactions.lua:848 infra/sui_config.lua:124
+#: features/sui_quickactions.lua:862 infra/sui_config.lua:125
 msgid "Bookmarks"
 msgstr "Əlfəcinlər"
 
@@ -580,21 +616,21 @@ msgstr "Əlfəcinlər"
 msgid "Books"
 msgstr "Kitablar"
 
-#: modules/module_reading_goals.lua:744
+#: modules/module_reading_goals.lua:763
 msgid "Books to read in %s:"
 msgstr "%s ərzində oxunacaq kitablar:"
 
-#: modules/module_collections.lua:1399 screens/sui_menu.lua:2952
-#: screens/sui_menu.lua:2959 screens/sui_menu.lua:2974
-#: screens/sui_menu.lua:3365 screens/sui_menu.lua:3384
+#: modules/module_collections.lua:1399 screens/sui_menu.lua:2971
+#: screens/sui_menu.lua:2978 screens/sui_menu.lua:2993
+#: screens/sui_menu.lua:3384 screens/sui_menu.lua:3403
 msgid "Bottom"
 msgstr "Aşağı"
 
-#: screens/sui_menu.lua:1372 screens/sui_menu.lua:1373
+#: screens/sui_menu.lua:1381 screens/sui_menu.lua:1382
 msgid "Bottom Margin"
 msgstr "Aşağı kənar boşluğu"
 
-#: screens/sui_menu.lua:2604
+#: screens/sui_menu.lua:2621
 msgid ""
 "Briefly show the book cover full-screen when opening or closing a book, "
 "masking the page-layout flash. Normally requires the book to already be "
@@ -608,8 +644,8 @@ msgstr ""
 "azı bir dəfə tor/siyahı görünüşündə görünməlidir) — indekslənməmiş kitablara "
 "da tətbiq etmək üçün aşağıdakı \"Yüksək keyfiyyətli üzlük\" seçiminə baxın."
 
-#: features/sui_quickactions.lua:914 infra/sui_config.lua:127
-#: infra/sui_config.lua:169
+#: features/sui_quickactions.lua:928 infra/sui_config.lua:128
+#: infra/sui_config.lua:194
 msgid "Brightness"
 msgstr "Parlaqlıq"
 
@@ -641,37 +677,47 @@ msgstr "Gözdən keçirmə işarələri"
 msgid "Browse by"
 msgstr "Gözdən keçirmə meyarı"
 
-#: features/sui_quickactions.lua:997 features/sui_quickactions.lua:1015
-#: features/sui_quickactions.lua:1033
+#: features/sui_quickactions.lua:1011 features/sui_quickactions.lua:1029
+#: features/sui_quickactions.lua:1047
 msgid "Browse by Authors/Series/Tags not available."
 msgstr "Müəlliflər/silsilələr/etiketlər üzrə gözdən keçirmə əlçatan deyil."
 
-#: screens/sui_titlebar.lua:1000
+#: screens/sui_titlebar.lua:1031
 msgid "Browse library"
 msgstr "Kitabxananı gözdən keçir"
 
-#: features/sui_quickactions.lua:2209 screens/sui_menu.lua:2256
-#: screens/sui_menu.lua:3796
+#: features/sui_quickactions.lua:2222 screens/sui_menu.lua:2288
+#: screens/sui_menu.lua:3815
 msgid "Browse…"
 msgstr "Gözdən keçir…"
 
-#: modules/module_quick_actions.lua:609 screens/sui_quicksettings_bar.lua:1283
+#: screens/sui_quicksettings_bar.lua:1302
 msgid "Button Background"
 msgstr "Düymə fonu"
 
-#: screens/sui_menu.lua:1825
+#: modules/module_quick_actions.lua:666
+#, fuzzy
+msgid "Button Opacity"
+msgstr "Düymə ölçüsü"
+
+#: screens/sui_menu.lua:1834
 msgid "Button Size"
 msgstr "Düymə ölçüsü"
 
-#: modules/module_quick_actions.lua:574 screens/sui_quicksettings_bar.lua:1247
+#: modules/module_quick_actions.lua:640
+#, fuzzy
+msgid "Button Style"
+msgstr "Düymə ölçüsü"
+
+#: modules/module_quick_actions.lua:605 screens/sui_quicksettings_bar.lua:1266
 msgid "Button Type"
 msgstr "Düymə növü"
 
-#: screens/sui_titlebar.lua:1004
+#: screens/sui_titlebar.lua:1035
 msgid "By author"
 msgstr "Müəllif üzrə"
 
-#: screens/sui_menu.lua:2643
+#: screens/sui_menu.lua:2660
 msgid ""
 "By default the cover is stretched to fill the whole screen, which can "
 "distort it if its proportions don't match your screen's. When on, the cover "
@@ -682,11 +728,11 @@ msgstr ""
 "seçim qoşulduqda üzlük ilkin nisbətlərini saxlayaraq qara fonun mərkəzində "
 "göstərilir."
 
-#: screens/sui_titlebar.lua:1005
+#: screens/sui_titlebar.lua:1036
 msgid "By series"
 msgstr "Silsilə üzrə"
 
-#: screens/sui_titlebar.lua:1006
+#: screens/sui_titlebar.lua:1037
 msgid "By tags"
 msgstr "Etiketlər üzrə"
 
@@ -694,67 +740,68 @@ msgstr "Etiketlər üzrə"
 msgid "CALENDAR"
 msgstr "Təqvim"
 
-#: modules/module_heatmap.lua:342
+#: modules/module_heatmap.lua:348
 msgid "Calendar"
 msgstr "Təqvim"
 
-#: modules/module_quote.lua:1300 modules/module_collections.lua:365
-#: modules/module_reading_goals.lua:731 modules/module_clock.lua:1238
-#: features/sui_quickactions.lua:515 features/sui_quickactions.lua:1632
-#: features/sui_quickactions.lua:1965 features/sui_quickactions.lua:2117
-#: features/sui_quickactions.lua:2138 features/sui_quickactions.lua:2248
-#: features/sui_quickactions.lua:2533 features/sui_quickactions.lua:2604
-#: features/sui_quickactions.lua:2630 features/sui_quickactions.lua:2655
-#: features/sui_quickactions.lua:2733 features/sui_quickactions.lua:2757
-#: features/sui_quickactions.lua:3070 features/sui_quickactions.lua:3465
-#: features/sui_backup.lua:995 features/sui_backup.lua:1094
-#: features/sui_style.lua:1311 features/sui_presets.lua:849
-#: features/sui_presets.lua:879 features/sui_presets.lua:909
-#: features/sui_presets.lua:926 features/sui_presets.lua:954
-#: features/sui_presets.lua:994 features/sui_presets.lua:1012
-#: features/sui_presets.lua:1041 infra/sui_config.lua:939
-#: infra/sui_config.lua:973 infra/sui_config.lua:1088 infra/sui_config.lua:1161
+#: modules/module_quote.lua:1307 modules/module_collections.lua:365
+#: modules/module_reading_goals.lua:750 modules/module_clock.lua:1272
+#: features/sui_quickactions.lua:529 features/sui_quickactions.lua:1645
+#: features/sui_quickactions.lua:1978 features/sui_quickactions.lua:2130
+#: features/sui_quickactions.lua:2151 features/sui_quickactions.lua:2261
+#: features/sui_quickactions.lua:2546 features/sui_quickactions.lua:2617
+#: features/sui_quickactions.lua:2643 features/sui_quickactions.lua:2668
+#: features/sui_quickactions.lua:2746 features/sui_quickactions.lua:2770
+#: features/sui_quickactions.lua:3082 features/sui_quickactions.lua:3477
+#: features/sui_backup.lua:996 features/sui_backup.lua:1095
+#: features/sui_style.lua:1311 features/sui_presets.lua:854
+#: features/sui_presets.lua:884 features/sui_presets.lua:914
+#: features/sui_presets.lua:931 features/sui_presets.lua:959
+#: features/sui_presets.lua:999 features/sui_presets.lua:1017
+#: features/sui_presets.lua:1046 infra/sui_config.lua:1132
+#: infra/sui_config.lua:1180 infra/sui_config.lua:1214
+#: infra/sui_config.lua:1329 infra/sui_config.lua:1402
 #: infra/sui_updater.lua:500 infra/sui_updater.lua:517
-#: screens/sui_titlebar.lua:1007 screens/sui_menu.lua:650
+#: screens/sui_titlebar.lua:1038 screens/sui_menu.lua:650
 #: screens/sui_menu.lua:911 screens/sui_menu.lua:1041 screens/sui_menu.lua:1318
-#: screens/sui_menu.lua:2407 screens/sui_menu.lua:2479
-#: screens/sui_menu.lua:2511 screens/sui_menu.lua:2937
-#: screens/sui_menu.lua:3298 screens/sui_menu.lua:4004
-#: screens/sui_menu.lua:4032 screens/sui_menu.lua:4061
-#: screens/sui_menu.lua:4078 screens/sui_menu.lua:4104
-#: screens/sui_menu.lua:4145 screens/sui_menu.lua:4163
-#: screens/sui_menu.lua:4190 screens/sui_menu.lua:4335
-#: screens/sui_menu.lua:4440 screens/sui_stats_windows.lua:649
-#: screens/sui_stats_windows.lua:772 screens/sui_settings_window.lua:483
-#: screens/sui_settings_window.lua:1170
-#: features/library/sui_library_browse.lua:826
-#: features/library/sui_series_grouping.lua:377
+#: screens/sui_menu.lua:2424 screens/sui_menu.lua:2496
+#: screens/sui_menu.lua:2528 screens/sui_menu.lua:2956
+#: screens/sui_menu.lua:3317 screens/sui_menu.lua:4023
+#: screens/sui_menu.lua:4051 screens/sui_menu.lua:4080
+#: screens/sui_menu.lua:4097 screens/sui_menu.lua:4123
+#: screens/sui_menu.lua:4164 screens/sui_menu.lua:4182
+#: screens/sui_menu.lua:4209 screens/sui_menu.lua:4354
+#: screens/sui_menu.lua:4459 screens/sui_stats_windows.lua:649
+#: screens/sui_stats_windows.lua:772 screens/sui_settings_window.lua:487
+#: screens/sui_settings_window.lua:1174
+#: features/library/sui_library_browse.lua:801
+#: features/library/sui_series_grouping.lua:382
 #: features/library/sui_library_search.lua:70
 #: features/library/sui_library_search.lua:207
-#: features/library/sui_group_actions.lua:71
-#: features/library/sui_group_actions.lua:101
+#: features/library/sui_group_actions.lua:74
+#: features/library/sui_group_actions.lua:107
 msgid "Cancel"
 msgstr "Ləğv et"
 
-#: modules/module_reading_stats.lua:804
+#: modules/module_reading_stats.lua:899
+msgid "Card Opacity"
+msgstr ""
+
+#: modules/module_reading_stats.lua:867
 msgid "Cards"
 msgstr "Kartlar"
 
-#: modules/module_reading_stats.lua:814
-msgid "Cards - Transparent"
-msgstr "Kartlar - şəffaf"
-
-#: modules/module_quote.lua:127 modules/module_quote.lua:1564
-#: modules/module_action_list.lua:68 modules/module_action_list.lua:470
-#: modules/module_reading_stats.lua:93 modules/module_reading_stats.lua:860
-#: modules/module_reading_goals.lua:121 modules/module_reading_goals.lua:1573
-#: modules/module_clock.lua:168 modules/module_clock.lua:1205
-#: screens/sui_menu.lua:710 screens/sui_menu.lua:941 screens/sui_menu.lua:3364
-#: screens/sui_menu.lua:3377
+#: modules/module_quote.lua:126 modules/module_quote.lua:1574
+#: modules/module_action_list.lua:68 modules/module_action_list.lua:483
+#: modules/module_reading_stats.lua:113 modules/module_reading_stats.lua:922
+#: modules/module_reading_goals.lua:136 modules/module_reading_goals.lua:1607
+#: modules/module_clock.lua:167 modules/module_clock.lua:1239
+#: screens/sui_menu.lua:710 screens/sui_menu.lua:941 screens/sui_menu.lua:3383
+#: screens/sui_menu.lua:3396
 msgid "Center"
 msgstr "Mərkəz"
 
-#: screens/sui_menu.lua:4412
+#: screens/sui_menu.lua:4431
 msgid "Check for Updates"
 msgstr "Yeniləmələri yoxla"
 
@@ -762,11 +809,11 @@ msgstr "Yeniləmələri yoxla"
 msgid "Checking for updates…"
 msgstr "Yeniləmələr yoxlanılır…"
 
-#: features/sui_backup.lua:964
+#: features/sui_backup.lua:965
 msgid "Choose backup file"
 msgstr "Ehtiyat nüsxə faylını seç"
 
-#: features/sui_backup.lua:1140
+#: features/sui_backup.lua:1141
 msgid "Choose backup file…"
 msgstr "Ehtiyat nüsxə faylını seç…"
 
@@ -774,15 +821,15 @@ msgstr "Ehtiyat nüsxə faylını seç…"
 msgid "Choose file"
 msgstr "Fayl seç"
 
-#: features/sui_quickactions.lua:2222
+#: features/sui_quickactions.lua:2235
 msgid "Choose icon"
 msgstr "İşarə seç"
 
-#: screens/sui_menu.lua:3806
+#: screens/sui_menu.lua:3825
 msgid "Choose icon pack"
 msgstr "İşarə dəstini seç"
 
-#: screens/sui_menu.lua:2263
+#: screens/sui_menu.lua:2295
 msgid "Choose wallpaper"
 msgstr "Fon şəklini seç"
 
@@ -790,17 +837,17 @@ msgstr "Fon şəklini seç"
 msgid "Choose your initial layout"
 msgstr "İlkin düzülüşü seçin"
 
-#: modules/module_clock.lua:237 modules/module_clock.lua:740
-#: features/sui_presets.lua:150 features/sui_presets.lua:215
-#: infra/sui_config.lua:167
+#: modules/module_clock.lua:236 modules/module_clock.lua:745
+#: modules/module_clock.lua:1188 features/sui_presets.lua:154
+#: features/sui_presets.lua:219 infra/sui_config.lua:191
 msgid "Clock"
 msgstr "Saat"
 
-#: modules/module_clock.lua:1013 modules/module_clock.lua:1015
+#: modules/module_clock.lua:1038 modules/module_clock.lua:1040
 msgid "Clock Size"
 msgstr "Saat ölçüsü"
 
-#: modules/module_clock.lua:1161
+#: modules/module_clock.lua:1195
 msgid "Clock Style"
 msgstr "Saat üslubu"
 
@@ -808,19 +855,19 @@ msgstr "Saat üslubu"
 msgid "Close"
 msgstr "Bağla"
 
-#: screens/sui_menu.lua:2556
+#: screens/sui_menu.lua:2573
 msgid "Closing Book Notice"
 msgstr "Kitabın bağlanması bildirişi"
 
-#: main.lua:1891
+#: main.lua:1908
 msgid "Closing book…"
 msgstr "Kitab bağlanır…"
 
-#: features/sui_quickactions.lua:2163
+#: features/sui_quickactions.lua:2176
 msgid "Codepoint out of valid Unicode range (0–10FFFF)."
 msgstr "Kod nöqtəsi etibarlı Unicode aralığından (0–10FFFF) kənardadır."
 
-#: features/sui_quickactions.lua:2606 features/sui_quickactions.lua:2749
+#: features/sui_quickactions.lua:2619 features/sui_quickactions.lua:2762
 msgid "Collection"
 msgstr "Kolleksiya"
 
@@ -828,11 +875,11 @@ msgstr "Kolleksiya"
 msgid "Collection Menu"
 msgstr "Kolleksiya menyusu"
 
-#: features/library/sui_group_actions.lua:127
+#: features/library/sui_group_actions.lua:146
 msgid "Collection \"%1\" created with %2 books."
 msgstr "\"%1\" kolleksiyası %2 kitabla yaradıldı."
 
-#: features/library/sui_group_actions.lua:113
+#: features/library/sui_group_actions.lua:119
 msgid "Collection already exists: %1"
 msgstr "Kolleksiya artıq mövcuddur: %1"
 
@@ -840,7 +887,7 @@ msgstr "Kolleksiya artıq mövcuddur: %1"
 msgid "Collection is empty."
 msgstr "Kolleksiya boşdur."
 
-#: features/sui_quickactions.lua:3159
+#: features/sui_quickactions.lua:3171
 msgid "Collection not available: %s"
 msgstr "Kolleksiya əlçatan deyil: %s"
 
@@ -855,17 +902,17 @@ msgstr "Kolleksiya: (yoxdur)"
 #: modules/module_collections.lua:1188 modules/module_collections.lua:1207
 #: modules/module_collections.lua:1216 modules/module_collections.lua:1269
 #: modules/module_collections.lua:1477 modules/module_collections.lua:1478
-#: modules/module_coverdeck.lua:1452 features/sui_quickactions.lua:501
-#: features/sui_quickactions.lua:737 features/sui_quickactions.lua:2270
-#: infra/sui_config.lua:118
+#: modules/module_coverdeck.lua:1404 features/sui_quickactions.lua:515
+#: features/sui_quickactions.lua:751 features/sui_quickactions.lua:2283
+#: infra/sui_config.lua:119
 msgid "Collections"
 msgstr "Kolleksiyalar"
 
-#: infra/sui_patches.lua:1409
+#: infra/sui_patches.lua:1426
 msgid "Collections (%1)"
 msgstr "Kolleksiyalar (%1)"
 
-#: features/sui_quickactions.lua:744
+#: features/sui_quickactions.lua:758
 msgid "Collections not available."
 msgstr "Kolleksiyalar əlçatan deyil."
 
@@ -873,53 +920,53 @@ msgstr "Kolleksiyalar əlçatan deyil."
 msgid "Collections: Back Button"
 msgstr "Kolleksiyalar: geri düyməsi"
 
-#: screens/sui_menu.lua:2997 screens/sui_menu.lua:3051
-#: screens/sui_menu.lua:3105 screens/sui_menu.lua:3172
-#: screens/sui_menu.lua:3239 screens/sui_menu.lua:3393
+#: screens/sui_menu.lua:3016 screens/sui_menu.lua:3070
+#: screens/sui_menu.lua:3124 screens/sui_menu.lua:3191
+#: screens/sui_menu.lua:3258 screens/sui_menu.lua:3412
 msgid "Color"
 msgstr "Rəng"
 
-#: infra/sui_config.lua:1145 infra/sui_config.lua:1153
+#: infra/sui_config.lua:1386 infra/sui_config.lua:1394
 msgid "Column Width (Bento Grid)"
 msgstr "Sütun eni (bölməli tor)"
 
-#: engines/sui_book_grid.lua:1834
+#: engines/sui_book_grid.lua:1852
 msgid "Columns"
 msgstr "Sütunlar"
 
-#: modules/module_reading_goals.lua:1519 modules/module_currently.lua:1967
-#: screens/sui_menu.lua:1828
+#: modules/module_reading_goals.lua:1553 modules/module_currently.lua:2028
+#: screens/sui_menu.lua:1837
 msgid "Compact"
 msgstr "Yığcam"
 
-#: features/sui_quickactions.lua:2116
+#: features/sui_quickactions.lua:2129
 msgid "Confirm"
 msgstr "Təsdiq et"
 
-#: features/sui_quickactions.lua:770 infra/sui_config.lua:121
+#: features/sui_quickactions.lua:784 infra/sui_config.lua:122
 #: screens/sui_onboarding.lua:254 screens/sui_onboarding.lua:260
 #: screens/sui_onboarding.lua:266
 msgid "Continue"
 msgstr "Davam et"
 
-#: features/sui_backup.lua:1112
+#: features/sui_backup.lua:1113
 msgid "Copy this file somewhere safe (e.g. over USB)."
 msgstr "Bu faylı təhlükəsiz yerə köçürün (məsələn, USB vasitəsilə)."
 
-#: engines/sui_book_grid.lua:1943
+#: engines/sui_book_grid.lua:1944
 msgid "Corner Badge"
 msgstr "Künc nişanı"
 
-#: features/sui_backup.lua:881 features/sui_backup.lua:956
-#: features/sui_backup.lua:1083
+#: features/sui_backup.lua:882 features/sui_backup.lua:957
+#: features/sui_backup.lua:1084
 msgid "Could not determine backup folder."
 msgstr "Ehtiyat nüsxə qovluğunu müəyyən etmək mümkün olmadı."
 
-#: features/sui_style.lua:1991
+#: features/sui_style.lua:2075
 msgid "Could not determine packs folder"
 msgstr "Dəstlər qovluğunu müəyyən etmək mümkün olmadı"
 
-#: features/sui_backup.lua:528
+#: features/sui_backup.lua:529
 msgid "Could not open backup file for writing"
 msgstr "Ehtiyat nüsxə faylını yazmaq üçün açmaq mümkün olmadı"
 
@@ -927,31 +974,31 @@ msgstr "Ehtiyat nüsxə faylını yazmaq üçün açmaq mümkün olmadı"
 msgid "Could not open statistics database."
 msgstr "Statistika verilənlər bazasını açmaq mümkün olmadı."
 
-#: features/sui_style.lua:1993
+#: features/sui_style.lua:2077
 msgid "Could not open zip (invalid format or corrupted)"
 msgstr ""
 "ZIP faylını açmaq mümkün olmadı (format yanlışdır və ya fayl zədələnib)"
 
-#: features/sui_backup.lua:540
+#: features/sui_backup.lua:541
 msgid "Could not write backup file"
 msgstr "Ehtiyat nüsxə faylını yazmaq mümkün olmadı"
 
-#: modules/module_coverdeck.lua:637 features/sui_presets.lua:170
-#: features/sui_presets.lua:188
+#: modules/module_coverdeck.lua:575 features/sui_presets.lua:174
+#: features/sui_presets.lua:192
 msgid "Cover Deck"
 msgstr "Üzlük dəsti"
 
-#: screens/sui_menu.lua:2869
+#: screens/sui_menu.lua:2888
 msgid "Cover Settings"
 msgstr "Üzlük parametrləri"
 
-#: modules/module_coverdeck.lua:1348 modules/module_coverdeck.lua:1349
-#: modules/module_currently.lua:1424 modules/module_currently.lua:1425
-#: engines/sui_book_grid.lua:1787 engines/sui_book_grid.lua:1789
+#: modules/module_coverdeck.lua:1300 modules/module_coverdeck.lua:1301
+#: modules/module_currently.lua:1464 modules/module_currently.lua:1465
+#: engines/sui_book_grid.lua:1805 engines/sui_book_grid.lua:1807
 msgid "Cover Size"
 msgstr "Üzlük ölçüsü"
 
-#: modules/module_currently.lua:1451 modules/module_currently.lua:1452
+#: modules/module_currently.lua:1491 modules/module_currently.lua:1492
 msgid "Cover Spacing"
 msgstr "Üzlük aralığı"
 
@@ -963,34 +1010,40 @@ msgstr "Üzlük üslubu"
 msgid "Cover for \"%s\""
 msgstr "\"%s\" üçün üzlük"
 
+#: infra/sui_compat_check.lua:212
+msgid ""
+"CoverBrowser plugin is not enabled, some features will not work correctly."
+msgstr ""
+
 #: modules/module_coverdeck.lua:154
 msgid "Covers"
 msgstr "Üzlüklər"
 
-#: screens/sui_settings_window.lua:1175
-#: features/library/sui_group_actions.lua:106
+#: screens/sui_settings_window.lua:1179
+#: features/library/sui_group_actions.lua:112
 msgid "Create"
 msgstr "Yarat"
 
-#: features/sui_quickactions.lua:1668 features/sui_quickactions.lua:2977
+#: features/sui_quickactions.lua:1681 features/sui_quickactions.lua:2989
 msgid "Create Quick Action"
 msgstr "Sürətli əməl yarat"
 
-#: screens/sui_settings_window.lua:1158
+#: screens/sui_settings_window.lua:1162
 msgid "Create Screen"
 msgstr "Ekran yarat"
 
-#: features/library/sui_foldercovers.lua:726
-#: features/library/sui_library_browse.lua:819
-#: features/library/sui_series_grouping.lua:369
+#: features/library/sui_foldercovers.lua:730
+#: features/library/sui_foldercovers.lua:745
+#: features/library/sui_library_browse.lua:794
+#: features/library/sui_series_grouping.lua:374
 msgid "Create collection"
 msgstr "Kolleksiya yarat"
 
-#: screens/sui_settings_window.lua:1165
+#: screens/sui_settings_window.lua:1169
 msgid "Create screen"
 msgstr "Ekran yarat"
 
-#: features/sui_backup.lua:878 features/sui_backup.lua:1108
+#: features/sui_backup.lua:879 features/sui_backup.lua:1109
 msgid "Creating backup…"
 msgstr "Ehtiyat nüsxə yaradılır…"
 
@@ -998,30 +1051,30 @@ msgstr "Ehtiyat nüsxə yaradılır…"
 msgid "Current streak"
 msgstr "Cari ardıcıllıq"
 
-#: modules/module_currently.lua:355 modules/module_currently.lua:356
-#: modules/module_currently.lua:487 modules/module_currently.lua:1928
-#: features/sui_presets.lua:138 features/sui_presets.lua:150
-#: features/sui_presets.lua:215
+#: modules/module_currently.lua:375 modules/module_currently.lua:376
+#: modules/module_currently.lua:533 modules/module_currently.lua:1983
+#: features/sui_presets.lua:142 features/sui_presets.lua:154
+#: features/sui_presets.lua:219
 msgid "Currently Reading"
 msgstr "Hazırda oxunan"
 
-#: infra/sui_config.lua:2105
+#: infra/sui_config.lua:2356
 msgid "Custom"
 msgstr "Fərdi"
 
-#: features/sui_quickactions.lua:1934 features/sui_quickactions.lua:1937
+#: features/sui_quickactions.lua:1947 features/sui_quickactions.lua:1950
 msgid "Custom Actions"
 msgstr "Fərdi əməllər"
 
-#: modules/module_quote.lua:1451
+#: modules/module_quote.lua:1461
 msgid "Custom File"
 msgstr "Fərdi fayl"
 
-#: modules/module_quote.lua:1500
+#: modules/module_quote.lua:1510
 msgid "Custom File + My Highlights"
 msgstr "Fərdi fayl + vurğulamalarım"
 
-#: features/sui_quickactions.lua:1561 features/sui_quickactions.lua:1665
+#: features/sui_quickactions.lua:1574 features/sui_quickactions.lua:1678
 msgid "Custom Quick Actions"
 msgstr "Fərdi sürətli əməllər"
 
@@ -1029,15 +1082,15 @@ msgstr "Fərdi sürətli əməllər"
 msgid "Custom Screen"
 msgstr "Fərdi ekran"
 
-#: features/sui_quickactions.lua:1944 features/sui_quickactions.lua:1947
+#: features/sui_quickactions.lua:1957 features/sui_quickactions.lua:1960
 msgid "Custom Screens"
 msgstr "Fərdi ekranlar"
 
-#: screens/sui_settings_window.lua:434
+#: screens/sui_settings_window.lua:438
 msgid "Custom Screens unavailable."
 msgstr "Fərdi ekranlar əlçatan deyil."
 
-#: infra/sui_config.lua:173 screens/sui_menu.lua:642 screens/sui_menu.lua:904
+#: infra/sui_config.lua:198 screens/sui_menu.lua:642 screens/sui_menu.lua:904
 msgid "Custom Text"
 msgstr "Fərdi mətn"
 
@@ -1065,43 +1118,43 @@ msgstr "Daha çox fərdiləşdirin"
 msgid "DAY STREAK"
 msgstr "Ardıcıl günlər"
 
-#: modules/module_reading_goals.lua:1332 modules/module_reading_goals.lua:1360
-#: modules/module_reading_goals.lua:1397 modules/module_reading_goals.lua:1442
+#: modules/module_reading_goals.lua:1365 modules/module_reading_goals.lua:1393
+#: modules/module_reading_goals.lua:1430 modules/module_reading_goals.lua:1475
 msgid "Daily Goal"
 msgstr "Gündəlik məqsəd"
 
-#: modules/module_reading_goals.lua:777
+#: modules/module_reading_goals.lua:796
 msgid "Daily Reading Goal"
 msgstr "Gündəlik oxu məqsədi"
 
-#: modules/module_reading_stats.lua:114
+#: modules/module_reading_stats.lua:134
 msgid "Daily avg — Pages"
 msgstr "Gündəlik orta — səhifələr"
 
-#: modules/module_reading_stats.lua:113
+#: modules/module_reading_stats.lua:133
 msgid "Daily avg — Time"
 msgstr "Gündəlik orta — vaxt"
 
-#: modules/module_collections.lua:1408 modules/module_coverdeck.lua:1736
-#: engines/sui_book_grid.lua:1914 screens/sui_menu.lua:2999
-#: screens/sui_menu.lua:3004 screens/sui_menu.lua:3053
-#: screens/sui_menu.lua:3058 screens/sui_menu.lua:3107
-#: screens/sui_menu.lua:3112 screens/sui_menu.lua:3174
-#: screens/sui_menu.lua:3179 screens/sui_menu.lua:3241
-#: screens/sui_menu.lua:3246 screens/sui_menu.lua:3395
-#: screens/sui_menu.lua:3407
+#: modules/module_collections.lua:1408 modules/module_coverdeck.lua:1697
+#: modules/module_currently.lua:2002 engines/sui_book_grid.lua:1915
+#: screens/sui_menu.lua:3018 screens/sui_menu.lua:3023
+#: screens/sui_menu.lua:3072 screens/sui_menu.lua:3077
+#: screens/sui_menu.lua:3126 screens/sui_menu.lua:3131
+#: screens/sui_menu.lua:3193 screens/sui_menu.lua:3198
+#: screens/sui_menu.lua:3260 screens/sui_menu.lua:3265
+#: screens/sui_menu.lua:3414 screens/sui_menu.lua:3426
 msgid "Dark"
 msgstr "Tünd"
 
-#: features/sui_presets.lua:214
+#: features/sui_presets.lua:218
 msgid "Dashboard"
 msgstr "İdarəetmə paneli"
 
-#: modules/module_clock.lua:238
+#: modules/module_clock.lua:237 modules/module_clock.lua:1188
 msgid "Date"
 msgstr "Tarix"
 
-#: modules/module_clock.lua:1022 modules/module_clock.lua:1024
+#: modules/module_clock.lua:1047 modules/module_clock.lua:1049
 msgid "Date Size"
 msgstr "Tarix ölçüsü"
 
@@ -1125,7 +1178,7 @@ msgstr "Başlama tarixi"
 msgid "Days"
 msgstr "Günlər"
 
-#: modules/module_coverdeck.lua:144 modules/module_currently.lua:285
+#: modules/module_coverdeck.lua:144 modules/module_currently.lua:305
 msgid "Days of reading"
 msgstr "Oxunan günlər"
 
@@ -1133,33 +1186,39 @@ msgstr "Oxunan günlər"
 msgid "Dec"
 msgstr "Dek"
 
-#: modules/module_clock.lua:64 screens/sui_stats_windows.lua:2817
+#: modules/module_clock.lua:63 screens/sui_stats_windows.lua:2817
 msgid "December"
 msgstr "Dekabr"
 
-#: modules/module_reading_goals.lua:1511 modules/module_currently.lua:1475
-#: modules/module_currently.lua:1965 features/sui_quickactions.lua:2187
-#: features/sui_quickactions.lua:2473 screens/sui_titlebar.lua:1003
+#: modules/module_reading_goals.lua:1545 modules/module_currently.lua:1515
+#: modules/module_currently.lua:2026 features/sui_quickactions.lua:2200
+#: features/sui_quickactions.lua:2486 features/sui_style.lua:1919
+#: infra/sui_config.lua:953 screens/sui_titlebar.lua:1034
 #: screens/sui_menu.lua:459 screens/sui_menu.lua:588 screens/sui_menu.lua:1264
-#: screens/sui_menu.lua:1829
+#: screens/sui_menu.lua:1838
 msgid "Default"
 msgstr "Standart"
 
-#: features/sui_quickactions.lua:2474
+#: features/sui_quickactions.lua:2487
 msgid "Default (Folder)"
 msgstr "Standart (qovluq)"
 
-#: features/sui_quickactions.lua:2475
+#: features/sui_quickactions.lua:2488
 msgid "Default (Plugin)"
 msgstr "Standart (qoşma)"
 
-#: features/sui_quickactions.lua:2476
+#: features/sui_quickactions.lua:2489
 msgid "Default (System)"
 msgstr "Standart (sistem)"
 
-#: modules/module_quote.lua:1387
+#: modules/module_quote.lua:1397
 msgid "Default Quotes"
 msgstr "Standart sitatlar"
+
+#: infra/sui_config.lua:1173
+#, fuzzy
+msgid "Default: %1"
+msgstr "Standart"
 
 #: features/sui_style.lua:177
 msgid "Default: Folder"
@@ -1177,79 +1236,83 @@ msgstr "Standart: qoşma"
 msgid "Default: System"
 msgstr "Standart: sistem"
 
-#: engines/sui_window.lua:1941 engines/sui_window.lua:2870
-#: features/sui_quickactions.lua:1631 features/sui_quickactions.lua:3064
-#: features/sui_quickactions.lua:3069 features/sui_presets.lua:950
-#: features/sui_presets.lua:953 features/sui_presets.lua:993
-#: screens/sui_menu.lua:4100 screens/sui_menu.lua:4103
-#: screens/sui_menu.lua:4144 screens/sui_settings_window.lua:510
-#: screens/sui_settings_window.lua:555 screens/sui_settings_window.lua:685
+#: engines/sui_window.lua:1960 engines/sui_window.lua:2889
+#: features/sui_quickactions.lua:1644 features/sui_quickactions.lua:3076
+#: features/sui_quickactions.lua:3081 features/sui_presets.lua:955
+#: features/sui_presets.lua:958 features/sui_presets.lua:998
+#: screens/sui_menu.lua:4119 screens/sui_menu.lua:4122
+#: screens/sui_menu.lua:4163 screens/sui_settings_window.lua:514
+#: screens/sui_settings_window.lua:559 screens/sui_settings_window.lua:689
 #: features/library/sui_book_hold_dialog.lua:151
 msgid "Delete"
 msgstr "Sil"
 
-#: screens/sui_menu.lua:4439
+#: screens/sui_menu.lua:4458
 msgid "Delete Settings"
 msgstr "Parametrləri sil"
 
-#: screens/sui_settings_window.lua:508
+#: screens/sui_settings_window.lua:512
 msgid "Delete \"%s\"? This removes its layout, modules and Quick Action."
 msgstr "\"%s\" silinsin? Onun düzülüşü, modulları və sürətli əməli silinəcək."
 
-#: features/sui_presets.lua:952 features/sui_presets.lua:992
-#: screens/sui_menu.lua:4102 screens/sui_menu.lua:4143
+#: features/sui_presets.lua:957 features/sui_presets.lua:997
+#: screens/sui_menu.lua:4121 screens/sui_menu.lua:4162
 msgid "Delete preset \"%s\"?"
 msgstr "\"%s\" hazır quruluşu silinsin?"
 
-#: features/sui_quickactions.lua:1630 features/sui_quickactions.lua:3068
+#: features/sui_quickactions.lua:1643 features/sui_quickactions.lua:3080
 msgid "Delete quick action \"%s\"?"
 msgstr "\"%s\" sürətli əməli silinsin?"
 
-#: modules/module_currently.lua:282
+#: modules/module_currently.lua:302 modules/module_currently.lua:1971
 msgid "Description"
 msgstr "Təsvir"
 
-#: modules/module_reading_goals.lua:1541 modules/module_reading_goals.lua:1553
+#: modules/module_reading_goals.lua:1314
+msgid "Detail"
+msgstr ""
+
+#: modules/module_reading_goals.lua:1575 modules/module_reading_goals.lua:1587
 msgid "Detail Below Ring"
 msgstr "Təfərrüat halqanın altında"
 
-#: modules/module_reading_goals.lua:1541 modules/module_reading_goals.lua:1545
+#: modules/module_reading_goals.lua:1575 modules/module_reading_goals.lua:1579
 msgid "Detail Inside Ring"
 msgstr "Təfərrüat halqanın içində"
 
-#: features/sui_quickactions.lua:2273
+#: features/sui_quickactions.lua:2286
 msgid "Dictionary Lookup"
 msgstr "Lüğətdə axtarış"
 
-#: modules/module_clock.lua:1166 modules/module_clock.lua:1170
+#: modules/module_clock.lua:1200 modules/module_clock.lua:1204
 msgid "Digital"
 msgstr "Rəqəmsal"
 
-#: screens/sui_menu.lua:2497
+#: screens/sui_menu.lua:2514
 msgid "Disable \"Lock Scale\" first to set a custom label scale."
 msgstr ""
 "Fərdi yazı miqyası təyin etmək üçün əvvəlcə \"Miqyası kilidlə\" seçimini "
 "söndürün."
 
-#: infra/sui_config.lua:924
+#: infra/sui_config.lua:1117
 msgid "Disable \"Lock Scale\" first to set a per-module scale."
 msgstr ""
 "Modul üçün ayrıca miqyas təyin etmək üçün əvvəlcə \"Miqyası kilidlə\" "
 "seçimini söndürün."
 
-#: infra/sui_config.lua:171
+#: infra/sui_config.lua:196
 msgid "Disk Usage"
 msgstr "Disk istifadəsi"
 
-#: features/sui_quickactions.lua:3118
+#: features/sui_quickactions.lua:3130
 msgid "Dispatcher not available."
 msgstr "Dispatcher əlçatan deyil."
 
-#: screens/sui_menu.lua:3565
+#: screens/sui_menu.lua:3584
 msgid "Display"
 msgstr "Ekran"
 
-#: features/sui_quickactions.lua:2724
+#: features/sui_quickactions.lua:2737
 msgid "Done"
 msgstr "Hazırdır"
 
@@ -1273,11 +1336,11 @@ msgstr "Endirmə xətası: "
 msgid "Downloading Simple UI %s…"
 msgstr "Simple UI %s endirilir…"
 
-#: modules/module_currently.lua:1478
+#: modules/module_currently.lua:1518
 msgid "Dynamic"
 msgstr "Dinamik"
 
-#: features/sui_quickactions.lua:3051
+#: features/sui_quickactions.lua:3063
 msgid "Edit"
 msgstr "Redaktə et"
 
@@ -1285,23 +1348,23 @@ msgstr "Redaktə et"
 msgid "Edit Custom Text"
 msgstr "Fərdi mətni redaktə et"
 
-#: screens/sui_menu.lua:2191 screens/sui_settings_window.lua:379
+#: screens/sui_menu.lua:2200 screens/sui_settings_window.lua:379
 msgid "Edit Home Screen Layout"
 msgstr "Əsas ekranın düzülüşünü redaktə et"
 
-#: features/sui_quickactions.lua:2391
+#: features/sui_quickactions.lua:2404
 msgid "Edit Quick Action"
 msgstr "Sürətli əməli redaktə et"
 
-#: modules/module_clock.lua:317
+#: modules/module_clock.lua:316
 msgid "Eight"
 msgstr "Səkkiz"
 
-#: modules/module_clock.lua:320
+#: modules/module_clock.lua:319
 msgid "Eighteen"
 msgstr "On səkkiz"
 
-#: modules/module_clock.lua:318
+#: modules/module_clock.lua:317
 msgid "Eleven"
 msgstr "On bir"
 
@@ -1309,18 +1372,23 @@ msgstr "On bir"
 msgid "Empty"
 msgstr "Boş"
 
-#: features/sui_quickactions.lua:998 features/sui_quickactions.lua:1016
-#: features/sui_quickactions.lua:1034
+#: infra/sui_compat_check.lua:186
+#, fuzzy
+msgid "Enable"
+msgstr "qoşulub"
+
+#: features/sui_quickactions.lua:1012 features/sui_quickactions.lua:1030
+#: features/sui_quickactions.lua:1048
 msgid "Enable 'Browse by Author / Series / Tags' in the library menu first."
 msgstr ""
 "Əvvəlcə kitabxana menyusunda \"Müəllif / silsilə / etiketlər üzrə gözdən "
 "keçirmə\" seçimini qoşun."
 
-#: screens/sui_menu.lua:2820
+#: screens/sui_menu.lua:2839
 msgid "Enable Browse by Author / Series / Tags"
 msgstr "Müəllif / silsilə / etiketlər üzrə gözdən keçirməni qoş"
 
-#: screens/sui_menu.lua:2804
+#: screens/sui_menu.lua:2823
 msgid "Enable Library Custom Covers"
 msgstr "Kitabxanada fərdi üzlükləri qoş"
 
@@ -1328,7 +1396,7 @@ msgstr "Kitabxanada fərdi üzlükləri qoş"
 msgid "Enable Navigation Bar"
 msgstr "Naviqasiya panelini qoş"
 
-#: screens/sui_quicksettings_bar.lua:1106
+#: screens/sui_quicksettings_bar.lua:1119
 msgid "Enable Quick Settings Bar"
 msgstr "Sürətli parametrlər panelini qoş"
 
@@ -1336,19 +1404,19 @@ msgstr "Sürətli parametrlər panelini qoş"
 msgid "Enable Status Bar"
 msgstr "Vəziyyət panelini qoş"
 
-#: screens/sui_menu.lua:1779
+#: screens/sui_menu.lua:1788
 msgid "Enable Title Bar"
 msgstr "Başlıq panelini qoş"
 
-#: screens/sui_menu.lua:2239
+#: screens/sui_menu.lua:2273
 msgid "Enable Wallpaper"
 msgstr "Fon şəklini qoş"
 
-#: features/sui_style.lua:1789
+#: features/sui_style.lua:1811
 msgid "Enable custom UI font"
 msgstr "Fərdi interfeys şriftini qoş"
 
-#: features/sui_quickactions.lua:2135
+#: features/sui_quickactions.lua:2148
 msgid ""
 "Enter the Unicode codepoint (hex) of a Nerd Fonts symbol.\n"
 "You can look up codes with wakamaifondue.com using the file:\n"
@@ -1360,7 +1428,7 @@ msgstr ""
 "  /koreader/fonts/nerdfonts/symbols.ttf\n"
 "Nerd Font işarəsini silmək üçün boş saxlayıb \"Oldu\" düyməsinə basın."
 
-#: screens/sui_menu.lua:3867
+#: screens/sui_menu.lua:3886
 msgid "Error applying pack:"
 msgstr "Dəstin tətbiqi zamanı xəta:"
 
@@ -1372,23 +1440,23 @@ msgstr "Yeniləmələri yoxlayarkən xəta baş verdi."
 msgid "Error checking for updates: "
 msgstr "Yeniləmələri yoxlayarkən xəta: "
 
-#: features/sui_presets.lua:1121 screens/sui_menu.lua:4272
+#: features/sui_presets.lua:1126 screens/sui_menu.lua:4291
 msgid "Error exporting preset: "
 msgstr "Hazır quruluşu ixrac edərkən xəta: "
 
-#: features/sui_style.lua:2040
+#: features/sui_style.lua:2124
 msgid "Error extracting zip: "
 msgstr "ZIP faylını çıxararkən xəta: "
 
-#: features/sui_presets.lua:1095 screens/sui_menu.lua:4245
+#: features/sui_presets.lua:1100 screens/sui_menu.lua:4264
 msgid "Error importing preset: "
 msgstr "Hazır quruluşu idxal edərkən xəta: "
 
-#: modules/module_reading_goals.lua:1150
+#: modules/module_reading_goals.lua:1168
 msgid "Error in Reading Goals: check crash.log"
 msgstr "Oxu məqsədlərində xəta: crash.log faylına baxın"
 
-#: screens/sui_menu.lua:3785
+#: screens/sui_menu.lua:3804
 msgid "Error installing pack:"
 msgstr "Dəstin quraşdırılması zamanı xəta:"
 
@@ -1400,23 +1468,23 @@ msgstr "Məqsədlərə daxil etmə"
 msgid "Excluded"
 msgstr "Daxil edilməyib"
 
-#: features/sui_backup.lua:1099
+#: features/sui_backup.lua:1100
 msgid "Export"
 msgstr "İxrac et"
 
-#: features/sui_backup.lua:1125
+#: features/sui_backup.lua:1126
 msgid "Export Full Backup…"
 msgstr "Tam ehtiyat nüsxəni ixrac et…"
 
-#: features/sui_backup.lua:1078
+#: features/sui_backup.lua:1079
 msgid "Export now…"
 msgstr "İndi ixrac et…"
 
-#: features/sui_presets.lua:1109 screens/sui_menu.lua:4259
+#: features/sui_presets.lua:1114 screens/sui_menu.lua:4278
 msgid "Export preset"
 msgstr "Hazır quruluşu ixrac et"
 
-#: screens/sui_settings_window.lua:390 screens/sui_settings_window.lua:1078
+#: screens/sui_settings_window.lua:390 screens/sui_settings_window.lua:1082
 msgid "Extra Custom Screens"
 msgstr "Əlavə fərdi ekranlar"
 
@@ -1432,19 +1500,19 @@ msgstr "Çıxarma xətası: "
 msgid "FREEZES"
 msgstr "Dondurmalar"
 
-#: screens/sui_menu.lua:4432
+#: screens/sui_menu.lua:4451
 msgid "Factory Reset"
 msgstr "Zavod parametrlərinə qaytar"
 
-#: screens/sui_menu.lua:3274
+#: screens/sui_menu.lua:3293
 msgid "Fade Finished Books"
 msgstr "Bitirilmiş kitabları solğunlaşdır"
 
-#: screens/sui_menu.lua:3290
+#: screens/sui_menu.lua:3309
 msgid "Fade Intensity"
 msgstr "Solğunluq dərəcəsi"
 
-#: screens/sui_menu.lua:3291
+#: screens/sui_menu.lua:3310
 msgid ""
 "Fades finished book covers towards white.\n"
 "50% is the default."
@@ -1452,7 +1520,7 @@ msgstr ""
 "Bitirilmiş kitabların üzlüklərini ağa doğru solğunlaşdırır.\n"
 "Standart dəyər: 50%."
 
-#: screens/sui_menu.lua:2400
+#: screens/sui_menu.lua:2417
 msgid ""
 "Fades the wallpaper towards white to improve text readability.\n"
 "0% is the default (no lightening)."
@@ -1460,12 +1528,12 @@ msgstr ""
 "Mətnin oxunaqlığını artırmaq üçün fon şəklini ağa doğru solğunlaşdırır.\n"
 "Standart dəyər: 0% (açıqlaşdırma yoxdur)."
 
-#: modules/module_coverdeck.lua:1434 features/sui_quickactions.lua:835
-#: features/sui_quickactions.lua:2269 infra/sui_config.lua:123
+#: modules/module_coverdeck.lua:1386 features/sui_quickactions.lua:849
+#: features/sui_quickactions.lua:2282 infra/sui_config.lua:124
 msgid "Favorites"
 msgstr "Seçilmişlər"
 
-#: features/sui_quickactions.lua:842
+#: features/sui_quickactions.lua:856
 msgid "Favorites not available."
 msgstr "Seçilmişlər əlçatan deyil."
 
@@ -1481,35 +1549,35 @@ msgstr "Önə çıxarılan kolleksiya — tənzimləmək üçün toxunun"
 msgid "Feb"
 msgstr "Fev"
 
-#: modules/module_clock.lua:62 screens/sui_stats_windows.lua:2815
+#: modules/module_clock.lua:61 screens/sui_stats_windows.lua:2815
 msgid "February"
 msgstr "Fevral"
 
-#: features/sui_quickactions.lua:446
+#: features/sui_quickactions.lua:460
 msgid "Fetching bookmarks…"
 msgstr "Əlfəcinlər alınır…"
 
-#: modules/module_clock.lua:319
+#: modules/module_clock.lua:318
 msgid "Fifteen"
 msgstr "On beş"
 
-#: modules/module_clock.lua:325
+#: modules/module_clock.lua:324
 msgid "Fifty"
 msgstr "Əlli"
 
-#: features/sui_quickactions.lua:823
+#: features/sui_quickactions.lua:837
 msgid "File Manager not available."
 msgstr "Fayl meneceri əlçatan deyil."
 
-#: features/sui_quickactions.lua:2271
+#: features/sui_quickactions.lua:2284
 msgid "File Search"
 msgstr "Fayl axtarışı"
 
-#: features/sui_backup.lua:566
+#: features/sui_backup.lua:567
 msgid "File not found."
 msgstr "Fayl tapılmadı."
 
-#: features/sui_style.lua:1987
+#: features/sui_style.lua:2071
 msgid "File not found: "
 msgstr "Fayl tapılmadı: "
 
@@ -1525,20 +1593,20 @@ msgstr "Fayl ölçüsü (ən kiçik)"
 msgid "Filter by name…"
 msgstr "Ada görə süzgəcdən keçir…"
 
-#: screens/sui_menu.lua:3267
+#: screens/sui_menu.lua:3286
 msgid "Finished Books"
 msgstr "Bitirilmiş kitablar"
 
-#: modules/module_clock.lua:316
+#: modules/module_clock.lua:315
 msgid "Five"
 msgstr "Beş"
 
-#: modules/module_quote.lua:1579
+#: modules/module_quote.lua:1598
 msgid "Fixed Height"
 msgstr "Sabit hündürlük"
 
-#: modules/module_reading_stats.lua:824 modules/module_quick_actions.lua:633
-#: screens/sui_menu.lua:4356 screens/sui_quicksettings_bar.lua:1307
+#: modules/module_reading_stats.lua:877 modules/module_quick_actions.lua:654
+#: screens/sui_menu.lua:4375 screens/sui_quicksettings_bar.lua:1326
 msgid "Flat"
 msgstr "Yastı"
 
@@ -1546,11 +1614,11 @@ msgstr "Yastı"
 msgid "Flat Library"
 msgstr "Yastı kitabxana"
 
-#: features/sui_quickactions.lua:2747
+#: features/sui_quickactions.lua:2760
 msgid "Folder"
 msgstr "Qovluq"
 
-#: screens/sui_menu.lua:2874
+#: screens/sui_menu.lua:2893
 msgid "Folder Cover Type"
 msgstr "Qovluq üzlüyünün növü"
 
@@ -1562,22 +1630,22 @@ msgstr "Qovluq üzlükləri"
 msgid "Folder Covers: Empty Folder"
 msgstr "Qovluq üzlükləri: boş qovluq"
 
-#: screens/sui_menu.lua:3311
+#: screens/sui_menu.lua:3330
 msgid "Folder Name"
 msgstr "Qovluq adı"
 
-#: screens/sui_menu.lua:3420
+#: screens/sui_menu.lua:3439
 msgid "Folder Name Text Size"
 msgstr "Qovluq adının mətn ölçüsü"
 
-#: features/sui_quickactions.lua:2272
+#: features/sui_quickactions.lua:2285
 msgid "Folder Shortcuts"
 msgstr "Qovluqlara sürətli keçidlər"
 
 #: features/library/sui_foldercovers.lua:647
 #: features/library/sui_library_browse.lua:366
-#: features/library/sui_series_grouping.lua:87
-#: features/library/sui_group_actions.lua:76
+#: features/library/sui_series_grouping.lua:91
+#: features/library/sui_group_actions.lua:79
 msgid "Folder cover"
 msgstr "Qovluq üzlüyü"
 
@@ -1585,36 +1653,48 @@ msgstr "Qovluq üzlüyü"
 msgid "Folder covers, browse modes, series grouping"
 msgstr "Qovluq üzlükləri, gözdən keçirmə rejimləri, silsilə üzrə qruplaşdırma"
 
-#: modules/module_coverdeck.lua:1735 engines/sui_book_grid.lua:1913
+#: modules/module_coverdeck.lua:1696 modules/module_currently.lua:2001
+#: engines/sui_book_grid.lua:1914
 msgid "Follow Library"
 msgstr "Kitabxanaya uyğun"
+
+#: modules/module_action_list.lua:454 modules/module_quick_actions.lua:589
+#: infra/sui_config.lua:978 screens/sui_quicksettings_bar.lua:1249
+#, fuzzy
+msgid "Font"
+msgstr "İnterfeys şrifti"
+
+#: infra/sui_config.lua:1015
+#, fuzzy
+msgid "Fonts"
+msgstr "İnterfeys şrifti"
 
 #: features/sui_backup.lua:105
 msgid "Fonts, icon assignments, icon presets"
 msgstr "Şriftlər, işarə təyinatları, hazır işarə quruluşları"
 
-#: modules/module_clock.lua:325
+#: modules/module_clock.lua:324
 msgid "Forty"
 msgstr "Qırx"
 
-#: modules/module_clock.lua:316
+#: modules/module_clock.lua:315
 msgid "Four"
 msgstr "Dörd"
 
-#: modules/module_clock.lua:319
+#: modules/module_clock.lua:318
 msgid "Fourteen"
 msgstr "On dörd"
 
-#: modules/module_heatmap.lua:365 modules/module_reading_goals.lua:1587
-#: modules/module_currently.lua:1930 engines/sui_book_grid.lua:1869
+#: features/sui_module_chrome.lua:191 features/sui_module_chrome.lua:244
+#: features/sui_module_chrome.lua:256
 msgid "Frame"
 msgstr "Çərçivə"
 
-#: screens/sui_menu.lua:1276 screens/sui_menu.lua:4367
+#: screens/sui_menu.lua:1276 screens/sui_menu.lua:4386
 msgid "Framed"
 msgstr "Çərçivəli"
 
-#: modules/module_reading_stats.lua:903 modules/module_reading_stats.lua:908
+#: modules/module_reading_stats.lua:965 modules/module_reading_stats.lua:970
 msgid "Freezes"
 msgstr "Dondurmalar"
 
@@ -1631,15 +1711,15 @@ msgstr ""
 msgid "Fri"
 msgstr "Cüm"
 
-#: modules/module_clock.lua:59
+#: modules/module_clock.lua:58
 msgid "Friday"
 msgstr "Cümə"
 
-#: screens/sui_quicksettings_bar.lua:320 screens/sui_quicksettings_bar.lua:342
+#: screens/sui_quicksettings_bar.lua:333 screens/sui_quicksettings_bar.lua:355
 msgid "Frontlight"
 msgstr "Ön işıq"
 
-#: screens/sui_quicksettings_bar.lua:1202
+#: screens/sui_quicksettings_bar.lua:1215
 msgid "Frontlight Slider"
 msgstr "Ön işıq sürüşdürmə çubuğu"
 
@@ -1647,15 +1727,15 @@ msgstr "Ön işıq sürüşdürmə çubuğu"
 msgid "Frontlight not available on this device."
 msgstr "Bu cihazda ön işıq əlçatan deyil."
 
-#: features/sui_backup.lua:649
+#: features/sui_backup.lua:650
 msgid "General — %d settings"
 msgstr "Ümumi — %d parametr"
 
-#: screens/sui_menu.lua:2575
+#: screens/sui_menu.lua:2592
 msgid "Gesture Only"
 msgstr "Yalnız jest"
 
-#: screens/sui_menu.lua:4320 screens/sui_menu.lua:4327
+#: screens/sui_menu.lua:4339 screens/sui_menu.lua:4346
 msgid "Global Text Size"
 msgstr "Ümumi mətn ölçüsü"
 
@@ -1663,7 +1743,7 @@ msgstr "Ümumi mətn ölçüsü"
 msgid "Global custom actions & icons"
 msgstr "Ümumi fərdi əməllər və işarələr"
 
-#: screens/sui_menu.lua:4328
+#: screens/sui_menu.lua:4347
 msgid ""
 "Global scale applied to all of KOReader's interface text — menus, dialogs, "
 "titles, and Simple UI. It does not change the book's reading font size, "
@@ -1677,7 +1757,7 @@ msgstr ""
 "Standart ölçü: 100%. Seçilmiş interfeys şrifti (yuxarıdakı interfeys "
 "şriftinə baxın) adi ölçüdən kiçik və ya böyük görünəndə faydalıdır."
 
-#: screens/sui_menu.lua:2472
+#: screens/sui_menu.lua:2489
 msgid ""
 "Global scale for all modules.\n"
 "Individual overrides in Module Settings take precedence.\n"
@@ -1693,8 +1773,8 @@ msgstr ""
 "Düzülüşü istənilən vaxt redaktə etmək üçün Parametrlər > Əsas ekran "
 "bölməsinə keçin."
 
-#: modules/module_reading_goals.lua:1289 modules/module_reading_goals.lua:1354
-#: modules/module_reading_goals.lua:1368
+#: modules/module_reading_goals.lua:1322 modules/module_reading_goals.lua:1387
+#: modules/module_reading_goals.lua:1401
 msgid "Goals"
 msgstr "Məqsədlər"
 
@@ -1702,27 +1782,27 @@ msgstr "Məqsədlər"
 msgid "Goals & Streaks"
 msgstr "Məqsədlər və ardıcıllıqlar"
 
-#: engines/sui_book_grid.lua:1821 engines/sui_book_grid.lua:1832
+#: engines/sui_book_grid.lua:1839 engines/sui_book_grid.lua:1850
 msgid "Grid size"
 msgstr "Tor ölçüsü"
 
-#: features/sui_quickactions.lua:2402 features/sui_quickactions.lua:2730
+#: features/sui_quickactions.lua:2415 features/sui_quickactions.lua:2743
 msgid "Group"
 msgstr "Qrup"
 
-#: screens/sui_menu.lua:2856
+#: screens/sui_menu.lua:2875
 msgid "Group by Book Series"
 msgstr "Kitab silsiləsi üzrə qruplaşdır"
 
-#: features/sui_quickactions.lua:2755
+#: features/sui_quickactions.lua:2768
 msgid "Group of Quick Actions"
 msgstr "Sürətli əməllər qrupu"
 
-#: features/sui_quickactions.lua:2737
+#: features/sui_quickactions.lua:2750
 msgid "Group: select actions"
 msgstr "Qrup: əməlləri seçin"
 
-#: modules/module_currently.lua:1486
+#: modules/module_currently.lua:1526
 msgid ""
 "Grows or shrinks the cover so its height always matches the text column, "
 "keeping the cover's proportions.\n"
@@ -1763,12 +1843,12 @@ msgstr ""
 "Standart ölçü: 100%."
 
 #: modules/module_collections.lua:1381 screens/sui_menu.lua:480
-#: screens/sui_menu.lua:539 screens/sui_menu.lua:2951 screens/sui_menu.lua:2958
-#: screens/sui_menu.lua:2985 screens/sui_menu.lua:3025
-#: screens/sui_menu.lua:3031 screens/sui_menu.lua:3042
-#: screens/sui_menu.lua:3079 screens/sui_menu.lua:3085
-#: screens/sui_menu.lua:3096 screens/sui_menu.lua:3317
-#: screens/sui_menu.lua:3348
+#: screens/sui_menu.lua:539 screens/sui_menu.lua:2970 screens/sui_menu.lua:2977
+#: screens/sui_menu.lua:3004 screens/sui_menu.lua:3044
+#: screens/sui_menu.lua:3050 screens/sui_menu.lua:3061
+#: screens/sui_menu.lua:3098 screens/sui_menu.lua:3104
+#: screens/sui_menu.lua:3115 screens/sui_menu.lua:3336
+#: screens/sui_menu.lua:3367
 msgid "Hidden"
 msgstr "Gizli"
 
@@ -1780,16 +1860,16 @@ msgstr "Kitabın belini gizlət"
 msgid "Hide Currently Reading book"
 msgstr "Hazırda oxunan kitabı gizlət"
 
-#: screens/sui_menu.lua:3522
+#: screens/sui_menu.lua:3541
 msgid "Hide Folder Book Spine"
 msgstr "Qovluqdakı kitabın belini gizlət"
 
-#: modules/module_quick_actions.lua:386 modules/module_quick_actions.lua:539
-#: screens/sui_menu.lua:1981 screens/sui_quicksettings_bar.lua:1235
+#: modules/module_quick_actions.lua:408 modules/module_quick_actions.lua:561
+#: screens/sui_menu.lua:1990 screens/sui_quicksettings_bar.lua:1254
 msgid "Hide Label"
 msgstr "Yazını gizlət"
 
-#: screens/sui_menu.lua:3516
+#: screens/sui_menu.lua:3535
 msgid "Hide Selection Underline"
 msgstr "Seçimin alt xəttini gizlət"
 
@@ -1805,7 +1885,7 @@ msgstr ""
 "Əsas ekranda səhifələmə panelini gizlədir.\n"
 "Naviqasiya ilə səhifələmə aktiv olduqda əlçatan deyil."
 
-#: screens/sui_menu.lua:2630
+#: screens/sui_menu.lua:2647
 msgid "High-Quality Cover"
 msgstr "Yüksək keyfiyyətli üzlük"
 
@@ -1813,27 +1893,27 @@ msgstr "Yüksək keyfiyyətli üzlük"
 msgid "Highlights"
 msgstr "Vurğulamalar"
 
-#: features/sui_quickactions.lua:494 features/sui_quickactions.lua:749
-#: features/sui_quickactions.lua:2267 infra/sui_config.lua:119
+#: features/sui_quickactions.lua:508 features/sui_quickactions.lua:763
+#: features/sui_quickactions.lua:2280 infra/sui_config.lua:120
 msgid "History"
 msgstr "Tarixçə"
 
-#: features/sui_quickactions.lua:756
+#: features/sui_quickactions.lua:770
 msgid "History not available."
 msgstr "Tarixçə əlçatan deyil."
 
-#: features/sui_quickactions.lua:690 infra/sui_config.lua:117
+#: features/sui_quickactions.lua:704 infra/sui_config.lua:118
 msgid "Home"
 msgstr "Əsas"
 
 #: engines/sui_screen_engine.lua:1371 features/sui_backup.lua:109
-#: infra/sui_patches.lua:1134 infra/sui_patches.lua:1161
-#: screens/sui_menu.lua:4560 screens/sui_settings_window.lua:323
-#: screens/sui_settings_window.lua:1077
+#: infra/sui_patches.lua:1151 infra/sui_patches.lua:1178
+#: screens/sui_menu.lua:4579 screens/sui_settings_window.lua:323
+#: screens/sui_settings_window.lua:1081
 msgid "Home Screen"
 msgstr "Əsas ekran"
 
-#: screens/sui_settings_window.lua:1093
+#: screens/sui_settings_window.lua:1097
 msgid "Home Screen Presets"
 msgstr "Əsas ekranın hazır quruluşları"
 
@@ -1841,23 +1921,23 @@ msgstr "Əsas ekranın hazır quruluşları"
 msgid "Home Screen Style"
 msgstr "Əsas ekranın üslubu"
 
-#: features/sui_quickactions.lua:511
+#: features/sui_quickactions.lua:525
 msgid "Home folder"
 msgstr "Əsas qovluq"
 
-#: features/sui_quickactions.lua:513
+#: features/sui_quickactions.lua:527
 msgid "Home folder + subfolders"
 msgstr "Əsas qovluq + alt qovluqlar"
 
-#: screens/sui_menu.lua:2717
+#: screens/sui_menu.lua:2734
 msgid "Home key opens Home Screen"
 msgstr "Əsas ekran düyməsi əsas ekranı açır"
 
-#: features/sui_quickactions.lua:731
+#: features/sui_quickactions.lua:745
 msgid "Homescreen not available."
 msgstr "Əsas ekran əlçatan deyil."
 
-#: modules/module_currently.lua:1453
+#: modules/module_currently.lua:1493
 msgid ""
 "Horizontal space between the cover and the text.\n"
 "100% is the default spacing."
@@ -1865,11 +1945,11 @@ msgstr ""
 "Üzlüklə mətn arasındakı üfüqi məsafə.\n"
 "Standart aralıq: 100%."
 
-#: modules/module_reading_goals.lua:766
+#: modules/module_reading_goals.lua:785
 msgid "Hours per month:"
 msgstr "Ayda saat:"
 
-#: modules/module_heatmap.lua:296
+#: modules/module_heatmap.lua:302
 msgid ""
 "How many weeks of history to include, and (in Calendar view) how many weeks "
 "the grid shows — this count is unaffected by Scale, which only resizes the "
@@ -1882,15 +1962,15 @@ msgstr ""
 "istifadə olunan tarixçənin həcmini dəyişir — torun özündə həmişə hər saat "
 "üçün bir sütun olur."
 
-#: features/sui_quickactions.lua:2427 features/sui_quickactions.lua:2431
+#: features/sui_quickactions.lua:2440 features/sui_quickactions.lua:2444
 msgid "Icon"
 msgstr "İşarə"
 
-#: screens/sui_menu.lua:3705
+#: screens/sui_menu.lua:3724
 msgid "Icon Packs"
 msgstr "İşarə dəstləri"
 
-#: screens/sui_menu.lua:3882
+#: screens/sui_menu.lua:3901
 msgid "Icon Presets"
 msgstr "Hazır işarə quruluşları"
 
@@ -1902,11 +1982,11 @@ msgstr "İşarə ölçüsü"
 msgid "Icon files and installed packs from sui_icons/"
 msgstr "sui_icons/ qovluğundakı işarə faylları və quraşdırılmış dəstlər"
 
-#: features/sui_quickactions.lua:2423
+#: features/sui_quickactions.lua:2436
 msgid "Icon: Default"
 msgstr "İşarə: standart"
 
-#: screens/sui_menu.lua:208 screens/sui_menu.lua:3651
+#: screens/sui_menu.lua:208 screens/sui_menu.lua:3670
 msgid "Icons"
 msgstr "İşarələr"
 
@@ -1926,23 +2006,27 @@ msgstr ""
 "Təkan hazır quruluşunu seçmisinizsə, oxu məqsədlərinizi seçib təyin etmək "
 "üçün oxu məqsədi modulunu basıb saxlayın."
 
-#: features/sui_backup.lua:1135
+#: features/sui_backup.lua:1136
 msgid "Import Backup…"
 msgstr "Ehtiyat nüsxəni idxal et…"
 
-#: features/sui_presets.lua:1072 screens/sui_menu.lua:4221
+#: features/sui_presets.lua:1077 screens/sui_menu.lua:4240
 msgid "Import preset"
 msgstr "Hazır quruluşu idxal et"
 
-#: screens/sui_menu.lua:3790
+#: infra/sui_compat_check.lua:306
+msgid "Incompatible items have been disabled:"
+msgstr ""
+
+#: screens/sui_menu.lua:3809
 msgid "Install pack from ZIP"
 msgstr "ZIP faylından dəst quraşdır"
 
-#: screens/sui_menu.lua:3283
+#: screens/sui_menu.lua:3302
 msgid "Intensity"
 msgstr "İntensivlik"
 
-#: screens/sui_menu.lua:1508
+#: screens/sui_menu.lua:1517
 msgid ""
 "Invalid arrangement.\n"
 "Keep items between the Left and Right separators."
@@ -1958,31 +2042,31 @@ msgstr ""
 "Yanlış düzülüş.\n"
 "Sol, mərkəz və sağ ayırıcıları ardıcıllıqla saxlayın."
 
-#: features/sui_presets.lua:430 features/sui_presets.lua:610
+#: features/sui_presets.lua:434 features/sui_presets.lua:614
 msgid "Invalid data"
 msgstr "Yanlış məlumat"
 
-#: features/sui_quickactions.lua:2166
+#: features/sui_quickactions.lua:2179
 msgid "Invalid input. Please enter 1–6 hexadecimal digits (0–9, A–F)."
 msgstr "Yanlış giriş. 1–6 onaltılıq rəqəm daxil edin (0–9, A–F)."
 
-#: features/sui_presets.lua:426 features/sui_presets.lua:606
+#: features/sui_presets.lua:430 features/sui_presets.lua:610
 msgid "Invalid preset file"
 msgstr "Yanlış hazır quruluş faylı"
 
-#: screens/sui_menu.lua:2374
+#: screens/sui_menu.lua:2394
 msgid "Invert in Night Mode"
 msgstr "Gecə rejimində rəngləri tərsinə çevir"
 
-#: modules/module_reading_stats.lua:694 modules/module_reading_stats.lua:715
-#: modules/module_reading_stats.lua:737 modules/module_clock.lua:1045
-#: modules/module_clock.lua:1068 modules/module_clock.lua:1077
-#: modules/module_clock.lua:1115 modules/module_coverdeck.lua:1602
-#: modules/module_coverdeck.lua:1642 modules/module_coverdeck.lua:1656
-#: modules/module_currently.lua:1618 modules/module_currently.lua:1623
-#: modules/module_currently.lua:1646 screens/sui_menu.lua:857
-#: screens/sui_menu.lua:862 screens/sui_menu.lua:951 screens/sui_menu.lua:1991
-#: screens/sui_menu.lua:1996 screens/sui_menu.lua:2022
+#: modules/module_reading_stats.lua:748 modules/module_reading_stats.lua:769
+#: modules/module_reading_stats.lua:791 modules/module_clock.lua:1070
+#: modules/module_clock.lua:1093 modules/module_clock.lua:1102
+#: modules/module_clock.lua:1140 modules/module_coverdeck.lua:1554
+#: modules/module_coverdeck.lua:1594 modules/module_coverdeck.lua:1608
+#: modules/module_currently.lua:1658 modules/module_currently.lua:1663
+#: modules/module_currently.lua:1686 screens/sui_menu.lua:857
+#: screens/sui_menu.lua:862 screens/sui_menu.lua:951 screens/sui_menu.lua:2000
+#: screens/sui_menu.lua:2005 screens/sui_menu.lua:2031
 msgid "Items"
 msgstr "Elementlər"
 
@@ -1990,7 +2074,7 @@ msgstr "Elementlər"
 msgid "Jan"
 msgstr "Yan"
 
-#: modules/module_clock.lua:62 screens/sui_stats_windows.lua:2815
+#: modules/module_clock.lua:61 screens/sui_stats_windows.lua:2815
 msgid "January"
 msgstr "Yanvar"
 
@@ -1998,7 +2082,7 @@ msgstr "Yanvar"
 msgid "Jul"
 msgstr "İyl"
 
-#: modules/module_clock.lua:63 screens/sui_stats_windows.lua:2816
+#: modules/module_clock.lua:62 screens/sui_stats_windows.lua:2816
 msgid "July"
 msgstr "İyul"
 
@@ -2006,11 +2090,11 @@ msgstr "İyul"
 msgid "Jun"
 msgstr "İyn"
 
-#: modules/module_clock.lua:63 screens/sui_stats_windows.lua:2816
+#: modules/module_clock.lua:62 screens/sui_stats_windows.lua:2816
 msgid "June"
 msgstr "İyun"
 
-#: modules/module_quick_actions.lua:648
+#: modules/module_quick_actions.lua:678
 msgid "Justified"
 msgstr "Hər iki kənara düzləndirilmiş"
 
@@ -2022,11 +2106,17 @@ msgstr "KOReader"
 msgid "LAST 7 DAYS"
 msgstr "Son 7 gün"
 
-#: modules/module_quick_actions.lua:556 screens/sui_quicksettings_bar.lua:1224
+#: modules/module_reading_stats.lua:857 modules/module_reading_goals.lua:1314
+#: modules/module_quick_actions.lua:578 screens/sui_quicksettings_bar.lua:1237
 msgid "Label"
 msgstr "Yazı"
 
-#: screens/sui_menu.lua:2503
+#: screens/sui_menu.lua:1373
+#, fuzzy
+msgid "Label Font"
+msgstr "Yazı"
+
+#: screens/sui_menu.lua:2520
 msgid "Label Scale"
 msgstr "Yazı miqyası"
 
@@ -2034,37 +2124,37 @@ msgstr "Yazı miqyası"
 msgid "Label Size"
 msgstr "Yazı ölçüsü"
 
-#: screens/sui_menu.lua:2492
+#: screens/sui_menu.lua:2509
 msgid "Labels"
 msgstr "Yazılar"
 
-#: screens/sui_menu.lua:1830
+#: screens/sui_menu.lua:1839
 msgid "Large"
 msgstr "Böyük"
 
-#: features/sui_backup.lua:1031
+#: features/sui_backup.lua:1032
 msgid "Last backup: %s%s"
 msgstr "Son ehtiyat nüsxə: %s%s"
 
-#: features/sui_backup.lua:1028
+#: features/sui_backup.lua:1029
 msgid "Last backup: never"
 msgstr "Son ehtiyat nüsxə: heç vaxt"
 
-#: features/sui_backup.lua:1009 infra/sui_updater.lua:449
+#: features/sui_backup.lua:1010 infra/sui_updater.lua:449
 #: screens/sui_menu.lua:444 screens/sui_menu.lua:847 screens/sui_menu.lua:1058
 #: screens/sui_menu.lua:1119 screens/sui_menu.lua:1335
-#: screens/sui_menu.lua:1794 screens/sui_menu.lua:3448
-#: screens/sui_menu.lua:3471 screens/sui_menu.lua:3493
-#: screens/sui_menu.lua:4342 screens/sui_menu.lua:4544
-#: screens/sui_quicksettings_bar.lua:1120
+#: screens/sui_menu.lua:1803 screens/sui_menu.lua:3467
+#: screens/sui_menu.lua:3490 screens/sui_menu.lua:3512
+#: screens/sui_menu.lua:4361 screens/sui_menu.lua:4563
+#: screens/sui_quicksettings_bar.lua:1133
 msgid "Later"
 msgstr "Daha sonra"
 
-#: modules/module_reading_goals.lua:1509 modules/module_currently.lua:1472
+#: modules/module_reading_goals.lua:1543 modules/module_currently.lua:1512
 msgid "Layout"
 msgstr "Düzülüş"
 
-#: screens/sui_settings_window.lua:1084 screens/sui_settings_window.lua:1085
+#: screens/sui_settings_window.lua:1088 screens/sui_settings_window.lua:1089
 msgid "Layout Editor"
 msgstr "Düzülüş redaktoru"
 
@@ -2076,55 +2166,55 @@ msgstr "Düzülüş, modullar, fərdi ekranlar, hazır quruluşlar"
 msgid "Layout, wallpaper, presets and behaviour"
 msgstr "Düzülüş, fon şəkli, hazır quruluşlar və davranış"
 
-#: modules/module_quote.lua:125 modules/module_quote.lua:1558
-#: modules/module_action_list.lua:66 modules/module_action_list.lua:464
-#: modules/module_reading_stats.lua:91 modules/module_reading_stats.lua:850
-#: modules/module_reading_goals.lua:119 modules/module_reading_goals.lua:1568
-#: modules/module_clock.lua:166 modules/module_clock.lua:1198
-#: modules/module_quick_actions.lua:658 screens/sui_menu.lua:704
-#: screens/sui_menu.lua:937 screens/sui_menu.lua:1475 screens/sui_menu.lua:1682
+#: modules/module_quote.lua:124 modules/module_quote.lua:1568
+#: modules/module_action_list.lua:66 modules/module_action_list.lua:477
+#: modules/module_reading_stats.lua:111 modules/module_reading_stats.lua:912
+#: modules/module_reading_goals.lua:134 modules/module_reading_goals.lua:1602
+#: modules/module_clock.lua:165 modules/module_clock.lua:1232
+#: modules/module_quick_actions.lua:688 screens/sui_menu.lua:704
+#: screens/sui_menu.lua:937 screens/sui_menu.lua:1484 screens/sui_menu.lua:1691
 msgid "Left"
 msgstr "Sol"
 
-#: modules/module_heatmap.lua:176 engines/sui_heatmap_widgets.lua:375
+#: modules/module_heatmap.lua:179 engines/sui_heatmap_widgets.lua:375
 msgid "Less"
 msgstr "Daha az"
 
-#: features/sui_quickactions.lua:661 features/sui_backup.lua:119
-#: infra/sui_config.lua:116 infra/sui_config.lua:376
-#: screens/sui_titlebar.lua:1089 screens/sui_menu.lua:4564
-#: screens/sui_settings_window.lua:337 screens/sui_settings_window.lua:1080
+#: features/sui_quickactions.lua:675 features/sui_backup.lua:119
+#: infra/sui_config.lua:117 infra/sui_config.lua:401
+#: screens/sui_titlebar.lua:1120 screens/sui_menu.lua:4583
+#: screens/sui_settings_window.lua:337 screens/sui_settings_window.lua:1084
 msgid "Library"
 msgstr "Kitabxana"
 
-#: screens/sui_menu.lua:1802 screens/sui_menu.lua:1805
+#: screens/sui_menu.lua:1811 screens/sui_menu.lua:1814
 msgid "Library Buttons"
 msgstr "Kitabxana düymələri"
 
-#: features/sui_presets.lua:187
+#: features/sui_presets.lua:191
 msgid "Library View"
 msgstr "Kitabxana görünüşü"
 
-#: modules/module_collections.lua:1415 modules/module_coverdeck.lua:1737
-#: engines/sui_book_grid.lua:1915 screens/sui_menu.lua:2999
-#: screens/sui_menu.lua:3011 screens/sui_menu.lua:3053
-#: screens/sui_menu.lua:3065 screens/sui_menu.lua:3107
-#: screens/sui_menu.lua:3119 screens/sui_menu.lua:3174
-#: screens/sui_menu.lua:3186 screens/sui_menu.lua:3241
-#: screens/sui_menu.lua:3253 screens/sui_menu.lua:3395
-#: screens/sui_menu.lua:3400
+#: modules/module_collections.lua:1415 modules/module_coverdeck.lua:1698
+#: modules/module_currently.lua:2003 engines/sui_book_grid.lua:1916
+#: screens/sui_menu.lua:3018 screens/sui_menu.lua:3030
+#: screens/sui_menu.lua:3072 screens/sui_menu.lua:3084
+#: screens/sui_menu.lua:3126 screens/sui_menu.lua:3138
+#: screens/sui_menu.lua:3193 screens/sui_menu.lua:3205
+#: screens/sui_menu.lua:3260 screens/sui_menu.lua:3272
+#: screens/sui_menu.lua:3414 screens/sui_menu.lua:3419
 msgid "Light"
 msgstr "Açıq"
 
-#: screens/sui_menu.lua:2386
+#: screens/sui_menu.lua:2405
 msgid "Lighten"
 msgstr "Açıqlaşdır"
 
-#: screens/sui_menu.lua:2399
+#: screens/sui_menu.lua:2416
 msgid "Lighten Wallpaper"
 msgstr "Fon şəklini açıqlaşdır"
 
-#: modules/module_reading_stats.lua:834
+#: modules/module_reading_stats.lua:887
 msgid "List"
 msgstr "Siyahı"
 
@@ -2132,11 +2222,11 @@ msgstr "Siyahı"
 msgid "Loading statistics…"
 msgstr "Statistika yüklənir…"
 
-#: screens/sui_menu.lua:2451
+#: screens/sui_menu.lua:2468
 msgid "Lock Scale"
 msgstr "Miqyası kilidlə"
 
-#: infra/sui_config.lua:1278
+#: infra/sui_config.lua:1529
 msgid "Long Press"
 msgstr "Basıb saxlama"
 
@@ -2144,9 +2234,9 @@ msgstr "Basıb saxlama"
 msgid "Long press to customize"
 msgstr "Fərdiləşdirmək üçün basıb saxlayın"
 
-#: features/sui_backup.lua:521 features/sui_backup.lua:570
-#: features/sui_presets.lua:409 features/sui_presets.lua:421
-#: features/sui_presets.lua:589 features/sui_presets.lua:601
+#: features/sui_backup.lua:522 features/sui_backup.lua:571
+#: features/sui_presets.lua:413 features/sui_presets.lua:425
+#: features/sui_presets.lua:593 features/sui_presets.lua:605
 msgid "LuaSettings module unavailable"
 msgstr "LuaSettings modulu əlçatan deyil"
 
@@ -2154,7 +2244,7 @@ msgstr "LuaSettings modulu əlçatan deyil"
 msgid "Make it yours"
 msgstr "Özünüzə uyğunlaşdırın"
 
-#: screens/sui_menu.lua:2718
+#: screens/sui_menu.lua:2735
 msgid ""
 "Makes the device's physical Home key open the SimpleUI Home Screen — while "
 "reading and while browsing files — instead of KOReader's native Home "
@@ -2166,9 +2256,9 @@ msgstr ""
 "Simple UI əsas ekranını açır. Fayl brauzerinin başlıq panelindəki ev işarəsi "
 "isə yenə əsas qovluğa aparır."
 
-#: features/sui_presets.lua:897 features/sui_presets.lua:973
-#: features/sui_presets.lua:978 screens/sui_menu.lua:4049
-#: screens/sui_menu.lua:4123 screens/sui_menu.lua:4128
+#: features/sui_presets.lua:902 features/sui_presets.lua:978
+#: features/sui_presets.lua:983 screens/sui_menu.lua:4068
+#: screens/sui_menu.lua:4142 screens/sui_menu.lua:4147
 msgid "Manage presets"
 msgstr "Hazır quruluşları idarə et"
 
@@ -2176,11 +2266,11 @@ msgstr "Hazır quruluşları idarə et"
 msgid "Manual order"
 msgstr "Əl ilə sıralama"
 
-#: modules/module_reading_goals.lua:1499
+#: modules/module_reading_goals.lua:1533
 msgid "Manually Tracked Books"
 msgstr "Əl ilə izlənən kitablar"
 
-#: modules/module_reading_goals.lua:1487
+#: modules/module_reading_goals.lua:1521
 msgid "Manually Tracked Books  (%s)"
 msgstr "Əl ilə izlənən kitablar  (%s)"
 
@@ -2188,15 +2278,15 @@ msgstr "Əl ilə izlənən kitablar  (%s)"
 msgid "Mar"
 msgstr "Mar"
 
-#: modules/module_clock.lua:62 screens/sui_stats_windows.lua:2815
+#: modules/module_clock.lua:61 screens/sui_stats_windows.lua:2815
 msgid "March"
 msgstr "Mart"
 
-#: screens/sui_quicksettings_bar.lua:367 screens/sui_quicksettings_bar.lua:473
+#: screens/sui_quicksettings_bar.lua:380 screens/sui_quicksettings_bar.lua:486
 msgid "Max"
 msgstr "Maksimum"
 
-#: modules/module_clock.lua:63 engines/sui_heatmap_widgets.lua:87
+#: modules/module_clock.lua:62 engines/sui_heatmap_widgets.lua:87
 #: screens/sui_stats_windows.lua:2816
 msgid "May"
 msgstr "May"
@@ -2209,11 +2299,11 @@ msgstr "Menyu"
 msgid "Menu Button"
 msgstr "Menyu düyməsi"
 
-#: modules/module_clock.lua:386
+#: modules/module_clock.lua:385
 msgid "Midnight"
 msgstr "Gecə yarısı"
 
-#: features/sui_presets.lua:149
+#: features/sui_presets.lua:153
 msgid "Mindful Reading"
 msgstr "Diqqətli oxu"
 
@@ -2225,7 +2315,7 @@ msgstr "Naviqasiya ilə səhifələmə rejimində ən azı 1 vərəq tələb olu
 msgid "Minimum 2 tabs required. Select another tab first."
 msgstr "Ən azı 2 vərəq tələb olunur. Əvvəlcə başqa vərəq seçin."
 
-#: modules/module_reading_goals.lua:778
+#: modules/module_reading_goals.lua:797
 msgid "Minutes per day:"
 msgstr "Gündə dəqiqə:"
 
@@ -2233,27 +2323,27 @@ msgstr "Gündə dəqiqə:"
 msgid "Mode"
 msgstr "Rejim"
 
-#: screens/sui_menu.lua:2469
+#: screens/sui_menu.lua:2486
 msgid "Module Scale"
 msgstr "Modul miqyası"
 
-#: infra/sui_config.lua:1275 screens/sui_menu.lua:2198
+#: infra/sui_config.lua:1526 screens/sui_menu.lua:2207
 msgid "Module Settings"
 msgstr "Modul parametrləri"
 
-#: screens/sui_menu.lua:3709
+#: screens/sui_menu.lua:3728
 msgid "Module unavailable"
 msgstr "Modul əlçatan deyil"
 
-#: screens/sui_menu.lua:2462 screens/sui_menu.lua:2737
+#: screens/sui_menu.lua:2479 screens/sui_menu.lua:2754
 msgid "Modules"
 msgstr "Modullar"
 
-#: screens/sui_menu.lua:2186
+#: screens/sui_menu.lua:2195
 msgid "Modules  (%d)"
 msgstr "Modullar  (%d)"
 
-#: engines/sui_screen_engine.lua:2781
+#: engines/sui_screen_engine.lua:2808
 msgid ""
 "Modules exceed the visible area.\n"
 "Move some to another page or adjust the scale."
@@ -2261,7 +2351,7 @@ msgstr ""
 "Modullar görünən sahədən kənara çıxır.\n"
 "Bəzilərini başqa səhifəyə köçürün və ya miqyası tənzimləyin."
 
-#: features/sui_presets.lua:169
+#: features/sui_presets.lua:173
 msgid "Momentum"
 msgstr "Təkan"
 
@@ -2269,16 +2359,16 @@ msgstr "Təkan"
 msgid "Mon"
 msgstr "B.e."
 
-#: modules/module_clock.lua:58
+#: modules/module_clock.lua:57
 msgid "Monday"
 msgstr "Bazar ertəsi"
 
-#: modules/module_reading_goals.lua:1312 modules/module_reading_goals.lua:1359
-#: modules/module_reading_goals.lua:1396 modules/module_reading_goals.lua:1427
+#: modules/module_reading_goals.lua:1345 modules/module_reading_goals.lua:1392
+#: modules/module_reading_goals.lua:1429 modules/module_reading_goals.lua:1460
 msgid "Monthly Goal"
 msgstr "Aylıq məqsəd"
 
-#: modules/module_reading_goals.lua:765
+#: modules/module_reading_goals.lua:784
 msgid "Monthly Reading Goal"
 msgstr "Aylıq oxu məqsədi"
 
@@ -2286,32 +2376,32 @@ msgstr "Aylıq oxu məqsədi"
 msgid "More"
 msgstr "Daha çox"
 
-#: main.lua:1083
+#: main.lua:1100
 msgid "More by %s (%d)"
 msgstr "%s müəllifinin digər kitabları (%d)"
 
-#: engines/sui_window.lua:2853
+#: engines/sui_window.lua:2872
 msgid "Move down"
 msgstr "Aşağı köçür"
 
-#: engines/sui_window.lua:2847 screens/sui_settings_window.lua:704
-#: screens/sui_settings_window.lua:739
+#: engines/sui_window.lua:2866 screens/sui_settings_window.lua:708
+#: screens/sui_settings_window.lua:743
 msgid "Move to page"
 msgstr "Səhifəyə köçür"
 
-#: engines/sui_window.lua:2850
+#: engines/sui_window.lua:2869
 msgid "Move up"
 msgstr "Yuxarı köçür"
 
-#: modules/module_quote.lua:1407
+#: modules/module_quote.lua:1417
 msgid "My Highlights"
 msgstr "Vurğulamalarım"
 
-#: features/sui_presets.lua:795 features/sui_presets.lua:800
+#: features/sui_presets.lua:800 features/sui_presets.lua:805
 msgid "My Presets"
 msgstr "Hazır quruluşlarım"
 
-#: features/sui_quickactions.lua:2518
+#: features/sui_quickactions.lua:2531
 msgid "Name"
 msgstr "Ad"
 
@@ -2323,14 +2413,19 @@ msgstr "Ad (A–Z)"
 msgid "Name (Z–A)"
 msgstr "Ad (Z–A)"
 
-#: screens/sui_menu.lua:3135 screens/sui_menu.lua:3144
-#: screens/sui_menu.lua:3156 features/library/sui_foldercovers.lua:314
+#: screens/sui_menu.lua:3154 screens/sui_menu.lua:3163
+#: screens/sui_menu.lua:3175 features/library/sui_foldercovers.lua:314
 msgid "Native"
 msgstr "Daxili"
 
-#: screens/sui_menu.lua:2773 screens/sui_bottombar.lua:821
+#: screens/sui_menu.lua:2792 screens/sui_bottombar.lua:931
 msgid "Navigation Bar"
 msgstr "Naviqasiya paneli"
+
+#: screens/sui_menu.lua:2340
+#, fuzzy
+msgid "Navigation Bar Opacity"
+msgstr "Naviqasiya panelinin ölçüsü"
 
 #: screens/sui_menu.lua:1310
 msgid "Navigation Bar Size"
@@ -2372,11 +2467,11 @@ msgstr "Naviqasiya ilə səhifələmə: növbəti"
 msgid "Navpager: Previous"
 msgstr "Naviqasiya ilə səhifələmə: əvvəlki"
 
-#: features/sui_quickactions.lua:2132
+#: features/sui_quickactions.lua:2145
 msgid "Nerd Font Icon"
 msgstr "Nerd Font işarəsi"
 
-#: features/sui_quickactions.lua:2197
+#: features/sui_quickactions.lua:2210
 msgid "Nerd Font symbol…"
 msgstr "Nerd Font simvolu…"
 
@@ -2384,26 +2479,26 @@ msgstr "Nerd Font simvolu…"
 msgid "Network manager unavailable."
 msgstr "Şəbəkə meneceri əlçatan deyil."
 
-#: screens/sui_menu.lua:2586
+#: screens/sui_menu.lua:2603
 msgid "Never"
 msgstr "Heç vaxt"
 
-#: modules/module_new_books.lua:137 engines/sui_book_grid.lua:535
-#: features/library/sui_foldercovers.lua:1263
-#: features/library/sui_foldercovers.lua:1911
+#: modules/module_new_books.lua:137 engines/sui_book_grid.lua:552
+#: features/library/sui_foldercovers.lua:1290
+#: features/library/sui_foldercovers.lua:1938
 #: features/library/sui_cover_widgets.lua:467
 msgid "New"
 msgstr "Yeni"
 
-#: engines/sui_book_grid.lua:2070
+#: engines/sui_book_grid.lua:2071
 msgid "New Badge Color"
 msgstr "Yeni nişanının rəngi"
 
-#: screens/sui_menu.lua:3198
+#: screens/sui_menu.lua:3217
 msgid "New Book"
 msgstr "Yeni kitab"
 
-#: engines/sui_book_grid.lua:2062 engines/sui_book_grid.lua:2075
+#: engines/sui_book_grid.lua:2063 engines/sui_book_grid.lua:2076
 msgid "New Book Badge"
 msgstr "Yeni kitab nişanı"
 
@@ -2411,27 +2506,27 @@ msgstr "Yeni kitab nişanı"
 msgid "New Books"
 msgstr "Yeni kitablar"
 
-#: features/sui_quickactions.lua:2391
+#: features/sui_quickactions.lua:2404
 msgid "New Quick Action"
 msgstr "Yeni sürətli əməl"
 
-#: features/library/sui_group_actions.lua:97
+#: features/library/sui_group_actions.lua:103
 msgid "New collection name"
 msgstr "Yeni kolleksiya adı"
 
-#: screens/sui_bottombar.lua:501
+#: screens/sui_bottombar.lua:582
 msgid "Next"
 msgstr "Növbəti"
 
-#: features/sui_quickactions.lua:923 infra/sui_config.lua:128
+#: features/sui_quickactions.lua:937 infra/sui_config.lua:129
 msgid "Night Mode"
 msgstr "Gecə rejimi"
 
-#: modules/module_clock.lua:317
+#: modules/module_clock.lua:316
 msgid "Nine"
 msgstr "Doqquz"
 
-#: modules/module_clock.lua:321
+#: modules/module_clock.lua:320
 msgid "Nineteen"
 msgstr "On doqquz"
 
@@ -2439,11 +2534,11 @@ msgstr "On doqquz"
 msgid "No"
 msgstr "Xeyr"
 
-#: modules/module_quote.lua:1464 modules/module_quote.lua:1513
+#: modules/module_quote.lua:1474 modules/module_quote.lua:1523
 msgid "No .lua files found in sui_quotes/"
 msgstr "sui_quotes/ qovluğunda .lua faylı tapılmadı"
 
-#: screens/sui_menu.lua:3828
+#: screens/sui_menu.lua:3847
 msgid ""
 "No .zip files found.\n"
 "Place .zip files in:\n"
@@ -2453,14 +2548,14 @@ msgstr ""
 ".zip fayllarını buraya yerləşdirin:\n"
 "%1"
 
-#: screens/sui_quicksettings_bar.lua:1138
-#: screens/sui_quicksettings_bar.lua:1158
+#: screens/sui_quicksettings_bar.lua:1151
+#: screens/sui_quicksettings_bar.lua:1171
 msgid "No actions active yet."
 msgstr "Hələ aktiv əməl yoxdur."
 
 #: modules/module_action_list.lua:95 modules/module_action_list.lua:114
-#: modules/module_quick_actions.lua:150 features/sui_quickactions.lua:1667
-#: screens/sui_settings_window.lua:657
+#: modules/module_quick_actions.lua:150 features/sui_quickactions.lua:1680
+#: screens/sui_settings_window.lua:661
 msgid "No actions configured"
 msgstr "Əməl tənzimlənməyib"
 
@@ -2469,7 +2564,7 @@ msgstr "Əməl tənzimlənməyib"
 msgid "No actions configured  —  long press to configure"
 msgstr "Əməl tənzimlənməyib  —  tənzimləmək üçün basıb saxlayın"
 
-#: screens/sui_quicksettings_bar.lua:279
+#: screens/sui_quicksettings_bar.lua:292
 msgid ""
 "No actions configured.\n"
 "Go to Bars → Quick Settings Bar."
@@ -2477,11 +2572,11 @@ msgstr ""
 "Əməl tənzimlənməyib.\n"
 "Panellər → Sürətli parametrlər paneli bölməsinə keçin."
 
-#: features/sui_backup.lua:1170
+#: features/sui_backup.lua:1171
 msgid "No backup loaded yet."
 msgstr "Hələ ehtiyat nüsxə yüklənməyib."
 
-#: features/sui_quickactions.lua:782
+#: features/sui_quickactions.lua:796
 msgid "No book in history."
 msgstr "Tarixçədə kitab yoxdur."
 
@@ -2490,18 +2585,19 @@ msgid "No books finished in %s"
 msgstr "%s ərzində kitab bitirilməyib"
 
 #: features/library/sui_foldercovers.lua:651
+#: features/library/sui_foldercovers.lua:754
 msgid "No books found in this folder."
 msgstr "Bu qovluqda kitab tapılmadı."
 
-#: features/library/sui_series_grouping.lua:91
-#: features/library/sui_series_grouping.lua:104
+#: features/library/sui_series_grouping.lua:95
+#: features/library/sui_series_grouping.lua:108
 msgid "No books found in this series."
 msgstr "Bu silsilədə kitab tapılmadı."
 
 #: features/library/sui_library_browse.lua:370
 #: features/library/sui_library_browse.lua:392
-#: features/library/sui_group_actions.lua:36
-#: features/library/sui_group_actions.lua:90
+#: features/library/sui_group_actions.lua:39
+#: features/library/sui_group_actions.lua:96
 msgid "No books found."
 msgstr "Kitab tapılmadı."
 
@@ -2519,11 +2615,11 @@ msgstr "Bu kolleksiyada kitab yoxdur."
 msgid "No books opened yet"
 msgstr "Hələ kitab açılmayıb"
 
-#: modules/module_coverdeck.lua:693 modules/module_currently.lua:455
+#: modules/module_coverdeck.lua:634 modules/module_currently.lua:501
 msgid "No books to show yet — open a book to see it here."
 msgstr "Hələ göstəriləcək kitab yoxdur — burada görmək üçün kitab açın."
 
-#: modules/module_feat_coll.lua:407 screens/sui_settings_window.lua:669
+#: modules/module_feat_coll.lua:407 screens/sui_settings_window.lua:673
 msgid "No collection selected"
 msgstr "Kolleksiya seçilməyib"
 
@@ -2531,7 +2627,7 @@ msgstr "Kolleksiya seçilməyib"
 msgid "No collection selected  —  long press to configure"
 msgstr "Kolleksiya seçilməyib  —  tənzimləmək üçün basıb saxlayın"
 
-#: modules/module_coverdeck.lua:1404
+#: modules/module_coverdeck.lua:1356
 msgid "No collections found"
 msgstr "Kolleksiya tapılmadı"
 
@@ -2548,7 +2644,7 @@ msgstr "Kolleksiya seçilməyib"
 msgid "No collections selected  —  long press to configure"
 msgstr "Kolleksiya seçilməyib  —  tənzimləmək üçün basıb saxlayın"
 
-#: modules/module_quote.lua:928
+#: modules/module_quote.lua:927
 msgid ""
 "No custom quotes found. Add a .lua file to the plugin's sui_quotes/ folder "
 "and select it in Settings."
@@ -2556,7 +2652,7 @@ msgstr ""
 "Fərdi sitatlar tapılmadı. Qoşmanın sui_quotes/ qovluğuna .lua faylı əlavə "
 "edin və onu parametrlərdə seçin."
 
-#: screens/sui_settings_window.lua:441
+#: screens/sui_settings_window.lua:445
 msgid "No custom screens yet."
 msgstr "Hələ fərdi ekran yoxdur."
 
@@ -2570,7 +2666,7 @@ msgstr ""
 "\n"
 "Buraxılışlar səhifəsi açılsın?"
 
-#: features/sui_presets.lua:401 features/sui_presets.lua:581
+#: features/sui_presets.lua:405 features/sui_presets.lua:585
 msgid "No export directory"
 msgstr "İxrac qovluğu yoxdur"
 
@@ -2578,7 +2674,7 @@ msgstr "İxrac qovluğu yoxdur"
 msgid "No filepath."
 msgstr "Fayl yolu yoxdur."
 
-#: features/sui_quickactions.lua:3196
+#: features/sui_quickactions.lua:3208
 msgid ""
 "No folder, collection or plugin configured.\n"
 "Go to Simple UI → Settings → Quick Actions to set one."
@@ -2586,11 +2682,11 @@ msgstr ""
 "Qovluq, kolleksiya və ya qoşma tənzimlənməyib.\n"
 "Təyin etmək üçün Simple UI → Parametrlər → Sürətli əməllər bölməsinə keçin."
 
-#: features/sui_style.lua:1804
+#: features/sui_style.lua:1826
 msgid "No fonts found."
 msgstr "Şrift tapılmadı."
 
-#: modules/module_quote.lua:1000
+#: modules/module_quote.lua:999
 msgid "No highlights found. Open a book and highlight some passages."
 msgstr "Vurğulama tapılmadı. Kitab açın və bəzi hissələri vurğulayın."
 
@@ -2599,50 +2695,50 @@ msgstr "Vurğulama tapılmadı. Kitab açın və bəzi hissələri vurğulayın.
 msgid "No home folder set."
 msgstr "Əsas qovluq"
 
-#: features/sui_quickactions.lua:2232
+#: features/sui_quickactions.lua:2245
 msgid "No icons found in:"
 msgstr "Burada işarə tapılmadı:"
 
-#: engines/sui_window.lua:2521 engines/sui_window.lua:3170
+#: engines/sui_window.lua:2540 engines/sui_window.lua:3189
 msgid "No items available."
 msgstr "Əlçatan element yoxdur."
 
-#: modules/module_collections.lua:1219 modules/module_action_list.lua:352
-#: modules/module_action_list.lua:377 modules/module_reading_stats.lua:718
-#: modules/module_reading_stats.lua:739 modules/module_reading_goals.lua:1362
-#: modules/module_reading_goals.lua:1369 modules/module_clock.lua:1080
-#: modules/module_coverdeck.lua:1650 modules/module_coverdeck.lua:1658
-#: modules/module_currently.lua:1640 modules/module_currently.lua:1724
-#: modules/module_currently.lua:1856 modules/module_currently.lua:1899
-#: modules/module_quick_actions.lua:404 modules/module_quick_actions.lua:429
-#: engines/sui_window.lua:3080 screens/sui_menu.lua:875
+#: modules/module_collections.lua:1219 modules/module_action_list.lua:355
+#: modules/module_action_list.lua:380 modules/module_reading_stats.lua:772
+#: modules/module_reading_stats.lua:793 modules/module_reading_goals.lua:1395
+#: modules/module_reading_goals.lua:1402 modules/module_clock.lua:1105
+#: modules/module_coverdeck.lua:1602 modules/module_coverdeck.lua:1610
+#: modules/module_currently.lua:1680 modules/module_currently.lua:1764
+#: modules/module_currently.lua:1896 modules/module_currently.lua:1939
+#: modules/module_quick_actions.lua:426 modules/module_quick_actions.lua:451
+#: engines/sui_window.lua:3099 screens/sui_menu.lua:875
 #: screens/sui_menu.lua:953 screens/sui_menu.lua:1145 screens/sui_menu.lua:1196
-#: screens/sui_menu.lua:1591 screens/sui_menu.lua:1698
-#: screens/sui_menu.lua:1999 screens/sui_menu.lua:2024
+#: screens/sui_menu.lua:1600 screens/sui_menu.lua:1707
+#: screens/sui_menu.lua:2008 screens/sui_menu.lua:2033
 msgid "No items selected."
 msgstr "Element seçilməyib."
 
-#: modules/module_clock.lua:1117
+#: modules/module_clock.lua:1142
 msgid "No items."
 msgstr "Element yoxdur."
 
-#: screens/sui_settings_window.lua:575 screens/sui_settings_window.lua:750
+#: screens/sui_settings_window.lua:579 screens/sui_settings_window.lua:754
 msgid "No modules"
 msgstr "Modul yoxdur"
 
-#: screens/sui_settings_window.lua:736
+#: screens/sui_settings_window.lua:740
 msgid "No other pages available."
 msgstr "Başqa səhifə yoxdur."
 
-#: screens/sui_menu.lua:3849
+#: screens/sui_menu.lua:3868
 msgid "No packs found."
 msgstr "Dəst tapılmadı."
 
-#: features/sui_quickactions.lua:2613
+#: features/sui_quickactions.lua:2626
 msgid "No plugins found."
 msgstr "Qoşma tapılmadı."
 
-#: features/sui_presets.lua:1079 screens/sui_menu.lua:4229
+#: features/sui_presets.lua:1084 screens/sui_menu.lua:4248
 msgid ""
 "No preset files found.\n"
 "Place .lua files in:\n"
@@ -2652,15 +2748,15 @@ msgstr ""
 ".lua fayllarını buraya yerləşdirin:\n"
 "%1"
 
-#: features/sui_presets.lua:1056 screens/sui_menu.lua:4205
+#: features/sui_presets.lua:1061 screens/sui_menu.lua:4224
 msgid "No presets found."
 msgstr "Hazır quruluş tapılmadı."
 
-#: modules/module_quote.lua:962
+#: modules/module_quote.lua:961
 msgid "No quotes found."
 msgstr "Sitat tapılmadı."
 
-#: features/sui_quickactions.lua:3509
+#: features/sui_quickactions.lua:3521
 msgid "No recent books."
 msgstr "Son kitab yoxdur."
 
@@ -2674,46 +2770,46 @@ msgstr "Hazır quruluş tapılmadı."
 msgid "No statistics found for this book."
 msgstr "Bu kitab üçün statistika tapılmadı."
 
-#: modules/module_coverdeck.lua:1525
+#: modules/module_coverdeck.lua:1477
 msgid "No statistics selected."
 msgstr "Statistika seçilməyib."
 
-#: modules/module_reading_stats.lua:465
+#: modules/module_reading_stats.lua:519
 msgid "No stats selected"
 msgstr "Statistika seçilməyib"
 
-#: modules/module_reading_stats.lua:464
+#: modules/module_reading_stats.lua:518
 msgid "No stats selected  —  long press to configure"
 msgstr "Statistika seçilməyib  —  tənzimləmək üçün basıb saxlayın"
 
-#: features/sui_quickactions.lua:2639
+#: features/sui_quickactions.lua:2652
 msgid "No system actions found."
 msgstr "Sistem əməli tapılmadı."
 
-#: screens/sui_menu.lua:2287
+#: screens/sui_menu.lua:2319
 msgid "No wallpapers found."
 msgstr "Fon şəkli tapılmadı."
 
-#: engines/sui_book_grid.lua:1938 engines/sui_book_grid.lua:2056
-#: features/sui_quickactions.lua:2511 screens/sui_menu.lua:3136
-#: screens/sui_menu.lua:3145 screens/sui_menu.lua:3163
-#: screens/sui_menu.lua:3203 screens/sui_menu.lua:3212
-#: screens/sui_menu.lua:3230 features/library/sui_foldercovers.lua:319
+#: engines/sui_book_grid.lua:1939 engines/sui_book_grid.lua:2057
+#: features/sui_quickactions.lua:2524 screens/sui_menu.lua:3155
+#: screens/sui_menu.lua:3164 screens/sui_menu.lua:3182
+#: screens/sui_menu.lua:3222 screens/sui_menu.lua:3231
+#: screens/sui_menu.lua:3249 features/library/sui_foldercovers.lua:319
 msgid "None"
 msgstr "Yoxdur"
 
-#: modules/module_clock.lua:389
+#: modules/module_clock.lua:388
 msgid "Noon"
 msgstr "Günorta"
 
-#: features/sui_backup.lua:575 features/sui_backup.lua:579
-#: features/sui_backup.lua:589 features/sui_backup.lua:774
-#: features/sui_backup.lua:931
+#: features/sui_backup.lua:576 features/sui_backup.lua:580
+#: features/sui_backup.lua:590 features/sui_backup.lua:775
+#: features/sui_backup.lua:932
 msgid "Not a valid backup file."
 msgstr "Etibarlı ehtiyat nüsxə faylı deyil."
 
-#: modules/module_reading_goals.lua:1410 modules/module_reading_goals.lua:1425
-#: modules/module_reading_goals.lua:1440
+#: modules/module_reading_goals.lua:1443 modules/module_reading_goals.lua:1458
+#: modules/module_reading_goals.lua:1473
 msgid "Not set"
 msgstr "Təyin edilməyib"
 
@@ -2721,7 +2817,7 @@ msgstr "Təyin edilməyib"
 msgid "Notes"
 msgstr "Qeydlər"
 
-#: features/sui_backup.lua:986
+#: features/sui_backup.lua:987
 msgid "Nothing selected to import."
 msgstr "İdxal üçün heç nə seçilməyib."
 
@@ -2729,27 +2825,27 @@ msgstr "İdxal üçün heç nə seçilməyib."
 msgid "Nov"
 msgstr "Noy"
 
-#: modules/module_clock.lua:64 screens/sui_stats_windows.lua:2817
+#: modules/module_clock.lua:63 screens/sui_stats_windows.lua:2817
 msgid "November"
 msgstr "Noyabr"
 
-#: engines/sui_book_grid.lua:1805 engines/sui_book_grid.lua:1806
+#: engines/sui_book_grid.lua:1823 engines/sui_book_grid.lua:1824
 msgid "Number of Books"
 msgstr "Kitab sayı"
 
-#: screens/sui_menu.lua:2949
+#: screens/sui_menu.lua:2968
 msgid "Number of Books in Folder"
 msgstr "Qovluqdakı kitab sayı"
 
-#: screens/sui_menu.lua:3023
+#: screens/sui_menu.lua:3042
 msgid "Number of Pages"
 msgstr "Səhifə sayı"
 
-#: modules/module_clock.lua:407
+#: modules/module_clock.lua:406
 msgid "O'Clock"
 msgstr "Tamam"
 
-#: features/sui_quickactions.lua:2145
+#: features/sui_quickactions.lua:2158 infra/sui_compat_check.lua:207
 msgid "OK"
 msgstr "Oldu"
 
@@ -2757,37 +2853,39 @@ msgstr "Oldu"
 msgid "Oct"
 msgstr "Okt"
 
-#: modules/module_clock.lua:64 screens/sui_stats_windows.lua:2817
+#: modules/module_clock.lua:63 screens/sui_stats_windows.lua:2817
 msgid "October"
 msgstr "Oktyabr"
 
-#: modules/module_coverdeck.lua:1747 engines/sui_book_grid.lua:2023
-#: engines/sui_book_grid.lua:2049 screens/sui_menu.lua:1439
-#: screens/sui_menu.lua:1649 screens/sui_menu.lua:3269
-#: screens/sui_menu.lua:3434 screens/sui_menu.lua:4526
+#: modules/module_coverdeck.lua:1708 modules/module_currently.lua:2035
+#: engines/sui_book_grid.lua:2024 engines/sui_book_grid.lua:2050
+#: screens/sui_menu.lua:1448 screens/sui_menu.lua:1658
+#: screens/sui_menu.lua:3288 screens/sui_menu.lua:3453
+#: screens/sui_menu.lua:4545
 msgid "Off"
 msgstr "Sönülü"
 
-#: modules/module_clock.lua:352
+#: modules/module_clock.lua:351
 msgid "Oh"
 msgstr "Sıfır"
 
-#: modules/module_coverdeck.lua:1747 engines/sui_book_grid.lua:2023
-#: engines/sui_book_grid.lua:2049 screens/sui_menu.lua:1439
-#: screens/sui_menu.lua:1649 screens/sui_menu.lua:4526
+#: modules/module_coverdeck.lua:1708 modules/module_currently.lua:2035
+#: engines/sui_book_grid.lua:2024 engines/sui_book_grid.lua:2050
+#: screens/sui_menu.lua:1448 screens/sui_menu.lua:1658
+#: screens/sui_menu.lua:4545
 msgid "On"
 msgstr "Qoşulu"
 
-#: modules/module_coverdeck.lua:1721
+#: modules/module_coverdeck.lua:1682
 msgid "On side covers too"
 msgstr "Yan üzlüklərdə də"
 
-#: modules/module_clock.lua:315
+#: modules/module_clock.lua:314
 msgid "One"
 msgstr "Bir"
 
-#: modules/module_quote.lua:1299 engines/sui_screen_engine.lua:791
-#: features/sui_quickactions.lua:3464 screens/sui_stats_windows.lua:771
+#: modules/module_quote.lua:1306 engines/sui_screen_engine.lua:791
+#: features/sui_quickactions.lua:3476 screens/sui_stats_windows.lua:771
 #: features/library/sui_library_search.lua:69
 #: features/library/sui_library_search.lua:142
 msgid "Open"
@@ -2809,8 +2907,8 @@ msgstr "Brauzerdə aç"
 msgid "Open module settings"
 msgstr "Modul parametrlərini aç"
 
-#: modules/module_quote.lua:1298 engines/sui_screen_engine.lua:790
-#: features/sui_quickactions.lua:3463 screens/sui_stats_windows.lua:769
+#: modules/module_quote.lua:1305 engines/sui_screen_engine.lua:790
+#: features/sui_quickactions.lua:3475 screens/sui_stats_windows.lua:769
 #: features/library/sui_library_search.lua:68
 msgid "Open this file?"
 msgstr "Bu fayl açılsın?"
@@ -2819,30 +2917,30 @@ msgstr "Bu fayl açılsın?"
 msgid "Open with…"
 msgstr "Bununla aç…"
 
-#: screens/sui_menu.lua:2668
+#: screens/sui_menu.lua:2685
 msgid "Overflow Warning"
 msgstr "Sahənin aşılması xəbərdarlığı"
 
-#: screens/sui_menu.lua:2913
+#: screens/sui_menu.lua:2932
 msgid "Overlays"
 msgstr "Üst qatlar"
 
-#: features/sui_presets.lua:878 features/sui_presets.lua:908
-#: features/sui_presets.lua:1040 screens/sui_menu.lua:4031
-#: screens/sui_menu.lua:4060 screens/sui_menu.lua:4189
+#: features/sui_presets.lua:883 features/sui_presets.lua:913
+#: features/sui_presets.lua:1045 screens/sui_menu.lua:4050
+#: screens/sui_menu.lua:4079 screens/sui_menu.lua:4208
 msgid "Overwrite"
 msgstr "Üzərinə yaz"
 
-#: features/sui_presets.lua:907 features/sui_presets.lua:1039
+#: features/sui_presets.lua:912 features/sui_presets.lua:1044
 msgid "Overwrite preset \"%s\" with the current homescreen settings?"
 msgstr ""
 "\"%s\" hazır quruluşunun üzərinə cari əsas ekran parametrləri yazılsın?"
 
-#: screens/sui_menu.lua:4059 screens/sui_menu.lua:4188
+#: screens/sui_menu.lua:4078 screens/sui_menu.lua:4207
 msgid "Overwrite preset \"%s\" with the current icon settings?"
 msgstr "\"%s\" hazır quruluşunun üzərinə cari işarə parametrləri yazılsın?"
 
-#: screens/sui_menu.lua:3864
+#: screens/sui_menu.lua:3883
 msgid ""
 "Pack \"%s\" applied.\n"
 "%d icons replaced."
@@ -2850,7 +2948,7 @@ msgstr ""
 "\"%s\" dəsti tətbiq edildi.\n"
 "%d işarə əvəzləndi."
 
-#: screens/sui_menu.lua:3782
+#: screens/sui_menu.lua:3801
 msgid ""
 "Pack \"%s\" installed.\n"
 "You can now apply it from the list."
@@ -2858,22 +2956,22 @@ msgstr ""
 "\"%s\" dəsti quraşdırıldı.\n"
 "İndi onu siyahıdan tətbiq edə bilərsiniz."
 
-#: features/sui_style.lua:2045
+#: features/sui_style.lua:2129
 msgid "Pack folder not accessible: "
 msgstr "Dəstin qovluğuna giriş yoxdur: "
 
-#: engines/sui_screen_engine.lua:2036 engines/sui_window.lua:1416
-#: infra/sui_patches.lua:2273 infra/sui_patches.lua:2862
+#: engines/sui_screen_engine.lua:2044 engines/sui_window.lua:1435
+#: infra/sui_patches.lua:2290 infra/sui_patches.lua:2887
 msgid "Page %1 of %2"
 msgstr "Səhifə %1 / %2"
 
-#: screens/sui_settings_window.lua:549 screens/sui_settings_window.lua:713
-#: screens/sui_settings_window.lua:1099
+#: screens/sui_settings_window.lua:553 screens/sui_settings_window.lua:717
+#: screens/sui_settings_window.lua:1103
 msgid "Page %d"
 msgstr "Səhifə %d"
 
-#: screens/sui_settings_window.lua:548 screens/sui_settings_window.lua:712
-#: screens/sui_settings_window.lua:1098
+#: screens/sui_settings_window.lua:552 screens/sui_settings_window.lua:716
+#: screens/sui_settings_window.lua:1102
 msgid "Page 1 (Home)"
 msgstr "Səhifə 1 (əsas)"
 
@@ -2881,11 +2979,11 @@ msgstr "Səhifə 1 (əsas)"
 msgid "Pages"
 msgstr "Səhifələr"
 
-#: engines/sui_book_grid.lua:2005 engines/sui_book_grid.lua:2021
+#: engines/sui_book_grid.lua:2006 engines/sui_book_grid.lua:2022
 msgid "Pages Badge"
 msgstr "Səhifə nişanı"
 
-#: engines/sui_book_grid.lua:2016
+#: engines/sui_book_grid.lua:2017
 msgid "Pages Badge Color"
 msgstr "Səhifə nişanının rəngi"
 
@@ -2897,8 +2995,13 @@ msgstr "Gündə səhifə"
 msgid "Pages read"
 msgstr "Oxunan səhifələr"
 
-#: features/sui_style.lua:1294 screens/sui_menu.lua:2775
+#: features/sui_style.lua:1294 screens/sui_menu.lua:2794
 msgid "Pagination Bar"
+msgstr "Səhifələmə paneli"
+
+#: screens/sui_menu.lua:2351
+#, fuzzy
+msgid "Pagination Bar Opacity"
 msgstr "Səhifələmə paneli"
 
 #: screens/sui_menu.lua:486
@@ -2947,36 +3050,41 @@ msgstr "Səhifələmə: növbəti səhifə"
 msgid "Pagination: Previous Page"
 msgstr "Səhifələmə: əvvəlki səhifə"
 
-#: features/sui_quickactions.lua:2567
+#: features/sui_quickactions.lua:2580
 msgid "Path chooser not available."
 msgstr "Yol seçicisi əlçatan deyil."
 
-#: features/sui_style.lua:2034
+#: features/sui_style.lua:2118
 msgid "Path does not exist: "
 msgstr "Yol mövcud deyil: "
 
-#: modules/module_coverdeck.lua:143 modules/module_currently.lua:284
-#: modules/module_currently.lua:1599
+#: modules/module_reading_goals.lua:1314
+#, fuzzy
+msgid "Percentage"
+msgstr "Oxunan faiz"
+
+#: modules/module_coverdeck.lua:143 modules/module_currently.lua:304
+#: modules/module_currently.lua:1639
 msgid "Percentage read"
 msgstr "Oxunan faiz"
 
-#: modules/module_reading_goals.lua:754
+#: modules/module_reading_goals.lua:773
 msgid "Physical Books — %s"
 msgstr "Çap kitabları — %s"
 
-#: modules/module_reading_goals.lua:755
+#: modules/module_reading_goals.lua:774
 msgid "Physical books read this year:"
 msgstr "Bu il oxunan çap kitabları:"
 
-#: modules/module_quote.lua:1489 modules/module_quote.lua:1538
+#: modules/module_quote.lua:1499 modules/module_quote.lua:1548
 msgid "Place .lua files in the plugin's sui_quotes/ folder"
 msgstr ".lua fayllarını qoşmanın sui_quotes/ qovluğuna yerləşdirin"
 
-#: screens/sui_menu.lua:3850
+#: screens/sui_menu.lua:3869
 msgid "Place a folder or .zip in:"
 msgstr "Qovluğu və ya .zip faylını buraya yerləşdirin:"
 
-#: screens/sui_menu.lua:2289
+#: screens/sui_menu.lua:2321
 msgid "Place images in:"
 msgstr "Şəkilləri buraya yerləşdirin:"
 
@@ -2987,69 +3095,79 @@ msgstr ""
 "Fayllarınızı koreader/settings/simpleui/sui_wallpapers və ya sui_icons "
 "qovluğuna yerləşdirin."
 
-#: screens/sui_menu.lua:3532
+#: screens/sui_menu.lua:3551
 msgid "Placeholder Cover for Bookless Folders"
 msgstr "Kitabsız qovluqlar üçün əvəzedici üzlük"
+
+#: infra/sui_compat_check.lua:235
+msgid ""
+"Please delete the Project: Title plugin from your plugins folder and restart "
+"KOReader."
+msgstr ""
 
 #: screens/sui_stats_windows.lua:667
 msgid "Please enter a date in YYYY-MM-DD format."
 msgstr "Tarixi YYYY-MM-DD formatında daxil edin."
 
-#: features/sui_presets.lua:860 screens/sui_menu.lua:4015
+#: features/sui_presets.lua:865 screens/sui_menu.lua:4034
 msgid "Please enter a name for the preset."
 msgstr "Hazır quruluş üçün ad daxil edin."
 
-#: features/sui_quickactions.lua:2538
+#: infra/sui_compat_check.lua:196
+msgid "Please restart KOReader for the change to take effect."
+msgstr ""
+
+#: features/sui_quickactions.lua:2551
 msgid "Please select an action."
 msgstr "Əməl seçin."
 
-#: features/sui_quickactions.lua:2632 features/sui_quickactions.lua:2751
+#: features/sui_quickactions.lua:2645 features/sui_quickactions.lua:2764
 msgid "Plugin"
 msgstr "Qoşma"
 
-#: features/sui_quickactions.lua:3142
+#: features/sui_quickactions.lua:3154
 msgid "Plugin error: %s"
 msgstr "Qoşma xətası: %s"
 
-#: features/sui_quickactions.lua:3144
+#: features/sui_quickactions.lua:3156
 msgid "Plugin not available: %s"
 msgstr "Qoşma əlçatan deyil: %s"
 
-#: screens/sui_menu.lua:2956 screens/sui_menu.lua:3360
+#: screens/sui_menu.lua:2975 screens/sui_menu.lua:3379
 msgid "Position"
 msgstr "Mövqe"
 
-#: features/sui_quickactions.lua:956 infra/sui_config.lua:130
+#: features/sui_quickactions.lua:970 infra/sui_config.lua:131
 msgid "Power"
 msgstr "Enerji"
 
-#: screens/sui_menu.lua:2642
+#: screens/sui_menu.lua:2659
 msgid "Preserve Cover Proportions"
 msgstr "Üzlüyün nisbətlərini qoru"
 
-#: screens/sui_menu.lua:2693
+#: screens/sui_menu.lua:2710
 msgid "Preserve Deleted Books in Statistics"
 msgstr "Silinmiş kitabları statistikada saxla"
 
-#: features/sui_presets.lua:1092 screens/sui_menu.lua:4240
+#: features/sui_presets.lua:1097 screens/sui_menu.lua:4259
 msgid "Preset \"%s\" imported."
 msgstr "\"%s\" hazır quruluşu idxal edildi."
 
-#: features/sui_presets.lua:743 features/sui_presets.lua:821
-#: screens/sui_menu.lua:3978
+#: features/sui_presets.lua:748 features/sui_presets.lua:826
+#: screens/sui_menu.lua:3997
 msgid "Preset \"%s\" not found."
 msgstr "\"%s\" hazır quruluşu tapılmadı."
 
-#: features/sui_presets.lua:871 screens/sui_menu.lua:4022
+#: features/sui_presets.lua:876 screens/sui_menu.lua:4041
 msgid "Preset \"%s\" saved."
 msgstr "\"%s\" hazır quruluşu yadda saxlanıldı."
 
-#: features/sui_presets.lua:914 features/sui_presets.lua:1046
-#: screens/sui_menu.lua:4066 screens/sui_menu.lua:4195
+#: features/sui_presets.lua:919 features/sui_presets.lua:1051
+#: screens/sui_menu.lua:4085 screens/sui_menu.lua:4214
 msgid "Preset \"%s\" updated."
 msgstr "\"%s\" hazır quruluşu yeniləndi."
 
-#: features/sui_presets.lua:1119 screens/sui_menu.lua:4270
+#: features/sui_presets.lua:1124 screens/sui_menu.lua:4289
 msgid ""
 "Preset exported to:\n"
 "%s"
@@ -3057,19 +3175,19 @@ msgstr ""
 "Hazır quruluş buraya ixrac edildi:\n"
 "%s"
 
-#: features/sui_presets.lua:846 screens/sui_menu.lua:4001
+#: features/sui_presets.lua:851 screens/sui_menu.lua:4020
 msgid "Preset name"
 msgstr "Hazır quruluşun adı"
 
-#: features/sui_presets.lua:403 features/sui_presets.lua:583
+#: features/sui_presets.lua:407 features/sui_presets.lua:587
 msgid "Preset not found"
 msgstr "Hazır quruluş tapılmadı"
 
-#: screens/sui_menu.lua:2747 screens/sui_settings_window.lua:408
+#: screens/sui_menu.lua:2766 screens/sui_settings_window.lua:412
 msgid "Presets"
 msgstr "Hazır quruluşlar"
 
-#: screens/sui_settings_window.lua:909
+#: screens/sui_settings_window.lua:913
 msgid "Presets module unavailable."
 msgstr "Hazır quruluşlar modulu əlçatan deyil."
 
@@ -3081,81 +3199,87 @@ msgstr ""
 "Parametrlərini tez fərdiləşdirmək üçün ekrandakı istənilən elementi "
 "(məsələn, modulu və ya paneli) basıb saxlayın."
 
-#: screens/sui_bottombar.lua:501
+#: screens/sui_bottombar.lua:582
 msgid "Prev"
 msgstr "Əvvəlki"
 
-#: screens/sui_menu.lua:3131
+#: screens/sui_menu.lua:3150
 msgid "Progress"
 msgstr "İrəliləyiş"
 
-#: modules/module_coverdeck.lua:1712 modules/module_coverdeck.lua:1745
+#: modules/module_coverdeck.lua:1673 modules/module_coverdeck.lua:1706
+#: modules/module_currently.lua:1989 modules/module_currently.lua:2033
 msgid "Progress Badge"
 msgstr "İrəliləyiş nişanı"
 
-#: modules/module_coverdeck.lua:1732 engines/sui_book_grid.lua:1964
+#: modules/module_coverdeck.lua:1693 modules/module_currently.lua:1998
+#: engines/sui_book_grid.lua:1965
 msgid "Progress Badge Color"
 msgstr "İrəliləyiş nişanının rəngi"
 
-#: screens/sui_menu.lua:4353
+#: screens/sui_menu.lua:4372
 msgid "Progress Bar Type"
 msgstr "İrəliləyiş zolağının növü"
 
-#: engines/sui_book_grid.lua:1969
+#: engines/sui_book_grid.lua:1970
 msgid "Progress Indicator"
 msgstr "İrəliləyiş göstəricisi"
 
-#: engines/sui_book_grid.lua:1956
+#: engines/sui_book_grid.lua:1957
 msgid "Progress Style"
 msgstr "İrəliləyiş üslubu"
 
-#: engines/sui_book_grid.lua:2089
+#: engines/sui_book_grid.lua:2090
 msgid "Progress and Badges"
 msgstr "İrəliləyiş və nişanlar"
 
-#: modules/module_currently.lua:1951
+#: modules/module_currently.lua:2012
 msgid "Progress and Stats"
 msgstr "İrəliləyiş və statistika"
 
-#: modules/module_coverdeck.lua:157 modules/module_currently.lua:283
+#: modules/module_coverdeck.lua:157 modules/module_currently.lua:303
 msgid "Progress bar"
 msgstr "İrəliləyiş zolağı"
 
-#: modules/module_currently.lua:1954
+#: modules/module_currently.lua:2015
 msgid "Progress bar style"
 msgstr "İrəliləyiş zolağının üslubu"
 
-#: modules/module_action_list.lua:344 modules/module_action_list.lua:349
-#: modules/module_action_list.lua:375 modules/module_quick_actions.lua:396
-#: modules/module_quick_actions.lua:401 modules/module_quick_actions.lua:427
-#: modules/module_quick_actions.lua:538 features/sui_quickactions.lua:1572
-#: features/sui_quickactions.lua:3407 features/sui_backup.lua:124
-#: screens/sui_menu.lua:2175 screens/sui_menu.lua:4581
-#: screens/sui_quicksettings_bar.lua:1130
-#: screens/sui_quicksettings_bar.lua:1135
-#: screens/sui_quicksettings_bar.lua:1156 screens/sui_settings_window.lua:351
+#: infra/sui_compat_check.lua:234
+msgid "Project: Title is not compatible with Simple UI."
+msgstr ""
+
+#: modules/module_action_list.lua:347 modules/module_action_list.lua:352
+#: modules/module_action_list.lua:378 modules/module_quick_actions.lua:418
+#: modules/module_quick_actions.lua:423 modules/module_quick_actions.lua:449
+#: modules/module_quick_actions.lua:560 features/sui_quickactions.lua:1585
+#: features/sui_quickactions.lua:3419 features/sui_backup.lua:124
+#: screens/sui_menu.lua:2184 screens/sui_menu.lua:4600
+#: screens/sui_quicksettings_bar.lua:1143
+#: screens/sui_quicksettings_bar.lua:1148
+#: screens/sui_quicksettings_bar.lua:1169 screens/sui_settings_window.lua:351
 msgid "Quick Actions"
 msgstr "Sürətli əməllər"
 
-#: screens/sui_menu.lua:4585
+#: screens/sui_menu.lua:4604
 msgid "Quick Actions  (%d/%d — %d left)"
 msgstr "Sürətli əməllər  (%d/%d — %d qalıb)"
 
-#: screens/sui_menu.lua:4583
+#: screens/sui_menu.lua:4602
 msgid "Quick Actions  (%d/%d — at limit)"
 msgstr "Sürətli əməllər  (%d/%d — həddə çatıb)"
 
-#: features/sui_quickactions.lua:1554 features/sui_quickactions.lua:1956
-#: screens/sui_menu.lua:3688
+#: features/sui_quickactions.lua:1567 features/sui_quickactions.lua:1969
+#: screens/sui_menu.lua:3707
 msgid "Quick Actions Icons"
 msgstr "Sürətli əməl işarələri"
 
-#: modules/module_quick_actions.lua:252 modules/module_quick_actions.lua:308
-#: modules/module_quick_actions.lua:692 screens/sui_menu.lua:1925
+#: modules/module_quick_actions.lua:273 modules/module_quick_actions.lua:330
+#: modules/module_quick_actions.lua:722 screens/sui_menu.lua:1934
 msgid "Quick Actions Row"
 msgstr "Sürətli əməllər sətri"
 
-#: screens/sui_menu.lua:2777 screens/sui_quicksettings_bar.lua:979
+#: screens/sui_menu.lua:2796 screens/sui_quicksettings_bar.lua:992
 msgid "Quick Settings Bar"
 msgstr "Sürətli parametrlər paneli"
 
@@ -3163,16 +3287,20 @@ msgstr "Sürətli parametrlər paneli"
 msgid "Quick Tips"
 msgstr "Qısa məsləhətlər"
 
-#: features/sui_quickactions.lua:606
+#: features/sui_quickactions.lua:620
 msgid "Quit"
 msgstr "Çıx"
 
-#: features/sui_quickactions.lua:609
+#: features/sui_quickactions.lua:623
 msgid "Quitting…"
 msgstr "Çıxılır…"
 
-#: modules/module_quote.lua:1117 features/sui_presets.lua:150
-#: features/sui_presets.lua:215
+#: modules/module_quote.lua:1591
+msgid "Quote"
+msgstr ""
+
+#: modules/module_quote.lua:1116 features/sui_presets.lua:154
+#: features/sui_presets.lua:219
 msgid "Quote of the Day"
 msgstr "Günün sitatı"
 
@@ -3180,27 +3308,27 @@ msgstr "Günün sitatı"
 msgid "Quote pool files from sui_quotes/"
 msgstr "sui_quotes/ qovluğundakı sitat toplusu faylları"
 
-#: modules/module_quote.lua:1429
+#: modules/module_quote.lua:1439
 msgid "Quotes + My Highlights"
 msgstr "Sitatlar + vurğulamalarım"
 
-#: infra/sui_config.lua:172
+#: infra/sui_config.lua:197
 msgid "RAM Usage"
 msgstr "Operativ yaddaş istifadəsi"
 
-#: modules/module_library.lua:218 features/sui_quickactions.lua:788
-#: infra/sui_config.lua:122
+#: modules/module_library.lua:218 features/sui_quickactions.lua:802
+#: infra/sui_config.lua:123
 msgid "Random"
 msgstr "Təsadüfi"
 
-#: modules/module_reading_goals.lua:872 modules/module_reading_goals.lua:873
-#: modules/module_reading_goals.lua:899 modules/module_reading_goals.lua:1585
-#: features/sui_presets.lua:170 features/sui_presets.lua:216
+#: modules/module_reading_goals.lua:891 modules/module_reading_goals.lua:892
+#: modules/module_reading_goals.lua:919 modules/module_reading_goals.lua:1619
+#: features/sui_presets.lua:174 features/sui_presets.lua:220
 msgid "Reading Goals"
 msgstr "Oxu məqsədləri"
 
-#: modules/module_heatmap.lua:206 modules/module_heatmap.lua:207
-#: modules/module_heatmap.lua:226 modules/module_heatmap.lua:354
+#: modules/module_heatmap.lua:209 modules/module_heatmap.lua:210
+#: modules/module_heatmap.lua:229 modules/module_heatmap.lua:360
 #: screens/sui_heatmap_popup.lua:193
 msgid "Reading Heatmap"
 msgstr "Oxu istilik xəritəsi"
@@ -3209,8 +3337,8 @@ msgstr "Oxu istilik xəritəsi"
 msgid "Reading Insights"
 msgstr "Oxu təhlili"
 
-#: modules/module_reading_stats.lua:360 features/sui_presets.lua:170
-#: features/sui_presets.lua:216
+#: modules/module_reading_stats.lua:406 features/sui_presets.lua:174
+#: features/sui_presets.lua:220
 msgid "Reading Stats"
 msgstr "Oxu statistikası"
 
@@ -3218,22 +3346,22 @@ msgstr "Oxu statistikası"
 msgid "Reading goals, streak mode and freeze bank"
 msgstr "Oxu məqsədləri, ardıcıllıq rejimi və dondurma ehtiyatı"
 
-#: modules/module_reading_stats.lua:904 modules/module_reading_stats.lua:918
+#: modules/module_reading_stats.lua:966 modules/module_reading_stats.lua:980
 msgid "Real streak only"
 msgstr "Yalnız həqiqi ardıcıllıq"
 
-#: features/sui_quickactions.lua:592
+#: features/sui_quickactions.lua:606
 msgid "Reboot"
 msgstr "Cihazı yenidən başlat"
 
-#: features/sui_quickactions.lua:761 features/sui_quickactions.lua:3570
-#: infra/sui_config.lua:120
+#: features/sui_quickactions.lua:775 features/sui_quickactions.lua:3582
+#: infra/sui_config.lua:121
 msgid "Recent"
 msgstr "Son"
 
 #: modules/module_recent.lua:15 modules/module_recent.lua:16
-#: modules/module_coverdeck.lua:1430 features/sui_presets.lua:138
-#: features/sui_presets.lua:188
+#: modules/module_coverdeck.lua:1382 features/sui_presets.lua:142
+#: features/sui_presets.lua:192
 msgid "Recent Books"
 msgstr "Son kitablar"
 
@@ -3245,23 +3373,23 @@ msgstr "Oxunacaqlardan çıxar"
 msgid "Remove from list when finished"
 msgstr "Bitirildikdə siyahıdan çıxar"
 
-#: engines/sui_window.lua:1938 engines/sui_window.lua:2859
-#: features/sui_presets.lua:920 features/sui_presets.lua:927
-#: features/sui_presets.lua:1013 screens/sui_menu.lua:4072
-#: screens/sui_menu.lua:4079 screens/sui_menu.lua:4164
+#: engines/sui_window.lua:1957 engines/sui_window.lua:2878
+#: features/sui_presets.lua:925 features/sui_presets.lua:932
+#: features/sui_presets.lua:1018 screens/sui_menu.lua:4091
+#: screens/sui_menu.lua:4098 screens/sui_menu.lua:4183
 msgid "Rename"
 msgstr "Adını dəyiş"
 
-#: features/sui_presets.lua:923 features/sui_presets.lua:1009
-#: screens/sui_menu.lua:4075 screens/sui_menu.lua:4160
+#: features/sui_presets.lua:928 features/sui_presets.lua:1014
+#: screens/sui_menu.lua:4094 screens/sui_menu.lua:4179
 msgid "Rename \"%s\""
 msgstr "\"%s\" adını dəyiş"
 
-#: screens/sui_settings_window.lua:478
+#: screens/sui_settings_window.lua:482
 msgid "Rename screen"
 msgstr "Ekranın adını dəyiş"
 
-#: screens/sui_menu.lua:2619
+#: screens/sui_menu.lua:2636
 msgid ""
 "Replaces the \"Closing book…\" notice above with the cover for that close, "
 "when a cover is available."
@@ -3282,16 +3410,16 @@ msgstr ""
 "Naviqasiya ilə səhifələmə aktiv olduqda ən azı 1, ən çoxu 4 vərəq təyin "
 "edilə bilər."
 
-#: features/sui_quickactions.lua:1964 features/sui_style.lua:1310
-#: screens/sui_menu.lua:2530 screens/sui_stats_windows.lua:653
+#: features/sui_quickactions.lua:1977 features/sui_style.lua:1310
+#: screens/sui_menu.lua:2547 screens/sui_stats_windows.lua:653
 msgid "Reset"
 msgstr "Sıfırla"
 
-#: features/sui_quickactions.lua:1958 features/sui_style.lua:1304
+#: features/sui_quickactions.lua:1971 features/sui_style.lua:1304
 msgid "Reset All"
 msgstr "Hamısını sıfırla"
 
-#: features/sui_quickactions.lua:2816
+#: features/sui_quickactions.lua:2829
 msgid "Reset All Quick Action Icons"
 msgstr "Bütün sürətli əməl işarələrini sıfırla"
 
@@ -3299,11 +3427,11 @@ msgstr "Bütün sürətli əməl işarələrini sıfırla"
 msgid "Reset All System Icons"
 msgstr "Bütün sistem işarələrini sıfırla"
 
-#: features/sui_quickactions.lua:1963
+#: features/sui_quickactions.lua:1976
 msgid "Reset all Quick Actions icons to default?"
 msgstr "Bütün sürətli əməl işarələri standart vəziyyətə qaytarılsın?"
 
-#: screens/sui_menu.lua:2529
+#: screens/sui_menu.lua:2546
 msgid "Reset all scales to default (100%)? This cannot be undone."
 msgstr ""
 "Bütün miqyaslar standart dəyərə (100%) qaytarılsın? Bu əməl geri alına "
@@ -3313,50 +3441,51 @@ msgstr ""
 msgid "Reset all system icons to default?"
 msgstr "Bütün sistem işarələri standart vəziyyətə qaytarılsın?"
 
-#: screens/sui_menu.lua:2524
+#: screens/sui_menu.lua:2541
 msgid "Reset to Default Scale"
 msgstr "Standart miqyasa qaytar"
 
-#: features/sui_quickactions.lua:586 infra/sui_updater.lua:448
+#: features/sui_quickactions.lua:600 infra/sui_updater.lua:448
 #: screens/sui_menu.lua:444 screens/sui_menu.lua:847 screens/sui_menu.lua:1057
 #: screens/sui_menu.lua:1119 screens/sui_menu.lua:1334
-#: screens/sui_menu.lua:1793 screens/sui_menu.lua:3448
-#: screens/sui_menu.lua:3471 screens/sui_menu.lua:3493
-#: screens/sui_menu.lua:4341 screens/sui_menu.lua:4544
-#: screens/sui_quicksettings_bar.lua:1120
+#: screens/sui_menu.lua:1802 screens/sui_menu.lua:3467
+#: screens/sui_menu.lua:3490 screens/sui_menu.lua:3512
+#: screens/sui_menu.lua:4360 screens/sui_menu.lua:4563
+#: screens/sui_quicksettings_bar.lua:1133
 msgid "Restart"
 msgstr "Yenidən başlat"
 
-#: features/sui_backup.lua:1008
+#: features/sui_backup.lua:1009 infra/sui_compat_check.lua:197
+#: infra/sui_compat_check.lua:310
 msgid "Restart now"
 msgstr "İndi yenidən başlat"
 
-#: features/sui_style.lua:1796 features/sui_style.lua:1840
+#: features/sui_style.lua:1818 features/sui_style.lua:1858
 msgid "Restart to fully apply the UI font change."
 msgstr "İnterfeys şrifti dəyişikliyini tam tətbiq etmək üçün yenidən başladın."
 
-#: features/sui_quickactions.lua:588
+#: features/sui_quickactions.lua:602
 msgid "Restarting…"
 msgstr "Yenidən başladılır…"
 
-#: features/sui_backup.lua:994
+#: features/sui_backup.lua:995
 msgid "Restore"
 msgstr "Bərpa et"
 
-#: features/sui_backup.lua:1162
+#: features/sui_backup.lua:1163
 msgid "Restore Selected…"
 msgstr "Seçilənləri bərpa et…"
 
-#: features/sui_backup.lua:999
+#: features/sui_backup.lua:1000
 msgid "Restore failed."
 msgstr "Bərpa uğursuz oldu."
 
-#: features/sui_backup.lua:857
+#: features/sui_backup.lua:858
 msgid "Restore failed. Your previous configuration was kept unchanged."
 msgstr ""
 "Bərpa uğursuz oldu. Əvvəlki konfiqurasiyanız dəyişdirilmədən saxlanıldı."
 
-#: features/sui_backup.lua:993
+#: features/sui_backup.lua:994
 msgid ""
 "Restore this backup? Existing settings for these categories will be "
 "replaced. Saved presets are merged — yours are kept."
@@ -3365,54 +3494,54 @@ msgstr ""
 "ediləcək. Yadda saxlanılmış hazır quruluşlar birləşdiriləcək — sizinkilər "
 "saxlanılacaq."
 
-#: screens/sui_menu.lua:2544
+#: screens/sui_menu.lua:2561
 msgid "Return to Book Folder"
 msgstr "Kitabın qovluğuna qayıt"
 
-#: screens/sui_menu.lua:2435
+#: screens/sui_menu.lua:2452
 msgid "Return to Home Screen on Wakeup"
 msgstr "Oyanarkən əsas ekrana qayıt"
 
-#: engines/sui_book_grid.lua:2058 screens/sui_menu.lua:3202
-#: screens/sui_menu.lua:3211 screens/sui_menu.lua:3223
+#: engines/sui_book_grid.lua:2059 screens/sui_menu.lua:3221
+#: screens/sui_menu.lua:3230 screens/sui_menu.lua:3242
 msgid "Ribbon"
 msgstr "Lent"
 
-#: modules/module_quote.lua:126 modules/module_quote.lua:1570
-#: modules/module_action_list.lua:67 modules/module_action_list.lua:476
-#: modules/module_reading_stats.lua:92 modules/module_reading_stats.lua:870
-#: modules/module_reading_goals.lua:120 modules/module_reading_goals.lua:1578
-#: modules/module_clock.lua:167 modules/module_clock.lua:1212
-#: modules/module_quick_actions.lua:668 screens/sui_menu.lua:716
-#: screens/sui_menu.lua:945 screens/sui_menu.lua:1490 screens/sui_menu.lua:1688
+#: modules/module_quote.lua:125 modules/module_quote.lua:1580
+#: modules/module_action_list.lua:67 modules/module_action_list.lua:489
+#: modules/module_reading_stats.lua:112 modules/module_reading_stats.lua:932
+#: modules/module_reading_goals.lua:135 modules/module_reading_goals.lua:1612
+#: modules/module_clock.lua:166 modules/module_clock.lua:1246
+#: modules/module_quick_actions.lua:698 screens/sui_menu.lua:716
+#: screens/sui_menu.lua:945 screens/sui_menu.lua:1499 screens/sui_menu.lua:1697
 msgid "Right"
 msgstr "Sağ"
 
-#: modules/module_reading_goals.lua:1564
+#: modules/module_reading_goals.lua:1598
 msgid "Ring Alignment"
 msgstr "Halqaların düzləndirilməsi"
 
-#: modules/module_reading_goals.lua:1538
+#: modules/module_reading_goals.lua:1572
 msgid "Ring Style"
 msgstr "Halqa üslubu"
 
-#: modules/module_reading_goals.lua:1527
+#: modules/module_reading_goals.lua:1561
 msgid "Rings"
 msgstr "Halqalar"
 
-#: modules/module_quick_actions.lua:577 screens/sui_quicksettings_bar.lua:1250
+#: modules/module_quick_actions.lua:608 screens/sui_quicksettings_bar.lua:1269
 msgid "Round"
 msgstr "Dairəvi"
 
-#: engines/sui_book_grid.lua:1942
+#: engines/sui_book_grid.lua:1943
 msgid "Round Overlay"
 msgstr "Dairəvi üst qat"
 
-#: modules/module_quick_actions.lua:587 screens/sui_quicksettings_bar.lua:1260
+#: modules/module_quick_actions.lua:618 screens/sui_quicksettings_bar.lua:1279
 msgid "Rounded Square"
 msgstr "Yuvarlaq künclü kvadrat"
 
-#: engines/sui_book_grid.lua:1842
+#: engines/sui_book_grid.lua:1860
 msgid "Rows"
 msgstr "Sətirlər"
 
@@ -3420,47 +3549,47 @@ msgstr "Sətirlər"
 msgid "Sat"
 msgstr "Şən"
 
-#: modules/module_clock.lua:59
+#: modules/module_clock.lua:58
 msgid "Saturday"
 msgstr "Şənbə"
 
-#: modules/module_reading_goals.lua:731 features/sui_quickactions.lua:2535
-#: features/sui_presets.lua:854 screens/sui_menu.lua:4009
-#: screens/sui_stats_windows.lua:662 screens/sui_settings_window.lua:488
+#: modules/module_reading_goals.lua:750 features/sui_quickactions.lua:2548
+#: features/sui_presets.lua:859 screens/sui_menu.lua:4028
+#: screens/sui_stats_windows.lua:662 screens/sui_settings_window.lua:492
 msgid "Save"
 msgstr "Yadda saxla"
 
-#: features/sui_presets.lua:839 screens/sui_menu.lua:3994
+#: features/sui_presets.lua:844 screens/sui_menu.lua:4013
 msgid "Save as new preset"
 msgstr "Yeni hazır quruluş kimi yadda saxla"
 
-#: features/sui_backup.lua:1089
+#: features/sui_backup.lua:1090
 msgid "Save backup as"
 msgstr "Ehtiyat nüsxəni fərqli adla yadda saxla"
 
-#: screens/sui_menu.lua:3999
+#: screens/sui_menu.lua:4018
 msgid "Save icon preset"
 msgstr "İşarə quruluşunu yadda saxla"
 
-#: features/sui_presets.lua:844
+#: features/sui_presets.lua:849
 msgid "Save preset"
 msgstr "Hazır quruluşu yadda saxla"
 
-#: modules/module_heatmap.lua:309 modules/module_heatmap.lua:311
-#: modules/module_quote.lua:1349 modules/module_quote.lua:1353
-#: modules/module_action_list.lua:431 modules/module_action_list.lua:433
-#: modules/module_reading_stats.lua:655 modules/module_reading_stats.lua:657
-#: modules/module_reading_goals.lua:1250 modules/module_reading_goals.lua:1252
-#: modules/module_clock.lua:1004 modules/module_clock.lua:1006
-#: modules/module_coverdeck.lua:1339 modules/module_coverdeck.lua:1341
-#: modules/module_currently.lua:1410 modules/module_currently.lua:1412
-#: modules/module_quick_actions.lua:544 modules/module_quick_actions.lua:546
-#: engines/sui_book_grid.lua:1770 engines/sui_book_grid.lua:1772
-#: screens/sui_menu.lua:2447
+#: modules/module_heatmap.lua:315 modules/module_heatmap.lua:317
+#: modules/module_quote.lua:1359 modules/module_quote.lua:1363
+#: modules/module_action_list.lua:434 modules/module_action_list.lua:436
+#: modules/module_reading_stats.lua:709 modules/module_reading_stats.lua:711
+#: modules/module_reading_goals.lua:1274 modules/module_reading_goals.lua:1276
+#: modules/module_clock.lua:1029 modules/module_clock.lua:1031
+#: modules/module_coverdeck.lua:1291 modules/module_coverdeck.lua:1293
+#: modules/module_currently.lua:1450 modules/module_currently.lua:1452
+#: modules/module_quick_actions.lua:566 modules/module_quick_actions.lua:568
+#: engines/sui_book_grid.lua:1788 engines/sui_book_grid.lua:1790
+#: screens/sui_menu.lua:2464
 msgid "Scale"
 msgstr "Miqyas"
 
-#: modules/module_currently.lua:1439
+#: modules/module_currently.lua:1479
 msgid ""
 "Scale for all text elements (title, author, progress, time).\n"
 "100% is the default size."
@@ -3468,7 +3597,7 @@ msgstr ""
 "Bütün mətn elementlərinin (başlıq, müəllif, irəliləyiş, vaxt) miqyası.\n"
 "Standart ölçü: 100%."
 
-#: modules/module_clock.lua:1034
+#: modules/module_clock.lua:1059
 msgid ""
 "Scale for the battery text only.\n"
 "100% is the default size."
@@ -3476,7 +3605,7 @@ msgstr ""
 "Yalnız batareya mətninin miqyası.\n"
 "Standart ölçü: 100%."
 
-#: modules/module_quick_actions.lua:561
+#: modules/module_quick_actions.lua:583
 msgid ""
 "Scale for the button label text.\n"
 "100% is the default size."
@@ -3484,7 +3613,7 @@ msgstr ""
 "Düymə yazısının miqyası.\n"
 "Standart ölçü: 100%."
 
-#: modules/module_clock.lua:1016
+#: modules/module_clock.lua:1041
 msgid ""
 "Scale for the clock face only.\n"
 "100% is the default size."
@@ -3496,7 +3625,7 @@ msgstr ""
 msgid "Scale for the collection count badge."
 msgstr "Kolleksiya sayı nişanının miqyası."
 
-#: modules/module_currently.lua:1426
+#: modules/module_currently.lua:1466
 msgid ""
 "Scale for the cover thumbnail only.\n"
 "100% is the default size.\n"
@@ -3508,7 +3637,7 @@ msgstr ""
 "Dinamik üzlük ölçüsü qoşulduqda bu, üzlüyü cari dinamik ölçüsünə nisbətən "
 "miqyaslandırır və üzlük heç vaxt 100% ölçüsündən kiçik olmur."
 
-#: modules/module_coverdeck.lua:1350
+#: modules/module_coverdeck.lua:1302
 msgid ""
 "Scale for the cover thumbnails only.\n"
 "100% is the default size."
@@ -3516,7 +3645,7 @@ msgstr ""
 "Yalnız üzlük miniatürlərinin miqyası.\n"
 "Standart ölçü: 100%."
 
-#: engines/sui_book_grid.lua:1790
+#: engines/sui_book_grid.lua:1808
 msgid ""
 "Scale for the cover thumbnails only.\n"
 "Text and progress bar follow the module scale.\n"
@@ -3526,7 +3655,7 @@ msgstr ""
 "Mətn və irəliləyiş zolağı modulun miqyasına uyğunlaşır.\n"
 "Standart ölçü: 100%."
 
-#: modules/module_clock.lua:1025
+#: modules/module_clock.lua:1050
 msgid ""
 "Scale for the date text only.\n"
 "100% is the default size."
@@ -3534,7 +3663,7 @@ msgstr ""
 "Yalnız tarix mətninin miqyası.\n"
 "Standart ölçü: 100%."
 
-#: screens/sui_menu.lua:3421
+#: screens/sui_menu.lua:3440
 msgid ""
 "Scale for the folder name overlay text.\n"
 "100% is the default size."
@@ -3542,7 +3671,7 @@ msgstr ""
 "Qovluq adının üst qatdakı mətninin miqyası.\n"
 "Standart ölçü: 100%."
 
-#: modules/module_action_list.lua:442 screens/sui_quicksettings_bar.lua:1229
+#: modules/module_action_list.lua:445 screens/sui_quicksettings_bar.lua:1242
 msgid ""
 "Scale for the label text.\n"
 "100% is the default size."
@@ -3550,7 +3679,7 @@ msgstr ""
 "Yazı mətninin miqyası.\n"
 "Standart ölçü: 100%."
 
-#: screens/sui_menu.lua:2930
+#: screens/sui_menu.lua:2949
 msgid ""
 "Scale for the library badges (progress, pages, etc.).\n"
 "100% is the default size."
@@ -3558,7 +3687,7 @@ msgstr ""
 "Kitabxana nişanlarının (irəliləyiş, səhifələr və s.) miqyası.\n"
 "Standart ölçü: 100%."
 
-#: engines/sui_book_grid.lua:1781
+#: engines/sui_book_grid.lua:1799
 msgid ""
 "Scale for the percentage read text.\n"
 "100% is the default size."
@@ -3566,7 +3695,7 @@ msgstr ""
 "Oxunan faiz mətninin miqyası.\n"
 "Standart ölçü: 100%."
 
-#: modules/module_reading_goals.lua:1268
+#: modules/module_reading_goals.lua:1292
 msgid ""
 "Scale for the text inside the rings.\n"
 "100% is the default size."
@@ -3574,21 +3703,21 @@ msgstr ""
 "Halqaların içindəki mətnin miqyası.\n"
 "Standart ölçü: 100%."
 
-#: engines/sui_book_grid.lua:1993
+#: engines/sui_book_grid.lua:1994
 msgid ""
 "Scale for this module's corner badges (progress, pages, series, new book)."
 msgstr ""
 "Bu modulun künc nişanlarının (irəliləyiş, səhifələr, silsilə, yeni kitab) "
 "miqyası."
 
-#: modules/module_coverdeck.lua:1342
+#: modules/module_coverdeck.lua:1294
 msgid "Scale for this module."
 msgstr "Bu modulun miqyası."
 
-#: modules/module_quote.lua:1355 modules/module_action_list.lua:434
-#: modules/module_reading_stats.lua:658 modules/module_reading_goals.lua:1253
-#: modules/module_clock.lua:1007 modules/module_currently.lua:1413
-#: modules/module_quick_actions.lua:547 engines/sui_book_grid.lua:1773
+#: modules/module_quote.lua:1365 modules/module_action_list.lua:437
+#: modules/module_reading_stats.lua:712 modules/module_reading_goals.lua:1277
+#: modules/module_clock.lua:1032 modules/module_currently.lua:1453
+#: modules/module_quick_actions.lua:569 engines/sui_book_grid.lua:1791
 msgid ""
 "Scale for this module.\n"
 "100% is the default size."
@@ -3596,7 +3725,7 @@ msgstr ""
 "Bu modulun miqyası.\n"
 "Standart ölçü: 100%."
 
-#: modules/module_heatmap.lua:312
+#: modules/module_heatmap.lua:318
 msgid ""
 "Scale for this module.\n"
 "100% is the default size. Capped at 100% here: the grid always has as many "
@@ -3610,7 +3739,7 @@ msgstr ""
 "dür), buna görə xanaları avtomatik uyğunlaşdırılmış ölçüdən artıq böyütmək "
 "torun kartdan kənara çıxmasına səbəb olur."
 
-#: modules/module_coverdeck.lua:1358
+#: modules/module_coverdeck.lua:1310
 msgid ""
 "Scale for title and statistics text.\n"
 "100% is the default size."
@@ -3618,7 +3747,7 @@ msgstr ""
 "Başlıq və statistika mətninin miqyası.\n"
 "Standart ölçü: 100%."
 
-#: screens/sui_menu.lua:2471
+#: screens/sui_menu.lua:2488
 msgid ""
 "Scales all modules and labels together.\n"
 "100% is the default size."
@@ -3626,7 +3755,7 @@ msgstr ""
 "Bütün modulları və yazıları birlikdə miqyaslandırır.\n"
 "Standart ölçü: 100%."
 
-#: screens/sui_menu.lua:2504
+#: screens/sui_menu.lua:2521
 msgid ""
 "Scales the section label text above each module.\n"
 "100% is the default size."
@@ -3634,15 +3763,15 @@ msgstr ""
 "Hər modulun üstündəki bölmə yazısını miqyaslandırır.\n"
 "Standart ölçü: 100%."
 
-#: screens/sui_menu.lua:3545
+#: screens/sui_menu.lua:3564
 msgid "Scan Subfolders for Covers"
 msgstr "Üzlüklər üçün alt qovluqları yoxla"
 
-#: screens/sui_settings_window.lua:480 screens/sui_settings_window.lua:1167
+#: screens/sui_settings_window.lua:484 screens/sui_settings_window.lua:1171
 msgid "Screen name"
 msgstr "Ekran adı"
 
-#: features/sui_quickactions.lua:873 infra/sui_config.lua:125
+#: features/sui_quickactions.lua:887 infra/sui_config.lua:126
 #: screens/sui_titlebar.lua:104 features/library/sui_library_search.lua:208
 msgid "Search"
 msgstr "Axtarış"
@@ -3651,7 +3780,7 @@ msgstr "Axtarış"
 msgid "Search Button"
 msgstr "Axtarış düyməsi"
 
-#: features/sui_quickactions.lua:890
+#: features/sui_quickactions.lua:904
 #, fuzzy
 msgid "Search Library not available."
 msgstr "Tarixçə əlçatan deyil."
@@ -3665,16 +3794,16 @@ msgstr "Kitabxananı gözdən keçir"
 msgid "Search results: %1"
 msgstr ""
 
-#: engines/sui_window.lua:1927 engines/sui_window.lua:2844
+#: engines/sui_window.lua:1946 engines/sui_window.lua:2863
 msgid "Select"
 msgstr "Seç"
 
-#: features/sui_presets.lua:750 features/sui_presets.lua:758
-#: features/sui_presets.lua:763 screens/sui_menu.lua:3985
+#: features/sui_presets.lua:755 features/sui_presets.lua:763
+#: features/sui_presets.lua:768 screens/sui_menu.lua:4004
 msgid "Select Preset"
 msgstr "Hazır quruluş seç"
 
-#: screens/sui_menu.lua:2250
+#: screens/sui_menu.lua:2283
 msgid "Select Wallpaper"
 msgstr "Fon şəkli seç"
 
@@ -3686,24 +3815,25 @@ msgstr "Sıralamaq üçün ən azı 2 kolleksiya seçin."
 msgid "Sep"
 msgstr "Sen"
 
-#: modules/module_clock.lua:64 screens/sui_stats_windows.lua:2817
+#: modules/module_clock.lua:63 screens/sui_stats_windows.lua:2817
 msgid "September"
 msgstr "Sentyabr"
 
-#: modules/module_currently.lua:281 features/sui_quickactions.lua:1008
-#: infra/sui_config.lua:134 features/library/sui_library_browse.lua:59
+#: modules/module_currently.lua:301 modules/module_currently.lua:1970
+#: features/sui_quickactions.lua:1022 infra/sui_config.lua:135
+#: features/library/sui_library_browse.lua:59
 msgid "Series"
 msgstr "Silsilə"
 
-#: engines/sui_book_grid.lua:2031 engines/sui_book_grid.lua:2047
+#: engines/sui_book_grid.lua:2032 engines/sui_book_grid.lua:2048
 msgid "Series Badge"
 msgstr "Silsilə nişanı"
 
-#: engines/sui_book_grid.lua:2042
+#: engines/sui_book_grid.lua:2043
 msgid "Series Badge Color"
 msgstr "Silsilə nişanının rəngi"
 
-#: screens/sui_menu.lua:3077
+#: screens/sui_menu.lua:3096
 msgid "Series Index"
 msgstr "Silsilədəki nömrə"
 
@@ -3711,8 +3841,8 @@ msgstr "Silsilədəki nömrə"
 msgid "Set"
 msgstr "Təyin et"
 
-#: modules/module_reading_goals.lua:1416 modules/module_reading_goals.lua:1431
-#: modules/module_reading_goals.lua:1446
+#: modules/module_reading_goals.lua:1449 modules/module_reading_goals.lua:1464
+#: modules/module_reading_goals.lua:1479
 msgid "Set Goal"
 msgstr "Məqsəd təyin et"
 
@@ -3721,8 +3851,8 @@ msgid "Set collection cover"
 msgstr "Kolleksiya üzlüyünü təyin et"
 
 #: features/library/sui_foldercovers.lua:684
-#: features/library/sui_library_browse.lua:811
-#: features/library/sui_series_grouping.lua:357
+#: features/library/sui_library_browse.lua:786
+#: features/library/sui_series_grouping.lua:362
 msgid "Set folder cover"
 msgstr "Qovluq üzlüyünü təyin et"
 
@@ -3730,7 +3860,7 @@ msgstr "Qovluq üzlüyünü təyin et"
 msgid "Set your reading goal"
 msgstr "Oxu məqsədinizi təyin edin"
 
-#: features/sui_quickactions.lua:966 infra/sui_config.lua:131
+#: features/sui_quickactions.lua:980 infra/sui_config.lua:132
 msgid "Settings"
 msgstr "Parametrlər"
 
@@ -3738,20 +3868,20 @@ msgstr "Parametrlər"
 msgid "Settings not found."
 msgstr "Parametrlər tapılmadı."
 
-#: screens/sui_menu.lua:1088 screens/sui_menu.lua:1390
-#: screens/sui_menu.lua:2680 screens/sui_quicksettings_bar.lua:1320
+#: screens/sui_menu.lua:1088 screens/sui_menu.lua:1399
+#: screens/sui_menu.lua:2697 screens/sui_quicksettings_bar.lua:1339
 msgid "Settings on Long Tap"
 msgstr "Basıb saxladıqda parametrlər"
 
-#: modules/module_clock.lua:317
+#: modules/module_clock.lua:316
 msgid "Seven"
 msgstr "Yeddi"
 
-#: modules/module_clock.lua:320
+#: modules/module_clock.lua:319
 msgid "Seventeen"
 msgstr "On yeddi"
 
-#: infra/sui_config.lua:1154
+#: infra/sui_config.lua:1395
 msgid ""
 "Share of the row this module occupies.\n"
 "100% = full width. Modules under 100% share a row when their widths fit "
@@ -3761,19 +3891,19 @@ msgstr ""
 "100% = tam en. Eni 100% həddindən az olan modullar enləri uyğun gəldikdə "
 "eyni sətirdə yerləşir (bölməli tor)."
 
-#: modules/module_clock.lua:1149
+#: modules/module_clock.lua:1174
 msgid "Show Battery"
 msgstr "Batareyanı göstər"
 
-#: modules/module_clock.lua:1137
+#: modules/module_clock.lua:1162
 msgid "Show Clock"
 msgstr "Saatı göstər"
 
-#: modules/module_clock.lua:1143
+#: modules/module_clock.lua:1168
 msgid "Show Date"
 msgstr "Tarixi göstər"
 
-#: modules/module_action_list.lua:451
+#: modules/module_action_list.lua:464
 msgid "Show Icon"
 msgstr "İşarəni göstər"
 
@@ -3781,7 +3911,7 @@ msgstr "İşarəni göstər"
 msgid "Show Page Count in Title Bar"
 msgstr "Başlıq panelində səhifə sayını göstər"
 
-#: screens/sui_menu.lua:2557
+#: screens/sui_menu.lua:2574
 msgid ""
 "Show a brief \"Closing book…\" notice when closing a book, preventing "
 "accidental double-taps while e-ink refreshes."
@@ -3789,7 +3919,7 @@ msgstr ""
 "Elektron mürəkkəb ekranı yenilənərkən təsadüfi ikiqat toxunmaların qarşısını "
 "almaq üçün kitab bağlanarkən qısa \"Kitab bağlanır…\" bildirişi göstərir."
 
-#: screens/sui_menu.lua:2657
+#: screens/sui_menu.lua:2674
 msgid ""
 "Show a brief \"Loading statistics…\" notice when opening a statistics "
 "window, preventing accidental double-taps while e-ink refreshes."
@@ -3799,27 +3929,27 @@ msgstr ""
 "bildirişi göstərir."
 
 #: modules/module_library.lua:345 modules/module_recent.lua:54
-#: modules/module_coverdeck.lua:1753
+#: modules/module_coverdeck.lua:1714
 msgid "Show finished books"
 msgstr "Bitirilmiş kitabları göstər"
 
-#: modules/module_heatmap.lua:356
+#: modules/module_heatmap.lua:362
 msgid "Show legend"
 msgstr "İşarələrin izahını göstər"
 
-#: screens/sui_menu.lua:2618
+#: screens/sui_menu.lua:2635
 msgid "Show on Close"
 msgstr "Bağlayarkən göstər"
 
-#: screens/sui_menu.lua:2607
+#: screens/sui_menu.lua:2624
 msgid "Show on Open"
 msgstr "Açarkən göstər"
 
-#: infra/sui_config.lua:1367
+#: infra/sui_config.lua:1618
 msgid "Show section label"
 msgstr "Bölmə yazısını göstər"
 
-#: screens/sui_menu.lua:2334
+#: screens/sui_menu.lua:2361
 msgid "Show wallpaper on all screens"
 msgstr "Fon şəklini bütün ekranlarda göstər"
 
@@ -3853,12 +3983,12 @@ msgstr "Qarışdır"
 msgid "Shuffle now"
 msgstr "İndi qarışdır"
 
-#: modules/module_currently.lua:1956
+#: modules/module_currently.lua:2017
 msgid "Simple"
 msgstr "Sadə"
 
-#: main.lua:2515 main.lua:2528 _meta.lua:5 screens/sui_menu.lua:4526
-#: screens/sui_menu.lua:4615
+#: main.lua:2532 main.lua:2545 _meta.lua:5 screens/sui_menu.lua:4545
+#: screens/sui_menu.lua:4634
 msgid "Simple UI"
 msgstr "Simple UI"
 
@@ -3880,7 +4010,7 @@ msgstr ""
 "Simple UI %s mövcuddur!\n"
 "Sizdə %s var."
 
-#: screens/sui_settings_window.lua:1076
+#: screens/sui_settings_window.lua:1080
 msgid "Simple UI Settings"
 msgstr "Simple UI parametrləri"
 
@@ -3896,7 +4026,7 @@ msgstr ""
 msgid "Simple UI is up to date (%s)."
 msgstr "Simple UI ən son versiyadadır (%s)."
 
-#: main.lua:181
+#: main.lua:198
 msgid ""
 "Simple UI was updated (%s → %s).\n"
 "\n"
@@ -3907,7 +4037,7 @@ msgstr ""
 "Bütün dəyişikliklərin düzgün tətbiq edilməsi üçün yenidən başlatmaq tövsiyə "
 "olunur."
 
-#: screens/sui_menu.lua:4543
+#: screens/sui_menu.lua:4562
 msgid ""
 "Simple UI will be %s after restart.\n"
 "\n"
@@ -3917,49 +4047,49 @@ msgstr ""
 "\n"
 "İndi yenidən başladılsın?"
 
-#: main.lua:887
+#: main.lua:904
 msgid "Simple UI: Go to Homescreen"
 msgstr "Simple UI: əsas ekrana keç"
 
-#: main.lua:893
+#: main.lua:910
 msgid "Simple UI: Go to Library"
 msgstr "Simple UI: kitabxanaya keç"
 
-#: main.lua:917
+#: main.lua:934
 msgid "Simple UI: Navigation Bar"
 msgstr "Simple UI: naviqasiya paneli"
 
-#: main.lua:911
+#: main.lua:928
 msgid "Simple UI: Recent"
 msgstr "Simple UI: son"
 
-#: main.lua:905
+#: main.lua:922
 msgid "Simple UI: Settings"
 msgstr "Simple UI: parametrlər"
 
-#: main.lua:899
+#: main.lua:916
 msgid "Simple UI: Toggle Homescreen / Library"
 msgstr "Simple UI: əsas ekran / kitabxana arasında keçid"
 
-#: modules/module_collections.lua:1337 screens/sui_menu.lua:2877
+#: modules/module_collections.lua:1337 screens/sui_menu.lua:2896
 msgid "Single Cover"
 msgstr "Tək üzlük"
 
-#: modules/module_clock.lua:316
+#: modules/module_clock.lua:315
 msgid "Six"
 msgstr "Altı"
 
-#: modules/module_clock.lua:320
+#: modules/module_clock.lua:319
 msgid "Sixteen"
 msgstr "On altı"
 
-#: modules/module_action_list.lua:428 modules/module_reading_goals.lua:1281
-#: modules/module_clock.lua:1157 modules/module_coverdeck.lua:1695
-#: modules/module_currently.lua:1915 modules/module_quick_actions.lua:559
-#: modules/module_quick_actions.lua:560 engines/sui_book_grid.lua:1854
-#: screens/sui_menu.lua:1026 screens/sui_menu.lua:2921
-#: screens/sui_quicksettings_bar.lua:1227
-#: screens/sui_quicksettings_bar.lua:1228
+#: modules/module_action_list.lua:431 modules/module_reading_goals.lua:1305
+#: modules/module_clock.lua:1182 modules/module_coverdeck.lua:1647
+#: modules/module_currently.lua:1955 modules/module_quick_actions.lua:581
+#: modules/module_quick_actions.lua:582 engines/sui_book_grid.lua:1872
+#: infra/sui_config.lua:983 screens/sui_menu.lua:1026 screens/sui_menu.lua:2940
+#: screens/sui_quicksettings_bar.lua:1240
+#: screens/sui_quicksettings_bar.lua:1241
 msgid "Size"
 msgstr "Ölçü"
 
@@ -3979,7 +4109,7 @@ msgstr ""
 "Vərəq yazısının ölçüsü.\n"
 "Standart ölçü: 100%."
 
-#: modules/module_reading_stats.lua:791
+#: modules/module_reading_stats.lua:845
 msgid ""
 "Size of the text inside the stat cards.\n"
 "Does not affect card size or padding.\n"
@@ -3989,7 +4119,17 @@ msgstr ""
 "Kartın ölçüsünə və daxili boşluğuna təsir etmir.\n"
 "Standart ölçü: 100%."
 
-#: features/sui_quickactions.lua:599
+#: modules/module_quote.lua:1592 modules/module_coverdeck.lua:1654
+#: modules/module_currently.lua:1973
+#, fuzzy
+msgid ""
+"Size of this text.\n"
+"100% is the default size."
+msgstr ""
+"Vərəq yazısının ölçüsü.\n"
+"Standart ölçü: 100%."
+
+#: features/sui_quickactions.lua:613
 msgid "Sleep"
 msgstr "Yuxu"
 
@@ -3997,13 +4137,12 @@ msgstr "Yuxu"
 msgid "Small"
 msgstr "Kiçik"
 
-#: modules/module_quick_actions.lua:623 screens/sui_menu.lua:3318
-#: screens/sui_menu.lua:3322 screens/sui_quicksettings_bar.lua:1297
+#: modules/module_quick_actions.lua:644 screens/sui_menu.lua:3337
+#: screens/sui_menu.lua:3341 screens/sui_quicksettings_bar.lua:1316
 msgid "Solid"
 msgstr "Bütöv"
 
-#: modules/module_heatmap.lua:374 modules/module_reading_goals.lua:1596
-#: modules/module_currently.lua:1939 engines/sui_book_grid.lua:1878
+#: features/sui_module_chrome.lua:258
 msgid "Solid Background"
 msgstr "Bütöv fon"
 
@@ -4012,11 +4151,11 @@ msgstr "Bütöv fon"
 msgid "Sort"
 msgstr "Çeşidlə"
 
-#: modules/module_quote.lua:1381 modules/module_coverdeck.lua:1440
+#: modules/module_quote.lua:1391 modules/module_coverdeck.lua:1392
 msgid "Source"
 msgstr "Mənbə"
 
-#: screens/sui_menu.lua:1374
+#: screens/sui_menu.lua:1383
 msgid ""
 "Space below the bottom navigation bar.\n"
 "100% is the default spacing."
@@ -4032,7 +4171,7 @@ msgstr "Boşluq elementi"
 msgid "Spacer Size"
 msgstr "Boşluq elementinin ölçüsü"
 
-#: modules/module_clock.lua:1223 modules/module_clock.lua:1230
+#: modules/module_clock.lua:1257 modules/module_clock.lua:1264
 msgid "Spacing"
 msgstr "Aralıq"
 
@@ -4040,11 +4179,11 @@ msgstr "Aralıq"
 msgid "Start using Simple UI"
 msgstr "Simple UI istifadəsinə başla"
 
-#: infra/sui_patches.lua:1161 infra/sui_patches.lua:1163
+#: infra/sui_patches.lua:1178 infra/sui_patches.lua:1180
 msgid "Start with"
 msgstr "Başlanğıc seçimi"
 
-#: screens/sui_menu.lua:2424
+#: screens/sui_menu.lua:2441
 msgid "Start with Home Screen"
 msgstr "Əsas ekranla başla"
 
@@ -4052,12 +4191,13 @@ msgstr "Əsas ekranla başla"
 msgid "Start with a ready-made layout. You can change everything later."
 msgstr "Hazır düzülüşlə başlayın. Hər şeyi sonra dəyişə bilərsiniz."
 
-#: modules/module_coverdeck.lua:158 modules/module_coverdeck.lua:1523
-#: modules/module_coverdeck.lua:1556 modules/module_coverdeck.lua:1623
+#: modules/module_coverdeck.lua:158 modules/module_coverdeck.lua:1475
+#: modules/module_coverdeck.lua:1508 modules/module_coverdeck.lua:1575
+#: modules/module_coverdeck.lua:1653
 msgid "Statistics"
 msgstr "Statistika"
 
-#: screens/sui_menu.lua:2656
+#: screens/sui_menu.lua:2673
 msgid "Statistics Loading Notice"
 msgstr "Statistikanın yüklənməsi bildirişi"
 
@@ -4065,28 +4205,33 @@ msgstr "Statistikanın yüklənməsi bildirişi"
 msgid "Statistics database library not available."
 msgstr "Statistika verilənlər bazası kitabxanası əlçatan deyil."
 
-#: features/sui_quickactions.lua:950
+#: features/sui_quickactions.lua:964
 msgid "Statistics plugin not available."
 msgstr "Statistika qoşması əlçatan deyil."
 
-#: modules/module_currently.lua:1634 modules/module_currently.lua:1716
-#: modules/module_currently.lua:1777 features/sui_quickactions.lua:935
-#: infra/sui_config.lua:129
+#: modules/module_currently.lua:1674 modules/module_currently.lua:1756
+#: modules/module_currently.lua:1817 features/sui_quickactions.lua:949
+#: infra/sui_config.lua:130
 msgid "Stats"
 msgstr "Statistika"
 
-#: modules/module_currently.lua:1963
+#: modules/module_currently.lua:2024
 msgid "Stats layout"
 msgstr "Statistikanın düzülüşü"
 
-#: modules/module_reading_stats.lua:949 modules/module_reading_goals.lua:1625
-#: modules/module_coverdeck.lua:1780 modules/module_currently.lua:2000
+#: modules/module_reading_stats.lua:1011 modules/module_reading_goals.lua:1641
+#: modules/module_coverdeck.lua:1741 modules/module_currently.lua:2068
 msgid "Stats updated successfully."
 msgstr "Statistika uğurla yeniləndi."
 
-#: screens/sui_menu.lua:2772
+#: screens/sui_menu.lua:2791
 msgid "Status Bar"
 msgstr "Vəziyyət paneli"
+
+#: screens/sui_menu.lua:2327
+#, fuzzy
+msgid "Status Bar Opacity"
+msgstr "Vəziyyət panelinin ölçüsü"
 
 #: screens/sui_menu.lua:1033
 msgid "Status Bar Size"
@@ -4102,15 +4247,15 @@ msgstr ""
 "\n"
 "İndi yenidən başladılsın?"
 
-#: modules/module_reading_stats.lua:130
+#: modules/module_reading_stats.lua:150
 msgid "Status — Abandoned"
 msgstr "Vəziyyət — yarımçıq buraxılıb"
 
-#: modules/module_reading_stats.lua:129
+#: modules/module_reading_stats.lua:149
 msgid "Status — Reading"
 msgstr "Vəziyyət — oxunur"
 
-#: modules/module_reading_stats.lua:128
+#: modules/module_reading_stats.lua:148
 msgid "Status — Unread"
 msgstr "Vəziyyət — oxunmayıb"
 
@@ -4118,24 +4263,24 @@ msgstr "Vəziyyət — oxunmayıb"
 msgid "Status, title, navigation and pagination"
 msgstr "Vəziyyət, başlıq, naviqasiya və səhifələmə"
 
-#: modules/module_reading_stats.lua:119 screens/sui_stats_windows.lua:3494
+#: modules/module_reading_stats.lua:139 screens/sui_stats_windows.lua:3494
 msgid "Streak"
 msgstr "Ardıcıllıq"
 
-#: modules/module_reading_stats.lua:900
+#: modules/module_reading_stats.lua:962
 msgid "Streak Mode"
 msgstr "Ardıcıllıq rejimi"
 
-#: screens/sui_menu.lua:2352
+#: screens/sui_menu.lua:2374
 msgid "Stretch to fill screen"
 msgstr "Ekranı doldurmaq üçün dart"
 
-#: modules/module_reading_stats.lua:801 screens/sui_menu.lua:4572
-#: screens/sui_settings_window.lua:344 screens/sui_settings_window.lua:1081
+#: modules/module_reading_stats.lua:864 screens/sui_menu.lua:4591
+#: screens/sui_settings_window.lua:344 screens/sui_settings_window.lua:1085
 msgid "Style"
 msgstr "Üslub"
 
-#: screens/sui_menu.lua:1808 screens/sui_menu.lua:1811
+#: screens/sui_menu.lua:1817 screens/sui_menu.lua:1820
 msgid "Sub-page Buttons"
 msgstr "Alt səhifə düymələri"
 
@@ -4143,7 +4288,7 @@ msgstr "Alt səhifə düymələri"
 msgid "Sun"
 msgstr "Baz"
 
-#: modules/module_clock.lua:58
+#: modules/module_clock.lua:57
 msgid "Sunday"
 msgstr "Bazar"
 
@@ -4151,17 +4296,17 @@ msgstr "Bazar"
 msgid "Swipe Indicator"
 msgstr "Sürüşdürmə göstəricisi"
 
-#: features/sui_quickactions.lua:1924 features/sui_quickactions.lua:1927
-#: features/sui_quickactions.lua:2657 features/sui_quickactions.lua:2753
+#: features/sui_quickactions.lua:1937 features/sui_quickactions.lua:1940
+#: features/sui_quickactions.lua:2670 features/sui_quickactions.lua:2766
 msgid "System Actions"
 msgstr "Sistem əməlləri"
 
-#: features/sui_style.lua:1302 screens/sui_menu.lua:3657
-#: screens/sui_menu.lua:3665
+#: features/sui_style.lua:1302 screens/sui_menu.lua:3676
+#: screens/sui_menu.lua:3684
 msgid "System Icons"
 msgstr "Sistem işarələri"
 
-#: features/sui_quickactions.lua:3115
+#: features/sui_quickactions.lua:3127
 msgid "System action error: %s"
 msgstr "Sistem əməli xətası: %s"
 
@@ -4241,30 +4386,30 @@ msgstr "Vərəqlər  (%d/%d — %d qalıb)"
 msgid "Tabs  (%d/%d — at limit)"
 msgstr "Vərəqlər  (%d/%d — həddə çatıb)"
 
-#: features/sui_quickactions.lua:1026 infra/sui_config.lua:136
+#: features/sui_quickactions.lua:1040 infra/sui_config.lua:137
 #: features/library/sui_library_browse.lua:60
 msgid "Tags"
 msgstr "Etiketlər"
 
-#: screens/sui_settings_window.lua:442
+#: screens/sui_settings_window.lua:446
 msgid "Tap \"Create Screen\" below to add one."
 msgstr "Əlavə etmək üçün aşağıdakı \"Ekran yarat\" düyməsinə toxunun."
 
-#: modules/module_clock.lua:318
+#: modules/module_clock.lua:317
 msgid "Ten"
 msgstr "On"
 
-#: engines/sui_book_grid.lua:1940 screens/sui_menu.lua:208
+#: engines/sui_book_grid.lua:1941 screens/sui_menu.lua:208
 msgid "Text"
 msgstr "Mətn"
 
-#: modules/module_action_list.lua:440 modules/module_action_list.lua:441
-#: modules/module_reading_stats.lua:789 modules/module_reading_stats.lua:790
-#: modules/module_reading_goals.lua:1265 modules/module_reading_goals.lua:1267
-#: modules/module_coverdeck.lua:1356 modules/module_coverdeck.lua:1357
-#: modules/module_currently.lua:1437 modules/module_currently.lua:1438
-#: engines/sui_book_grid.lua:1779 engines/sui_book_grid.lua:1780
-#: screens/sui_menu.lua:3418
+#: modules/module_action_list.lua:443 modules/module_action_list.lua:444
+#: modules/module_reading_stats.lua:843 modules/module_reading_stats.lua:844
+#: modules/module_reading_goals.lua:1289 modules/module_reading_goals.lua:1291
+#: modules/module_coverdeck.lua:1308 modules/module_coverdeck.lua:1309
+#: modules/module_currently.lua:1477 modules/module_currently.lua:1478
+#: engines/sui_book_grid.lua:1797 engines/sui_book_grid.lua:1798
+#: screens/sui_menu.lua:3437
 msgid "Text Size"
 msgstr "Mətn ölçüsü"
 
@@ -4272,7 +4417,7 @@ msgstr "Mətn ölçüsü"
 msgid "Text only"
 msgstr "Yalnız mətn"
 
-#: screens/sui_quicksettings_bar.lua:1117
+#: screens/sui_quicksettings_bar.lua:1130
 msgid ""
 "The Quick Settings Bar will be %s after restart.\n"
 "\n"
@@ -4282,7 +4427,7 @@ msgstr ""
 "\n"
 "İndi yenidən başladılsın?"
 
-#: screens/sui_menu.lua:2631
+#: screens/sui_menu.lua:2648
 msgid ""
 "The cover shown right as a book opens normally comes from the library's "
 "cached thumbnail, which can look soft on higher-resolution screens. When on, "
@@ -4300,23 +4445,23 @@ msgstr ""
 "yaranır. Bağlanarkən göstərilən üzlüyə bu seçim təsir etmir: o, onsuz da "
 "açıq kitabdan tam keyfiyyətlə oxunur."
 
-#: main.lua:1335 screens/sui_bottombar.lua:1823
+#: main.lua:1352 screens/sui_bottombar.lua:1933
 msgid "The navigation bar is already available on this screen."
 msgstr "Naviqasiya paneli bu ekranda artıq mövcuddur."
 
-#: infra/sui_patches.lua:1307
+#: infra/sui_patches.lua:1324
 msgid "The «To Be Read» collection cannot be renamed."
 msgstr "«Oxunacaqlar» kolleksiyasının adı dəyişdirilə bilməz."
 
-#: modules/module_clock.lua:319
+#: modules/module_clock.lua:318
 msgid "Thirteen"
 msgstr "On üç"
 
-#: modules/module_clock.lua:324
+#: modules/module_clock.lua:323
 msgid "Thirty"
 msgstr "Otuz"
 
-#: features/sui_backup.lua:941
+#: features/sui_backup.lua:942
 msgid "This backup contains no settings or files."
 msgstr "Bu ehtiyat nüsxədə parametr və ya fayl yoxdur."
 
@@ -4329,7 +4474,7 @@ msgstr ""
 "bilməz.\n"
 "Əvvəlcə vəziyyətini oxunur və ya gözləmədə olaraq dəyişin."
 
-#: features/sui_quickactions.lua:3313 features/sui_quickactions.lua:3391
+#: features/sui_quickactions.lua:3325 features/sui_quickactions.lua:3403
 msgid ""
 "This group is empty.\n"
 "Add actions to it from Settings → Quick Actions."
@@ -4337,28 +4482,28 @@ msgstr ""
 "Bu qrup boşdur.\n"
 "Parametrlər → Sürətli əməllər bölməsindən ona əməllər əlavə edin."
 
-#: modules/module_reading_stats.lua:116
+#: modules/module_reading_stats.lua:136
 msgid "This month — Pages"
 msgstr "Bu ay — səhifələr"
 
-#: modules/module_reading_stats.lua:115
+#: modules/module_reading_stats.lua:135
 msgid "This month — Time"
 msgstr "Bu ay — vaxt"
 
-#: features/sui_presets.lua:864 features/sui_presets.lua:932
-#: features/sui_presets.lua:1018
+#: features/sui_presets.lua:869 features/sui_presets.lua:937
+#: features/sui_presets.lua:1023
 msgid "This name is reserved by a built-in preset."
 msgstr "Bu ad daxili hazır quruluş üçün ayrılıb."
 
-#: modules/module_reading_stats.lua:112
+#: modules/module_reading_stats.lua:132
 msgid "This week — Pages"
 msgstr "Bu həftə — səhifələr"
 
-#: modules/module_reading_stats.lua:111
+#: modules/module_reading_stats.lua:131
 msgid "This week — Time"
 msgstr "Bu həftə — vaxt"
 
-#: screens/sui_menu.lua:4438
+#: screens/sui_menu.lua:4457
 msgid ""
 "This will delete all Simple UI settings and restart KOReader.\n"
 "Are you sure?"
@@ -4367,7 +4512,7 @@ msgstr ""
 "başladacaq.\n"
 "Əminsiniz?"
 
-#: modules/module_clock.lua:315
+#: modules/module_clock.lua:314
 msgid "Three"
 msgstr "Üç"
 
@@ -4375,23 +4520,24 @@ msgstr "Üç"
 msgid "Thu"
 msgstr "C.a."
 
-#: modules/module_clock.lua:59
+#: modules/module_clock.lua:58
 msgid "Thursday"
 msgstr "Cümə axşamı"
 
-#: modules/module_heatmap.lua:221 modules/module_heatmap.lua:343
+#: modules/module_heatmap.lua:224 modules/module_heatmap.lua:349
 msgid "Time of day"
 msgstr "Günün vaxtı"
 
-#: modules/module_coverdeck.lua:145 modules/module_currently.lua:286
+#: modules/module_coverdeck.lua:145 modules/module_currently.lua:306
 msgid "Time read"
 msgstr "Oxu vaxtı"
 
-#: modules/module_coverdeck.lua:146 modules/module_currently.lua:287
+#: modules/module_coverdeck.lua:146 modules/module_currently.lua:307
 msgid "Time remaining"
 msgstr "Qalan vaxt"
 
-#: modules/module_coverdeck.lua:155 modules/module_currently.lua:279
+#: modules/module_coverdeck.lua:155 modules/module_coverdeck.lua:1653
+#: modules/module_currently.lua:299 modules/module_currently.lua:1968
 #: screens/sui_titlebar.lua:106
 msgid "Title"
 msgstr "Başlıq"
@@ -4406,11 +4552,15 @@ msgstr "Başlıq (A–Z)"
 msgid "Title (Z–A)"
 msgstr "Başlıq (Z–A)"
 
-#: features/sui_style.lua:1292 screens/sui_menu.lua:2774
+#: features/sui_style.lua:1292 screens/sui_menu.lua:2793
 msgid "Title Bar"
 msgstr "Başlıq paneli"
 
-#: screens/sui_menu.lua:1790
+#: screens/sui_menu.lua:2333
+msgid "Title Bar Button Opacity"
+msgstr ""
+
+#: screens/sui_menu.lua:1799
 msgid ""
 "Title Bar will be %s after restart.\n"
 "\n"
@@ -4420,15 +4570,15 @@ msgstr ""
 "\n"
 "İndi yenidən başladılsın?"
 
-#: screens/sui_menu.lua:3480
+#: screens/sui_menu.lua:3499
 msgid "Title and Author"
 msgstr "Başlıq və müəllif"
 
-#: screens/sui_menu.lua:3431
+#: screens/sui_menu.lua:3450
 msgid "Title and Author Below Covers"
 msgstr "Üzlüklərin altında başlıq və müəllif"
 
-#: screens/sui_menu.lua:3492
+#: screens/sui_menu.lua:3511
 msgid ""
 "Title and author strip enabled.\n"
 "\n"
@@ -4438,11 +4588,11 @@ msgstr ""
 "\n"
 "İndi yenidən başladılsın?"
 
-#: screens/sui_menu.lua:3458
+#: screens/sui_menu.lua:3477
 msgid "Title only"
 msgstr "Yalnız başlıq"
 
-#: screens/sui_menu.lua:3447
+#: screens/sui_menu.lua:3466
 msgid ""
 "Title strip disabled.\n"
 "\n"
@@ -4452,7 +4602,7 @@ msgstr ""
 "\n"
 "İndi yenidən başladılsın?"
 
-#: screens/sui_menu.lua:3470
+#: screens/sui_menu.lua:3489
 msgid ""
 "Title strip enabled.\n"
 "\n"
@@ -4463,7 +4613,7 @@ msgstr ""
 "İndi yenidən başladılsın?"
 
 #: modules/module_tbr.lua:560 modules/module_tbr.lua:620
-#: modules/module_tbr.lua:621 modules/module_coverdeck.lua:1432
+#: modules/module_tbr.lua:621 modules/module_coverdeck.lua:1384
 msgid "To Be Read"
 msgstr "Oxunacaqlar"
 
@@ -4471,35 +4621,35 @@ msgstr "Oxunacaqlar"
 msgid "To Be Read Books"
 msgstr "Oxunacaq kitablar"
 
-#: modules/module_reading_goals.lua:970 modules/module_reading_goals.lua:1066
-#: modules/module_reading_goals.lua:1068 modules/module_reading_goals.lua:1122
-#: modules/module_reading_goals.lua:1125
+#: modules/module_reading_goals.lua:988 modules/module_reading_goals.lua:1084
+#: modules/module_reading_goals.lua:1086 modules/module_reading_goals.lua:1140
+#: modules/module_reading_goals.lua:1143
 msgid "Today"
 msgstr "Bu gün"
 
-#: modules/module_reading_stats.lua:110
+#: modules/module_reading_stats.lua:130
 msgid "Today — Pages"
 msgstr "Bu gün — səhifələr"
 
-#: modules/module_reading_stats.lua:109
+#: modules/module_reading_stats.lua:129
 msgid "Today — Time"
 msgstr "Bu gün — vaxt"
 
-#: engines/sui_window.lua:2862
+#: engines/sui_window.lua:2881
 msgid "Toggle"
 msgstr "Vəziyyəti dəyiş"
 
-#: modules/module_collections.lua:1391 screens/sui_menu.lua:2952
-#: screens/sui_menu.lua:2959 screens/sui_menu.lua:2963
-#: screens/sui_menu.lua:3363 screens/sui_menu.lua:3370
+#: modules/module_collections.lua:1391 screens/sui_menu.lua:2971
+#: screens/sui_menu.lua:2978 screens/sui_menu.lua:2982
+#: screens/sui_menu.lua:3382 screens/sui_menu.lua:3389
 msgid "Top"
 msgstr "Yuxarı"
 
-#: screens/sui_topbar.lua:508
+#: screens/sui_topbar.lua:587
 msgid "Top Bar"
 msgstr "Yuxarı panel"
 
-#: infra/sui_config.lua:1196
+#: infra/sui_config.lua:1447
 msgid "Top Margin"
 msgstr "Yuxarı kənar boşluğu"
 
@@ -4511,61 +4661,53 @@ msgstr "Cəmi"
 msgid "Total time"
 msgstr "Ümumi vaxt"
 
-#: features/sui_backup.lua:673
+#: features/sui_backup.lua:674
 msgid "Total: %d settings, %d files (%s)"
 msgstr "Cəmi: %d parametr, %d fayl (%s)"
 
-#: modules/module_quick_actions.lua:613 screens/sui_menu.lua:3318
-#: screens/sui_menu.lua:3335 screens/sui_quicksettings_bar.lua:1287
+#: screens/sui_menu.lua:3337 screens/sui_menu.lua:3354
+#: screens/sui_quicksettings_bar.lua:1306
 msgid "Transparent"
 msgstr "Şəffaf"
-
-#: screens/sui_menu.lua:2314
-msgid "Transparent navigation bar"
-msgstr "Şəffaf naviqasiya paneli"
-
-#: screens/sui_menu.lua:2296
-msgid "Transparent status bar"
-msgstr "Şəffaf vəziyyət paneli"
 
 #: screens/sui_stats_windows.lua:2805
 msgid "Tue"
 msgstr "Ç.a."
 
-#: modules/module_clock.lua:58
+#: modules/module_clock.lua:57
 msgid "Tuesday"
 msgstr "Çərşənbə axşamı"
 
-#: modules/module_clock.lua:318
+#: modules/module_clock.lua:317
 msgid "Twelve"
 msgstr "On iki"
 
-#: modules/module_clock.lua:324
+#: modules/module_clock.lua:323
 msgid "Twenty"
 msgstr "İyirmi"
 
-#: modules/module_clock.lua:315
+#: modules/module_clock.lua:314
 msgid "Two"
 msgstr "İki"
 
-#: modules/module_heatmap.lua:340 screens/sui_menu.lua:3140
-#: screens/sui_menu.lua:3207
+#: modules/module_heatmap.lua:346 screens/sui_menu.lua:3159
+#: screens/sui_menu.lua:3226
 msgid "Type"
 msgstr "Növ"
 
-#: screens/sui_menu.lua:4290 screens/sui_menu.lua:4293
+#: screens/sui_menu.lua:4309 screens/sui_menu.lua:4312
 msgid "UI Font"
 msgstr "İnterfeys şrifti"
 
-#: screens/sui_menu.lua:4297
+#: screens/sui_menu.lua:4316
 msgid "UI Font  (default)"
 msgstr "İnterfeys şrifti  (standart)"
 
-#: screens/sui_menu.lua:4299
+#: screens/sui_menu.lua:4318
 msgid "UI Font  [%s]"
 msgstr "İnterfeys şrifti  [%s]"
 
-#: screens/sui_menu.lua:3507
+#: screens/sui_menu.lua:3526
 msgid "Uniformize Covers (2:3)"
 msgstr "Üzlükləri eyni nisbətə gətir (2:3)"
 
@@ -4573,11 +4715,11 @@ msgstr "Üzlükləri eyni nisbətə gətir (2:3)"
 msgid "Unknown error."
 msgstr "Naməlum xəta."
 
-#: features/sui_style.lua:2043
+#: features/sui_style.lua:2127
 msgid "Unsupported format (use a folder or a .zip file)"
 msgstr "Dəstəklənməyən format (qovluq və ya .zip faylı istifadə edin)"
 
-#: features/sui_quickactions.lua:107 features/sui_quickactions.lua:1868
+#: features/sui_quickactions.lua:107 features/sui_quickactions.lua:1881
 #: features/sui_style.lua:1059 features/sui_style.lua:1246
 msgid ""
 "Unsupported icon format.\n"
@@ -4586,12 +4728,12 @@ msgstr ""
 "Dəstəklənməyən işarə formatı.\n"
 "PNG və ya SVG faylı istifadə edin."
 
-#: engines/sui_window.lua:1935 engines/sui_window.lua:2856
+#: engines/sui_window.lua:1954 engines/sui_window.lua:2875
 msgid "Update"
 msgstr "Yenilə"
 
-#: modules/module_reading_stats.lua:931 modules/module_reading_goals.lua:1607
-#: modules/module_coverdeck.lua:1762 modules/module_currently.lua:1982
+#: modules/module_reading_stats.lua:993 modules/module_reading_goals.lua:1623
+#: modules/module_coverdeck.lua:1723 modules/module_currently.lua:2050
 msgid "Update Stats Now"
 msgstr "Statistikanı indi yenilə"
 
@@ -4603,11 +4745,11 @@ msgstr "Yeniləmə ləğv edildi."
 msgid "Update check cancelled."
 msgstr "Yeniləmə yoxlaması ləğv edildi."
 
-#: features/sui_presets.lua:905 screens/sui_menu.lua:4057
+#: features/sui_presets.lua:910 screens/sui_menu.lua:4076
 msgid "Update with current settings"
 msgstr "Cari parametrlərlə yenilə"
 
-#: screens/sui_menu.lua:4416
+#: screens/sui_menu.lua:4435
 msgid "Updater module not found."
 msgstr "Yeniləmə modulu tapılmadı."
 
@@ -4615,7 +4757,7 @@ msgstr "Yeniləmə modulu tapılmadı."
 msgid "Use freeze"
 msgstr "Dondurmadan istifadə et"
 
-#: features/sui_quickactions.lua:2115
+#: features/sui_quickactions.lua:2128
 msgid "Use this Nerd Font icon?"
 msgstr "Bu Nerd Font işarəsi istifadə edilsin?"
 
@@ -4627,15 +4769,19 @@ msgstr ""
 "Əsas ekranda standart KOReader səhifələmə panelindən istifadə edir.\n"
 "Naviqasiya ilə səhifələmə aktiv olduqda əlçatan deyil."
 
+#: modules/module_reading_stats.lua:857
+msgid "Value"
+msgstr ""
+
 #: screens/sui_settings_window.lua:366
 msgid "Version, author and updates"
 msgstr "Versiya, müəllif və yeniləmələr"
 
-#: screens/sui_menu.lua:4391
+#: screens/sui_menu.lua:4410
 msgid "Version: %s"
 msgstr "Versiya: %s"
 
-#: infra/sui_config.lua:1198
+#: infra/sui_config.lua:1449
 msgid ""
 "Vertical space above this module.\n"
 "100% is the default spacing."
@@ -4643,7 +4789,7 @@ msgstr ""
 "Bu modulun üstündəki şaquli boşluq.\n"
 "Standart aralıq: 100%."
 
-#: modules/module_clock.lua:1231
+#: modules/module_clock.lua:1265
 msgid ""
 "Vertical space between items.\n"
 "100% is the default spacing."
@@ -4651,14 +4797,14 @@ msgstr ""
 "Elementlər arasındakı şaquli boşluq.\n"
 "Standart aralıq: 100%."
 
-#: screens/sui_menu.lua:3029 screens/sui_menu.lua:3083
-#: screens/sui_menu.lua:3315
+#: screens/sui_menu.lua:3048 screens/sui_menu.lua:3102
+#: screens/sui_menu.lua:3334
 msgid "Visibility"
 msgstr "Görünmə"
 
-#: screens/sui_menu.lua:3025 screens/sui_menu.lua:3031
-#: screens/sui_menu.lua:3035 screens/sui_menu.lua:3079
-#: screens/sui_menu.lua:3085 screens/sui_menu.lua:3089
+#: screens/sui_menu.lua:3044 screens/sui_menu.lua:3050
+#: screens/sui_menu.lua:3054 screens/sui_menu.lua:3098
+#: screens/sui_menu.lua:3104 screens/sui_menu.lua:3108
 msgid "Visible"
 msgstr "Görünən"
 
@@ -4666,11 +4812,11 @@ msgstr "Görünən"
 msgid "WEEK STREAK"
 msgstr "Ardıcıl həftələr"
 
-#: modules/module_clock.lua:332
+#: modules/module_clock.lua:331
 msgid "WORD_CLOCK_TENS_SEP"
 msgstr " "
 
-#: features/sui_backup.lua:134 screens/sui_menu.lua:2743
+#: features/sui_backup.lua:134 screens/sui_menu.lua:2760
 #: screens/sui_settings_window.lua:396 screens/sui_settings_window.lua:402
 msgid "Wallpaper"
 msgstr "Fon şəkli"
@@ -4679,16 +4825,16 @@ msgstr "Fon şəkli"
 msgid "Wallpaper settings and image files"
 msgstr "Fon şəkli parametrləri və şəkil faylları"
 
-#: screens/sui_quicksettings_bar.lua:424 screens/sui_quicksettings_bar.lua:445
-#: screens/sui_quicksettings_bar.lua:456
+#: screens/sui_quicksettings_bar.lua:437 screens/sui_quicksettings_bar.lua:458
+#: screens/sui_quicksettings_bar.lua:469
 msgid "Warmth"
 msgstr "Rəng istiliyi"
 
-#: screens/sui_quicksettings_bar.lua:1213
+#: screens/sui_quicksettings_bar.lua:1226
 msgid "Warmth Slider"
 msgstr "Rəng istiliyi sürüşdürmə çubuğu"
 
-#: screens/sui_menu.lua:2669
+#: screens/sui_menu.lua:2686
 msgid "Warn when modules on a page exceed the available screen height."
 msgstr ""
 "Səhifədəki modullar ekranın əlçatan hündürlüyünü aşdıqda xəbərdarlıq et."
@@ -4697,11 +4843,11 @@ msgstr ""
 msgid "Wed"
 msgstr "Çər"
 
-#: modules/module_clock.lua:58
+#: modules/module_clock.lua:57
 msgid "Wednesday"
 msgstr "Çərşənbə"
 
-#: modules/module_heatmap.lua:291 modules/module_heatmap.lua:295
+#: modules/module_heatmap.lua:297 modules/module_heatmap.lua:301
 msgid "Weeks shown"
 msgstr "Göstərilən həftələr"
 
@@ -4713,7 +4859,7 @@ msgstr "Simple UI-yə xoş gəlmisiniz"
 msgid "What's new:"
 msgstr "Yeniliklər:"
 
-#: screens/sui_menu.lua:2694
+#: screens/sui_menu.lua:2711
 msgid ""
 "When a finished book is deleted from the device (file or folder), keep it "
 "counted in the Books Read statistics on the Home Screen.\n"
@@ -4727,7 +4873,7 @@ msgstr ""
 "Vəziyyəti yenidən oxunur və ya yarımçıq buraxılıb olaraq dəyişdirilən "
 "kitablar bu siyahıdan avtomatik çıxarılır."
 
-#: screens/sui_menu.lua:2545
+#: screens/sui_menu.lua:2562
 msgid ""
 "When closing a book from the Home Screen, go back to the folder where the "
 "book is located instead of the Library home folder."
@@ -4735,7 +4881,7 @@ msgstr ""
 "Əsas ekrandan kitabı bağlayarkən kitabxananın əsas qovluğu əvəzinə kitabın "
 "yerləşdiyi qovluğa qayıdır."
 
-#: screens/sui_menu.lua:2681
+#: screens/sui_menu.lua:2698
 msgid ""
 "When enabled, long-pressing a module on the home screen opens its settings "
 "menu.\n"
@@ -4745,7 +4891,7 @@ msgstr ""
 "açır.\n"
 "Basıb saxladıqda parametrlərin görünməməsi üçün bunu söndürün."
 
-#: screens/sui_quicksettings_bar.lua:1321
+#: screens/sui_quicksettings_bar.lua:1340
 msgid ""
 "When enabled, long-pressing the Quick Settings Bar opens its settings menu.\n"
 "Disable this to prevent the settings menu from appearing on long tap."
@@ -4754,7 +4900,7 @@ msgstr ""
 "menyusunu açır.\n"
 "Basıb saxladıqda parametrlər menyusunun görünməməsi üçün bunu söndürün."
 
-#: screens/sui_menu.lua:1391
+#: screens/sui_menu.lua:1400
 msgid ""
 "When enabled, long-pressing the navigation bar opens its settings menu.\n"
 "Disable this to prevent the settings menu from appearing on long tap."
@@ -4771,7 +4917,7 @@ msgstr ""
 "Qoşulduqda yuxarı paneli basıb saxlamaq onun parametrlər menyusunu açır.\n"
 "Basıb saxladıqda parametrlər menyusunun görünməməsi üçün bunu söndürün."
 
-#: screens/sui_menu.lua:2436
+#: screens/sui_menu.lua:2453
 msgid ""
 "When waking the device from sleep/suspend, always return to the Home Screen "
 "— even if a book was open when it went to sleep."
@@ -4779,7 +4925,7 @@ msgstr ""
 "Cihaz yuxu/gözləmə rejimindən oyanarkən həmişə əsas ekrana qayıdır — yuxuya "
 "keçəndə kitab açıq olsa belə."
 
-#: features/sui_quickactions.lua:898 infra/sui_config.lua:126
+#: features/sui_quickactions.lua:912 infra/sui_config.lua:127
 msgid "Wi-Fi"
 msgstr "Wi-Fi"
 
@@ -4787,7 +4933,7 @@ msgstr "Wi-Fi"
 msgid "Wi-Fi off"
 msgstr "Wi-Fi sönülüdür"
 
-#: infra/sui_config.lua:168
+#: infra/sui_config.lua:192
 msgid "WiFi"
 msgstr "WiFi"
 
@@ -4795,15 +4941,15 @@ msgstr "WiFi"
 msgid "WiFi not available on this device."
 msgstr "Bu cihazda WiFi əlçatan deyil."
 
-#: features/sui_quickactions.lua:2274
+#: features/sui_quickactions.lua:2287
 msgid "Wikipedia Lookup"
 msgstr "Vikipediyada axtarış"
 
-#: modules/module_currently.lua:1958
+#: modules/module_currently.lua:2019
 msgid "With percentage"
 msgstr "Faizlə"
 
-#: modules/module_clock.lua:1164 modules/module_clock.lua:1177
+#: modules/module_clock.lua:1198 modules/module_clock.lua:1211
 msgid "Word"
 msgstr "Sözlə"
 
@@ -4831,11 +4977,11 @@ msgstr ""
 "%d dondurmanız var.\n"
 "%s gününü əvəz etmək üçün biri istifadə edilsin?"
 
-#: modules/module_quote.lua:1002
+#: modules/module_quote.lua:1001
 msgid "Your highlights"
 msgstr "Vurğulamalarınız"
 
-#: modules/module_reading_stats.lua:130
+#: modules/module_reading_stats.lua:150
 msgid "abandoned"
 msgstr "Yarımçıq buraxılıb"
 
@@ -4855,11 +5001,11 @@ msgstr "avq"
 msgid "august"
 msgstr "avqust"
 
-#: modules/module_reading_stats.lua:118 screens/sui_stats_windows.lua:2301
+#: modules/module_reading_stats.lua:138 screens/sui_stats_windows.lua:2301
 msgid "books finished"
 msgstr "bitirilmiş kitablar"
 
-#: modules/module_reading_stats.lua:113
+#: modules/module_reading_stats.lua:133
 msgid "daily avg (7 days)"
 msgstr "gündəlik orta (7 gün)"
 
@@ -4871,21 +5017,21 @@ msgstr "dek"
 msgid "december"
 msgstr "dekabr"
 
-#: features/sui_quickactions.lua:1860 features/sui_quickactions.lua:2928
+#: features/sui_quickactions.lua:1873 features/sui_quickactions.lua:2940
 msgid "default"
 msgstr "standart"
 
-#: screens/sui_menu.lua:846 screens/sui_menu.lua:1118 screens/sui_menu.lua:1791
-#: screens/sui_menu.lua:4543 screens/sui_quicksettings_bar.lua:1118
+#: screens/sui_menu.lua:846 screens/sui_menu.lua:1118 screens/sui_menu.lua:1800
+#: screens/sui_menu.lua:4562 screens/sui_quicksettings_bar.lua:1131
 msgid "disabled"
 msgstr "söndürülüb"
 
-#: features/sui_backup.lua:667
+#: features/sui_backup.lua:668
 msgid "empty"
 msgstr "boş"
 
-#: screens/sui_menu.lua:846 screens/sui_menu.lua:1118 screens/sui_menu.lua:1791
-#: screens/sui_menu.lua:4543 screens/sui_quicksettings_bar.lua:1118
+#: screens/sui_menu.lua:846 screens/sui_menu.lua:1118 screens/sui_menu.lua:1800
+#: screens/sui_menu.lua:4562 screens/sui_quicksettings_bar.lua:1131
 msgid "enabled"
 msgstr "qoşulub"
 
@@ -4897,11 +5043,11 @@ msgstr "fev"
 msgid "february"
 msgstr "fevral"
 
-#: features/sui_style.lua:1989
+#: features/sui_style.lua:2073
 msgid "ffi/archiver not available in this KOReader version"
 msgstr "Bu KOReader versiyasında ffi/archiver əlçatan deyil"
 
-#: features/sui_quickactions.lua:2134
+#: features/sui_quickactions.lua:2147
 msgid "hex code, e.g. E001"
 msgstr "onaltılıq kod, məs. E001"
 
@@ -4909,7 +5055,7 @@ msgstr "onaltılıq kod, məs. E001"
 msgid "hours read"
 msgstr "oxunan saatlar"
 
-#: modules/module_reading_stats.lua:129
+#: modules/module_reading_stats.lua:149
 msgid "in progress"
 msgstr "oxunur"
 
@@ -4954,12 +5100,12 @@ msgstr "mart"
 msgid "may"
 msgstr "may"
 
-#: modules/module_reading_stats.lua:121
+#: modules/module_reading_stats.lua:141
 msgid "no streak"
 msgstr "ardıcıllıq yoxdur"
 
-#: features/sui_quickactions.lua:1610 features/sui_quickactions.lua:3024
-#: features/sui_quickactions.lua:3043
+#: features/sui_quickactions.lua:1623 features/sui_quickactions.lua:3036
+#: features/sui_quickactions.lua:3055
 msgid "not configured"
 msgstr "tənzimlənməyib"
 
@@ -4979,23 +5125,23 @@ msgstr "okt"
 msgid "october"
 msgstr "oktyabr"
 
-#: modules/module_reading_stats.lua:115
+#: modules/module_reading_stats.lua:135
 msgid "of reading this month"
 msgstr "bu ay oxu"
 
-#: modules/module_reading_stats.lua:111
+#: modules/module_reading_stats.lua:131
 msgid "of reading this week"
 msgstr "bu həftə oxu"
 
-#: modules/module_reading_stats.lua:109
+#: modules/module_reading_stats.lua:129
 msgid "of reading today"
 msgstr "bu gün oxu"
 
-#: modules/module_reading_stats.lua:117
+#: modules/module_reading_stats.lua:137
 msgid "of reading, all time"
 msgstr "bütün dövr ərzində oxu"
 
-#: features/sui_style.lua:2032
+#: features/sui_style.lua:2116
 msgid "pack_path not provided"
 msgstr "pack_path verilməyib"
 
@@ -5003,19 +5149,19 @@ msgstr "pack_path verilməyib"
 msgid "pages read"
 msgstr "oxunan səhifələr"
 
-#: modules/module_reading_stats.lua:116
+#: modules/module_reading_stats.lua:136
 msgid "pages read this month"
 msgstr "bu ay oxunan səhifələr"
 
-#: modules/module_reading_stats.lua:112
+#: modules/module_reading_stats.lua:132
 msgid "pages read this week"
 msgstr "bu həftə oxunan səhifələr"
 
-#: modules/module_reading_stats.lua:110
+#: modules/module_reading_stats.lua:130
 msgid "pages read today"
 msgstr "bu gün oxunan səhifələr"
 
-#: modules/module_reading_stats.lua:114
+#: modules/module_reading_stats.lua:134
 msgid "pages/day (7 days)"
 msgstr "səhifə/gün (7 gün)"
 
@@ -5031,7 +5177,7 @@ msgstr "sen"
 msgid "september"
 msgstr "sentyabr"
 
-#: modules/module_reading_stats.lua:128
+#: modules/module_reading_stats.lua:148
 msgid "unread"
 msgstr "oxunmayıb"
 
@@ -5039,27 +5185,27 @@ msgstr "oxunmayıb"
 msgid "⬆ Update available: %s"
 msgstr "⬆ Yeniləmə mövcuddur: %s"
 
-#: modules/module_action_list.lua:333 modules/module_reading_stats.lua:889
-#: modules/module_quick_actions.lua:376 screens/sui_menu.lua:350
-#: screens/sui_menu.lua:1971
+#: modules/module_action_list.lua:336 modules/module_reading_stats.lua:951
+#: modules/module_quick_actions.lua:398 screens/sui_menu.lua:350
+#: screens/sui_menu.lua:1980
 msgid "  (%d left)"
 msgid_plural "  (%d left)"
 msgstr[0] "  (%d qalıb)"
 msgstr[1] "  (%d qalıb)"
 
-#: modules/module_reading_goals.lua:1304
+#: modules/module_reading_goals.lua:1337
 msgid "  Set Goal  (%d book in %s)"
 msgid_plural "  Set Goal  (%d books in %s)"
 msgstr[0] "  Məqsəd təyin et  (%d kitab, %s ərzində)"
 msgstr[1] "  Məqsəd təyin et  (%d kitab, %s ərzində)"
 
-#: modules/module_reading_goals.lua:819
+#: modules/module_reading_goals.lua:838
 msgid "%d book"
 msgid_plural "%d books"
 msgstr[0] "%d kitab"
 msgstr[1] "%d kitab"
 
-#: modules/module_reading_goals.lua:1409
+#: modules/module_reading_goals.lua:1442
 msgid "%d book in %s"
 msgid_plural "%d books in %s"
 msgstr[0] "%d kitab, %s ərzində"
@@ -5077,8 +5223,8 @@ msgid_plural "%d days"
 msgstr[0] "%d gün"
 msgstr[1] "%d gün"
 
-#: modules/module_coverdeck.lua:1078 modules/module_currently.lua:859
-#: modules/module_currently.lua:860 modules/module_currently.lua:940
+#: modules/module_coverdeck.lua:1029 modules/module_currently.lua:899
+#: modules/module_currently.lua:900 modules/module_currently.lua:980
 msgid "%d day of reading"
 msgid_plural "%d days of reading"
 msgstr[0] "%d gün oxu"
@@ -5090,14 +5236,14 @@ msgid_plural "%d freezes available"
 msgstr[0] "%d dondurma mövcuddur"
 msgstr[1] "%d dondurma mövcuddur"
 
-#: modules/module_reading_goals.lua:1495
+#: modules/module_reading_goals.lua:1529
 msgid "%d in %s"
 msgid_plural "%d in %s"
 msgstr[0] "%d, %s ərzində"
 msgstr[1] "%d, %s ərzində"
 
-#: features/sui_quickactions.lua:1602 features/sui_quickactions.lua:3016
-#: features/sui_quickactions.lua:3037
+#: features/sui_quickactions.lua:1615 features/sui_quickactions.lua:3028
+#: features/sui_quickactions.lua:3049
 msgid "%d item"
 msgid_plural "%d items"
 msgstr[0] "%d element"
@@ -5109,7 +5255,7 @@ msgid_plural "%d weeks"
 msgstr[0] "%d həftə"
 msgstr[1] "%d həftə"
 
-#: modules/module_reading_goals.lua:817
+#: modules/module_reading_goals.lua:836
 msgid "%d/%d book"
 msgid_plural "%d/%d books"
 msgstr[0] "%d/%d kitab"
@@ -5121,26 +5267,26 @@ msgid_plural "(%d collections)"
 msgstr[0] "(%d kolleksiya)"
 msgstr[1] "(%d kolleksiya)"
 
-#: modules/module_reading_stats.lua:387 modules/module_quick_actions.lua:486
+#: modules/module_reading_stats.lua:437 modules/module_quick_actions.lua:508
 msgid "(%d/%d — %d left)"
 msgid_plural "(%d/%d — %d left)"
 msgstr[0] "(%d/%d — %d qalıb)"
 msgstr[1] "(%d/%d — %d qalıb)"
 
-#: features/sui_quickactions.lua:2508
+#: features/sui_quickactions.lua:2521
 msgid "Group (%d item)"
 msgid_plural "Group (%d items)"
 msgstr[0] "Qrup (%d element)"
 msgstr[1] "Qrup (%d element)"
 
-#: modules/module_reading_goals.lua:1486
+#: modules/module_reading_goals.lua:1520
 msgid "Manually Tracked Books  (%d in %s)"
 msgid_plural "Manually Tracked Books  (%d in %s)"
 msgstr[0] "Əl ilə izlənən kitablar  (%d, %s ərzində)"
 msgstr[1] "Əl ilə izlənən kitablar  (%d, %s ərzində)"
 
-#: screens/sui_quicksettings_bar.lua:1094
-#: screens/sui_quicksettings_bar.lua:1180
+#: screens/sui_quicksettings_bar.lua:1107
+#: screens/sui_quicksettings_bar.lua:1193
 msgid "Maximum of %d slot reached. Remove one first."
 msgid_plural "Maximum of %d slots reached. Remove one first."
 msgstr[0] "Maksimum %d yer həddinə çatılıb. Əvvəlcə birini çıxarın."
@@ -5160,9 +5306,9 @@ msgstr[1] ""
 "Yuxarı paneldə göstərilən mətn.\n"
 "Ən çox %d simvol."
 
-#: modules/module_action_list.lua:276 modules/module_action_list.lua:403
-#: modules/module_quick_actions.lua:323 modules/module_quick_actions.lua:455
-#: screens/sui_menu.lua:1936 screens/sui_menu.lua:2050
+#: modules/module_action_list.lua:279 modules/module_action_list.lua:406
+#: modules/module_quick_actions.lua:345 modules/module_quick_actions.lua:477
+#: screens/sui_menu.lua:1945 screens/sui_menu.lua:2059
 msgid "The maximum of %d action per module has been reached. Remove one first."
 msgid_plural ""
 "The maximum of %d actions per module has been reached. Remove one first."
@@ -5171,14 +5317,14 @@ msgstr[0] ""
 msgstr[1] ""
 "Hər modul üçün maksimum %d əməl həddinə çatılıb. Əvvəlcə birini çıxarın."
 
-#: features/sui_quickactions.lua:1672 features/sui_quickactions.lua:2981
+#: features/sui_quickactions.lua:1685 features/sui_quickactions.lua:2993
 msgid "The maximum of %d quick action has been reached. Delete one first."
 msgid_plural ""
 "The maximum of %d quick actions has been reached. Delete one first."
 msgstr[0] "Maksimum %d sürətli əməl həddinə çatılıb. Əvvəlcə birini silin."
 msgstr[1] "Maksimum %d sürətli əməl həddinə çatılıb. Əvvəlcə birini silin."
 
-#: modules/module_reading_stats.lua:683 modules/module_reading_stats.lua:763
+#: modules/module_reading_stats.lua:737 modules/module_reading_stats.lua:817
 msgid "The maximum of %d stat per row has been reached. Remove one first."
 msgid_plural ""
 "The maximum of %d stats per row has been reached. Remove one first."
@@ -5201,7 +5347,7 @@ msgid_plural "days read"
 msgstr[0] "oxunan gün"
 msgstr[1] "oxunan gün"
 
-#: modules/module_reading_stats.lua:122
+#: modules/module_reading_stats.lua:142
 msgid "day streak"
 msgid_plural "days streak"
 msgstr[0] "gün ardıcıl oxu"
@@ -5212,3 +5358,15 @@ msgid "page read"
 msgid_plural "pages read"
 msgstr[0] "oxunan səhifə"
 msgstr[1] "oxunan səhifə"
+
+#~ msgid "Bookmark browser not available."
+#~ msgstr "Əlfəcin brauzeri əlçatan deyil."
+
+#~ msgid "Cards - Transparent"
+#~ msgstr "Kartlar - şəffaf"
+
+#~ msgid "Transparent navigation bar"
+#~ msgstr "Şəffaf naviqasiya paneli"
+
+#~ msgid "Transparent status bar"
+#~ msgstr "Şəffaf vəziyyət paneli"

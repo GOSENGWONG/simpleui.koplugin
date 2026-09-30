@@ -980,8 +980,10 @@ local function collectionsCellHeight(cw, pfx)
     local lf          = UI.isLandscape() and UI.getLandscapeFactor() or 1
     local scale       = Config.getModuleScale("collections", pfx) * lf
     local thumb_scale = Config.getThumbScale("collections", pfx) * lf
-    local lbl_scale   = Config.getItemLabelScale("collections", pfx) * lf
+    local styles      = Config.resolveTextStyles({ pfx = pfx }, "collections", { "label" })
+    local lbl_scale   = (styles.label and styles.label.scale) or 1
     local d = getDims(scale, thumb_scale, lbl_scale, cw, getHideSpine())
+    d.label_family = styles.label and styles.label.family
     return d.coll_cell_h
 end
 
@@ -994,7 +996,8 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     local lf          = ctx.landscape_factor or 1
     local scale       = Config.getModuleScale("collections", pfx) * lf
     local thumb_scale = Config.getThumbScale("collections", pfx) * lf
-    local lbl_scale   = Config.getItemLabelScale("collections", pfx) * lf
+    local styles      = Config.resolveTextStyles({ pfx = pfx }, "collections", { "label" })
+    local lbl_scale   = (styles.label and styles.label.scale) or 1
     local rc      = getRC()
     local files    = rc and getCollectionFilesFromRC(rc, coll_name) or {}
     local count    = #files
@@ -1006,6 +1009,7 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     -- separately so it stays uniform across every cell on screen.
     local style = _resolveCoverStyleForCount(getCoverStyle(), count)
     local d     = getDims(scale, thumb_scale, lbl_scale, cw, getHideSpine(), getBadgeScale())
+    d.label_family = styles.label and styles.label.family
 
     local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
     local CLR_ACCENT_EFF   = SUIStyle.COLOR.text_primary
@@ -1031,7 +1035,7 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     -- GridRenderer / Recent progress labels).
     local label_w = UI.makeColoredText{
         text                   = display_name,
-        face                   = Font:getFace(SUIStyle.FACE_REGULAR, d.coll_lbl_fs),
+        face                   = SUIStyle.getFamilyFace(d.label_family, d.coll_lbl_fs),
         bold                   = true,
         fgcolor                = CLR_TEXT_SUB_EFF,
         max_width              = d.coll_w,
@@ -1476,6 +1480,7 @@ local mod = GridRenderer.makeModule{
     id          = "collections",
     name        = _("Collections"),
     label       = _("Collections"),
+    text_label  = _("Label"),
     default_on  = false,
     is_book_mod = true,   -- needed for the surgical repaint of the swipe between pages
     max_items   = MAX_ITEMS,

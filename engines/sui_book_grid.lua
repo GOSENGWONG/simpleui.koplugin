@@ -70,6 +70,22 @@ local GridRenderer = {}
 -- Backs GridRenderer.clearRowCaches(ctx).
 GridRenderer._known_row_cache_keys = {}
 
+-- One-shot: legacy item_label_scale → text-style scale for element "label".
+local function _migrateLabelTextScale(id, pfx)
+    local key = (pfx or "simpleui_hs_") .. id .. "_item_label_scale"
+    local raw = SUISettings:get(key)
+    if raw == nil then return end
+    local n = tonumber(raw)
+    if n then
+        local tkey = (pfx or "simpleui_hs_") .. id .. "_text_scale_label"
+        if SUISettings:get(tkey) == nil then
+            Config.setTextStyleScale(n, id, "label", pfx)
+        end
+    end
+    SUISettings:del(key)
+end
+
+
 local _SH = nil
 local function getSH()
     if not _SH then
@@ -770,9 +786,10 @@ function GridRenderer.build(w, ctx, opts)
     local lf          = ctx.landscape_factor or 1
     local scale       = Config.getModuleScale(id, pfx) * lf
     local thumb_scale = Config.getThumbScale(id, pfx) * lf
-    local lbl_scale   = Config.getItemLabelScale(id, pfx) * lf
+    _migrateLabelTextScale(id, pfx)
+    local styles      = Config.resolveTextStyles(ctx, id, { "label" })
     local D           = SH.getDims(scale, thumb_scale)
-    local pct_fs      = math.max(8, math.floor(_BASE_RB_PCT_FS * scale * lbl_scale))
+    local pct_fs      = math.max(8, math.floor(_BASE_RB_PCT_FS * scale * (styles.label.scale or 1)))
 
     -- Frame border / solid background — same optional box every other
     -- homescreen module offers (module_currently.lua, module_heatmap.lua,
@@ -802,7 +819,7 @@ function GridRenderer.build(w, ctx, opts)
     -- visual frame of each cover on both sides; between rows, that full
     -- distance reads as too loose, making the two rows look like one block.
     local row_gap = math.max(0, math.floor(gap / 2))
-    local pct_face = Font:getFace(SUIStyle.FACE_REGULAR, pct_fs)
+    local pct_face = SUIStyle.getFamilyFace(styles.label.family, pct_fs)
 
     local progress_style     = GridRenderer.getProgressStyle(pfx, id, progress_style_cfg)
     local draw_progress      = progress_style == "bar"  or progress_style == "bar_text"
@@ -1333,7 +1350,8 @@ function GridRenderer.getHeight(_ctx, opts)
     local lf = (_ctx and _ctx.landscape_factor) or (UI.isLandscape() and UI.getLandscapeFactor() or 1)
     local scale       = Config.getModuleScale(id, pfx) * lf
     local thumb_scale = Config.getThumbScale(id, pfx) * lf
-    local lbl_scale   = Config.getItemLabelScale(id, pfx) * lf
+    _migrateLabelTextScale(id, pfx)
+    local styles      = Config.resolveTextStyles(_ctx or {}, id, { "label" })
     local SH  = getSH()
     local D   = SH.getDims(scale, thumb_scale)
 
@@ -1371,8 +1389,8 @@ function GridRenderer.getHeight(_ctx, opts)
     local draw_progress  = progress_style == "bar"  or progress_style == "bar_text"
     local draw_text      = progress_style == "text" or progress_style == "bar_text"
     local use_overlay    = progress_style == "overlay"
-    local pct_fs   = math.max(8, math.floor(_BASE_RB_PCT_FS * scale * lbl_scale))
-    local pct_face = Font:getFace(SUIStyle.FACE_REGULAR, pct_fs)
+    local pct_fs   = math.max(8, math.floor(_BASE_RB_PCT_FS * scale * (styles.label.scale or 1)))
+    local pct_face = SUIStyle.getFamilyFace(styles.label.family, pct_fs)
     local ok_h, face_height = pcall(function() return pct_face.ftsize:getHeightAndAscender() end)
     local label_h  = (ok_h and face_height and math.ceil(face_height)) or math.ceil(pct_fs * 1.8)
     -- opts.getCellHeight: see the twin note in build() — must return
@@ -1683,6 +1701,8 @@ function GridRenderer.makeModule(spec)
     M.enabled_key = spec.enabled_key or (id .. "_enabled")
     M.default_on  = spec.default_on or false
     M.has_covers  = true
+    -- Under-cover text (progress % / custom labelForItem / collection name).
+    M.text_elems  = spec.text_elems or { "label" }
     if spec.is_book_mod then M.is_book_mod = true end
     if spec.isEnabled    then M.isEnabled    = spec.isEnabled end
     if spec.reset         then M.reset         = spec.reset end
@@ -1794,14 +1814,6 @@ function GridRenderer.makeModule(spec)
             refresh      = refresh,
         }
         size_group[#size_group + 1] = Config.makeScaleItem{
-            text_func = function() return _lc("Text Size") end,
-            title     = _lc("Text Size"),
-            info      = _lc("Scale for the percentage read text.\n100% is the default size."),
-            get       = function() return Config.getItemLabelScalePct(id, pfx) end,
-            set       = function(v) Config.setItemLabelScale(v, id, pfx) end,
-            refresh   = refresh,
-        }
-        size_group[#size_group + 1] = Config.makeScaleItem{
             text_func = function() return _lc("Cover Size") end,
             separator = (spec.grid or spec.cols_choice) and true or false,
             title     = _lc("Cover Size"),
@@ -1815,7 +1827,7 @@ function GridRenderer.makeModule(spec)
             -- Lightweight sibling of the "Grid size" double-stepper below:
             -- same SpinWidget-backed single-value stepper
             -- (Config.makeStepperItem) for a consistent widget/feel across
-            -- the whole "Size" submenu, but only Columns (4-5) — no Rows —
+            -- the whole "Proportions" submenu, but only Columns (4-5) — no Rows —
             -- reusing the same GRID_COLS_MIN/MAX-backed storage. See
             -- _gridDims' doc comment above for why this doesn't also
             -- expose Rows.
@@ -1868,40 +1880,23 @@ function GridRenderer.makeModule(spec)
             }
         end
 
-        items[#items + 1] = {
-            text_func      = function() return _lc("Size") end,
-            sub_item_table = size_group,
-        }
-
-        -- Appearance: label visibility + static visual chrome (frame,
-        -- solid background). Grouped separately from Size since these are
-        -- checkboxes rather than value pickers, and touched far less often.
-        local appearance_group = {}
-
+        local appearance_extra = {}
         local lbl = spec.label_fn and spec.label_fn(pfx) or spec.label
         if lbl then
-            appearance_group[#appearance_group + 1] = Config.makeLabelToggleItem(id, lbl, refresh, _lc)
+            appearance_extra[#appearance_extra + 1] = Config.makeLabelToggleItem(id, lbl, refresh, _lc)
         end
 
-        if #appearance_group > 0 then
-            items[#items + 1] = {
-                text_func      = function() return _lc("Appearance") end,
-                separator      = true,
-                sub_item_table = appearance_group,
-            }
-        end
-
-        -- Long Press stays a top-level row (unchanged) — it's already a
-        -- single compact row with its own submenu, so nesting it one level
-        -- deeper would gain nothing.
-        items[#items + 1] = Config.makeCoverHoldModeItem{
-            mod_id            = id,
-            pfx               = pfx,
-            refresh           = refresh,
-            _lc               = _lc,
-            book_dialog_label = spec.hold_dialog_label,
+        local behaviour_rows = {
+            Config.makeCoverHoldModeItem{
+                mod_id            = id,
+                pfx               = pfx,
+                refresh           = refresh,
+                _lc               = _lc,
+                book_dialog_label = spec.hold_dialog_label,
+            },
         }
 
+        local badge_rows = nil
         if not spec.renderCell then
             local pb_group = {}
             local badge_colors_on = spec.badge_colors ~= false
@@ -2086,16 +2081,13 @@ function GridRenderer.makeModule(spec)
             end
 
             if #pb_group > 0 then
-                items[#items + 1] = {
-                    text_func      = function() return _lc("Progress and Badges") end,
-                    sub_item_table = pb_group,
-                }
+                badge_rows = pb_group
             end
         end
 
         for _, es in ipairs(spec.extra_settings or {}) do
             local skey = pfx .. id .. "_" .. es.key
-            items[#items + 1] = {
+            behaviour_rows[#behaviour_rows + 1] = {
                 text           = es.label,
                 checked_func   = function() return SUISettings:readSetting(skey) == true
                                               or (SUISettings:readSetting(skey) == nil and es.default) end,
@@ -2109,13 +2101,35 @@ function GridRenderer.makeModule(spec)
             }
         end
 
+        local content_rows = nil
         if spec.extra_menu_items_after then
+            content_rows = {}
             for _, it in ipairs(spec.extra_menu_items_after(ctx_menu)) do
-                items[#items + 1] = it
+                content_rows[#content_rows + 1] = it
             end
         end
 
-        return items
+        return Config.buildModuleMenu({
+            items   = #items > 0 and items or nil,
+            content = content_rows,
+            appearance = {
+                size  = size_group,
+                text  = {
+                    mod_id  = id,
+                    elems   = M.text_elems,
+                    labels  = {
+                        label = spec.text_label or _lc("Progress Text"),
+                    },
+                    info    = _lc("Size of this text.\n100% is the default size."),
+                    pfx     = pfx,
+                    refresh = refresh,
+                    _lc     = _lc,
+                },
+                extra = #appearance_extra > 0 and appearance_extra or nil,
+            },
+            badges    = badge_rows,
+            behaviour = behaviour_rows,
+        }, ctx_menu)
     end
 
     return M
