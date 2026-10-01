@@ -426,7 +426,7 @@ function Registry.purgeInstanceSettings(inst_id, pfx)
     local suffixes = { "_enabled", "_shape", "_bg", "_items", "_labels",
                        "_scale", "_gap_pct", "_item_label_scale",
                        -- used by Featured Collection / sui_book_grid.lua:
-                       "_coll_name", "_thumb_scale",
+                       "_coll_name", "_sort_state", "_thumb_scale",
                        "_show_progress", "_show_text", "_show_overlay",
                        "_show_frame", "_solid_bg", "_backdrop",
                        "_grid_rows", "_grid_cols" }

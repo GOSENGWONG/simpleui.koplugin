@@ -158,7 +158,7 @@ local CLASSIFY_RULES = {
     { "goals",
       prefixes = {
           "simpleui_streak_", "simpleui_reading_goal", "simpleui_daily_reading_goal_secs",
-          "simpleui_monthly_reading_goal_secs", "simpleui_tbr_sort_mode",
+          "simpleui_monthly_reading_goal_secs", "simpleui_tbr_sort_state",
           "simpleui_tbr_auto_remove_finished",
       },
       exact    = { simpleui_preserve_deleted_books_in_stats = true, simpleui_deleted_books = true },

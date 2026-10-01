@@ -1467,6 +1467,24 @@ function GridRenderer.listAllCollectionNames(exclude_names)
     return all
 end
 
+-- Entries of a ReadCollection in their persisted order (empty when the
+-- collection does not exist). Not calling rc:_read() — see note in
+-- listAllCollectionNames() above.
+local function orderedCollectionItems(coll_name)
+    if not coll_name then return {} end
+    local ok_rc, rc = pcall(require, "readcollection")
+    if not (ok_rc and rc) then return {} end
+    local coll = rc.coll and rc.coll[coll_name]
+    if not coll then return {} end
+    local items = {}
+    for _, item in pairs(coll) do items[#items + 1] = item end
+    table.sort(items, function(a, b)
+        if a.order ~= b.order then return (a.order or 0) < (b.order or 0) end
+        return a.file < b.file
+    end)
+    return items
+end
+
 -- ---------------------------------------------------------------------------
 -- getCollectionFileList(coll_name) → { fp, ... } sorted by RC "order"
 --
@@ -1474,22 +1492,13 @@ end
 -- collection. Filters out entries whose file no longer exists on disk.
 -- ---------------------------------------------------------------------------
 function GridRenderer.getCollectionFileList(coll_name)
-    if not coll_name then return {} end
-    local ok_rc, rc = pcall(require, "readcollection")
-    if not (ok_rc and rc) then return {} end
-    -- Not calling rc:_read() — see note in listAllCollectionNames() above.
-    local coll = rc.coll and rc.coll[coll_name]
-    if not coll then return {} end
     local lfs = require("libs/libkoreader-lfs")
-    local items = {}
-    for _, item in pairs(coll) do
+    local fps = {}
+    for _, item in ipairs(orderedCollectionItems(coll_name)) do
         if lfs.attributes(item.file, "mode") == "file" then
-            items[#items + 1] = item
+            fps[#fps + 1] = item.file
         end
     end
-    table.sort(items, function(a, b) return (a.order or 0) < (b.order or 0) end)
-    local fps = {}
-    for _, item in ipairs(items) do fps[#fps + 1] = item.file end
     return fps
 end
 
@@ -1558,6 +1567,94 @@ function GridRenderer.sortCollection(coll_name, mode)
     rc:updateCollectionOrder(coll_name, ordered)
     rc:write({ [coll_name] = true })
     return true
+end
+
+-- ---------------------------------------------------------------------------
+-- collectionOrderSignature(coll_name) → string | nil
+--
+-- Identifies a collection's current order: entry count plus a 32-bit hash of
+-- the file paths in order. nil when the collection does not exist.
+-- ---------------------------------------------------------------------------
+local function collectionOrderSignature(coll_name)
+    local items = orderedCollectionItems(coll_name)
+    if #items == 0 then return nil end
+    local h = 5381
+    for _i, item in ipairs(items) do
+        local fp = item.file
+        for i = 1, #fp do h = (h * 33 + fp:byte(i)) % 4294967296 end
+        h = (h * 33 + 10) % 4294967296
+    end
+    return #items .. ":" .. h
+end
+
+-- ---------------------------------------------------------------------------
+-- makeSortMenuItem(opts) → menu item
+--
+-- "Sort" row for modules backed by a ReadCollection. Each sub-item applies
+-- GridRenderer.sortCollection once. The applied mode is stored together with
+-- the order signature it produced and is shown (right-side value and checked
+-- radio) only while the collection still has that order, so a manual
+-- rearrangement, an added or removed book, or a restored setting never shows
+-- a mode that no longer describes the list. The row title stays static.
+--
+-- opts:
+--   _lc          function   translate function (ctx_menu._)
+--   state_key    string     settings key holding { mode, sig }
+--   getCollName  function   () → collection name | nil
+--   getCount     function   () → number of books; the row is enabled above 1
+--   refresh      function   () repaints the module
+--   onSorted     function?  () runs after a successful sort, before refresh
+--   separator    boolean?   draws a separator below the row
+-- ---------------------------------------------------------------------------
+function GridRenderer.makeSortMenuItem(opts)
+    local _lc = opts._lc
+    local modes = {
+        { "title_asc",    _lc("Title (A–Z)") },
+        { "title_desc",   _lc("Title (Z–A)") },
+        { "author_asc",   _lc("Author (A–Z)") },
+        { "percent_asc",  _lc("% Read (ascending)") },
+        { "percent_desc", _lc("% Read (descending)") },
+        { "shuffle",      _lc("Shuffle") },
+    }
+    local labels = {}
+    for _i, entry in ipairs(modes) do labels[entry[1]] = entry[2] end
+
+    local function appliedMode()
+        local state = SUISettings:readSetting(opts.state_key)
+        if type(state) ~= "table" then return nil end
+        local sig = collectionOrderSignature(opts.getCollName())
+        return sig and state.sig == sig and state.mode or nil
+    end
+
+    return {
+        text_func           = function() return _lc("Sort") end,
+        mandatory_func      = function() return labels[appliedMode()] or "" end,
+        enabled_func        = function() return opts.getCount() > 1 end,
+        separator           = opts.separator,
+        sub_item_table_func = function()
+            local sub = {}
+            for _i, entry in ipairs(modes) do
+                local mode = entry[1]
+                sub[#sub + 1] = {
+                    text           = entry[2],
+                    radio          = true,
+                    separator      = (mode == "shuffle") or nil,
+                    checked_func   = function() return appliedMode() == mode end,
+                    keep_menu_open = true,
+                    callback       = function()
+                        local name = opts.getCollName()
+                        if name and GridRenderer.sortCollection(name, mode) then
+                            SUISettings:saveSetting(opts.state_key,
+                                { mode = mode, sig = collectionOrderSignature(name) })
+                            if opts.onSorted then opts.onSorted() end
+                            opts.refresh()
+                        end
+                    end,
+                }
+            end
+            return sub
+        end,
+    }
 end
 
 -- ---------------------------------------------------------------------------
