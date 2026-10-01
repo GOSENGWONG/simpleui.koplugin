@@ -1601,8 +1601,11 @@ local _FONT_DEFAULT     = "Noto Sans"
 
 -- Module-level lazy caches — populated once by _initFonts().
 local _font_list     = nil   -- ordered list of font family names (strings)
-local _fonts         = nil   -- map: family name → { regular=path, bold=path }
+local _fonts         = nil   -- map: family name → { regular=path }
 local _replaced      = nil   -- map: Font.fontmap slot → "regular"|"bold"
+local _by_stem       = {}    -- lowercase file stem → font file path
+local _by_family     = {}    -- family name .. "\0" .. variant → font file path
+local _variant_cache = {}    -- file .. "\0" .. variant → variant file, or false
 
 -- ── Lazy module accessors ────────────────────────────────────────────────
 
@@ -1626,21 +1629,83 @@ local function _reqCRE()
     return (ok and m) or _req("libs/libkoreader-cre")
 end
 
--- ── Path helpers ─────────────────────────────────────────────────────────
+-- ── Font variants ────────────────────────────────────────────────────────
 
--- Heuristic: try "Font-Regular.ext" → "Font-Bold.ext",
--- then "Font.ext" → "Font-Bold.ext".
-local function _boldPath(path_regular)
-    if not path_regular then return nil end
-    local p, n = path_regular:gsub("%-Regular%.", "-Bold.", 1)
-    if n > 0 then return p end
-    p, n = path_regular:gsub("(%.)([^.]+)$", "-Bold.%2", 1)
-    return n > 0 and p or nil
+-- Text variants a font can be drawn in, and the weight/slant each one asks for.
+M.VARIANTS = { "regular", "bold", "italic", "bolditalic" }
+local _VARIANT_FLAGS = {
+    regular    = { bold = false, italic = false },
+    bold       = { bold = true,  italic = false },
+    italic     = { bold = false, italic = true  },
+    bolditalic = { bold = true,  italic = true  },
+}
+
+local function _variantName(bold, italic)
+    if bold then return italic and "bolditalic" or "bold" end
+    return italic and "italic" or "regular"
+end
+
+--- True when `variant` is one of M.VARIANTS.
+function M.isVariant(variant)
+    return _VARIANT_FLAGS[variant] ~= nil
+end
+
+--- `variant` with bold added: regular → bold, italic → bolditalic.
+function M.emphasize(variant)
+    local flags = _VARIANT_FLAGS[variant] or _VARIANT_FLAGS.regular
+    return _variantName(true, flags.italic)
+end
+
+local function _fileStem(path)
+    return ((path:match("([^/]+)$") or path):gsub("%.[^.]+$", ""))
+end
+
+-- Lowercase stems a font packager may have used for the `variant` sibling of
+-- `stem` ("Foo-Regular" → "foo-bold", "foo bold", "foobold", …).
+local _VARIANT_WORDS = {
+    bold       = { "Bold" },
+    italic     = { "Italic" },
+    bolditalic = { "BoldItalic", "Bold Italic", "Bold-Italic" },
+}
+local function _siblingStems(stem, variant)
+    local out = {}
+    for _i, word in ipairs(_VARIANT_WORDS[variant]) do
+        if stem:match("[Rr]egular") then
+            out[#out + 1] = stem:gsub("[Rr]egular", word):lower()
+        end
+        out[#out + 1] = (stem .. "-" .. word):lower()
+        out[#out + 1] = (stem .. " " .. word):lower()
+        out[#out + 1] = (stem .. word):lower()
+    end
+    return out
 end
 
 -- ── Font list initialisation ──────────────────────────────────────────────
 
--- Builds _font_list, _fonts, _replaced.
+-- Collects the font files that still exist and indexes them for variant
+-- lookup, by file stem and by family name plus variant (font metadata).
+-- Returns the set of existing paths.
+local function _scanFontFiles(FontList, lfs)
+    local path_set = {}
+    local info_of  = FontList.fontinfo or {}
+    _by_stem, _by_family, _variant_cache = {}, {}, {}
+    for _i, p in ipairs(FontList.fontlist) do
+        -- Verify the file still exists on disk, as FontList caches paths across restarts.
+        if not lfs or lfs.attributes(p, "mode") == "file" then
+            path_set[p] = true
+            local stem = _fileStem(p):lower()
+            if not _by_stem[stem] then _by_stem[stem] = p end
+            local info = info_of[p] and info_of[p][1]
+            if info and info.name then
+                local key = info.name .. "\0" .. _variantName(info.bold == true, info.italic == true)
+                if not _by_family[key] then _by_family[key] = p end
+            end
+        end
+    end
+    return path_set
+end
+
+-- Builds _font_list, _fonts, _replaced and the variant index.
 local function _initFonts()
     local Font     = _reqFont()
     local FontList = _reqFontList()
@@ -1656,27 +1721,14 @@ local function _initFonts()
     _fonts     = {}
     _replaced  = {}
 
-    -- Build the set of paths that will be accepted as valid font sources.
-    local path_set = {}
-    for _, p in ipairs(FontList.fontlist) do 
-        -- Verify the file still exists on disk, as FontList caches paths across restarts.
-        if not lfs or lfs.attributes(p, "mode") == "file" then
-            path_set[p] = true 
-        end
-    end
+    local path_set = _scanFontFiles(FontList, lfs)
 
     -- Walk CRE's font face list and keep only those whose file is in path_set.
     for _, name in ipairs(cre.getFontFaces()) do
         local path_regular = cre.getFontFaceFilenameAndFaceIndex(name)
         if path_regular and path_set[path_regular] then
-            local path_bold  = _boldPath(path_regular)
-            local bold_ok    = path_set[path_bold]
             table.insert(_font_list, name)
-            if bold_ok then
-                _fonts[name] = { regular = path_regular, bold = path_bold }
-            else
-                _fonts[name] = { regular = path_regular, bold = path_regular }
-            end
+            _fonts[name] = { regular = path_regular }
         end
     end
 
@@ -1708,14 +1760,43 @@ local function _ensureFonts()
     end
 end
 
+-- Face of the font file `file` at `size`, or nil when it cannot be loaded.
+local function fileFace(file, size)
+    local Font = _reqFont()
+    if not (file and Font) then return nil end
+    local ok, face = pcall(Font.getFace, Font, file, size)
+    return ok and face or nil
+end
+
 -- Regular-weight face of the installed family `name` at `size`, or nil when
 -- the family is unknown or cannot be loaded. Requires _ensureFonts().
 local function familyFace(name, size)
     local entry = _fonts and _fonts[name]
-    local Font  = _reqFont()
-    if not (entry and Font) then return nil end
-    local ok, face = pcall(Font.getFace, Font, entry.regular, size)
-    return ok and face or nil
+    return entry and fileFace(entry.regular, size) or nil
+end
+
+-- Font file of the bold/italic variant of `file`, or nil when its family does
+-- not ship one. Matches by file-name convention first, then by the family
+-- name and style flags in the font metadata. Requires _ensureFonts().
+local function variantFile(file, bold, italic)
+    local variant = _variantName(bold, italic)
+    local key     = file .. "\0" .. variant
+    local hit     = _variant_cache[key]
+    if hit ~= nil then return hit or nil end
+
+    local found
+    for _i, stem in ipairs(_siblingStems(_fileStem(file), variant)) do
+        found = _by_stem[stem]
+        if found then break end
+    end
+    if not found then
+        local FontList = _reqFontList()
+        local info     = FontList and FontList.fontinfo and FontList.fontinfo[file]
+        local family   = info and info[1] and info[1].name
+        found = family and _by_family[family .. "\0" .. variant]
+    end
+    _variant_cache[key] = found or false
+    return found
 end
 
 -- ── Apply ────────────────────────────────────────────────────────────────
@@ -1760,8 +1841,10 @@ local function _applyFont(name)
     _ensureFonts()
     if not SUISettings:isTrue(_FONT_KEY_ENABLED) then return end
     if not (_fonts and _fonts[name]) then return end
+    local regular = _fonts[name].regular
+    local bold    = variantFile(regular, true, false) or regular
     for slot, typ in pairs(_replaced) do
-        Font.fontmap[slot] = _fonts[name][typ]
+        Font.fontmap[slot] = typ == "bold" and bold or regular
     end
     logger.dbg("simpleui/style: UI font applied →", name)
     -- Refresh TitleBar class defaults so new instances use the updated font.
@@ -1833,7 +1916,7 @@ function M.makeFontMenuItems()
             items[#items + 1] = {
                 text_func = function()
                     local label = _name
-                    if _fonts[_name] and _fonts[_name].regular == _fonts[_name].bold then
+                    if _fonts[_name] and not variantFile(_fonts[_name].regular, true, false) then
                         label = label .. "  (no bold)"
                     end
                     if _isEnabled() and _name == _currentName() then
@@ -1867,15 +1950,53 @@ end
 
 -- ── Per-element font families ────────────────────────────────────────────
 
---- Face for a user-chosen font family at `size`. A nil/empty family, or one
---- that is no longer installed, yields the default UI face.
-function M.getFamilyFace(family, size)
-    if family and family ~= "" then
-        _ensureFonts()
-        local face = familyFace(family, size)
-        if face then return face end
+-- Font files tried for each variant, best first: { bold, italic, synthetic
+-- bold }. Slant cannot be synthesised, so without an italic file the text
+-- renders upright; a missing bold file is emboldened by the text widget.
+local _FALLBACKS = {
+    bold       = { { true,  false, false } },
+    italic     = { { false, true,  false } },
+    bolditalic = { { true,  true,  false }, { false, true,  true }, { true, false, false } },
+}
+
+--- Face of `family` drawn in `variant` ("regular" | "bold" | "italic" |
+--- "bolditalic") at `size`, plus whether the text widget must still embolden
+--- it (no bold file exists). A nil/empty family, or one that is no longer
+--- installed, resolves against the default UI font.
+function M.getStyledFace(family, size, variant)
+    local Font = _reqFont()
+    local flags = _VARIANT_FLAGS[variant] or _VARIANT_FLAGS.regular
+    local has_family = family and family ~= ""
+    if has_family or flags.bold or flags.italic then _ensureFonts() end
+
+    local base = has_family and _fonts[family] and _fonts[family].regular or nil
+    local from = base or Font.fontmap[M.FACE_REGULAR]
+    for _i, step in ipairs(_FALLBACKS[_variantName(flags.bold, flags.italic)] or {}) do
+        local file = from and variantFile(from, step[1], step[2])
+        local face = fileFace(file, size)
+        if face then return face, step[3] end
     end
-    return _reqFont():getFace(M.FACE_REGULAR, size)
+    return fileFace(base, size) or Font:getFace(M.FACE_REGULAR, size), flags.bold
+end
+
+--- Face and emboldening flag of a text element drawn in `style` (the
+--- { family, variant } table of Config.getTextStyle) at `size`. `add_bold`
+--- adds bold to the chosen variant, for text that is emphasised by design.
+function M.getTextFace(style, size, add_bold)
+    local variant = add_bold and M.emphasize(style.variant) or style.variant
+    return M.getStyledFace(style.family, size, variant)
+end
+
+--- True when `family` (nil = default UI font) can draw `variant` faithfully.
+--- Bold is always available (emboldened when the family has no bold file);
+--- slant needs an italic file.
+function M.supportsVariant(family, variant)
+    local flags = _VARIANT_FLAGS[variant]
+    if not (flags and flags.italic) then return true end
+    _ensureFonts()
+    local entry = family and _fonts[family]
+    local from  = entry and entry.regular or _reqFont().fontmap[M.FACE_REGULAR]
+    return from ~= nil and (variantFile(from, flags.bold, true) or variantFile(from, false, true)) ~= nil
 end
 
 --- Real line height of `face` in pixels (ascender + descender), as a
@@ -1889,11 +2010,11 @@ function M.faceHeight(face)
     return math.ceil(face.size * 1.8)
 end
 
---- Line height to reserve for text of `size` in `family`: the measured face
---- height for a chosen family, `nominal` for the default face.
-function M.lineReserve(family, size, nominal)
-    if not family then return nominal end
-    return M.faceHeight(M.getFamilyFace(family, size))
+--- Line height to reserve for text of `size` drawn in `style`: the measured
+--- face height, or `nominal` for the default regular face.
+function M.lineReserve(style, size, nominal)
+    if not style.family and style.variant == "regular" then return nominal end
+    return M.faceHeight((M.getTextFace(style, size)))
 end
 
 --- Radio items to pick a font family: "Default" (clears the choice) followed
@@ -1932,6 +2053,48 @@ function M.makeFamilyMenuItems(get, set, refresh)
             checked_func   = function() return get() == family end,
             font_func      = function(size) return familyFace(family, size) end,
             callback       = pick(family),
+        }
+    end
+    return items
+end
+
+local _VARIANT_LABELS = {
+    regular    = function() return _("Regular")     end,
+    bold       = function() return _("Bold")        end,
+    italic     = function() return _("Italic")      end,
+    bolditalic = function() return _("Bold italic") end,
+}
+
+--- Translated name of `variant`.
+function M.variantLabel(variant)
+    return (_VARIANT_LABELS[variant] or _VARIANT_LABELS.regular)()
+end
+
+--- Radio items to pick a text variant, one per M.VARIANTS entry. Variants the
+--- family cannot draw are greyed out.
+---   opts.get()      → chosen variant
+---   opts.set(v)     → persists the choice
+---   opts.refresh()  → repaints whatever displays the choice
+---   opts.family()   → family the variant applies to (nil = default UI font)
+---   opts.default    → variant marked as the default
+function M.makeVariantMenuItems(opts)
+    local items = {}
+    for _i, variant in ipairs(M.VARIANTS) do
+        local v = variant   -- upvalue capture
+        items[#items + 1] = {
+            text_func      = function()
+                local label = M.variantLabel(v)
+                if v == opts.default then label = label .. "  (" .. _("Default") .. ")" end
+                return label
+            end,
+            radio          = true,
+            keep_menu_open = true,
+            checked_func   = function() return opts.get() == v end,
+            enabled_func   = function() return M.supportsVariant(opts.family(), v) end,
+            callback       = function()
+                opts.set(v)
+                opts.refresh()
+            end,
         }
     end
     return items

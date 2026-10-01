@@ -67,6 +67,9 @@ end
 --   detail  progress detail (x of y)
 local TEXT_ELEMS = { "label", "value", "detail" }
 
+-- The row label and the percentage are bold until the user picks another variant.
+Config.declareTextVariants("reading_goals", { label = "bold", value = "bold" })
+
 local function _elemFs(base, min_fs, scale, style)
     return math.max(min_fs, math.floor(base * scale * (style and style.scale or 1)))
 end
@@ -75,9 +78,9 @@ end
 -- Returns `d`.
 local function _applyFaces(d, styles, label_fs, value_fs, detail_fs)
     d.styles   = styles
-    d.face_lbl = SUIStyle.getFamilyFace(styles.label.family,  label_fs)
-    d.face_pct = SUIStyle.getFamilyFace(styles.value.family,  value_fs)
-    d.face_det = SUIStyle.getFamilyFace(styles.detail.family, detail_fs)
+    d.face_lbl, d.bold_lbl = SUIStyle.getTextFace(styles.label,  label_fs)
+    d.face_pct, d.bold_pct = SUIStyle.getTextFace(styles.value,  value_fs)
+    d.face_det, d.bold_det = SUIStyle.getTextFace(styles.detail, detail_fs)
     return d
 end
 
@@ -254,7 +257,7 @@ end
 -- Measures the rendered width of each active label using the given face and
 -- returns the smallest lbl_w that fits all of them, with a minimum floor.
 -- Called once per M.build so both rows share the same column width.
-local function _measureLblW(labels, face, floor_w)
+local function _measureLblW(labels, face, bold, floor_w)
     local max_w   = 0
     local widths  = _lbl_w_cache[face]
     if not widths then
@@ -265,7 +268,7 @@ local function _measureLblW(labels, face, floor_w)
         local key    = tostring(lbl)
         local cached = widths[key]
         if not cached then
-            local tw = TextWidget:new{ text = lbl, face = face, bold = true }
+            local tw = TextWidget:new{ text = lbl, face = face, bold = bold }
             cached   = tw:getSize().w
             tw:free()
             widths[key] = cached
@@ -308,7 +311,7 @@ local function _buildInnerCompact(inner_w, lbl_w, pct_w, label_str, pct, pct_str
         vcenter_left(UI.makeColoredText{
             text    = label_str,
             face    = cd.face_lbl,
-            bold    = true,
+            bold    = cd.bold_lbl,
             fgcolor = eff_blk,
             width   = lbl_w,
         }, lbl_w),
@@ -318,7 +321,7 @@ local function _buildInnerCompact(inner_w, lbl_w, pct_w, label_str, pct, pct_str
         vcenter_left(UI.makeColoredText{
             text    = pct_str,
             face    = cd.face_pct,
-            bold    = true,
+            bold    = cd.bold_pct,
             fgcolor = eff_blk,
             width   = PCT_W,
         }, PCT_W),
@@ -326,6 +329,7 @@ local function _buildInnerCompact(inner_w, lbl_w, pct_w, label_str, pct, pct_str
         vcenter_right(UI.makeColoredText{
             text      = detail_str,
             face      = cd.face_det,
+            bold      = cd.bold_det,
             fgcolor   = clr_sub or CLR_TEXT_SUB,
             width     = DETAIL_W,
             alignment = "right",
@@ -390,7 +394,7 @@ local function _buildInnerDefault(inner_w, label_str, pct, pct_str, detail_str, 
             UI.makeColoredText{
                 text    = label_str,
                 face    = d.face_lbl,
-                bold    = true,
+                bold    = d.bold_lbl,
                 fgcolor = clr_blk_eff,
                 width   = d.lbl_w,
             },
@@ -400,7 +404,7 @@ local function _buildInnerDefault(inner_w, label_str, pct, pct_str, detail_str, 
             UI.makeColoredText{
                 text      = pct_str,
                 face      = d.face_pct,
-                bold      = true,
+                bold      = d.bold_pct,
                 fgcolor   = clr_blk_eff,
                 width     = PCT_W,
                 alignment = "right",
@@ -410,6 +414,7 @@ local function _buildInnerDefault(inner_w, label_str, pct, pct_str, detail_str, 
         UI.makeColoredText{
             text    = detail_str,
             face    = d.face_det,
+            bold    = d.bold_det,
             fgcolor = clr_sub_eff,
             width   = inner_w,
         },
@@ -612,14 +617,14 @@ local function _buildGoalCardInner(card_w, _card_h, label_str, pct, pct_str, det
     local max_det_fs = math.max(7, math.floor(content_w * 0.28))
     local pct_fs = math.min(d.pct_fs, max_pct_fs)
     local det_fs = math.min(d.det_fs, max_det_fs)
-    local face_pct = SUIStyle.getFamilyFace(d.styles.value.family,  pct_fs)
-    local face_det = SUIStyle.getFamilyFace(d.styles.detail.family, det_fs)
+    local face_pct, bold_pct = SUIStyle.getTextFace(d.styles.value,  pct_fs)
+    local face_det, bold_det = SUIStyle.getTextFace(d.styles.detail, det_fs)
     local gap_h = math.max(1, math.min(math.floor(d.text_gap / 2), math.floor(content_w * 0.08)))
 
     local pct_widget = UI.makeColoredText{
         text    = center_txt,
         face    = face_pct,
-        bold    = true,
+        bold    = bold_pct,
         fgcolor = clr_blk,
         max_width = content_w,
         truncate_with_ellipsis = true,
@@ -633,6 +638,7 @@ local function _buildGoalCardInner(card_w, _card_h, label_str, pct, pct_str, det
         local det = UI.makeColoredText{
             text    = detail_str,
             face    = face_det,
+            bold    = bold_det,
             fgcolor = clr_sub,
             max_width = content_w,
             truncate_with_ellipsis = true,
@@ -662,6 +668,7 @@ local function _buildGoalCardInner(card_w, _card_h, label_str, pct, pct_str, det
         vg[#vg + 1] = UI.makeColoredText{
             text    = detail_str,
             face    = d.face_det,
+            bold    = d.bold_det,
             fgcolor = clr_sub,
             max_width = ring_d,
             truncate_with_ellipsis = true,
@@ -674,7 +681,7 @@ local function _buildGoalCardInner(card_w, _card_h, label_str, pct, pct_str, det
         vg[#vg + 1] = UI.makeColoredText{
             text    = label_str,
             face    = d.face_lbl,
-            bold    = true,
+            bold    = d.bold_lbl,
             fgcolor = clr_blk,
             max_width = ring_d,
             truncate_with_ellipsis = true,
@@ -1048,12 +1055,12 @@ function M.build(w, ctx)
         if show_ann and ann_pct_str ~= "" then pct_strs[#pct_strs+1] = ann_pct_str end
         if show_mon and mon_pct_str ~= "" then pct_strs[#pct_strs+1] = mon_pct_str end
         if show_day and day_pct_str ~= "" then pct_strs[#pct_strs+1] = day_pct_str end
-        local pct_w = _measureLblW(pct_strs, cd.face_pct, Screen:scaleBySize(28))
+        local pct_w = _measureLblW(pct_strs, cd.face_pct, cd.bold_pct, Screen:scaleBySize(28))
         local rendered_count = 0
         for _i, k in ipairs(_getElemOrder(ctx.pfx)) do
             if k == "annual" and show_ann then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = cd.row_gap } end
-                local lbl_w = _measureLblW({ year_str }, cd.face_lbl, cd.lbl_w)
+                local lbl_w = _measureLblW({ year_str }, cd.face_lbl, cd.bold_lbl, cd.lbl_w)
                 cd.lbl_w = lbl_w
                 local row_widget, row_update_fn = buildCompactGoalRow(
                     inner_w, lbl_w, pct_w, year_str, ann_pct, ann_pct_str, ann_detail,
@@ -1072,7 +1079,7 @@ function M.build(w, ctx)
                 rendered_count = rendered_count + 1
             elseif k == "monthly" and show_mon then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = cd.row_gap } end
-                local lbl_w = _measureLblW({ month_str }, cd.face_lbl, cd.lbl_w)
+                local lbl_w = _measureLblW({ month_str }, cd.face_lbl, cd.bold_lbl, cd.lbl_w)
                 cd.lbl_w = lbl_w
                 local row_widget, row_update_fn = buildCompactGoalRow(
                     inner_w, lbl_w, pct_w, month_str, mon_pct, mon_pct_str, mon_detail,
@@ -1085,7 +1092,7 @@ function M.build(w, ctx)
                 rendered_count = rendered_count + 1
             elseif k == "daily" and show_day then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = cd.row_gap } end
-                local lbl_w = _measureLblW({ _("Today") }, cd.face_lbl, cd.lbl_w)
+                local lbl_w = _measureLblW({ _("Today") }, cd.face_lbl, cd.bold_lbl, cd.lbl_w)
                 local row_widget, row_update_fn = buildCompactGoalRow(
                     inner_w, lbl_w, pct_w, _("Today"), day_pct, day_pct_str, day_detail,
                     function() showDailySettingsDialog() end, cd, CLR_TEXT_SUB_EFF, CLR_TEXT_BLK_EFF)
@@ -1107,7 +1114,7 @@ function M.build(w, ctx)
             if k == "annual" and show_ann then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = d.row_gap } end
                 local pct, pct_str, detail = _annualData(books_read)
-                local ann_lbl_w = _measureLblW({ year_str }, d.face_lbl, d.lbl_w)
+                local ann_lbl_w = _measureLblW({ year_str }, d.face_lbl, d.bold_lbl, d.lbl_w)
                 d.lbl_w = ann_lbl_w
                 local row_widget, row_update_fn = buildGoalRow(
                     inner_w, year_str, pct, pct_str, detail,
@@ -1127,7 +1134,7 @@ function M.build(w, ctx)
             elseif k == "monthly" and show_mon then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = d.row_gap } end
                 local pct, pct_str, detail = _monthlyData(month_secs)
-                local mon_lbl_w = _measureLblW({ month_str }, d.face_lbl, d.lbl_w)
+                local mon_lbl_w = _measureLblW({ month_str }, d.face_lbl, d.bold_lbl, d.lbl_w)
                 d.lbl_w = mon_lbl_w
                 local row_widget, row_update_fn = buildGoalRow(
                     inner_w, month_str, pct, pct_str, detail,
@@ -1141,7 +1148,7 @@ function M.build(w, ctx)
             elseif k == "daily" and show_day then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = d.row_gap } end
                 local pct, pct_str, detail = _dailyData(today_secs)
-                local day_lbl_w = _measureLblW({ _("Today") }, d.face_lbl, d.lbl_w)
+                local day_lbl_w = _measureLblW({ _("Today") }, d.face_lbl, d.bold_lbl, d.lbl_w)
                 d.lbl_w = day_lbl_w
                 local row_widget, row_update_fn = buildGoalRow(
                     inner_w, _("Today"), pct, pct_str, detail,

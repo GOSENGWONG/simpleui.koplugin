@@ -891,22 +891,44 @@ function M.setItemLabelScale(pct, mod_id, pfx)
     SUISettings:set(_itemLabelKey(mod_id, pfx), _clamp(pct))
 end
 
--- Per-element text style: a font family and a size scale for one text
--- element (title, author, ...) of a module. An unset family means the default
--- UI font; an unset scale means 100%.
-local TEXT_FONT_INFIX  = "_text_font_"
-local TEXT_SCALE_INFIX = "_text_scale_"
+-- Per-element text style: a font family, a size scale and a variant (regular,
+-- bold, italic, bold italic) for one text element (title, author, ...) of a
+-- module. An unset family means the default UI font; an unset scale means
+-- 100%; an unset variant means the element's default variant, "regular"
+-- unless the module declares otherwise (M.declareTextVariants).
+local TEXT_FONT_INFIX    = "_text_font_"
+local TEXT_SCALE_INFIX   = "_text_scale_"
+local TEXT_VARIANT_INFIX = "_text_variant_"
+local TEXT_INFIXES       = { TEXT_FONT_INFIX, TEXT_SCALE_INFIX, TEXT_VARIANT_INFIX }
 
 local function _textKey(infix, mod_id, elem, pfx)
     return (pfx or "simpleui_hs_") .. mod_id .. infix .. elem
 end
 
+local _variant_defaults = {}   -- module id → { element id → variant }
+
+-- Declares the variant of the elements of `mod_id` that are not regular by
+-- default, e.g. { title = "bold" }.
+function M.declareTextVariants(mod_id, defaults)
+    _variant_defaults[mod_id] = defaults
+end
+
+local function _defaultVariant(mod_id, elem)
+    local defaults = _variant_defaults[mod_id]
+    return defaults and defaults[elem] or "regular"
+end
+
 function M.getTextStyle(mod_id, elem, pfx)
-    local family = SUISettings:get(_textKey(TEXT_FONT_INFIX, mod_id, elem, pfx))
-    local n      = tonumber(SUISettings:get(_textKey(TEXT_SCALE_INFIX, mod_id, elem, pfx)))
+    local family  = SUISettings:get(_textKey(TEXT_FONT_INFIX, mod_id, elem, pfx))
+    local n       = tonumber(SUISettings:get(_textKey(TEXT_SCALE_INFIX, mod_id, elem, pfx)))
+    local variant = SUISettings:get(_textKey(TEXT_VARIANT_INFIX, mod_id, elem, pfx))
+    if not require("features/sui_style").isVariant(variant) then
+        variant = _defaultVariant(mod_id, elem)
+    end
     return {
-        family = (type(family) == "string" and family ~= "") and family or nil,
-        scale  = n and _clamp(n) / 100 or 1.0,
+        family  = (type(family) == "string" and family ~= "") and family or nil,
+        scale   = n and _clamp(n) / 100 or 1.0,
+        variant = variant,
     }
 end
 
@@ -941,52 +963,91 @@ function M.setTextStyleFont(family, mod_id, elem, pfx)
     if family then SUISettings:set(key, family) else SUISettings:del(key) end
 end
 
--- Menu entry with a "Font" picker and a "Size" spinner for one text element.
--- With opts.family_only the entry is the font picker alone, for elements
--- whose size is controlled elsewhere.
+-- variant == nil clears the choice.
+function M.setTextStyleVariant(variant, mod_id, elem, pfx)
+    local key = _textKey(TEXT_VARIANT_INFIX, mod_id, elem, pfx)
+    if variant then SUISettings:set(key, variant) else SUISettings:del(key) end
+end
+
+-- Drops every stored text choice of the listed elements, returning them to
+-- their defaults.
+function M.resetTextStyles(mod_id, elems, pfx)
+    for _i, elem in ipairs(elems) do
+        for _j, infix in ipairs(TEXT_INFIXES) do
+            SUISettings:del(_textKey(infix, mod_id, elem, pfx))
+        end
+    end
+end
+
+-- Menu entry for one text element: "Font" and "Style" pickers (regular, bold,
+-- italic, bold italic), plus a "Size" spinner unless the size is controlled
+-- elsewhere.
 -- opts: { title, info, mod_id, elem, pfx, refresh, _lc, family_only }
 function M.makeTextStyleItem(opts)
     local mod_id, elem, pfx, refresh = opts.mod_id, opts.elem, opts.pfx, opts.refresh
     local _lc = opts._lc or _
+    local SUIStyle = require("features/sui_style")
 
     local function family() return M.getTextStyle(mod_id, elem, pfx).family end
     local function familyLabel() return family() or _lc("Default") end
     local function familyMenuItems()
-        return require("features/sui_style").makeFamilyMenuItems(
+        return SUIStyle.makeFamilyMenuItems(
             family,
             function(name) M.setTextStyleFont(name, mod_id, elem, pfx) end,
             refresh)
     end
 
-    if opts.family_only then
-        return {
-            text                = opts.title,
-            value_func          = familyLabel,
-            sub_item_table_func = familyMenuItems,
-        }
+    local default_variant = _defaultVariant(mod_id, elem)
+    local function variant() return M.getTextStyle(mod_id, elem, pfx).variant end
+    local function variantMenuItems()
+        return SUIStyle.makeVariantMenuItems({
+            get     = variant,
+            -- The default is stored as "no choice", like the default font.
+            set     = function(v)
+                M.setTextStyleVariant(v ~= default_variant and v or nil, mod_id, elem, pfx)
+            end,
+            refresh = refresh,
+            family  = family,
+            default = default_variant,
+        })
     end
 
-    -- Font + Size are independent controls: no value on the parent row
-    -- (chevron only), so the user is not shown a single ambiguous summary.
-    return {
-        text           = opts.title,
-        sub_item_table = {
-            {
-                text                = _lc("Font"),
-                value_func          = familyLabel,
-                sub_item_table_func = familyMenuItems,
-            },
-            M.makeScaleItem({
-                text_func = function() return _lc("Size") end,
-                title     = opts.title,
-                info      = opts.info,
-                get       = function() return M.getTextStyleScalePct(mod_id, elem, pfx) end,
-                set       = function(v) M.setTextStyleScale(v, mod_id, elem, pfx) end,
-                refresh    = refresh,
-                value_step = 5,
-            }),
+    local entries = {
+        { text = _lc("Font"), value_func = familyLabel, sub_item_table_func = familyMenuItems },
+        {
+            text                = _lc("Style"),
+            value_func          = function() return SUIStyle.variantLabel(variant()) end,
+            sub_item_table_func = variantMenuItems,
         },
     }
+    if not opts.family_only then
+        table.insert(entries, 2, M.makeScaleItem({
+            text_func = function() return _lc("Size") end,
+            title     = opts.title,
+            info      = opts.info,
+            get       = function() return M.getTextStyleScalePct(mod_id, elem, pfx) end,
+            set       = function(v) M.setTextStyleScale(v, mod_id, elem, pfx) end,
+            refresh    = refresh,
+            value_step = 5,
+        }))
+    end
+    -- The controls are independent: no value on the parent row (chevron
+    -- only), so the user is not shown a single ambiguous summary.
+    return { text = opts.title, sub_item_table = entries }
+end
+
+-- Item of one element of a text section; `opts` are the section's options.
+local function _textElementItem(opts, elem, title)
+    return M.makeTextStyleItem({
+        mod_id      = opts.mod_id,
+        elem        = elem,
+        title       = title,
+        info        = opts.info,
+        pfx         = opts.pfx,
+        refresh     = opts.refresh,
+        _lc         = opts._lc,
+        family_only = opts.family_only,
+    })
 end
 
 -- "Fonts" submenu entry: one text-style item per element of `opts.elems`.
@@ -997,16 +1058,7 @@ function M.makeTextStyleMenu(opts)
     local _lc = opts._lc or _
     local items = {}
     for _i, elem in ipairs(opts.elems) do
-        items[#items + 1] = M.makeTextStyleItem({
-            mod_id      = opts.mod_id,
-            elem        = elem,
-            title       = opts.labels[elem],
-            info        = opts.info,
-            pfx         = opts.pfx,
-            refresh     = opts.refresh,
-            _lc         = _lc,
-            family_only = opts.family_only,
-        })
+        items[#items + 1] = _textElementItem(opts, elem, opts.labels[elem])
     end
     local title = opts.section_title or _lc("Text")
     return {
@@ -1017,23 +1069,14 @@ end
 
 -- Typography block: one element → a single entry (Label / element title);
 -- several elements → a "Text" submenu. Layout scales do not belong here.
--- opts: same as makeTextStyleMenu (mod_id, elems, labels, pfx, refresh, _lc, info, family_only)
+-- opts: same as makeTextStyleMenu
 function M.makeTextSection(opts)
     local elems = opts.elems
     if not elems or #elems == 0 then return nil end
-    local _lc = opts._lc or _
     if #elems == 1 then
         local elem = elems[1]
-        return M.makeTextStyleItem({
-            mod_id      = opts.mod_id,
-            elem        = elem,
-            title       = (opts.labels and opts.labels[elem]) or _lc("Label"),
-            info        = opts.info,
-            pfx         = opts.pfx,
-            refresh     = opts.refresh,
-            _lc         = _lc,
-            family_only = opts.family_only,
-        })
+        local _lc = opts._lc or _
+        return _textElementItem(opts, elem, (opts.labels and opts.labels[elem]) or _lc("Label"))
     end
     return M.makeTextStyleMenu(opts)
 end
@@ -1141,13 +1184,12 @@ local function _chromeBarId(bar)
     return assert(CHROME_BARS[bar], "unknown chrome bar: " .. tostring(bar))
 end
 
--- Font family chosen for the labels of `bar` ("navbar" | "quick_settings"),
--- or nil for the default.
-function M.getChromeLabelFamily(bar)
-    return M.getTextStyle(_chromeBarId(bar), CHROME_ELEM, CHROME_PFX).family
+-- Text style (family, variant) of the labels of `bar` ("navbar" | "quick_settings").
+function M.getChromeLabelStyle(bar)
+    return M.getTextStyle(_chromeBarId(bar), CHROME_ELEM, CHROME_PFX)
 end
 
--- Font-only picker entry for the labels of a chrome bar.
+-- Font and Style picker entry for the labels of a chrome bar.
 -- opts: { bar, title, refresh, _lc }
 function M.makeChromeLabelFontItem(opts)
     return M.makeTextStyleItem({

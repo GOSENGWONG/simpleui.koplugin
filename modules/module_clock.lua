@@ -417,7 +417,7 @@ end
 -- getSize() sometimes reports incorrect heights before the first paint.
 -- ---------------------------------------------------------------------------
 
-local function _buildWordClockWidget(text, face, inner_w, align)
+local function _buildWordClockWidget(text, face, bold, inner_w, align)
     -- Split the "Hour\nMinutes" string into two parts.
     local nl = text:find("\n")
     local line1 = nl and text:sub(1, nl - 1) or text
@@ -428,7 +428,7 @@ local function _buildWordClockWidget(text, face, inner_w, align)
     if align == "right" then ContainerClass = RightContainer end
 
     -- Measure a single line height once.
-    local probe = TextWidget:new{ text = line1, face = face, bold = true }
+    local probe = TextWidget:new{ text = line1, face = face, bold = bold }
     local line_h = probe:getSize().h
     probe:free()
 
@@ -436,7 +436,7 @@ local function _buildWordClockWidget(text, face, inner_w, align)
         local wgt = UI.makeColoredText{
             text    = txt,
             face    = face,
-            bold    = true,
+            bold    = bold,
         }
         if not wgt.dimen then wgt.dimen = wgt:getSize() end
         return ContainerClass:new{
@@ -618,6 +618,9 @@ end
 -- Size lives only in Config text styles (_text_scale_*); no parallel scale keys.
 local TEXT_ELEMS = { "clock", "date", "battery" }
 
+-- The time is bold until the user picks another variant.
+Config.declareTextVariants("clock", { clock = "bold" })
+
 -- One-shot: copy legacy *_elem_scale values into text-style scales, then delete
 -- the legacy keys. Runs at most once per prefix per process.
 local _LEGACY_ELEM = { clock = "clock", date = "date", battery = "batt" }
@@ -689,7 +692,8 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
             local is_12h = G_reader_settings:isTrue("twelve_hour_clock")
             local t      = os.date("*t", os.time())
             local wc_text = timeToWords(t.hour, t.min, is_12h)
-            vg[#vg+1] = _buildWordClockWidget(wc_text, SUIStyle.getFamilyFace(styles.clock.family, word_fs), inner_w, align)
+            local face_word, bold_word = SUIStyle.getTextFace(styles.clock, word_fs)
+            vg[#vg+1] = _buildWordClockWidget(wc_text, face_word, bold_word, inner_w, align)
         elseif clock_style == "analogue" then
             local diameter = math.min(clock_span, inner_w)
             if diameter % 2 == 1 then diameter = diameter - 1 end
@@ -701,23 +705,26 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
                 }
             end
         else
+            local face_clock, bold_clock = SUIStyle.getTextFace(styles.clock, clock_fs)
             vg[#vg+1] = ContainerClass:new{
                 dimen = Geom:new{ w = inner_w, h = clock_w },
                 wrapText(UI.makeColoredText{
                     text    = datetime.secondsToHour(os.time(), G_reader_settings:isTrue("twelve_hour_clock")),
-                    face    = SUIStyle.getFamilyFace(styles.clock.family, clock_fs),
-                    bold    = true,
+                    face    = face_clock,
+                    bold    = bold_clock,
                 }),
             }
         end
     end
 
     local function appendDate()
+        local face_date, bold_date = SUIStyle.getTextFace(styles.date, date_fs)
         vg[#vg+1] = ContainerClass:new{
             dimen = Geom:new{ w = inner_w, h = date_h },
             wrapText(UI.makeColoredText{
                 text    = _localDate(),
-                face    = SUIStyle.getFamilyFace(styles.date.family, date_fs),
+                face    = face_date,
+                bold    = bold_date,
                 fgcolor = sub_fg,
             }),
         }
@@ -725,11 +732,13 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
 
     local function appendBattery()
         local lvl, charging = _battInfo()
+        local face_batt, bold_batt = SUIStyle.getTextFace(styles.battery, batt_fs)
         vg[#vg+1] = ContainerClass:new{
             dimen = Geom:new{ w = inner_w, h = batt_h },
             wrapText(UI.makeColoredText{
                 text    = _battText(lvl, charging),
-                face    = SUIStyle.getFamilyFace(styles.battery.family, batt_fs),
+                face    = face_batt,
+                bold    = bold_batt,
                 fgcolor = sub_fg,
             }),
         }

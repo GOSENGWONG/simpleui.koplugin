@@ -204,6 +204,7 @@ local function buildQAWidget(w, action_ids, show_labels, on_tap_fn, d, shape, bg
             lbl_h          = lbl_h,
             lbl_fs         = d.lbl_fs,
             lbl_face       = d.lbl_face,
+            lbl_bold       = d.lbl_bold,
             lbl_max_width  = d.frame_sz,
             lbl_truncate   = true,
             on_tap_fn      = on_tap_fn,
@@ -547,7 +548,7 @@ local function makeInstance(inst_id)
         _migrateLabelScale(S.id, ctx.pfx)
         local styles = Config.resolveTextStyles(ctx, S.id, S.text_elems)
         d.lbl_fs = math.max(6, math.floor(d.lbl_fs * lf * (styles.label.scale or 1)))
-        d.lbl_face = SUIStyle.getFamilyFace(styles.label.family, d.lbl_fs)
+        d.lbl_face, d.lbl_bold = SUIStyle.getTextFace(styles.label, d.lbl_fs)
         return buildQAWidget(w, qa_ids, show_labels, ctx.on_qa_tap, d, getShape(ctx.pfx), getBg(ctx.pfx), nil, getAlign(ctx.pfx), getBtnStrength(ctx.pfx))
     end
 

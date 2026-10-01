@@ -582,6 +582,9 @@ M.is_book_mod = true   -- suppresses empty-state when active
 -- Text elements with a user-selectable font family and size.
 M.text_elems  = { "title", "author", "info" }
 
+-- The title is bold until the user picks another variant.
+Config.declareTextVariants(M.id, { title = "bold" })
+
 function M.reset()
     _SH                 = nil
     _bstats_cache       = {}
@@ -922,8 +925,8 @@ function M.build(w, ctx)
     local styles    = Config.resolveTextStyles(ctx, M.id, M.text_elems)
     local title_fs, author_fs, info_fs = fontSizes(scale, lbl_scale, styles)
     local bar_h     = math.max(1, math.floor(Screen:scaleBySize(8) * scale))
-    local face_title = SUIStyle.getFamilyFace(styles.title.family, title_fs)
-    local face_info  = SUIStyle.getFamilyFace(styles.info.family,  info_fs)
+    local face_title, bold_title = SUIStyle.getTextFace(styles.title, title_fs)
+    local face_info,  bold_info  = SUIStyle.getTextFace(styles.info,  info_fs)
 
     -- Title widget (capped to full cover block including side peeks)
     local title_widget
@@ -931,7 +934,7 @@ function M.build(w, ctx)
         title_widget  = UI.makeColoredText{
             text      = truncateToWidth(bd.title, face_title, covers_block_w),
             face      = face_title,
-            bold      = true,
+            bold      = bold_title,
             fgcolor   = CLR_TEXT_EFF,
             width     = covers_block_w,
             alignment = "center",
@@ -943,10 +946,11 @@ function M.build(w, ctx)
     if show_author then
         local author_text = _formatAuthors(bd.authors)
         if author_text then
-            local face_author = SUIStyle.getFamilyFace(styles.author.family, author_fs)
+            local face_author, bold_author = SUIStyle.getTextFace(styles.author, author_fs)
             author_widget = UI.makeColoredText{
                 text      = truncateToWidth(author_text, face_author, covers_block_w),
                 face      = face_author,
+                bold      = bold_author,
                 fgcolor   = CLR_TEXT_SUB_EFF,
                 width     = covers_block_w,
                 alignment = "center",
@@ -1013,6 +1017,7 @@ function M.build(w, ctx)
         local stats_w = UI.makeColoredText{
             text      = "",
             face      = face_info,
+            bold      = bold_info,
             fgcolor   = CLR_TEXT_SUB_EFF,
             width     = stats_max_w,
             alignment = "center",
@@ -1236,11 +1241,11 @@ function M.getHeight(ctx)
     local title_fs, author_fs, info_fs = fontSizes(scale, lbl_scale, styles)
 
     if show_title then
-        h = h + SUIStyle.lineReserve(styles.title.family, title_fs, title_fs) + PAD2
+        h = h + SUIStyle.lineReserve(styles.title, title_fs, title_fs) + PAD2
     end
 
     if show_author then
-        h = h + SUIStyle.lineReserve(styles.author.family, author_fs, author_fs) + PAD2
+        h = h + SUIStyle.lineReserve(styles.author, author_fs, author_fs) + PAD2
     end
 
     local has_meta = false
@@ -1251,7 +1256,7 @@ function M.getHeight(ctx)
 
     if vis.has_stat and vis.show_stats ~= false then
         if has_meta then h = h + PAD2 end
-        h        = h + SUIStyle.lineReserve(styles.info.family, info_fs,
+        h        = h + SUIStyle.lineReserve(styles.info, info_fs,
             math.floor(Screen:scaleBySize(14) * scale * lbl_scale))
         has_meta = true
     end

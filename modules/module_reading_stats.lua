@@ -216,7 +216,7 @@ local function makeStreakValWidget(val_str, d, clr_blk)
         UI.makeColoredText{
             text    = val_str,
             face    = d.face_val,
-            bold    = true,
+            bold    = d.bold_val,
             fgcolor = clr_blk or SUIStyle.COLOR.text_primary,
         },
     }
@@ -234,7 +234,7 @@ local function _buildCardInner(stat_id, stats, d, align, clr_blk, clr_sub, max_w
             or  UI.makeColoredText{ 
                     text = val_str, 
                     face = d.face_val, 
-                    bold = true, 
+                    bold = d.bold_val, 
                     fgcolor = clr_blk,
                     max_width = actual_max_w,
                     truncate_with_ellipsis = true
@@ -242,6 +242,7 @@ local function _buildCardInner(stat_id, stats, d, align, clr_blk, clr_sub, max_w
         UI.makeColoredText{
             text    = lbl_str,
             face    = d.face_lbl,
+            bold    = d.bold_lbl,
             fgcolor = clr_sub,
             max_width = actual_max_w,
             truncate_with_ellipsis = true,
@@ -410,6 +411,9 @@ M.default_on = false
 -- Text elements with a user-selectable font family. Their size follows the
 -- card width and the module text size.
 M.text_elems = { "value", "label" }
+
+-- The values are bold until the user picks another variant.
+Config.declareTextVariants(M.id, { value = "bold" })
 M.MAX_ITEMS  = RS_N_COLS   -- public field instead of getMaxItems() function
 
 function M.isEnabled(pfx)
@@ -494,6 +498,8 @@ function M.build(w, ctx)
     -- Placeholder ("no stats selected") isn't card text — it spans the full
     -- row, so it keeps the old fixed-pixel/lf-scaled sizing.
     local _ph_fs  = math.max(8, math.floor(_BASE_RS_PH_FS  * scale))
+    local face_val, bold_val = SUIStyle.getTextFace(styles.value, _val_fs)
+    local face_lbl, bold_lbl = SUIStyle.getTextFace(styles.label, _lbl_fs)
     local d = {
         card_h   = card_h,
         gap      = gap,
@@ -504,8 +510,8 @@ function M.build(w, ctx)
         ph_fs    = _ph_fs,
         -- Pre-resolved font faces — shared by all card builders, avoids
         -- repeated face lookups inside the per-card build loop.
-        face_val  = SUIStyle.getFamilyFace(styles.value.family, _val_fs),
-        face_lbl  = SUIStyle.getFamilyFace(styles.label.family, _lbl_fs),
+        face_val  = face_val,  bold_val = bold_val,
+        face_lbl  = face_lbl,  bold_lbl = bold_lbl,
         -- The streak icon is a symbol glyph the chosen family may lack.
         face_icon = Font:getFace(SUIStyle.FACE_REGULAR, _val_fs),
         face_ph   = Font:getFace(SUIStyle.FACE_REGULAR, _ph_fs),

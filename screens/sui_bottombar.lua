@@ -297,10 +297,16 @@ function M.LABEL_FS()    return _cached("lbl_fs",  function()
     local base = (ok and ss and ss.FS_DETAIL) or 15  -- FS_DETAIL (15)
     return math.floor(base * _getNavbarScale() * (_getLabelScalePct() / 100))
 end) end
--- Label face: the chosen font family at the label size, resolved once per cache cycle.
-function M.LABEL_FACE()  return _cached("lbl_face", function()
-    return _SUIStyle().getFamilyFace(Config.getChromeLabelFamily("navbar"), M.LABEL_FS())
-end) end
+-- Label font: the chosen family and variant at the label size, resolved once
+-- per cache cycle. The active tab adds bold to the chosen variant.
+-- Returns face, bold (whether the text widget must still embolden the face).
+function M.LABEL_FONT(active)
+    local font = _cached(active and "lbl_font_active" or "lbl_font", function()
+        local face, bold = _SUIStyle().getTextFace(Config.getChromeLabelStyle("navbar"), M.LABEL_FS(), active)
+        return { face = face, bold = bold }
+    end)
+    return font.face, font.bold
+end
 function M.INDIC_H()     return _cached("indic_h", function() return math.floor(Screen:scaleBySize(3)  * _getNavbarScale()) end) end
 
 -- Structural dimensions — not affected by the size setting.
@@ -548,11 +554,13 @@ function M.buildTabCell(action_id, active, tab_w, mode)
         inactive_indicator_color = _getBarBg() or _SUIStyle().COLOR.surface
     end
 
+    local lbl_face, lbl_bold = M.LABEL_FONT(active)
     local og = _QARenderer().buildTabCell(action_id, active, {
         tab_w                    = tab_w,
         bar_h                    = M.BAR_H(),
         icon_sz                  = M.ICON_SZ(),
-        lbl_face                 = M.LABEL_FACE(),
+        lbl_face                 = lbl_face,
+        lbl_bold                 = lbl_bold,
         icon_txt_sp              = M.ICON_TXT_SP(),
         indic_h                  = M.INDIC_H(),
         mode                     = mode,
@@ -604,9 +612,11 @@ function M.buildNavpagerArrowCell(is_prev, enabled, tab_w, mode)
             if not _vspan_icon_txt then _vspan_icon_txt = VerticalSpan():new{ width = M.ICON_TXT_SP() } end
             vg[#vg + 1] = _vspan_icon_txt
         end
+        local lbl_face, lbl_bold = M.LABEL_FONT(false)
         tw = TextWidget():new{
             text    = label,
-            face    = M.LABEL_FACE(),
+            face    = lbl_face,
+            bold    = lbl_bold,
             fgcolor = color,
         }
         vg[#vg + 1] = tw

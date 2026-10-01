@@ -32,10 +32,13 @@
 --   M.is_book_mod    bool?    true → suppresses the "No books opened yet" empty-state
 --                             (equivalent to "currently"/"recent"/"coverdeck")
 --   M.text_elems     string[]?  ids of the text elements with a user-selectable
---                             font family and size scale (see Config.makeTextStyleMenu).
---                             Each style is { family, scale }. The screen engine reads
---                             them into ctx.cfg[M.id].text; render multiplies scale into
---                             the element font size.
+--                             font family, size scale and variant (regular, bold,
+--                             italic, bold italic; see Config.makeTextStyleMenu).
+--                             Each style is { family, scale, variant }. The screen engine
+--                             reads them into ctx.cfg[M.id].text; render multiplies scale
+--                             into the element font size and draws the face with
+--                             SUIStyle.getTextFace. Elements that are not regular by
+--                             default are declared with Config.declareTextVariants.
 --
 --   M.isEnabled(pfx)         → bool         (optional; replaces enabled_key)
 --   M.build(w, ctx)          → widget | nil
@@ -421,7 +424,7 @@ function Registry.purgeInstanceSettings(inst_id, pfx)
     -- "_scale_pct" / "_item_label_scale_pct" entries in this list never matched
     -- any saved key (pre-existing bug, fixed here).
     local suffixes = { "_enabled", "_shape", "_bg", "_items", "_labels",
-                       "_scale", "_gap_pct", "_item_label_scale", "_text_font_label",
+                       "_scale", "_gap_pct", "_item_label_scale",
                        -- used by Featured Collection / sui_book_grid.lua:
                        "_coll_name", "_thumb_scale",
                        "_show_progress", "_show_text", "_show_overlay",
@@ -431,6 +434,10 @@ function Registry.purgeInstanceSettings(inst_id, pfx)
         SUISettings:set(pfx    .. inst_id .. s, nil)
         SUISettings:set(qa_pfx .. inst_id .. s, nil)
     end
+    -- Per-element text styles (font, size, variant) of the instance.
+    local Config = require("infra/sui_config")
+    Config.resetTextStyles(inst_id, { "label" }, pfx)
+    Config.resetTextStyles(inst_id, { "label" }, qa_pfx)
     -- Also the bare keys used by build/getHeight.
     SUISettings:set(qa_pfx .. inst_id .. "_items",  nil)
     SUISettings:set(qa_pfx .. inst_id .. "_labels", nil)

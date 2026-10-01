@@ -819,7 +819,7 @@ function GridRenderer.build(w, ctx, opts)
     -- visual frame of each cover on both sides; between rows, that full
     -- distance reads as too loose, making the two rows look like one block.
     local row_gap = math.max(0, math.floor(gap / 2))
-    local pct_face = SUIStyle.getFamilyFace(styles.label.family, pct_fs)
+    local pct_face, pct_bold = SUIStyle.getTextFace(styles.label, pct_fs)
 
     local progress_style     = GridRenderer.getProgressStyle(pfx, id, progress_style_cfg)
     local draw_progress      = progress_style == "bar"  or progress_style == "bar_text"
@@ -827,12 +827,9 @@ function GridRenderer.build(w, ctx, opts)
     local use_overlay        = progress_style == "overlay"
     local use_progress_badge = progress_style == "badge"
 
-    -- Real line height for pct_face, measured via freetype
-    -- (face.ftsize:getHeightAndAscender(), the same API TextWidget:
-    -- updateSize() uses) rather than a fixed constant, so the row always
-    -- reserves at least as much height as the label actually needs.
-    local ok_h, face_height = pcall(function() return pct_face.ftsize:getHeightAndAscender() end)
-    local label_h = (ok_h and face_height and math.ceil(face_height)) or math.ceil(pct_fs * 1.8)
+    -- Measured line height of pct_face (not a fixed constant), so the row
+    -- always reserves at least as much height as the label needs.
+    local label_h = SUIStyle.faceHeight(pct_face)
 
     local badge_r = math.floor(cw * 0.28)
     -- draw_progress/draw_text (computed above, once, same for the whole
@@ -920,7 +917,7 @@ function GridRenderer.build(w, ctx, opts)
                     UI.makeColoredText{
                         text    = string.format(_("%d%%"), pct_int),
                         face    = pct_face,
-                        bold    = true,
+                        bold    = pct_bold,
                         fgcolor = _clr_blk,
                     },
                 },
@@ -979,7 +976,7 @@ function GridRenderer.build(w, ctx, opts)
                 text      = opts.labelForItem and opts.labelForItem(bd)
                             or string.format(_("%d%% Read"), math.floor((bd.percent or 0) * 100 + 0.5)),
                 face      = pct_face,
-                bold      = true,
+                bold      = pct_bold,
                 fgcolor   = _pct_fg,
                 max_width = cw,
                 truncate_with_ellipsis = true,
@@ -1390,9 +1387,7 @@ function GridRenderer.getHeight(_ctx, opts)
     local draw_text      = progress_style == "text" or progress_style == "bar_text"
     local use_overlay    = progress_style == "overlay"
     local pct_fs   = math.max(8, math.floor(_BASE_RB_PCT_FS * scale * (styles.label.scale or 1)))
-    local pct_face = SUIStyle.getFamilyFace(styles.label.family, pct_fs)
-    local ok_h, face_height = pcall(function() return pct_face.ftsize:getHeightAndAscender() end)
-    local label_h  = (ok_h and face_height and math.ceil(face_height)) or math.ceil(pct_fs * 1.8)
+    local label_h  = SUIStyle.faceHeight((SUIStyle.getTextFace(styles.label, pct_fs)))
     -- opts.getCellHeight: see the twin note in build() — must return
     -- exactly the same value for the same cw, or the height reserved here
     -- diverges from the actual drawn content.
@@ -1703,6 +1698,8 @@ function GridRenderer.makeModule(spec)
     M.has_covers  = true
     -- Under-cover text (progress % / custom labelForItem / collection name).
     M.text_elems  = spec.text_elems or { "label" }
+    -- The label is bold until the user picks another variant.
+    Config.declareTextVariants(id, { label = "bold" })
     if spec.is_book_mod then M.is_book_mod = true end
     if spec.isEnabled    then M.isEnabled    = spec.isEnabled end
     if spec.reset         then M.reset         = spec.reset end

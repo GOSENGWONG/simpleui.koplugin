@@ -142,7 +142,7 @@ local function buildPanel(touch_menu)
     local icon_size = math.floor(btn_size * 0.52)
     local ok_style, SUIStyle = pcall(require, "features/sui_style")
     local lbl_fs    = math.max(6, math.floor((ok_style and SUIStyle.FS_DETAIL or 15) * (getLabelScalePct() / 100)))
-    local lbl_face  = SUIStyle.getFamilyFace(_Config().getChromeLabelFamily("quick_settings"), lbl_fs)
+    local lbl_face, lbl_bold = SUIStyle.getTextFace(_Config().getChromeLabelStyle("quick_settings"), lbl_fs)
     local border_sz = ok_style and SUIStyle.BORDER_SZ or 1
 
     local function makeButton(action_id)
@@ -159,6 +159,7 @@ local function buildPanel(touch_menu)
             lbl_h        = lbl_face.size,
             lbl_fs       = lbl_fs,
             lbl_face     = lbl_face,
+            lbl_bold     = lbl_bold,
             lbl_w        = btn_size + Screen:scaleBySize(6),
             lbl_width    = btn_size + Screen:scaleBySize(6),
         })
@@ -1351,7 +1352,7 @@ function QSBar.makeMenuItems(ctx_menu)
 
     local Config = require("infra/sui_config")
     local master, item_rows, content_rows, appearance_extra, behaviour = {}, {}, {}, {}, {}
-    for _, row in ipairs(items) do
+    for _i, row in ipairs(items) do
         local label = row.text or ""
         if type(label) == "string" and label:find("Enable", 1, true) then
             master[#master + 1] = row

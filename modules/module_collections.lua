@@ -983,7 +983,6 @@ local function collectionsCellHeight(cw, pfx)
     local styles      = Config.resolveTextStyles({ pfx = pfx }, "collections", { "label" })
     local lbl_scale   = (styles.label and styles.label.scale) or 1
     local d = getDims(scale, thumb_scale, lbl_scale, cw, getHideSpine())
-    d.label_family = styles.label and styles.label.family
     return d.coll_cell_h
 end
 
@@ -1009,7 +1008,6 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     -- separately so it stays uniform across every cell on screen.
     local style = _resolveCoverStyleForCount(getCoverStyle(), count)
     local d     = getDims(scale, thumb_scale, lbl_scale, cw, getHideSpine(), getBadgeScale())
-    d.label_family = styles.label and styles.label.family
 
     local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
     local CLR_ACCENT_EFF   = SUIStyle.COLOR.text_primary
@@ -1033,10 +1031,11 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
 
     -- Single-line label capped to cover width (same truncation pattern as
     -- GridRenderer / Recent progress labels).
+    local label_face, label_bold = SUIStyle.getTextFace(styles.label, d.coll_lbl_fs)
     local label_w = UI.makeColoredText{
         text                   = display_name,
-        face                   = SUIStyle.getFamilyFace(d.label_family, d.coll_lbl_fs),
-        bold                   = true,
+        face                   = label_face,
+        bold                   = label_bold,
         fgcolor                = CLR_TEXT_SUB_EFF,
         max_width              = d.coll_w,
         truncate_with_ellipsis = true,

@@ -146,6 +146,7 @@ local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, c
             icon_sz        = d.icon_sz,
             icon_gap       = d.icon_gap,
             lbl_face       = d.lbl_face,
+            lbl_bold       = d.lbl_bold,
             fgcolor        = clr_blk,
             align          = align,
             icon_opts      = icon_opts,
@@ -256,7 +257,7 @@ function M.build(w, ctx)
     _migrateLabelScale(MOD_ID, ctx.pfx)
     local styles = Config.resolveTextStyles(ctx, MOD_ID, M.text_elems)
     d.fs = math.max(8, math.floor(d.fs * lf * (styles.label.scale or 1)))
-    d.lbl_face = SUIStyle.getFamilyFace(styles.label.family, d.fs)
+    d.lbl_face, d.lbl_bold = SUIStyle.getTextFace(styles.label, d.fs)
     return buildListWidget(w, qa_ids, show_icons, align, ctx.on_qa_tap, d)
 end
 

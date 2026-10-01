@@ -1906,7 +1906,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
             },
         }
         local master, item_rows, size_rows, appearance_extra = {}, {}, {}, {}
-        for _, row in ipairs(flat) do
+        for _i, row in ipairs(flat) do
             local label = row.text
             if type(label) ~= "string" and row.text_func then
                 local ok, v = pcall(row.text_func)

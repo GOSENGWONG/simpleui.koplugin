@@ -809,7 +809,7 @@ function SUIPresets.makeMenuItems(opts)
                                             end
                                         end
                                         
-                                        for _, name in ipairs(current_names) do
+                                        for _i, name in ipairs(current_names) do
                                             local _name = name
                                             rows[#rows + 1] = SUIWindow2.ListRow{
                                                 title   = _name,

@@ -488,7 +488,8 @@ end
 --   icon_opts                — forwarded to buildIcon (see its doc comment).
 --   show_label, lbl_sp, lbl_h, lbl_fs, lbl_face  — label row, shown below the
 --     frame when show_label is true. lbl_face is a resolved font face; without
---     it the default UI face at lbl_fs is used.
+--     it the default UI face at lbl_fs is used. lbl_bold asks the text widget
+--     to embolden the label (the face has no bold file of its own).
 --   lbl_w                    — label CenterContainer width (default frame_sz).
 --   lbl_width                — sets TextWidget.width directly (wrapping, no
 --     truncation) — used by the Quick Settings bar.
@@ -531,6 +532,7 @@ function QARenderer.buildCell(action_id, spec)
             TextWidget():new{
                 text                   = entry.label,
                 face                   = _labelFace(spec),
+                bold                   = spec.lbl_bold,
                 fgcolor                = fgcolor,
                 width                  = spec.lbl_width,
                 max_width              = spec.lbl_max_width,
@@ -555,7 +557,7 @@ end
 --   inner_w, row_h            — required.
 --   show_icon, icon_sz, icon_gap, icon_opts  — icon column, omitted entirely
 --     when show_icon is false.
---   lbl_fs, lbl_face          — label text; same convention as buildCell.
+--   lbl_fs, lbl_face, lbl_bold — label text; same convention as buildCell.
 --   fgcolor                   — icon/label color.
 --   align                     — "left" / "right" / anything else → centered.
 --   on_tap_fn, tap_event_name — tap dispatch, same convention as buildCell.
@@ -576,6 +578,7 @@ function QARenderer.buildListRow(action_id, spec)
     local label_tw = ui.makeColoredText{
         text    = entry.label,
         face    = _labelFace(spec),
+        bold    = spec.lbl_bold,
         fgcolor = fgcolor,
         width   = text_w,
         padding = 0,
@@ -628,7 +631,8 @@ end
 --
 -- spec fields:
 --   tab_w, bar_h, icon_sz, icon_txt_sp, indic_h  — required sizing.
---   lbl_face    — font face of the tab label; same convention as buildCell.
+--   lbl_face, lbl_bold — font face of the tab label and its emboldening flag;
+--     same convention as buildCell.
 --   mode        — "icons" / "text" / "both".
 --   bar_style   — "default" (draws the active-indicator line) / "framed"
 --     (raster icons render via buildFramedIcon) / anything else (no indicator).
@@ -678,7 +682,7 @@ function QARenderer.buildTabCell(action_id, active, spec)
             text    = entry.label,
             face    = _labelFace(spec),
             fgcolor = item_fg,
-            bold    = active or false,
+            bold    = spec.lbl_bold,
         }
     end
 

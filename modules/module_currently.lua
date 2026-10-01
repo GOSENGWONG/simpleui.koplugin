@@ -162,13 +162,17 @@ local _bstats_cache = {}
 -- Builds a progress bar with an inline percentage label: [▓▓▓░░░░] XX%
 -- Spacing below the bar is handled by gap_before() on the next element,
 -- consistent with how every other element in the layout works.
-local function buildProgressBarWithPct(w, pct, bar_h, scale, lbl_scale, face_inline, fg_color)
+local function buildProgressBarWithPct(w, pct, bar_h, scale, lbl_scale, face_inline, bold_inline, fg_color)
     local PCT_W   = math.max(16, math.floor(_BASE_PCT_W       * scale * lbl_scale))
     local GAP     = math.max(2,  math.floor(_BASE_BAR_PCT_GAP * scale))
     local bar_w   = math.max(10, w - GAP - PCT_W)
     local pct_str = string.format("%.0f%%", (pct or 0) * 100)
-    -- face_inline is pre-resolved by build(); fallback for direct calls.
-    local _face   = face_inline or Font:getFace(SUIStyle.FACE_REGULAR, math.max(7, math.floor(_BASE_INLINEPCT_FS * scale * lbl_scale)))
+    -- face_inline and bold_inline are pre-resolved by build(); fallback for
+    -- direct calls is the default font in bold.
+    local _face, _bold = face_inline, bold_inline
+    if not _face then
+        _face, _bold = SUIStyle.getStyledFace(nil, math.max(7, math.floor(_BASE_INLINEPCT_FS * scale * lbl_scale)), "bold")
+    end
     local _fg     = fg_color or SUIStyle.COLOR.text_primary
 
     local bar = UI.progressBar(bar_w, pct, bar_h)
@@ -180,7 +184,7 @@ local function buildProgressBarWithPct(w, pct, bar_h, scale, lbl_scale, face_inl
         UI.makeColoredText{
             text    = pct_str,
             face    = _face,
-            bold    = true,
+            bold    = _bold,
             fgcolor = _fg,
             width   = PCT_W,
         },
@@ -377,8 +381,13 @@ M.label       = _("Currently Reading")
 M.enabled_key = "currently_enabled"
 M.default_on  = true
 
--- Text elements with a user-selectable font family and size.
+-- Text elements with a user-selectable font family, size and variant.
 M.text_elems = { "title", "author", "series", "description", "stats" }
+
+-- The title is bold until the user picks another variant. The percentage
+-- shown with the progress bar is always emphasised on top of the "stats"
+-- variant.
+Config.declareTextVariants(M.id, { title = "bold" })
 
 M.has_covers  = true   -- activates e-ink dithering and cover poll
 M.is_book_mod = true   -- suppresses empty-state when active
@@ -420,17 +429,22 @@ local function _scaledLayoutDims(scale, _lbl_scale, styles)
 end
 
 -- _resolveFaces — the font face of every text element, shared by build() and
--- getHeight() for the same reason as _scaledLayoutDims. Elements with a
--- user-chosen family use it; the rest use the default UI face.
+-- getHeight() for the same reason as _scaledLayoutDims. Each face follows the
+-- element's chosen family and variant. Returns the faces and, under the same
+-- keys, whether the text widget must still embolden the face. The percentage
+-- adds bold to the "stats" variant.
 local function _resolveFaces(LD, styles)
-    return {
-        title  = SUIStyle.getFamilyFace(styles.title.family,       LD.title_fs),
-        author = SUIStyle.getFamilyFace(styles.author.family,      LD.author_fs),
-        series = SUIStyle.getFamilyFace(styles.series.family,      LD.series_fs),
-        desc   = SUIStyle.getFamilyFace(styles.description.family, LD.desc_fs),
-        pct    = SUIStyle.getFamilyFace(styles.stats.family, LD.pct_fs),
-        stats  = SUIStyle.getFamilyFace(styles.stats.family, LD.stats_fs),
-    }
+    local faces, embolden = {}, {}
+    local function resolve(key, elem, size, add_bold)
+        faces[key], embolden[key] = SUIStyle.getTextFace(styles[elem], size, add_bold)
+    end
+    resolve("title",  "title",       LD.title_fs)
+    resolve("author", "author",      LD.author_fs)
+    resolve("series", "series",      LD.series_fs)
+    resolve("desc",   "description", LD.desc_fs)
+    resolve("pct",    "stats",       LD.pct_fs, true)
+    resolve("stats",  "stats",       LD.stats_fs)
+    return faces, embolden
 end
 
 -- Cover width as a fraction of the module's own content width — the single
@@ -603,7 +617,7 @@ function M.build(w, ctx)
     local cover_gap = math.max(0, math.floor(_BASE_COVER_GAP * scale * (getCoverGapPct(pfx) / 100)))
 
     -- Resolve font faces once so they are not re-created per element.
-    local FC = _resolveFaces(LD, styles)
+    local FC, FB = _resolveFaces(LD, styles)
     local face_title, face_author, face_series, face_desc, face_pct, face_s =
         FC.title, FC.author, FC.series, FC.desc, FC.pct, FC.stats
 
@@ -673,9 +687,10 @@ function M.build(w, ctx)
 
     -- Inline pct on the progress bar uses the same Progress Text style as
     -- standalone percent / stats lines.
-    local face_inlinepct = SUIStyle.getFamilyFace(
-        styles.stats.family,
-        math.max(7, math.floor(_BASE_INLINEPCT_FS * scale * (styles.stats.scale or 1))))
+    local face_inlinepct, bold_inlinepct = SUIStyle.getTextFace(
+        styles.stats,
+        math.max(7, math.floor(_BASE_INLINEPCT_FS * scale * (styles.stats.scale or 1))),
+        true)
 
     -- Builds the text column (title/author/series/description/progress bar/
     -- stats) at the given width `tw`. Every element inside is either
@@ -740,7 +755,7 @@ function M.build(w, ctx)
             local title_args = {
                 text      = bd.title or "?",
                 face      = face_title,
-                bold      = true,
+                bold      = FB.title,
                 width     = tw,
                 height    = tbw_line_h * 2,
                 height_adjust = true,
@@ -772,6 +787,7 @@ function M.build(w, ctx)
                 meta[#meta+1] = UI.makeColoredText{
                     text            = author_text,
                     face            = face_author,
+                    bold            = FB.author,
                     fgcolor         = CLR_TEXT_SUB_EFF,
                     width           = tw,
                     max_width       = tw,
@@ -785,6 +801,7 @@ function M.build(w, ctx)
             meta[#meta+1] = UI.makeColoredText{
                 text            = series_text,
                 face            = face_series,
+                bold            = FB.series,
                 fgcolor         = CLR_TEXT_SUB_EFF,
                 width           = tw,
                 max_width       = tw,
@@ -804,6 +821,7 @@ function M.build(w, ctx)
             local desc_args = {
                 text      = bd.description,
                 face      = face_desc,
+                bold      = FB.desc,
                 width     = tw,
                 height    = desc_tbw_line_h * desc_max_lines,
                 height_adjust = true,
@@ -839,15 +857,16 @@ function M.build(w, ctx)
                 local _bar_sc   = scale
                 local _bar_lbl  = lbl_scale
                 local _bar_face = face_inlinepct
+                local _bar_bold = bold_inlinepct
                 local _bar_fg   = _CLR_DARK_EFF
-                local _init_bar = buildProgressBarWithPct(_bar_w, bd.percent, _bar_h, _bar_sc, _bar_lbl, _bar_face, _bar_fg)
+                local _init_bar = buildProgressBarWithPct(_bar_w, bd.percent, _bar_h, _bar_sc, _bar_lbl, _bar_face, _bar_bold, _bar_fg)
                 local bar_container = OverlapGroup:new{
                     dimen = _init_bar:getSize(),
                     _init_bar,
                 }
                 local function _update_bar(nb, nd)
                     bar_container[1] = buildProgressBarWithPct(
-                        _bar_w, (nd and nd.percent or 0), _bar_h, _bar_sc, _bar_lbl, _bar_face, _bar_fg)
+                        _bar_w, (nd and nd.percent or 0), _bar_h, _bar_sc, _bar_lbl, _bar_face, _bar_bold, _bar_fg)
                 end
                 table.insert(_cr_bd_only_funcs, _update_bar)
                 meta[#meta+1] = bar_container
@@ -875,7 +894,7 @@ function M.build(w, ctx)
             local pct_w = UI.makeColoredText{
                 text    = string.format(_("%d%% Read"), math.floor((bd.percent or 0) * 100 + 0.5)),
                 face    = face_pct,
-                bold    = true,
+                bold    = FB.pct,
                 fgcolor = _CLR_DARK_EFF,
                 width   = tw,
             }
@@ -895,7 +914,7 @@ function M.build(w, ctx)
             -- once activated, giving the user clear feedback that it exists.
             local has_data = bstats and bstats.days and bstats.days > 0
             gap_before(pct_gap)
-            local days_w = UI.makeColoredText{ text = "", face = face_s, fgcolor = CLR_PH_EFF, width = tw }
+            local days_w = UI.makeColoredText{ text = "", face = face_s, bold = FB.stats, fgcolor = CLR_PH_EFF, width = tw }
             local function _update(nb, nd)
                 local has_d = nb and nb.days and nb.days > 0
                 local days_lbl = has_d
@@ -912,7 +931,7 @@ function M.build(w, ctx)
             -- Placeholder when total time is not yet recorded.
             local has_data = bstats and bstats.total_secs and bstats.total_secs > 0
             gap_before(pct_gap)
-            local time_w = UI.makeColoredText{ text = "", face = face_s, fgcolor = CLR_PH_EFF, width = tw }
+            local time_w = UI.makeColoredText{ text = "", face = face_s, bold = FB.stats, fgcolor = CLR_PH_EFF, width = tw }
             local function _update(nb, nd)
                 local has_d = nb and nb.total_secs and nb.total_secs > 0
                 local text = has_d
@@ -932,7 +951,7 @@ function M.build(w, ctx)
             local pct_done = bd.percent or 0
             if pct_done < 1.0 then
                 gap_before(pct_gap)
-                local remain_w = UI.makeColoredText{ text = "", face = face_s, fgcolor = CLR_PH_EFF, width = tw }
+                local remain_w = UI.makeColoredText{ text = "", face = face_s, bold = FB.stats, fgcolor = CLR_PH_EFF, width = tw }
                 local function _update(nb, nd)
                     local avg_t
                     if nb and nb.avg_time and nb.avg_time > 0 then avg_t = nb.avg_time
@@ -999,6 +1018,7 @@ function M.build(w, ctx)
                 local stats_w = UI.makeColoredText{
                     text                    = text0,
                     face                    = face_s,
+                    bold                    = FB.stats,
                     fgcolor                 = fg0,
                     max_width               = tw,
                     truncate_with_ellipsis  = true,
