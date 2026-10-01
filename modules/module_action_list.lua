@@ -126,7 +126,9 @@ local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, c
     local inner_w = w - PAD * 2
     local n       = #valid_ids
 
-    local vg = VerticalGroup:new{ align = "center" }
+    -- Rows keep their natural width and are aligned against each other inside
+    -- the group, whose width is that of its widest row.
+    local vg = VerticalGroup:new{ align = align }
 
     -- icon_opts covers this row layout's one remaining structural
     -- difference from the other QA consumers: the icon sits beside a label
@@ -148,7 +150,6 @@ local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, c
             lbl_face       = d.lbl_face,
             lbl_bold       = d.lbl_bold,
             fgcolor        = clr_blk,
-            align          = align,
             icon_opts      = icon_opts,
             on_tap_fn      = on_tap_fn,
             tap_event_name = "TapAL",
@@ -160,8 +161,11 @@ local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, c
         vg[#vg + 1] = row_content
     end
 
+    -- `fit_align` makes the module chrome hug the list and position it within
+    -- the column (see ModuleChrome.wrap).
     return FrameContainer:new{
         bordersize = 0, padding = PAD, padding_top = 0, padding_bottom = 0,
+        fit_align = align,
         vg,
     }
 end

@@ -300,6 +300,23 @@ function M.setIcon(id, path)
 end
 
 -- ---------------------------------------------------------------------------
+-- Icon colours in night mode
+-- ---------------------------------------------------------------------------
+-- When enabled, coloured icons keep their original colours in night mode
+-- instead of being inverted with the rest of the frame (see
+-- sui_patches.patchIconNightColors). Monochrome icons are unaffected.
+
+local _ICON_NIGHT_COLORS_KEY = "simpleui_style_icons_night_colors"
+
+function M.keepIconColorsInNight()
+    return SUISettings:isTrue(_ICON_NIGHT_COLORS_KEY)
+end
+
+function M.setKeepIconColorsInNight(on)
+    SUISettings:set(_ICON_NIGHT_COLORS_KEY, on and true or false)
+end
+
+-- ---------------------------------------------------------------------------
 -- Icon path guard
 -- ---------------------------------------------------------------------------
 -- SUPPORTED_ICON_EXTS: formats that imagewidget.lua can actually load.

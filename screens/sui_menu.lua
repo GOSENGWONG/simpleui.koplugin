@@ -1905,17 +1905,18 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 },
             },
         }
-        local master, item_rows, size_rows, appearance_extra = {}, {}, {}, {}
-        for _i, row in ipairs(flat) do
+        -- The enable toggle is the first row and stays on top as the master row.
+        local master = { flat[1] }
+        local item_rows, size_rows, appearance_extra = {}, {}, {}
+        for i = 2, #flat do
+            local row = flat[i]
             local label = row.text
             if type(label) ~= "string" and row.text_func then
                 local ok, v = pcall(row.text_func)
                 if ok then label = v end
             end
             label = label or ""
-            if type(label) == "string" and label:find("Enable", 1, true) then
-                master[#master + 1] = row
-            elseif label == _("Library Buttons") or label == _("Sub-page Buttons") then
+            if label == _("Library Buttons") or label == _("Sub-page Buttons") then
                 item_rows[#item_rows + 1] = row
             elseif label == _("Button Size") then
                 size_rows[#size_rows + 1] = row
@@ -4394,6 +4395,18 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                             return items
                         end,
                         separator = true,
+                    },
+                    -- ── Night mode colours ────────────────────────────────────
+                    {
+                        text         = _("Don't Invert Colored Icons in Night Mode"),
+                        help_text    = _("Icons that contain color keep their original colors in night mode instead of being inverted.\nMonochrome icons are not affected and keep following the interface colors.\nRequires a color screen."),
+                        checked_func = function() return require("features/sui_style").keepIconColorsInNight() end,
+                        keep_menu_open = true,
+                        callback = function()
+                            local SUIStyle = require("features/sui_style")
+                            SUIStyle.setKeepIconColorsInNight(not SUIStyle.keepIconColorsInNight())
+                            _applyFullLayoutRefresh()
+                        end,
                     },
                 }, -- end Icons sub_item_table
             },   -- end Icons submenu

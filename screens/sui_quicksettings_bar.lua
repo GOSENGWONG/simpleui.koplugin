@@ -1351,12 +1351,13 @@ function QSBar.makeMenuItems(ctx_menu)
     }
 
     local Config = require("infra/sui_config")
-    local master, item_rows, content_rows, appearance_extra, behaviour = {}, {}, {}, {}, {}
-    for _i, row in ipairs(items) do
+    -- The enable toggle is the first row and stays on top as the master row.
+    local master = { items[1] }
+    local item_rows, content_rows, appearance_extra, behaviour = {}, {}, {}, {}
+    for i = 2, #items do
+        local row = items[i]
         local label = row.text or ""
-        if type(label) == "string" and label:find("Enable", 1, true) then
-            master[#master + 1] = row
-        elseif label == _("Quick Actions") then
+        if label == _("Quick Actions") then
             item_rows[#item_rows + 1] = row
         elseif label == _("Frontlight Slider") or label == _("Warmth Slider") then
             content_rows[#content_rows + 1] = row

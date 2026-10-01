@@ -12,8 +12,6 @@ local TextBoxWidget   = require("ui/widget/textboxwidget")
 local TextWidget      = require("ui/widget/textwidget")
 local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
-local LeftContainer   = require("ui/widget/container/leftcontainer")
-local RightContainer  = require("ui/widget/container/rightcontainer")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local Screen          = Device.screen
 local _ = require("infra/sui_i18n").translate
@@ -408,24 +406,37 @@ local function timeToWords(hour, min, is_12h)
 end
 
 -- ---------------------------------------------------------------------------
+-- Item slot
+--
+-- Wraps a widget in a row of fixed height and the widget's own width, with the
+-- widget vertically centred. The fixed height keeps the module height
+-- independent of font metrics (see M.getHeight).
+-- ---------------------------------------------------------------------------
+
+local function _slot(wgt, h)
+    local size = wgt:getSize()
+    if not wgt.dimen then wgt.dimen = size end
+    return CenterContainer:new{
+        dimen = Geom:new{ w = size.w, h = h },
+        wgt,
+    }
+end
+
+-- ---------------------------------------------------------------------------
 -- Word clock widget builder
 --
--- Returns a VerticalGroup containing two TextBoxWidget lines (hour + minutes)
--- so that each line can be centred/aligned independently within inner_w.
+-- Returns a VerticalGroup containing two lines (hour + minutes), aligned
+-- relative to each other by `align`.
 -- Using two separate widgets (rather than one multi-line TextBoxWidget) gives
 -- us reliable height control on e-ink devices, where multi-line TextBoxWidget
 -- getSize() sometimes reports incorrect heights before the first paint.
 -- ---------------------------------------------------------------------------
 
-local function _buildWordClockWidget(text, face, bold, inner_w, align)
+local function _buildWordClockWidget(text, face, bold, align)
     -- Split the "Hour\nMinutes" string into two parts.
     local nl = text:find("\n")
     local line1 = nl and text:sub(1, nl - 1) or text
     local line2 = nl and text:sub(nl + 1)    or ""
-
-    local ContainerClass = CenterContainer
-    if align == "left"  then ContainerClass = LeftContainer  end
-    if align == "right" then ContainerClass = RightContainer end
 
     -- Measure a single line height once.
     local probe = TextWidget:new{ text = line1, face = face, bold = bold }
@@ -433,16 +444,11 @@ local function _buildWordClockWidget(text, face, bold, inner_w, align)
     probe:free()
 
     local function makeLine(txt)
-        local wgt = UI.makeColoredText{
-            text    = txt,
-            face    = face,
-            bold    = bold,
-        }
-        if not wgt.dimen then wgt.dimen = wgt:getSize() end
-        return ContainerClass:new{
-            dimen = Geom:new{ w = inner_w, h = line_h },
-            wgt,
-        }
+        return _slot(UI.makeColoredText{
+            text = txt,
+            face = face,
+            bold = bold,
+        }, line_h)
     end
 
     local vg = VerticalGroup:new{ align = align }
@@ -676,16 +682,7 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
     local sub_fg = CLR_TEXT_SUB
 
     local align = getAlignment(pfx)
-    local ContainerClass = CenterContainer
-    if align == "left" then ContainerClass = LeftContainer
-    elseif align == "right" then ContainerClass = RightContainer end
-
     local vg = VerticalGroup:new{ align = align }
-
-    local function wrapText(wgt)
-        if not wgt.dimen then wgt.dimen = wgt:getSize() end
-        return wgt
-    end
 
     local function appendClock()
         if clock_style == "word" then
@@ -693,55 +690,41 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
             local t      = os.date("*t", os.time())
             local wc_text = timeToWords(t.hour, t.min, is_12h)
             local face_word, bold_word = SUIStyle.getTextFace(styles.clock, word_fs)
-            vg[#vg+1] = _buildWordClockWidget(wc_text, face_word, bold_word, inner_w, align)
+            vg[#vg+1] = _buildWordClockWidget(wc_text, face_word, bold_word, align)
         elseif clock_style == "analogue" then
             local diameter = math.min(clock_span, inner_w)
             if diameter % 2 == 1 then diameter = diameter - 1 end
             local face_widget = _buildAnalogueClockWidget(diameter, SUIStyle.COLOR.text_primary)
-            if face_widget then
-                vg[#vg+1] = ContainerClass:new{
-                    dimen = Geom:new{ w = inner_w, h = diameter },
-                    face_widget,
-                }
-            end
+            if face_widget then vg[#vg+1] = face_widget end
         else
             local face_clock, bold_clock = SUIStyle.getTextFace(styles.clock, clock_fs)
-            vg[#vg+1] = ContainerClass:new{
-                dimen = Geom:new{ w = inner_w, h = clock_w },
-                wrapText(UI.makeColoredText{
-                    text    = datetime.secondsToHour(os.time(), G_reader_settings:isTrue("twelve_hour_clock")),
-                    face    = face_clock,
-                    bold    = bold_clock,
-                }),
-            }
+            vg[#vg+1] = _slot(UI.makeColoredText{
+                text = datetime.secondsToHour(os.time(), G_reader_settings:isTrue("twelve_hour_clock")),
+                face = face_clock,
+                bold = bold_clock,
+            }, clock_w)
         end
     end
 
     local function appendDate()
         local face_date, bold_date = SUIStyle.getTextFace(styles.date, date_fs)
-        vg[#vg+1] = ContainerClass:new{
-            dimen = Geom:new{ w = inner_w, h = date_h },
-            wrapText(UI.makeColoredText{
-                text    = _localDate(),
-                face    = face_date,
-                bold    = bold_date,
-                fgcolor = sub_fg,
-            }),
-        }
+        vg[#vg+1] = _slot(UI.makeColoredText{
+            text    = _localDate(),
+            face    = face_date,
+            bold    = bold_date,
+            fgcolor = sub_fg,
+        }, date_h)
     end
 
     local function appendBattery()
         local lvl, charging = _battInfo()
         local face_batt, bold_batt = SUIStyle.getTextFace(styles.battery, batt_fs)
-        vg[#vg+1] = ContainerClass:new{
-            dimen = Geom:new{ w = inner_w, h = batt_h },
-            wrapText(UI.makeColoredText{
-                text    = _battText(lvl, charging),
-                face    = face_batt,
-                bold    = bold_batt,
-                fgcolor = sub_fg,
-            }),
-        }
+        vg[#vg+1] = _slot(UI.makeColoredText{
+            text    = _battText(lvl, charging),
+            face    = face_batt,
+            bold    = bold_batt,
+            fgcolor = sub_fg,
+        }, batt_h)
     end
 
     local appenders = {
@@ -758,10 +741,13 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
 
     if #vg == 0 then return nil end
 
+    -- `fit_align` makes the module chrome hug the content and position it
+    -- within the column (see ModuleChrome.wrap).
     return FrameContainer:new{
         bordersize     = 0,
         padding        = PAD,
         padding_bottom = PAD2 + bot_pad_extra,
+        fit_align      = align,
         vg,
     }
 end

@@ -3793,6 +3793,99 @@ function M.unpatchFontGetFace(plugin)
 end
 
 -- ---------------------------------------------------------------------------
+-- Icon colours in night mode (Style ▸ Icons ▸ Don't Invert Colored Icons in Night Mode)
+-- Night mode inverts the whole frame, which also flips the hues of coloured
+-- icons. ImageWidget:paintTo is wrapped so that an alpha icon holding a
+-- coloured bitmap is composited in displayed space: the covered region is
+-- inverted, the icon is painted as usual, and the region is inverted back.
+-- Frame inversion then restores the original colours, and the alpha channel
+-- keeps blending against the real background.
+-- Monochrome icons are painted as usual so they keep following the UI colours.
+-- ---------------------------------------------------------------------------
+
+-- Minimum channel spread (0-255) for a pixel to count as coloured.
+local _ICON_COLOR_SPREAD_MIN = 32
+
+function M.patchIconNightColors(plugin)
+    local ImageWidget = require("ui/widget/imagewidget")
+    if ImageWidget._simpleui_icon_nightcolor_patched then return end
+    ImageWidget._simpleui_icon_nightcolor_patched = true
+
+    local Blitbuffer = require("ffi/blitbuffer")
+    local orig_paintTo = ImageWidget.paintTo
+    plugin._orig_imagewidget_paintTo = orig_paintTo
+
+    local function isColorType(bb_type)
+        return bb_type == Blitbuffer.TYPE_BBRGB16
+            or bb_type == Blitbuffer.TYPE_BBRGB24
+            or bb_type == Blitbuffer.TYPE_BBRGB32
+    end
+
+    -- Bitmaps are shared through ImageCache, so the scan result is cached per
+    -- bitmap and released with it.
+    local has_color = setmetatable({}, { __mode = "k" })
+    local function hasColor(icon_bb)
+        local cached = has_color[icon_bb]
+        if cached ~= nil then return cached end
+        local found = false
+        if isColorType(icon_bb:getType()) then
+            for py = 0, icon_bb:getHeight() - 1 do
+                for px = 0, icon_bb:getWidth() - 1 do
+                    local c = icon_bb:getPixel(px, py):getColorRGB32()
+                    if c.alpha > 0
+                       and math.max(c.r, c.g, c.b) - math.min(c.r, c.g, c.b) >= _ICON_COLOR_SPREAD_MIN then
+                        found = true
+                        break
+                    end
+                end
+                if found then break end
+            end
+        end
+        has_color[icon_bb] = found
+        return found
+    end
+
+    ImageWidget.paintTo = function(self, bb, x, y)
+        if not (self.is_icon and self.alpha and Screen.night_mode
+                and SUIStyle.keepIconColorsInNight()
+                and Screen:isColorEnabled() and isColorType(bb:getType())) then
+            return orig_paintTo(self, bb, x, y)
+        end
+        local size = self:getSize()  -- renders the bitmap on first use
+        if not (self._bb and hasColor(self._bb)) then
+            return orig_paintTo(self, bb, x, y)
+        end
+
+        local w, h = size.w, size.h
+        local region = Blitbuffer.new(w, h, bb:getType())
+        region:blitFrom(bb, 0, 0, x, y, w, h)
+        region:invertRect(0, 0, w, h)
+        -- Dimming is applied after the round trip so it keeps lightening the
+        -- frame rather than the displayed image.
+        local dim = self.dim
+        self.dim = nil
+        orig_paintTo(self, region, 0, 0)
+        self.dim = dim
+        region:invertRect(0, 0, w, h)
+        if dim then region:lightenRect(0, 0, w, h) end
+        bb:blitFrom(region, x, y, 0, 0, w, h)
+        region:free()
+        self.dimen.x, self.dimen.y = x, y
+    end
+end
+
+function M.unpatchIconNightColors(plugin)
+    local ImageWidget = package.loaded["ui/widget/imagewidget"]
+    if not ImageWidget or not ImageWidget._simpleui_icon_nightcolor_patched then return end
+
+    if plugin._orig_imagewidget_paintTo then
+        ImageWidget.paintTo              = plugin._orig_imagewidget_paintTo
+        plugin._orig_imagewidget_paintTo = nil
+    end
+    ImageWidget._simpleui_icon_nightcolor_patched = nil
+end
+
+-- ---------------------------------------------------------------------------
 -- installAll / teardownAll
 -- ---------------------------------------------------------------------------
 
@@ -4588,6 +4681,8 @@ function M.patchWallpaperFM(plugin)
     -- getSize()), the flag is read BEFORE the cache lookup, forcing the
     -- "...|alpha" hash and compositing with the alpha channel intact, without
     -- touching the background already painted by the wallpaper.
+    -- The same alpha is requested when icon night-mode colours are kept
+    -- (see patchIconNightColors), which composites over the real background.
     --
     -- original_in_nightmode=false: native ImageWidget/KOReader field.
     -- When alpha=true and the screen is in night mode, ImageWidget:paintTo
@@ -4609,11 +4704,17 @@ function M.patchWallpaperFM(plugin)
 
         IconWidget.init = function(iw_self, ...)
             orig_iw_init(iw_self, ...)
-            -- Only intervenes when the FM wallpaper is active and the icon does
-            -- not yet have an explicit alpha defined by the instantiating widget.
-            if _wallpaperEnabledFM() and not iw_self.alpha then
-                iw_self.alpha = true
-                iw_self.original_in_nightmode = false
+            -- Only intervenes when the icon does not yet have an explicit alpha
+            -- defined by the instantiating widget. The FM wallpaper needs the
+            -- alpha channel to show through; the night-mode colour option needs
+            -- it to composite the icon over the real background.
+            if not iw_self.alpha then
+                if _wallpaperEnabledFM() then
+                    iw_self.alpha = true
+                    iw_self.original_in_nightmode = false
+                elseif SUIStyle.keepIconColorsInNight() then
+                    iw_self.alpha = true
+                end
             end
         end
     end
@@ -4631,18 +4732,14 @@ local function _applyPaginationScrim(menu_self)
         local ok, WP = pcall(require, "features/sui_wallpaper")
         local strength = ok and WP and WP.getPaginationBackdropStrength and WP.getPaginationBackdropStrength() or 0
         if strength > 0 then
-            local dimen = self.dimen
-            local w = (dimen and dimen.w) or 0
-            local h = (dimen and dimen.h) or 0
-            if w <= 0 or h <= 0 then
+            local h = (self.dimen and self.dimen.h) or 0
+            if h <= 0 then
                 local sz = self.getSize and self:getSize()
-                if sz then w, h = sz.w, sz.h end
+                h = sz and sz.h or 0
             end
-            -- Content-sized rounded scrim (same radius as module chrome).
-            if w > 0 and h > 0 then
-                local Device = require("device")
-                local radius = math.floor(Device.screen:scaleBySize(12))
-                WP.paintBackdrop(bb, x, y, w, h, strength, radius)
+            -- Full-width scrim spanning the page bar's height.
+            if h > 0 then
+                WP.paintBackdrop(bb, 0, y, Screen:getWidth(), h, strength)
             end
         end
         return orig_paint(self, bb, x, y)
@@ -5054,6 +5151,7 @@ function M.installAll(plugin)
     M.patchResetSettingsButton(plugin)
     M.patchFileDialogBookTitle(plugin)
     M.patchFontGetFace(plugin)
+    M.patchIconNightColors(plugin)
     -- Install the FM + Reader tab icon patches so system icon overrides
     -- survive menu rebuilds.
     local ok_ss, SUIStyle = pcall(require, "features/sui_style")
@@ -5279,6 +5377,7 @@ function M.teardownAll(plugin)
     M.unpatchResetSettingsButton(plugin)
     M.unpatchFileDialogBookTitle(plugin)
     M.unpatchFontGetFace(plugin)
+    M.unpatchIconNightColors(plugin)
 
     local FMH = package.loaded["apps/filemanager/filemanagerhistory"]
     if FMH and FMH._sui_onMenuHold_patched then

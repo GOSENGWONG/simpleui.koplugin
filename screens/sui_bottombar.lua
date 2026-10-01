@@ -529,11 +529,9 @@ function M.getTabWidths(num_tabs, usable_w)
     return _tab_widths_cache
 end
 
--- Color-tinted, alpha-mask painted icon (nerd glyph or raster file). Used by
--- both buildTabCell ("framed" bar style) and buildNavpagerArrowCell. The
--- actual construction now lives in engines/sui_quickactions_render.lua
--- (QARenderer.buildFramedIcon) so it isn't duplicated here; kept as a local
--- alias so existing call sites in this file don't need to change.
+-- Color-tinted, alpha-mask painted icon (nerd glyph or raster file) used by
+-- buildNavpagerArrowCell. Construction lives in
+-- engines/sui_quickactions_render.lua (QARenderer.buildFramedIcon).
 local function _makeColoredIcon(file, size, fgcolor)
     return _QARenderer().buildFramedIcon(file, size, fgcolor)
 end
