@@ -263,6 +263,8 @@ local _face_empty_sub   = Font:getFace(SUIStyle.FACE_REGULAR,  SUIStyle.FS_SUBTI
 --
 -- Invalidated via invalidateLabelCache() from:
 --   • main.lua's onCloseDocument — reader-return path, every document close.
+--   • ScreenWidget:onCloseWidget — chevron callbacks are bound to the closing
+--     instance, so its cached headers must not outlive it.
 --   • infra/sui_core.lua's invalidateDimCache — screen resize/rotation.
 --   • engines/sui_book_grid.lua's GridRenderer.clearRowCaches — every place
 --     a row module's file-list cache is cleared (status changes, TBR/
@@ -276,13 +278,13 @@ local function invalidateLabelCache()
     _label_cache = {}
 end
 
--- page_nav (optional): { mod_id, page, npages, turnPageFn } — see
+-- page_nav (optional): { screen_id, mod_id, page, npages, turnPageFn } — see
 -- pageNavFor below. When present, a pair of chevrons is drawn flanking
--- right_text, tappable to move to the previous/next page. mod_id is folded
--- into the cache key below: unlike plain display text, a chevron's tap
--- closure is bound to one specific module, so two modules that happen to
--- render the same text/width/page can no longer share the cached widget —
--- doing so would wire the wrong module's pagination to the tap.
+-- right_text, tappable to move to the previous/next page. screen_id and
+-- mod_id are folded into the cache key below: a chevron's tap closure is
+-- bound to one specific screen and module, so headers that happen to render
+-- the same text/width/page must not share a cached widget — doing so would
+-- wire the wrong screen's or module's pagination to the tap.
 -- landscape_factor (optional): scale multiplier for the label; defaults to 1.
 local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
     local scale = Config.getLabelScale() * (landscape_factor or 1)
@@ -293,7 +295,8 @@ local function sectionLabel(text, w, right_text, page_nav, landscape_factor)
         -- has_wallpaper is folded in too: it changes how the chevrons are
         -- built (see GridRenderer.buildPageNavButtons), so toggling the
         -- wallpaper must not reuse a cached widget built for the other state.
-        key = key .. "|" .. page_nav.mod_id .. "|" .. tostring(page_nav.page) .. "|" .. tostring(page_nav.npages)
+        key = key .. "|" .. tostring(page_nav.screen_id) .. "|" .. page_nav.mod_id
+            .. "|" .. tostring(page_nav.page) .. "|" .. tostring(page_nav.npages)
             .. "|" .. tostring(page_nav.has_wallpaper)
     end
     if not _label_cache[key] then
@@ -422,6 +425,7 @@ local function pageNavFor(self, mod, ctx)
     if not npages or npages <= 1 then return nil end
     local page = ctx["_row_page_" .. mod.id] or 1
     return {
+        screen_id     = self._id,
         mod_id        = mod.id,
         page          = page,
         npages        = npages,
@@ -3800,15 +3804,8 @@ function ScreenWidget:onCloseWidget()
     -- module_collections's stack/quad builders) -- audited 2026-08-08.
     self:free()
 
-    -- BUGFIX: _label_cache (see sectionLabel) memoizes paginated-row headers,
-    -- chevrons included, under a key that tracks page/npages but not the
-    -- identity of this ScreenWidget. The chevrons' tap callbacks close over
-    -- `self` (pageNavFor -> self:_turnBookModPage), and this instance's
-    -- _ctx_cache is dropped below, so any header cached during this
-    -- instance's lifetime is dead from here on. Without this, reopening the
-    -- screen (e.g. Library tab -> back to Home) lands on the same page 1 and
-    -- sectionLabel() returns the stale header: the "next" chevron silently
-    -- does nothing until a swipe builds a header for a new page/npages key.
+    -- Header chevrons close over this instance; drop the cached headers so a
+    -- reopened screen builds its own.
     invalidateLabelCache()
 
     if self._cover_poll_timer then
@@ -4241,6 +4238,13 @@ local function _liveScreenIds()
 end
 
 ScreenEngine.liveScreenIds = _liveScreenIds
+
+--- Re-fetches stats for every live screen without touching book data.
+function ScreenEngine.refreshAllLiveStats()
+    for _, id in ipairs(_liveScreenIds()) do
+        ScreenEngine.refreshScreen(id, false, false, true)
+    end
+end
 
 --- Full layout rebuild for every screen that currently has a live widget
 --- instance (the built-in Homescreen plus any Custom Screen left open in

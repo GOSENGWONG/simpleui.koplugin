@@ -689,6 +689,19 @@ function SP.invalidateTimeSeries()
     end
 end
 
+-- ---------------------------------------------------------------------------
+-- SP.invalidateStreak() — forces the next SP.get() to recount the streak.
+-- For changes to the streak's inputs that do not come from reading activity
+-- (freeze state), where the same-day carry-over of invalidateTimeSeries()
+-- would keep serving the old value. books_year/books_total are preserved.
+-- ---------------------------------------------------------------------------
+function SP.invalidateStreak()
+    if not _cache then return end
+    _streak_cache_valid = false
+    _books_cache_valid  = true
+    _cache_day          = nil
+end
+
 -- Reserved for countMarkedReadBoth's shared-cache access via SH — not part
 -- of the public API.
 SP._cacheGet = nil

@@ -1799,27 +1799,8 @@ function SimpleUIPlugin:onCloseDocument()
     local ScreenEngine = package.loaded["engines/sui_screen_engine"]
     if not ScreenEngine then return end
 
-    -- BUGFIX: sui_screen_engine.lua's sectionLabel() memoizes the header
-    -- widget for any book-grid-engine row that shows pagination chevrons
-    -- (TBR, Featured Collection, ...) under a cache key of
-    -- "mod_id|page|npages" — it does NOT (and structurally cannot cheaply)
-    -- include the identity of the turnPageFn closure passed in for THIS
-    -- render. Every homescreen rebuild after a document closes creates a
-    -- fresh ctx and therefore a fresh turnPageFn closure bound to that new
-    -- ctx/repaint machinery — but if the row happens to land back on the
-    -- same page/npages it had before the book was opened (the common case:
-    -- pagination state rarely changes just from reading a book), the cache
-    -- key matches and sectionLabel() hands back the OLD cached widget,
-    -- chevrons included, whose Button.callback is still wired to the OLD,
-    -- now-dead turnPageFn/ctx from before this document was opened. Tapping
-    -- those chevrons then silently invokes a closure over a ctx that no
-    -- longer corresponds to anything on screen — no error, no visible
-    -- effect, since it's a live Lua closure (nothing to raise on), just
-    -- discovered as "the chevrons do nothing" after returning from a book.
-    -- Invalidate unconditionally here (cheap: just clears a table) rather
-    -- than trying to enumerate which screens/modules use page_nav, mirroring
-    -- how invalidateLabelCache() is already called elsewhere in this file on
-    -- rotation for the same reason (stale widget identity across a rebuild).
+    -- Cached section headers hold page-turn callbacks bound to the previous
+    -- render's ctx; clear them so the rebuilt screen creates its own.
     if ScreenEngine.invalidateLabelCache then
         ScreenEngine.invalidateLabelCache()
     end

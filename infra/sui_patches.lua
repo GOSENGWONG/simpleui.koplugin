@@ -3734,31 +3734,11 @@ function M.patchFontGetFace(plugin)
             return orig_getFace(self, font, size, faceindex)
         end
 
-        -- BUGFIX (OOM when Global Text Size > 100%): keep the caller's
-        -- requested (pre-scale) size and restore it to face.orig_size before
-        -- returning. Core's Font:getFace sets face.orig_size to whatever
-        -- `size` it was called with — here, the ALREADY-SCALED value. Every
-        -- shrink-to-fit loop in KOReader (button.lua, confirmbox.lua,
-        -- infomessage.lua, titlebar.lua, touchmenu.lua, virtualkeyboard.lua,
-        -- bookmapwidget.lua, and fallback-font lookup in rendertext.lua) reads
-        -- face.orig_size back, decrements it by 1, and calls Font:getFace()
-        -- again expecting to keep shrinking in the same (unscaled) units.
-        -- Without this restore, each retry re-multiplies an already-scaled
-        -- value by `scale`: for scale > 1 the "size" grows every iteration
-        -- instead of shrinking, so the loop's `new_size < 8` / `<= font_size_2_lines`
-        -- exit conditions are never reached and isTruncated() never turns
-        -- false — an unbounded loop building ever-larger FreeType faces,
-        -- until KOReader is OOM-killed. This mirrors the write-back core
-        -- itself already does on a cache hit (see the "orig_size has changed"
-        -- comment in ui/font.lua), just extended to also cover our extra
-        -- scale step.
-        --
-        -- Wrapped in pcall: face_obj is a globally shared, hash-cached table
-        -- (ui/font.lua's self.faces) that can be touched concurrently by a
-        -- fallback-resolution call that is itself still on the Lua call
-        -- stack (see reentrancy note above); any unexpected error here must
-        -- degrade to the native, unpatched behaviour rather than propagate
-        -- out of a C→Lua callback, where KOReader cannot report it cleanly.
+        -- Scale the requested size, then restore the caller's pre-scale value
+        -- to face.orig_size: shrink-to-fit loops read it back, decrement it and
+        -- call getFace() again, so it must stay in unscaled units. Wrapped in
+        -- pcall so any error degrades to the native getFace instead of
+        -- propagating out of a C->Lua callback.
         local ok, result = pcall(function()
             local sz = size
             if not sz then sz = self.sizemap[font] end
@@ -5203,16 +5183,9 @@ function M.installAll(plugin)
     -- plugin.ui is a ReaderUI, so guard on plugin.ui.document, a field
     -- only ReaderUI instances have (FileManager has no .document).
     --
-    -- BUG FIX: these two were previously defined but never called from
-    -- anywhere, meaning the reader's "File browser" menu tab kept its
-    -- native callback instead of ours. That callback closes the reader
-    -- via readerui:onClose() directly, without going through
-    -- _prepareReaderClose (which sets readerui.tearing_down = true).
-    -- Without that flag, SimpleUIPlugin:onCloseWidget's real-exit guard
-    -- misfires on the CloseWidget broadcast and tears down the suspended
-    -- Homescreen, leaving the bare FileManager exposed once showFileManager
-    -- runs — i.e. exactly the "opens the library instead of the homescreen"
-    -- symptom.
+    -- The reader's "File browser" tab callback closes the reader directly,
+    -- bypassing _prepareReaderClose (which sets readerui.tearing_down), so
+    -- both hooks are required for a clean return to the Homescreen.
     -- ------------------------------------------------------------------
     if plugin.ui and plugin.ui.document then
         M.wireReaderMenuFMTab(plugin, plugin.ui)

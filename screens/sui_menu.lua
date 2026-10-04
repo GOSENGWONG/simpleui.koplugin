@@ -2218,7 +2218,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
             local _mod = mod
             return {
                 text_func = function()
-                    return _(_mod.name) -- FIX: Force translation evaluation at display time
+                    return _(_mod.name) -- Translated at display time
                 end,
                 checked_func   = function() return Registry.isEnabled(_mod, ctx.pfx) end,
                 keep_menu_open = true,

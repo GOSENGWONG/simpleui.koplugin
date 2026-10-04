@@ -109,6 +109,18 @@ local function u32(data, i)
         + (data:byte(i + 3) or 0) * 16777216
 end
 
+-- Returns the library handle produced by `open()` when it exports the inflate
+-- symbols, or nil. Symbol lookup raises on a missing function, so the check
+-- runs inside the pcall.
+local function openZlib(open)
+    local ok, lib = pcall(function()
+        local l = open()
+        assert(l.inflateInit2_ and l.inflate and l.inflateEnd)
+        return l
+    end)
+    return ok and lib or nil
+end
+
 -- Raw DEFLATE (ZIP method 8). windowBits = -15 = no zlib/gzip wrapper.
 local _inflate_fn -- false = unavailable, nil = not tried, function = ready
 
@@ -146,20 +158,16 @@ local function rawInflate(compressed, uncompressed_size)
                 int inflateEnd(z_stream *strm);
             ]]
         end)
-        local libz
-        local ok_z = pcall(function()
-            libz = ffi.loadlib and ffi.loadlib("z", 1) or ffi.load("z")
-            -- FFI symbol lookup throws when Android's bundled library omits zlib.
-            assert(libz.inflateInit2_ and libz.inflate and libz.inflateEnd)
+        local libz = openZlib(function()
+            return ffi.loadlib and ffi.loadlib("z", 1) or ffi.load("z")
         end)
-        if not ok_z and is_android then
-            ok_z = pcall(function()
-                local system_lib = ffi.abi("64bit") and "/system/lib64/libz.so" or "/system/lib/libz.so"
-                libz = ffi.load(system_lib)
-                assert(libz.inflateInit2_ and libz.inflate and libz.inflateEnd)
-            end)
+        if not libz and is_android then
+            -- Fall back to the platform's own zlib.
+            local system_lib = ffi.abi("64bit") and "/system/lib64/libz.so" or "/system/lib/libz.so"
+            libz = openZlib(function() return ffi.load("libz.so") end)
+                or openZlib(function() return ffi.load(system_lib) end)
         end
-        if not ok_z then
+        if not libz then
             _inflate_fn = false
             return nil
         end
