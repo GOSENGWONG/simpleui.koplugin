@@ -57,9 +57,19 @@ function FilterState.parseSeries(raw)
     return name, tonumber(suffix)
 end
 
+-- Unicode-aware lowercasing: the core helper when available, otherwise the
+-- utf8 library wrapper, otherwise plain Lua lowercasing.
+local function _resolveLower()
+    if type(util.stringLower) == "function" then return util.stringLower end
+    local ok, Utf8Proc = pcall(require, "ffi/utf8proc")
+    if ok and type(Utf8Proc.lowercase) == "function" then return Utf8Proc.lowercase end
+    return string.lower
+end
+local _lower = _resolveLower()
+
 -- Comparison key: two names denote the same series when their keys match.
 function FilterState.seriesKey(name)
-    return name and util.stringLower(name)
+    return name and _lower(name)
 end
 
 -- ---------------------------------------------------------------------------
