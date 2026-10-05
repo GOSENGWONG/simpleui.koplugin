@@ -649,7 +649,7 @@ local function _migrateLegacyElemScales(pfx)
 end
 
 -- landscape_factor is accepted for API compatibility; size uses raw module
--- scale only. inner_w is already the column width in landscape spread, so
+-- scale only. `w` is already the column width in landscape spread, so
 -- applying lf again would shrink twice (same convention as GridRenderer).
 -- `styles` (text style per element) is read from settings when omitted.
 local function build(w, pfx, vspan_pool, landscape_factor, styles)
@@ -657,14 +657,13 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
     _migrateLegacyElemScales(pfx)
     styles = styles or Config.readTextStyles("clock", TEXT_ELEMS, pfx)
     local scale = Config.getModuleScale("clock", pfx) * lf
-    local inner_w = w - PAD * 2
 
     local raw_scale  = Config.getModuleScaleRaw("clock", pfx)
     local clock_elem = styles.clock.scale or 1
     local date_elem  = styles.date.scale or 1
     local batt_elem  = styles.battery.scale or 1
 
-    local clock_span, clock_fs = _clockMetrics(inner_w, pfx, raw_scale, clock_elem)
+    local clock_span, clock_fs = _clockMetrics(w, pfx, raw_scale, clock_elem)
     local clock_w  = clock_fs
     local word_fs  = math.max(_CLOCK_SIZE_MIN, math.floor(clock_fs * _WORD_FS_RATIO))
 
@@ -692,7 +691,7 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
             local face_word, bold_word = SUIStyle.getTextFace(styles.clock, word_fs)
             vg[#vg+1] = _buildWordClockWidget(wc_text, face_word, bold_word, align)
         elseif clock_style == "analogue" then
-            local diameter = math.min(clock_span, inner_w)
+            local diameter = math.min(clock_span, w)
             if diameter % 2 == 1 then diameter = diameter - 1 end
             local face_widget = _buildAnalogueClockWidget(diameter, SUIStyle.COLOR.text_primary)
             if face_widget then vg[#vg+1] = face_widget end
@@ -742,10 +741,12 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
     if #vg == 0 then return nil end
 
     -- `fit_align` makes the module chrome hug the content and position it
-    -- within the column (see ModuleChrome.wrap).
+    -- within the column (see ModuleChrome.wrap). Horizontal insets come from
+    -- the chrome, so only vertical padding is applied here.
     return FrameContainer:new{
         bordersize     = 0,
-        padding        = PAD,
+        padding        = 0,
+        padding_top    = PAD,
         padding_bottom = PAD2 + bot_pad_extra,
         fit_align      = align,
         vg,

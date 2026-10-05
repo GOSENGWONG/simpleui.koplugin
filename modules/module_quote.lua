@@ -20,10 +20,6 @@ local Device         = require("device")
 
 
 local CenterContainer = require("ui/widget/container/centercontainer")
-local HorizontalGroup = require("ui/widget/horizontalgroup")
-local HorizontalSpan  = require("ui/widget/horizontalspan")
-local LeftContainer   = require("ui/widget/container/leftcontainer")
-local RightContainer  = require("ui/widget/container/rightcontainer")
 
 local GestureRange   = require("ui/gesturerange")
 
@@ -32,6 +28,8 @@ local GestureRange   = require("ui/gesturerange")
 -- local ConfirmBox = require("ui/widget/confirmbox")  ← moved to usage site
 
 local InputContainer   = require("ui/widget/container/inputcontainer")
+
+local RenderText       = require("ui/rendertext")
 
 local TextBoxWidget    = require("ui/widget/textboxwidget")
 
@@ -879,11 +877,65 @@ end
 
 
 
+-- ---------------------------------------------------------------------------
+-- Line-break control
+-- ---------------------------------------------------------------------------
+
+local NBSP = "\u{00A0}"  -- no-break space
+local WJ   = "\u{2060}"  -- word joiner: forbids a line break on either side
+
+-- Largest share of the box width the last two words may take for them to be
+-- kept together on one line.
+local _WIDOW_MAX_FRAC = 0.5
+
+local function textWidth(face, text)
+    return RenderText:sizeUtf8Text(0, Screen:getWidth(), face, text, true).x
+end
+
+-- Glues each inner hyphen of `token` to the text after it, so the compound
+-- cannot be split across lines at its hyphen.
+local function bindHyphens(token)
+    return (token:gsub("()%-()", function(i, j)
+        local before, after = token:sub(i - 1, i - 1), token:sub(j, j)
+        if before == "" or after == "" or before == "-" or after == "-" then
+            return nil
+        end
+        return "-" .. WJ
+    end))
+end
+
+-- Applies bindHyphens to every hyphenated word of `text` that fits `max_w`;
+-- a wider word is left alone to avoid a forced mid-word cut.
+local function bindCompounds(text, face, max_w)
+    return (text:gsub("%S+", function(token)
+        if token:find("-", 1, true) and textWidth(face, token) <= max_w then
+            return bindHyphens(token)
+        end
+    end))
+end
+
+-- Prepares `text` for a box `max_w` wide:
+--   * the last two words are kept together, so the final line is never a
+--     single word;
+--   * hyphenated compounds wrap as one unit instead of splitting at the hyphen.
+local function controlLineBreaks(text, face, max_w)
+    local function bind(part)
+        -- The word joiner is only understood by the xtext layout engine.
+        return TextBoxWidget.use_xtext and bindCompounds(part, face, max_w) or part
+    end
+
+    local head, w1, w2, tail = text:match("^(.-)(%S+)[ \t]+(%S+)(%s*)$")
+    if head and textWidth(face, w1 .. " " .. w2) <= max_w * _WIDOW_MAX_FRAC then
+        return bind(head) .. bind(w1) .. NBSP .. bind(w2) .. tail
+    end
+    return bind(text)
+end
+
 local function buildWidget(inner_w, text_str, attr_str, fonts, vspan_gap, has_wallpaper, clr_quote, clr_attr, alignment)
 
  local function makeTBW(text, face, fgcolor, bold)
         local args = {
-            text      = text,
+            text      = controlLineBreaks(text, face, inner_w),
             face      = face,
             bold      = bold,
             width     = inner_w,
@@ -1178,14 +1230,10 @@ function M.build(w, ctx)
     local _clr_quote       = SUIStyle.COLOR.text_primary
     local _clr_attr        = CLR_TEXT_SUB
 
-    local inner_w = w - PAD * 2
-
     local source    = getSource(ctx and ctx.pfx)
     local alignment = getAlignment(ctx and ctx.pfx)
 
     local has_wallpaper = ctx and ctx.has_wallpaper
-
-    logger.warn("simpleui: quote: build source=" .. source .. " align=" .. alignment)
 
     local content
     local hl_filepath
@@ -1195,55 +1243,33 @@ function M.build(w, ctx)
 
     if source == "highlights" then
 
-        content, hl_filepath, hl_title, hl_pos0, hl_page = buildFromHighlight(inner_w, fonts, vspan_gap, has_wallpaper, _clr_quote, _clr_attr, alignment)
+        content, hl_filepath, hl_title, hl_pos0, hl_page = buildFromHighlight(w, fonts, vspan_gap, has_wallpaper, _clr_quote, _clr_attr, alignment)
 
     elseif source == "mixed" then
 
-        content, hl_filepath, hl_title, hl_pos0, hl_page = buildFromMixed(inner_w, fonts, vspan_gap, has_wallpaper, _clr_quote, _clr_attr, alignment)
+        content, hl_filepath, hl_title, hl_pos0, hl_page = buildFromMixed(w, fonts, vspan_gap, has_wallpaper, _clr_quote, _clr_attr, alignment)
 
     elseif source == "custom" then
 
-        content = buildFromCustomQuote(inner_w, fonts, vspan_gap, ctx and ctx.pfx, has_wallpaper, _clr_quote, _clr_attr, alignment)
+        content = buildFromCustomQuote(w, fonts, vspan_gap, ctx and ctx.pfx, has_wallpaper, _clr_quote, _clr_attr, alignment)
 
     elseif source == "custom_mixed" then
 
-        content, hl_filepath, hl_title, hl_pos0, hl_page = buildFromCustomMixed(inner_w, fonts, vspan_gap, ctx and ctx.pfx, has_wallpaper, _clr_quote, _clr_attr, alignment)
+        content, hl_filepath, hl_title, hl_pos0, hl_page = buildFromCustomMixed(w, fonts, vspan_gap, ctx and ctx.pfx, has_wallpaper, _clr_quote, _clr_attr, alignment)
 
     else
 
-        content = buildFromQuote(inner_w, fonts, vspan_gap, has_wallpaper, _clr_quote, _clr_attr, alignment)
+        content = buildFromQuote(w, fonts, vspan_gap, has_wallpaper, _clr_quote, _clr_attr, alignment)
 
     end
 
     -- Use a plain VerticalGroup instead of FrameContainer so the module
     -- background is fully transparent (the homescreen background shows through).
-    -- Padding is replicated with VerticalSpan (top/bottom) and HorizontalSpan
-    -- (left/right) since VerticalGroup has no padding property of its own.
-    -- The inner_row is wrapped in an alignment container so the text block
-    -- sits left / center / right within the full module width.
+    -- Vertical padding is replicated with VerticalSpan. Horizontal insets come
+    -- from the module chrome, and each text box aligns its own lines.
     local pad_span  = VerticalSpan:new{ width = PAD }
     local pad2_span = VerticalSpan:new{ width = PAD2 }
-    local hpad      = HorizontalSpan:new{ width = PAD }
-    local inner_row = HorizontalGroup:new{ hpad, content, hpad }
-    local Geom = require("ui/geometry")
-    local inner_row_aligned
-    if alignment == "left" then
-        inner_row_aligned = LeftContainer:new{
-            dimen = Geom:new{ w = w, h = inner_row:getSize().h },
-            inner_row,
-        }
-    elseif alignment == "right" then
-        inner_row_aligned = RightContainer:new{
-            dimen = Geom:new{ w = w, h = inner_row:getSize().h },
-            inner_row,
-        }
-    else
-        inner_row_aligned = CenterContainer:new{
-            dimen = Geom:new{ w = w, h = inner_row:getSize().h },
-            inner_row,
-        }
-    end
-    local frame = VerticalGroup:new{ align = "center", pad_span, inner_row_aligned, pad2_span }
+    local frame = VerticalGroup:new{ align = "center", pad_span, content, pad2_span }
 
     -- When fixed height is active, pin the frame to exactly getHeight() so the
     -- homescreen layout is stable regardless of how many lines the quote wraps to.

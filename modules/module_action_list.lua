@@ -123,8 +123,7 @@ local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, c
         }
     end
 
-    local inner_w = w - PAD * 2
-    local n       = #valid_ids
+    local n = #valid_ids
 
     -- Rows keep their natural width and are aligned against each other inside
     -- the group, whose width is that of its widest row.
@@ -142,7 +141,7 @@ local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, c
     for i = 1, n do
         local aid = valid_ids[i]
         local row_content = QARenderer.buildListRow(aid, {
-            inner_w        = inner_w,
+            inner_w        = w,
             row_h          = d.row_h,
             show_icon      = show_icons,
             icon_sz        = d.icon_sz,
@@ -162,9 +161,9 @@ local function buildListWidget(w, action_ids, show_icons, align, on_tap_fn, d, c
     end
 
     -- `fit_align` makes the module chrome hug the list and position it within
-    -- the column (see ModuleChrome.wrap).
+    -- the column (see ModuleChrome.wrap). Horizontal insets come from the chrome.
     return FrameContainer:new{
-        bordersize = 0, padding = PAD, padding_top = 0, padding_bottom = 0,
+        bordersize = 0, padding = 0,
         fit_align = align,
         vg,
     }
