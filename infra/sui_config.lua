@@ -397,6 +397,26 @@ function M.setWifiHideWhenOff(v)
     SUISettings:set("simpleui_topbar_wifi_hide_when_off", v)
 end
 
+-- "Start with Home Screen" lives in KOReader's own "start_with" setting, so the
+-- native Start With menu and the plugin menu share a single source of truth.
+local START_WITH_KEY        = "start_with"
+local START_WITH_HOMESCREEN = "homescreen_simpleui"
+local START_WITH_DEFAULT    = "filemanager"
+
+function M.isStartWithHomescreen()
+    return G_reader_settings:readSetting(START_WITH_KEY) == START_WITH_HOMESCREEN
+end
+
+-- Enabling selects the Home Screen. Disabling only reverts to the default when
+-- the Home Screen is the active choice, leaving any other selection untouched.
+function M.setStartWithHomescreen(on)
+    if on then
+        G_reader_settings:saveSetting(START_WITH_KEY, START_WITH_HOMESCREEN)
+    elseif M.isStartWithHomescreen() then
+        G_reader_settings:saveSetting(START_WITH_KEY, START_WITH_DEFAULT)
+    end
+end
+
 function M.homeLabel()
     return _("Library")
 end
@@ -2669,7 +2689,7 @@ function M.applyFirstRunDefaults()
     def("simpleui_qs_bar_slots",            { "wifi_toggle", "bookmark_browser", "frontlight", "night_mode", "power", "sui_settings" })
 
     -- KOReader global: open homescreen on launch (only set once on fresh install)
-    gdef("start_with", "homescreen_simpleui")
+    gdef(START_WITH_KEY, START_WITH_HOMESCREEN)
 
     SUISettings:flush()
 end

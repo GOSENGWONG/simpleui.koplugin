@@ -245,7 +245,7 @@ function Onboarding.show(on_finish)
         position = "bottom",
         on_close = function()
             SUISettings:set("simpleui_onboarding_done", true)
-            G_reader_settings:saveSetting("start_with", "homescreen_simpleui")
+            Config.setStartWithHomescreen(true)
             if on_finish then on_finish() end
         end,
         screen_footers = {
@@ -273,7 +273,7 @@ function Onboarding.show(on_finish)
                     on_tap = function()
                         if SUIPresets.applyBuiltin then SUIPresets.applyBuiltin(st.selected_preset) end
                         SUISettings:set("simpleui_hs_active_preset", st.selected_preset)
-                        G_reader_settings:saveSetting("start_with", "homescreen_simpleui")
+                        Config.setStartWithHomescreen(true)
                         if win.close then win:close() else UIManager:close(win) end
                     end,
                 })

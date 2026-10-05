@@ -940,21 +940,18 @@ function SimpleUIPlugin:init()
         -- First-run bootstrap: ensure "Start with Homescreen" is active.
         --
         -- On a fresh install simpleui_onboarding_done is nil and start_with
-        -- has never been set to "homescreen_simpleui", so isStartWithHS()
-        -- would return false and the FM would open directly, bypassing the
-        -- homescreen entirely — meaning the onboarding window (which is
-        -- triggered inside ScreenEngine.show()) would never appear either.
+        -- has never been set to "homescreen_simpleui", so the FM would open
+        -- directly, bypassing the homescreen entirely — meaning the onboarding
+        -- window (triggered inside ScreenEngine.show()) would never appear.
         --
-        -- Fix: write start_with HERE, before Patches.installAll, so that
-        -- isStartWithHS() (lazily cached on first read in sui_patches.lua)
-        -- already sees the correct value when the setupLayout patch runs and
-        -- sets _hs_autoopen_pending = true.  From that point on, the normal
-        -- onShow → ScreenEngine.show() → Onboarding.show() chain handles
-        -- everything — no additional scheduling needed here.
+        -- The setting is written here, before Patches.installAll, so the
+        -- setupLayout patch sees it and sets _hs_autoopen_pending = true. The
+        -- normal onShow → ScreenEngine.show() → Onboarding.show() chain then
+        -- handles everything.
         -- -------------------------------------------------------------------
         local _sui_first_run = not SUISettings:get("simpleui_onboarding_done")
         if _sui_first_run then
-            G_reader_settings:saveSetting("start_with", "homescreen_simpleui")
+            Config.setStartWithHomescreen(true)
         end
 
         if SUISettings:nilOrTrue("simpleui_enabled") then

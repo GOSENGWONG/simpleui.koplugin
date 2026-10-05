@@ -48,6 +48,7 @@ local logger = require("logger")
 local _      = require("infra/sui_i18n").translate
 
 local SUISettings = require("infra/sui_store")
+local Config = require("infra/sui_config")
 
 local UI = require("infra/sui_core")
 
@@ -499,16 +500,11 @@ local function _buildSnapshot(scope)
         table.sort(assets, function(a, b) return a.p < b.p end)
     end
 
-    local start_with_hs = false
-    if G_reader_settings and G_reader_settings:readSetting("start_with") == "homescreen_simpleui" then
-        start_with_hs = true
-    end
-
     return {
         settings            = settings,
         assets              = assets,
         scope               = scope,
-        start_with_simpleui = start_with_hs,
+        start_with_simpleui = Config.isStartWithHomescreen(),
     }
 end
 
@@ -817,8 +813,8 @@ function Backup.restore(parsed, filter)
         -- Only ever SET it (when the backup had it); never clear the local
         -- device's startup preference — restoring a partial backup should
         -- not change how the device boots.
-        if parsed.start_with_simpleui and G_reader_settings then
-            G_reader_settings:saveSetting("start_with", "homescreen_simpleui")
+        if parsed.start_with_simpleui then
+            Config.setStartWithHomescreen(true)
         end
 
         -- 5. Assets: decode + write into the local simpleui/ tree.

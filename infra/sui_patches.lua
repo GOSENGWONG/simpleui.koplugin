@@ -81,13 +81,6 @@ local _hs_boot_done = false
 -- eliminating the visible flash between reader and homescreen.
 local _hs_pending_after_reader = false  -- kept for reset in teardown only
 
--- Cached value of the "start_with" setting. Updated whenever the user changes
--- the setting so UIManager.show / close avoid repeated settings reads.
--- Initialised lazily (nil until first read via isStartWithHS) so that
--- applyFirstRunDefaults() in main.lua:init() has a chance to write
--- "start_with" before we latch it for the boot session.
-local _start_with_hs = nil
-
 -- Navbar keyboard-focus state (D-pad devices only).
 -- _navbar_kb_capture: the transparent InputContainer on the UIManager stack,
 --   or nil when keyboard focus is inactive.
@@ -216,12 +209,7 @@ end
 -- Private helpers
 -- ---------------------------------------------------------------------------
 
-local function isStartWithHS()
-    if _start_with_hs == nil then
-        _start_with_hs = G_reader_settings:readSetting("start_with", "filemanager") == "homescreen_simpleui"
-    end
-    return _start_with_hs
-end
+local isStartWithHS = Config.isStartWithHomescreen
 
 -- Linear search used in low-frequency paths (boot, resume).
 -- Hot paths build a set with tabsToSet() instead.
@@ -1124,57 +1112,19 @@ function M.patchStartWithMenu()
         local sub    = result.sub_item_table
         if type(sub) ~= "table" then return result end
 
-        -- Wrap every native item's callback to clear _start_with_hs when a
-        -- native option is selected. Without this, selecting e.g. "file browser"
-        -- writes the setting directly but leaves _start_with_hs=true, causing
-        -- the HS to keep opening on boot even after the user switched away.
-        for _, item in ipairs(sub) do
-            if item.radio and type(item.callback) == "function" then
-                local orig_cb    = item.callback
-                local orig_check = item.checked_func
-                item.callback = function()
-                    _start_with_hs = false
-                    orig_cb()
-                end
-                -- Also read the setting directly so checked_func stays in sync
-                -- even when _start_with_hs cache and the persisted setting drift.
-                if orig_check then
-                    item.checked_func = function()
-                        if _start_with_hs then return false end
-                        return orig_check()
-                    end
-                end
-            end
-        end
-
-        -- Resolve gettext once so the loop and the menu entry share the same string.
-        local hs_text = _("Home Screen")
-
-        -- Add the entry only if it is not already present.
-        local found = false
-        for _, item in ipairs(sub) do
-            if item.text == hs_text and item.radio then found = true; break end
-        end
-        if not found then
-            table.insert(sub, math.max(1, #sub), {
-                text         = hs_text,
-                -- Read the setting directly as ground truth; fall back to the
-                -- cache only when the setting hasn't been written yet.
-                checked_func = function()
-                    return G_reader_settings:readSetting("start_with") == "homescreen_simpleui"
-                end,
-                callback = function()
-                    G_reader_settings:saveSetting("start_with", "homescreen_simpleui")
-                    _start_with_hs = true
-                end,
-                radio = true,
-            })
-        end
+        -- Native items read and write "start_with" directly, so only the
+        -- Home Screen radio item needs to be added.
+        table.insert(sub, math.max(1, #sub), {
+            text         = _("Home Screen"),
+            checked_func = Config.isStartWithHomescreen,
+            callback     = function() Config.setStartWithHomescreen(true) end,
+            radio        = true,
+        })
 
         -- Update the parent item label when Home Screen is the active choice.
         local orig_text_func = result.text_func
         result.text_func = function()
-            if G_reader_settings:readSetting("start_with") == "homescreen_simpleui" then
+            if Config.isStartWithHomescreen() then
                 return _("Start with") .. ": " .. _("Home Screen")
             end
             return orig_text_func and orig_text_func() or _("Start with")
@@ -5392,12 +5342,8 @@ function M.teardownAll(plugin)
 
     -- Reset module-level state so a re-enable cycle starts clean.
     -- Transient flags are cleared unconditionally.
-    -- _start_with_hs is reset to nil (not false) so isStartWithHS() performs a
-    -- fresh lazy read on the next installAll cycle, picking up any setting
-    -- change made while the plugin was disabled.
     _hs_boot_done             = false
     _hs_pending_after_reader  = false
-    _start_with_hs            = nil
     _navpager_rebuild_pending = false
 
     -- Clear lazy-refresh flag on the FM instance, if any.
