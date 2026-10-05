@@ -144,23 +144,36 @@ function LayoutService.load(pfx, layout_key)
     return { pages = pages }
 end
 
+-- Returns the set of module ids placed in a layout.
+local function _activeSet(layout)
+    local set = {}
+    for _, page in ipairs(layout.pages) do
+        for _, entry in ipairs(page.modules) do
+            local mod_id = LayoutService.entryId(entry)
+            if mod_id then set[mod_id] = true end
+        end
+    end
+    return set
+end
+
 function LayoutService.save(layout, pfx, layout_key, screen_id)
     pfx        = pfx or _DEFAULT_PFX
     layout_key = layout_key or _DEFAULT_LAYOUT_KEY
     screen_id  = screen_id or "hs"
 
+    -- Membership before this save, used to apply enable/disable only to the
+    -- modules that were actually added to or removed from the layout.
+    local previous_set = _activeSet(LayoutService.load(pfx, layout_key))
+
     SUISettings:saveSetting(layout_key, layout)
 
+    local active_set = _activeSet(layout)
     local flat_order = {}
-    local active_set = {}
 
     for _, page in ipairs(layout.pages) do
         for _, entry in ipairs(page.modules) do
             local mod_id = LayoutService.entryId(entry)
-            if mod_id then
-                table.insert(flat_order, mod_id)
-                active_set[mod_id] = true
-            end
+            if mod_id then table.insert(flat_order, mod_id) end
         end
     end
 
@@ -174,15 +187,19 @@ function LayoutService.save(layout, pfx, layout_key, screen_id)
 
     for _, mod in ipairs(Registry.list()) do
         local is_active = (active_set[mod.id] == true)
-        -- A module taken out of the layout drops its text styles, so adding
-        -- it back later starts from the defaults.
-        if not is_active and mod.text_elems and Registry.isEnabled(mod, pfx) then
-            require("infra/sui_config").resetTextStyles(mod.id, mod.text_elems, pfx)
-        end
-        if type(mod.setEnabled) == "function" then
-            mod.setEnabled(pfx, is_active)
-        elseif mod.enabled_key then
-            SUISettings:saveSetting(pfx .. mod.enabled_key, is_active)
+        -- Modules that stay in (or out of) the layout keep their own settings,
+        -- including per-item visibility.
+        if is_active ~= (previous_set[mod.id] == true) then
+            -- A module taken out of the layout drops its text styles, so adding
+            -- it back later starts from the defaults.
+            if not is_active and mod.text_elems then
+                require("infra/sui_config").resetTextStyles(mod.id, mod.text_elems, pfx)
+            end
+            if type(mod.setEnabled) == "function" then
+                mod.setEnabled(pfx, is_active)
+            elseif mod.enabled_key then
+                SUISettings:saveSetting(pfx .. mod.enabled_key, is_active)
+            end
         end
     end
 
