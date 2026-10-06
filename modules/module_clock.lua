@@ -23,7 +23,6 @@ local Config       = require("infra/sui_config")
 local SUISettings = require("infra/sui_store")
 local AAPaint      = require("infra/sui_aa_paint")
 local PAD          = UI.PAD
-local PAD2         = UI.PAD2
 local CLR_TEXT_SUB = UI.CLR_TEXT_SUB
 
 -- ---------------------------------------------------------------------------
@@ -92,8 +91,6 @@ local _DATE_FS_RATIO  = 20 / 75
 local _BATT_FS_RATIO  = 18 / 75
 local _DATE_H_RATIO   = 17 / 75
 local _BATT_H_RATIO   = 15 / 75
-
-local _BASE_BOT_PAD_EXTRA = Screen:scaleBySize(4)
 
 -- Gap between visible items (clock/date/battery), scaled the same way as
 -- every other module's inter-element spacing (base px * module scale),
@@ -673,8 +670,6 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
     local batt_h   = math.max(7, math.floor(clock_fs * _BATT_H_RATIO  * batt_elem))
     local item_gap = math.max(0, math.floor(_BASE_ITEM_GAP * scale * getItemGapPct(pfx) / 100))
 
-    local bot_pad_extra = math.floor(_BASE_BOT_PAD_EXTRA * scale)
-
     local visible     = getVisibleItems(pfx)
     local clock_style = getClockStyle(pfx)
 
@@ -742,12 +737,12 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
 
     -- `fit_align` makes the module chrome hug the content and position it
     -- within the column (see ModuleChrome.wrap). Horizontal insets come from
-    -- the chrome, so only vertical padding is applied here.
+    -- the chrome; equal vertical padding keeps the block optically centred.
     return FrameContainer:new{
         bordersize     = 0,
         padding        = 0,
         padding_top    = PAD,
-        padding_bottom = PAD2 + bot_pad_extra,
+        padding_bottom = PAD,
         fit_align      = align,
         vg,
     }
@@ -1002,7 +997,7 @@ function M.getHeight(ctx)
     local batt_h   = math.max(7, math.floor(clock_fs * _BATT_H_RATIO  * batt_elem))
     local item_gap = math.max(0, math.floor(_BASE_ITEM_GAP * scale * getItemGapPct(ctx.pfx) / 100))
 
-    local h_base  = PAD * 2 + PAD2
+    local h_base  = PAD * 2
     local visible = getVisibleItems(ctx.pfx)
     local style   = getClockStyle(ctx.pfx)
 

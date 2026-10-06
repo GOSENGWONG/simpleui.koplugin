@@ -248,19 +248,22 @@ local function _styleGetBgWidget()
         _style_bg_cache_w  = sw
         _style_bg_cache_h  = sh
         _style_bg_cache_nm = nm
-        -- Keep a screen-sized blitbuffer for partial erasers. Stretch mode
-        -- already stores one; fit mode rasterizes the widget once here.
-        if not _style_bg_cache_bb then
-            local ok_bb, canvas = pcall(function()
-                local Blitbuffer = require("ffi/blitbuffer")
-                local c = Blitbuffer.new(sw, sh)
-                c:fill(Blitbuffer.COLOR_WHITE)
-                w:paintTo(c, 0, 0)
-                return c
-            end)
-            if ok_bb and canvas then
-                _style_bg_cache_bb = canvas
-            end
+        -- Eraser cache: always rasterize through ImageWidget:paintTo so the
+        -- pixels match a full-frame wallpaper paint (night mode, letterbox,
+        -- rotation). Stretch mode may already hold the scaled source bitmap
+        -- shared with the widget — that source is not freed here.
+        local source_bb = _style_bg_cache_bb
+        local ok_bb, canvas = pcall(function()
+            local Blitbuffer = require("ffi/blitbuffer")
+            local c = Blitbuffer.new(sw, sh)
+            c:fill(Blitbuffer.COLOR_WHITE)
+            w:paintTo(c, 0, 0)
+            return c
+        end)
+        if ok_bb and canvas then
+            _style_bg_cache_bb = canvas
+        elseif not source_bb then
+            _style_bg_cache_bb = nil
         end
         return w
     end
@@ -706,32 +709,60 @@ function M.paintTint(bb, x, y, w, h)
     if darken  > 0 then bb:darkenRect(x, y, w, h, darken / 100) end
 end
 
--- Clear a dirty rect before a partial redraw: restore wallpaper pixels when
--- a wallpaper is active, otherwise paint the solid surface colour.
-function M.paintEraser(bb, x, y, w, h)
+-- Restore a dirty rect to the same appearance module chrome leaves behind:
+-- wallpaper (or solid surface) plus an optional backdrop scrim.
+--
+-- strength / radius are optional. Omit them (or pass 0) for a plain base
+-- restore — the historical paintEraser behaviour. Pass the module's chrome
+-- strength so gaps inside a card keep the configured opacity after a
+-- partial redraw (pagination, swipe).
+--
+-- The eraser cache is a screen-sized raster produced by ImageWidget:paintTo
+-- (see _styleGetBgWidget), so it already matches full-frame wallpaper paint
+-- including night-mode handling. No extra invert is applied here.
+function M.paintEraser(bb, x, y, w, h, strength, radius)
     if w <= 0 or h <= 0 then return end
-    -- Ensure the screen-sized cache exists (fit mode builds it on first get).
+    strength = _clampBackdrop(strength) or 0
+
+    -- Opaque chrome: surface fill alone is the final pixel state.
+    if strength >= 100 then
+        M.paintBackdrop(bb, x, y, w, h, 100, radius or 0)
+        return
+    end
+
+    -- Base layer: wallpaper sub-rect, or solid surface when none is set.
     if not _style_bg_cache_bb then
         _styleGetBgWidget()
     end
     local src = _style_bg_cache_bb
+    local restored = false
     if src then
         local sw = src:getWidth()
         local sh = src:getHeight()
-        if x < 0 then w = w + x; x = 0 end
-        if y < 0 then h = h + y; y = 0 end
-        if x >= sw or y >= sh then return end
-        if x + w > sw then w = sw - x end
-        if y + h > sh then h = sh - y end
-        if w <= 0 or h <= 0 then return end
-        local ok = pcall(function()
-            bb:blitFrom(src, x, y, x, y, w, h)
-            M.paintTint(bb, x, y, w, h)
-        end)
-        if ok then return end
+        local rx, ry, rw, rh = x, y, w, h
+        if rx < 0 then rw = rw + rx; rx = 0 end
+        if ry < 0 then rh = rh + ry; ry = 0 end
+        if rx < sw and ry < sh then
+            if rx + rw > sw then rw = sw - rx end
+            if ry + rh > sh then rh = sh - ry end
+            if rw > 0 and rh > 0 then
+                restored = pcall(function()
+                    bb:blitFrom(src, rx, ry, rx, ry, rw, rh)
+                    M.paintTint(bb, rx, ry, rw, rh)
+                end)
+            end
+        end
     end
-    local SUIStyle = require("features/sui_style")
-    bb:paintRect(x, y, w, h, SUIStyle.COLOR.surface)
+    if not restored then
+        local SUIStyle = require("features/sui_style")
+        M.withInverseGuard(bb, function()
+            bb:paintRect(x, y, w, h, SUIStyle.COLOR.surface)
+        end)
+    end
+
+    if strength > 0 then
+        M.paintBackdrop(bb, x, y, w, h, strength, radius or 0)
+    end
 end
 
 -- ---------------------------------------------------------------------------

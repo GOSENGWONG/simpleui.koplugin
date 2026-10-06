@@ -1106,11 +1106,10 @@ function GridRenderer.build(w, ctx, opts)
         -- what's in the framebuffer; without something repainting that
         -- area, the previous page's pixels stay there.
         -- Erase the row rect before painting content so partial rebuilds
-        -- (pagination / swipe) do not leave stale pixels. With a wallpaper
-        -- this restores the image sub-rect; without it, paints surface.
-        -- After the erase, re-apply the module backdrop so gaps between
-        -- covers keep the configured opacity (the outer chrome layer is
-        -- drawn before this content and would otherwise be wiped).
+        -- (pagination / swipe) do not leave stale pixels. paintEraser
+        -- restores the module chrome background (wallpaper + scrim) so gaps
+        -- between covers keep the configured opacity in both day and night
+        -- mode. Radius 0: this rect is inside the chrome box.
         local content_row = row
         do
             -- Built as a WidgetContainer instance, not a plain table, so it
@@ -1125,15 +1124,10 @@ function GridRenderer.build(w, ctx, opts)
             function eraser:paintTo(bb, x, y)
                 local ok_wp, WP = pcall(require, "features/sui_wallpaper")
                 if ok_wp and WP and WP.paintEraser then
-                    WP.paintEraser(bb, x, y, self.dimen.w, self.dimen.h)
+                    WP.paintEraser(bb, x, y, self.dimen.w, self.dimen.h,
+                        GridRenderer.backdropStrength(pfx, id), 0)
                 else
                     bb:paintRect(x, y, self.dimen.w, self.dimen.h, SUIStyle.COLOR.surface)
-                end
-                local strength = GridRenderer.backdropStrength(pfx, id)
-                if strength > 0 and ok_wp and WP and WP.paintBackdrop then
-                    -- Radius 0: this rect is inside the chrome box; corners
-                    -- and frame are owned by the outer chrome layer.
-                    WP.paintBackdrop(bb, x, y, self.dimen.w, self.dimen.h, strength, 0)
                 end
             end
             content_row = OverlapGroup:new{

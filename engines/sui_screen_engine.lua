@@ -2605,7 +2605,10 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                     end
                 end
 
-                local h_row = HorizontalGroup:new{ align = "center" }
+                -- Build columns first so shorter ones can be vertically
+                -- centred against the tallest column in the row.
+                local built = {}
+                local max_h = 0
                 for i, col in ipairs(row_cols) do
                     local slot_w = target[i]
                     local v_col = VerticalGroup:new{ align = "left" }
@@ -2619,15 +2622,23 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
                             v_col[#v_col+1] = cell
                         end
                     end
-                    -- Pin the column to the allocated slot width. Without this,
-                    -- VerticalGroup reports content width (which can exceed
-                    -- slot_w); neighbouring columns then overlap the
-                    -- HorizontalSpan and the inter-column gap never changes
-                    -- no matter what H_COL_GAP is set to.
                     local col_h = v_col:getSize().h
-                    h_row[#h_row+1] = LeftContainer:new{
-                        dimen = Geom:new{ w = slot_w, h = col_h },
-                        v_col,
+                    if col_h > max_h then max_h = col_h end
+                    built[#built+1] = { v_col = v_col, slot_w = slot_w, col_h = col_h }
+                end
+
+                local h_row = HorizontalGroup:new{ align = "center" }
+                for i, b in ipairs(built) do
+                    -- Stretch every column to max_h and centre its content.
+                    -- CenterContainer is the same pattern used for section-label
+                    -- page indicators above; LeftContainer pins the slot width
+                    -- so a narrow child does not shrink the column.
+                    h_row[#h_row+1] = CenterContainer:new{
+                        dimen = Geom:new{ w = b.slot_w, h = max_h },
+                        LeftContainer:new{
+                            dimen = Geom:new{ w = b.slot_w, h = b.col_h },
+                            b.v_col,
+                        },
                     }
                     if i < n then
                         h_row[#h_row+1] = HorizontalSpan:new{ width = H_COL_GAP }
@@ -2718,7 +2729,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
             if #left_group > 0 or #right_group > 0 then
                 first_mod = false
                 body[#body+1] = HorizontalGroup:new{
-                    align = "top",
+                    align = "center",
                     left_group,
                     HorizontalSpan:new{ width = H_COL_GAP },
                     right_group,
