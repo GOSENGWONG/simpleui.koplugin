@@ -408,14 +408,22 @@ end
 -- Wraps a widget in a row of fixed height and the widget's own width, with the
 -- widget vertically centred. The fixed height keeps the module height
 -- independent of font metrics (see M.getHeight).
+-- `shift` (px, positive = down) offsets the widget from the centre; it is
+-- applied as a spacer on the opposite side, which the centring then halves.
 -- ---------------------------------------------------------------------------
 
-local function _slot(wgt, h)
+local function _slot(wgt, h, shift)
     local size = wgt:getSize()
     if not wgt.dimen then wgt.dimen = size end
+    local content = wgt
+    if shift and shift > 0 then
+        content = VerticalGroup:new{ VerticalSpan:new{ width = shift * 2 }, wgt }
+    elseif shift and shift < 0 then
+        content = VerticalGroup:new{ wgt, VerticalSpan:new{ width = -shift * 2 } }
+    end
     return CenterContainer:new{
         dimen = Geom:new{ w = size.w, h = h },
-        wgt,
+        content,
     }
 end
 
@@ -692,11 +700,12 @@ local function build(w, pfx, vspan_pool, landscape_factor, styles)
             if face_widget then vg[#vg+1] = face_widget end
         else
             local face_clock, bold_clock = SUIStyle.getTextFace(styles.clock, clock_fs)
+            local time_text = datetime.secondsToHour(os.time(), G_reader_settings:isTrue("twelve_hour_clock"))
             vg[#vg+1] = _slot(UI.makeColoredText{
-                text = datetime.secondsToHour(os.time(), G_reader_settings:isTrue("twelve_hour_clock")),
+                text = time_text,
                 face = face_clock,
                 bold = bold_clock,
-            }, clock_w)
+            }, clock_w, SUIStyle.inkCentreShift(face_clock, time_text, bold_clock))
         end
     end
 

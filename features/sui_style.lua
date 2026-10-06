@@ -58,6 +58,7 @@ local _               = require("infra/sui_i18n").translate
 local Blitbuffer      = require("ffi/blitbuffer")
 local Device          = require("device")
 local FrameContainer   = require("ui/widget/container/framecontainer")
+local RenderText       = require("ui/rendertext")
 local HorizontalGroup  = require("ui/widget/horizontalgroup")
 local HorizontalSpan   = require("ui/widget/horizontalspan")
 local Screen          = Device.screen
@@ -2032,6 +2033,20 @@ end
 function M.lineReserve(style, size, nominal)
     if not style.family and style.variant == "regular" then return nominal end
     return M.faceHeight((M.getTextFace(style, size)))
+end
+
+--- Vertical shift in pixels (positive = down) that moves the drawn glyphs of
+--- `text` to the centre of their line box. Faces differ in how they place
+--- glyphs inside the line box, so centring the box alone can leave the text
+--- visibly off-centre. Returns 0 when the font engine cannot answer.
+function M.inkCentreShift(face, text, bold)
+    local ok, shift = pcall(function()
+        local line_h, ascender = face.ftsize:getHeightAndAscender()
+        local ink = RenderText:sizeUtf8Text(0, nil, face, text, false, bold)
+        local ink_centre = ascender + (ink.y_bottom - ink.y_top) / 2
+        return math.floor(line_h / 2 - ink_centre + 0.5)
+    end)
+    return ok and shift or 0
 end
 
 --- Radio items to pick a font family: "Default" (clears the choice) followed
