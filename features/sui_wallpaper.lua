@@ -703,8 +703,13 @@ end
 
 -- Applies the lighten / darken tint over a region that already holds the
 -- wallpaper. Both are cheap in-place blitbuffer operations.
+--
+-- Night mode inverts the frame after painting, so a tint written towards white
+-- reaches the screen as a darkening (and vice versa). The strengths are swapped
+-- in night mode so each setting keeps its on-screen meaning.
 function M.paintTint(bb, x, y, w, h)
     local lighten, darken = _readTint(KEY_LIGHTEN), _readTint(KEY_DARKEN)
+    if Screen.night_mode then lighten, darken = darken, lighten end
     if lighten > 0 then bb:lightenRect(x, y, w, h, lighten / 100) end
     if darken  > 0 then bb:darkenRect(x, y, w, h, darken / 100) end
 end
