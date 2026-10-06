@@ -2339,9 +2339,10 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
     local function makeWallpaperMenuItems(ctx_menu)
         local SUIWallpaper = require("features/sui_wallpaper")
 
-        -- Refreshes the UI once after a backdrop opacity change; the wallpaper
-        -- image itself is untouched.
-        local function refreshOpacity(touchmenu)
+        -- Refreshes the UI once after a strength change and updates the menu
+        -- so the new value shows immediately; the wallpaper image itself is
+        -- untouched.
+        local function refreshStrength(touchmenu)
             _applyFullLayoutRefresh({ keep_wallpaper = true })
             if ctx_menu and ctx_menu.refresh then
                 ctx_menu.refresh()
@@ -2352,85 +2353,148 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
             end
         end
 
-        -- Opacity entry available only while a wallpaper is active.
-        local function opacityItem(opts)
+        -- Strength entry available only while a wallpaper is active.
+        local function strengthItem(opts)
             local extra_enabled = opts.enabled_func
             opts.enabled_func = function()
                 return SUIWallpaper.isWallpaperActive() and (not extra_enabled or extra_enabled())
             end
-            opts.refresh = refreshOpacity
+            opts.refresh = refreshStrength
             return Config.makeBackdropStrengthItem(opts)
         end
 
+        -- Wallpaper tint entry (0–99 %, no tint by default).
+        local function tintItem(opts)
+            opts.default_value = 0
+            opts.value_max     = SUIWallpaper.TINT_MAX
+            opts.format        = function(strength) return strength .. "%" end
+            return strengthItem(opts)
+        end
+
+        -- Image option that rebuilds the wallpaper when toggled.
+        local function imageToggleItem(text, get, set)
+            return {
+                text           = text,
+                enabled_func   = SUIWallpaper.styleGetWallpaperEnabled,
+                checked_func   = get,
+                keep_menu_open = true,
+                callback       = function()
+                    set(not get())
+                    _applyFullLayoutRefresh()
+                end,
+            }
+        end
+
+        local function selectWallpaperItems()
+            local items = {
+                {
+                    text           = _("Browse…"),
+                    keep_menu_open = true,
+                    separator      = true,
+                    callback       = function()
+                        local AssetBrowser = require("engines/sui_asset_browser")
+                        UIManager:show(AssetBrowser:new{
+                            path       = SUIWallpaper.styleGetWallpapersDir(),
+                            extensions = SUIWallpaper.SUPPORTED_WALLPAPER_EXTS,
+                            title      = _("Choose wallpaper"),
+                            onConfirm  = function(path)
+                                SUIWallpaper.styleSetWallpaper(path)
+                                _applyFullLayoutRefresh()
+                            end,
+                        })
+                    end,
+                },
+            }
+            for _i, wp in ipairs(SUIWallpaper.styleScanWallpapers()) do
+                local _wp = wp
+                items[#items + 1] = {
+                    text_func      = function() return _wp.label end,
+                    radio          = true,
+                    checked_func   = function() return SUIWallpaper.styleGetWallpaper() == _wp.path end,
+                    keep_menu_open = true,
+                    callback       = function()
+                        SUIWallpaper.styleSetWallpaper(_wp.path)
+                        _applyFullLayoutRefresh()
+                    end,
+                }
+            end
+            if #items == 1 then
+                items[#items + 1] = { text = _("No wallpapers found."), enabled = false }
+            end
+            items[#items + 1] = { text = _("Place images in:"), enabled = false, separator = true }
+            items[#items + 1] = { text = SUIWallpaper.styleGetWallpapersDir(), enabled = false }
+            return items
+        end
+
+        -- Ordered as: source → image rendering → tint → surfaces over the
+        -- wallpaper (top of the screen to bottom).
         return {
             {
                 text           = _("Enable Wallpaper"),
-                checked_func = function() return SUISettings:isTrue("simpleui_style_wallpaper_enabled") end,
-                callback     = function()
-                    SUIWallpaper.styleSetWallpaperEnabled(not SUISettings:isTrue("simpleui_style_wallpaper_enabled"))
+                checked_func   = SUIWallpaper.styleGetWallpaperEnabled,
+                keep_menu_open = true,
+                separator      = true,
+                callback       = function()
+                    SUIWallpaper.styleSetWallpaperEnabled(not SUIWallpaper.styleGetWallpaperEnabled())
                     _applyFullLayoutRefresh()
                 end,
-                separator    = true,
-                keep_menu_open = true,
             },
             {
-                text = _("Select Wallpaper"),
-                enabled_func = function() return SUISettings:isTrue("simpleui_style_wallpaper_enabled") end,
-                sub_item_table_func = function()
-                    local items = {}
-                    items[#items + 1] = {
-                        text = _("Browse…"),
-                        keep_menu_open = true,
-                        callback = function()
-                            local AssetBrowser = require("engines/sui_asset_browser")
-                            UIManager:show(AssetBrowser:new{
-                                path       = SUIWallpaper.styleGetWallpapersDir(),
-                                extensions = SUIWallpaper.SUPPORTED_WALLPAPER_EXTS,
-                                title      = _("Choose wallpaper"),
-                                onConfirm  = function(path)
-                                    SUIWallpaper.styleSetWallpaper(path)
-                                    _applyFullLayoutRefresh()
-                                end,
-                            })
-                        end,
-                        separator = true,
-                    }
-                    local wps = SUIWallpaper.styleScanWallpapers()
-                    for _, wp in ipairs(wps) do
-                        local _wp = wp
-                        items[#items + 1] = {
-                            text_func    = function() return _wp.label end,
-                            radio        = true,
-                            checked_func = function() return SUIWallpaper.styleGetWallpaper() == _wp.path end,
-                            keep_menu_open = true,
-                            callback = function()
-                                SUIWallpaper.styleSetWallpaper(_wp.path)
-                                _applyFullLayoutRefresh()
-                            end,
-                        }
-                    end
-                    if #items == 0 then
-                        items[#items+1] = { text = _("No wallpapers found."), enabled = false }
-                    end
-                    items[#items+1] = { text = _("Place images in:"), enabled = false, separator = true }
-                    items[#items+1] = { text = SUIWallpaper.styleGetWallpapersDir(), enabled = false }
-                    return items
+                text                = _("Select Wallpaper"),
+                enabled_func        = SUIWallpaper.styleGetWallpaperEnabled,
+                sub_item_table_func = selectWallpaperItems,
+            },
+            {
+                text           = _("Show wallpaper on all screens"),
+                checked_func   = SUIWallpaper.styleGetWallpaperShowInFM,
+                enabled_func   = SUIWallpaper.isWallpaperActive,
+                keep_menu_open = true,
+                separator      = true,
+                callback       = function()
+                    SUIWallpaper.styleSetWallpaperShowInFM(not SUIWallpaper.styleGetWallpaperShowInFM())
+                    _applyFullLayoutRefresh()
                 end,
             },
-            opacityItem({
+            imageToggleItem(_("Stretch to fill screen"),
+                SUIWallpaper.styleGetWallpaperStretch, SUIWallpaper.styleSetWallpaperStretch),
+            imageToggleItem(_("Auto-rotate"),
+                SUIWallpaper.styleGetWallpaperAutoRotate, SUIWallpaper.styleSetWallpaperAutoRotate),
+            imageToggleItem(_("Invert in Night Mode"),
+                SUIWallpaper.styleGetWallpaperInvertNight, SUIWallpaper.styleSetWallpaperInvertNight),
+            tintItem({
+                title = _("Lighten"),
+                info  = _("Fades the wallpaper towards white to improve text readability."),
+                get   = SUIWallpaper.styleGetWallpaperLighten,
+                set   = SUIWallpaper.styleSetWallpaperLighten,
+            }),
+            tintItem({
+                title = _("Darken"),
+                info  = _("Fades the wallpaper towards black."),
+                get   = SUIWallpaper.styleGetWallpaperDarken,
+                set   = SUIWallpaper.styleSetWallpaperDarken,
+            }),
+            strengthItem({
                 title         = _("Status Bar Opacity"),
                 get           = SUIWallpaper.getStatusbarBackdropStrength,
                 set           = SUIWallpaper.setStatusbarBackdropStrength,
                 default_value = SUIWallpaper.BACKDROP_DEFAULT.statusbar,
             }),
-            opacityItem({
+            strengthItem({
                 title         = _("Title Bar Button Opacity"),
                 info          = _("0% transparent, 100% solid. Rounded background behind title bar buttons (back, search, menu, …)."),
                 get           = SUIWallpaper.getTitlebarButtonBackdropStrength,
                 set           = SUIWallpaper.setTitlebarButtonBackdropStrength,
                 default_value = SUIWallpaper.BACKDROP_DEFAULT.titlebar_button,
             }),
-            opacityItem({
+            strengthItem({
+                title         = _("Pagination Bar Opacity"),
+                info          = _("0% transparent, 100% solid. Applies to the native page bar in Library, History, Collections and similar screens."),
+                get           = SUIWallpaper.getPaginationBackdropStrength,
+                set           = SUIWallpaper.setPaginationBackdropStrength,
+                default_value = SUIWallpaper.BACKDROP_DEFAULT.pagination,
+                enabled_func  = function() return SUISettings:nilOrTrue("simpleui_bar_pagination_visible") end,
+            }),
+            strengthItem({
                 title         = _("Navigation Bar Opacity"),
                 get           = SUIWallpaper.getNavbarBackdropStrength,
                 set           = SUIWallpaper.setNavbarBackdropStrength,
@@ -2441,89 +2505,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     return SUIWallpaper.formatBackdropStrength(SUIWallpaper.getNavbarBackdropStrength())
                 end,
             }),
-            opacityItem({
-                title         = _("Pagination Bar Opacity"),
-                info          = _("0% transparent, 100% solid. Applies to the native page bar in Library, History, Collections and similar screens."),
-                get           = SUIWallpaper.getPaginationBackdropStrength,
-                set           = SUIWallpaper.setPaginationBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.pagination,
-                enabled_func  = function() return SUISettings:nilOrTrue("simpleui_bar_pagination_visible") end,
-            }),
-
-            -- Show wallpaper on all FM / overlay screens
-            {
-                text         = _("Show wallpaper on all screens"),
-                checked_func = function()
-                    return SUIWallpaper.styleGetWallpaperShowInFM()
-                end,
-                enabled_func = SUIWallpaper.isWallpaperActive,
-                callback = function()
-                    SUIWallpaper.styleSetWallpaperShowInFM(not SUIWallpaper.styleGetWallpaperShowInFM())
-                    _applyFullLayoutRefresh()
-                end,
-                keep_menu_open = true,
-                separator      = true,
-            },
-            {
-                text = _("Stretch to fill screen"),
-                enabled_func = function() return SUISettings:isTrue("simpleui_style_wallpaper_enabled") end,
-                checked_func = function() return SUIWallpaper.styleGetWallpaperStretch() end,
-                keep_menu_open = true,
-                callback = function()
-                    SUIWallpaper.styleSetWallpaperStretch(not SUIWallpaper.styleGetWallpaperStretch())
-                    _applyFullLayoutRefresh()
-                end,
-            },
-            {
-                text = _("Auto-rotate"),
-                enabled_func = function() return SUISettings:isTrue("simpleui_style_wallpaper_enabled") end,
-                checked_func = function() return SUIWallpaper.styleGetWallpaperAutoRotate() end,
-                keep_menu_open = true,
-                callback = function()
-                    SUIWallpaper.styleSetWallpaperAutoRotate(not SUIWallpaper.styleGetWallpaperAutoRotate())
-                    _applyFullLayoutRefresh()
-                end,
-            },
-            {
-                text = _("Invert in Night Mode"),
-                enabled_func = function() return SUISettings:isTrue("simpleui_style_wallpaper_enabled") end,
-                checked_func = function() return SUIWallpaper.styleGetWallpaperInvertNight() end,
-                keep_menu_open = true,
-                callback = function()
-                    SUIWallpaper.styleSetWallpaperInvertNight(not SUIWallpaper.styleGetWallpaperInvertNight())
-                    _applyFullLayoutRefresh()
-                end,
-            },
-            {
-                text_func = function()
-                    return _("Lighten")
-                end,
-                value_func = function()
-                    local op = SUIWallpaper.styleGetWallpaperOpacity()
-                    return op .. "%"
-                end,
-                enabled_func = function() return SUISettings:isTrue("simpleui_style_wallpaper_enabled") end,
-                keep_menu_open = true,
-                callback = function()
-                    local SpinWidget = require("ui/widget/spinwidget")
-                    UIManager:show(SpinWidget:new{
-                        title_text = _("Lighten Wallpaper"),
-                        info_text  = _("Fades the wallpaper towards white to improve text readability.\n0% is the default (no lightening)."),
-                        value      = SUIWallpaper.styleGetWallpaperOpacity(),
-                        value_min  = 0,
-                        value_max  = 99,
-                        value_step = 5,
-                        unit       = "%",
-                        ok_text    = _("Apply"),
-                        cancel_text = _("Cancel"),
-                        default_value = 0,
-                        callback = function(spin)
-                            SUIWallpaper.styleSetWallpaperOpacity(spin.value)
-                            _applyFullLayoutRefresh({ keep_wallpaper = true })
-                        end,
-                    })
-                end,
-            },
         }
     end
     plugin.makeWallpaperMenuItems = makeWallpaperMenuItems

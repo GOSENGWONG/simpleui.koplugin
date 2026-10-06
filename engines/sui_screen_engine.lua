@@ -1647,12 +1647,7 @@ function ScreenWidget:_initLayout()
             -- Always paint from y=0 so the wallpaper is anchored at the top
             -- and covers the full screen area.
             _bg:paintTo(bb, x, 0)
-            -- Opacity: 0 = fully opaque (no lighten), 1-99 = fade toward white.
-            -- lightenRect is a cheap in-place blitbuffer op — safe on e-ink.
-            local opacity = SUIWallpaper.styleGetWallpaperOpacityValue()
-            if opacity and opacity > 0 then
-                bb:lightenRect(x, 0, Screen:getWidth(), Screen:getHeight(), opacity / 100)
-            end
+            SUIWallpaper.paintTint(bb, x, 0, Screen:getWidth(), Screen:getHeight())
             _orig_paintTo(self, bb, x, y)
         end
     end

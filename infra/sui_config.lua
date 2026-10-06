@@ -1314,9 +1314,9 @@ function M.makeScaleItem(opts)
     }
 end
 
--- Backdrop opacity entry (0–100 %, labelled Transparent / N% / Solid),
--- shared by every surface drawn over the wallpaper. The dialog documents the
--- semantic default, which its reset button restores.
+-- Wallpaper strength entry (0–100 %, labelled Transparent / N% / Solid by
+-- default), shared by every surface and tint drawn over the wallpaper. The
+-- dialog documents the semantic default, which its reset button restores.
 -- opts: {
 --   title         — entry text and dialog title
 --   get / set     — strength accessors (0–100)
@@ -1325,11 +1325,15 @@ end
 --   info          — optional dialog description (generic one otherwise)
 --   enabled_func  — optional menu enabled state
 --   value_func    — optional override of the value label
+--   value_max     — optional upper bound (defaults to 100)
+--   format        — optional strength → label formatter (defaults to
+--                   Transparent / N% / Solid)
 --   _lc           — optional translator (defaults to the plugin translator)
 -- }
 function M.makeBackdropStrengthItem(opts)
     local _lc = opts._lc or _
     local function label(strength)
+        if opts.format then return opts.format(strength) end
         return require("features/sui_wallpaper").formatBackdropStrength(strength, _lc)
     end
     return {
@@ -1347,7 +1351,7 @@ function M.makeBackdropStrengthItem(opts)
                 info_text     = info .. "\n" .. T(_lc("Default: %1"), label(opts.default_value)),
                 value         = opts.get(),
                 value_min     = 0,
-                value_max     = 100,
+                value_max     = opts.value_max or 100,
                 value_step    = 5,
                 unit          = "%",
                 ok_text       = _("Apply"),

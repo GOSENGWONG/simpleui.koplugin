@@ -87,7 +87,18 @@ end
 local function _wpStretch()     return SUISettings:isTrue("simpleui_style_wallpaper_stretch")        end
 local function _wpAutoRotate()  return SUISettings:nilOrTrue("simpleui_style_wallpaper_autorotate")  end
 local function _wpInvertNight() return SUISettings:isTrue("simpleui_style_wallpaper_invert_night")   end
-local function _wpOpacity()     return SUISettings:readSetting("simpleui_style_wallpaper_opacity", 0) end
+
+-- Wallpaper tint strength (0–99): lighten fades towards white, darken towards
+-- black. The lighten key keeps its original name so stored settings stay valid.
+local KEY_LIGHTEN  = "simpleui_style_wallpaper_opacity"
+local KEY_DARKEN   = "simpleui_style_wallpaper_darken"
+local _TINT_MIN, _TINT_MAX = 0, 99
+M.TINT_MAX = _TINT_MAX
+
+local function _readTint(key) return SUISettings:readSetting(key, _TINT_MIN) end
+local function _saveTint(key, val)
+    SUISettings:saveSetting(key, math.max(_TINT_MIN, math.min(_TINT_MAX, val or _TINT_MIN)))
+end
 
 -- Returns DataStorage/simpleui/sui_wallpapers/, creating it if needed.
 local function _styleWallpapersDir()
@@ -347,12 +358,6 @@ function M.styleGetBgWidget()
     return _styleGetBgWidget()
 end
 
---- Returns the stored wallpaper opacity (0 = fully opaque, 1-99 = fade toward white).
---- Consumed by sui_patches.lua paint helpers.
-function M.styleGetWallpaperOpacityValue()
-    return _wpOpacity()
-end
-
 --- Consumed by sui_patches.lua to decide whether to paint the wallpaper into
 --- fullscreen overlays (Collections, History, etc.) and the FM.
 function M.styleGetWallpaperShowInFM()
@@ -401,13 +406,20 @@ function M.styleSetWallpaperInvertNight(on)
     _notifyLayoutChanged()
 end
 
-function M.styleGetWallpaperOpacity()
-    return _wpOpacity()
+-- Tint strengths are applied at paint time (not baked into the ImageWidget
+-- cache); the caller refreshes the layout with the cache kept.
+function M.styleGetWallpaperLighten()
+    return _readTint(KEY_LIGHTEN)
 end
-function M.styleSetWallpaperOpacity(val)
-    -- Opacity is applied at paint-time (not baked into the ImageWidget
-    -- cache); the caller refreshes the layout with the cache kept.
-    SUISettings:saveSetting("simpleui_style_wallpaper_opacity", math.max(0, math.min(99, val or 0)))
+function M.styleSetWallpaperLighten(val)
+    _saveTint(KEY_LIGHTEN, val)
+end
+
+function M.styleGetWallpaperDarken()
+    return _readTint(KEY_DARKEN)
+end
+function M.styleSetWallpaperDarken(val)
+    _saveTint(KEY_DARKEN, val)
 end
 
 --- Frees the internal wallpaper widget cache.
@@ -686,6 +698,14 @@ function M.paintFrame(bb, x, y, w, h, thickness, radius, color)
     end
 end
 
+-- Applies the lighten / darken tint over a region that already holds the
+-- wallpaper. Both are cheap in-place blitbuffer operations.
+function M.paintTint(bb, x, y, w, h)
+    local lighten, darken = _readTint(KEY_LIGHTEN), _readTint(KEY_DARKEN)
+    if lighten > 0 then bb:lightenRect(x, y, w, h, lighten / 100) end
+    if darken  > 0 then bb:darkenRect(x, y, w, h, darken / 100) end
+end
+
 -- Clear a dirty rect before a partial redraw: restore wallpaper pixels when
 -- a wallpaper is active, otherwise paint the solid surface colour.
 function M.paintEraser(bb, x, y, w, h)
@@ -706,10 +726,7 @@ function M.paintEraser(bb, x, y, w, h)
         if w <= 0 or h <= 0 then return end
         local ok = pcall(function()
             bb:blitFrom(src, x, y, x, y, w, h)
-            local opacity = _wpOpacity()
-            if opacity and opacity > 0 then
-                bb:lightenRect(x, y, w, h, opacity / 100)
-            end
+            M.paintTint(bb, x, y, w, h)
         end)
         if ok then return end
     end

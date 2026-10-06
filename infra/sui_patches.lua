@@ -4376,14 +4376,13 @@ end
 -- direct access to the KOReader-level widgets without walking the full tree.
 -- ---------------------------------------------------------------------------
 
--- Paint the wallpaper onto bb, anchored at y=0 (top of screen), with opacity.
+-- Paint the wallpaper onto bb, anchored at y=0 (top of screen), with its tint.
 local function _paintWallpaper(bg_widget, bb, x, y)
     if not bg_widget then return end
-    local ok_wp, SUIWallpaper = pcall(require, "features/sui_wallpaper")
-    local opacity = ok_wp and SUIWallpaper and SUIWallpaper.styleGetWallpaperOpacityValue() or 0
     bg_widget:paintTo(bb, x, 0)
-    if opacity and opacity > 0 then
-        bb:lightenRect(x, 0, Screen:getWidth(), Screen:getHeight(), opacity / 100)
+    local ok_wp, SUIWallpaper = pcall(require, "features/sui_wallpaper")
+    if ok_wp and SUIWallpaper then
+        SUIWallpaper.paintTint(bb, x, 0, Screen:getWidth(), Screen:getHeight())
     end
 end
 
