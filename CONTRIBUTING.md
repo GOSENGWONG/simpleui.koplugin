@@ -149,6 +149,7 @@ msgmerge --update locale/<lang>.po locale/simpleui.pot
 - If a string is shown to the user, it must be wrapped in `_()`
 - Add a short comment when the reason for a decision is not obvious from the code
 - All settings keys written to `G_reader_settings` must use either the `simpleui_` or `navbar_` prefix — never bare unprefixed keys
+- Settings rows keep a static label; the current choice is shown only as the right-side value (`value_func`, plus `mandatory_func` for the native menu) — never concatenated into the label (`"Sort: Title"`). Use `Config.makeRadioSubmenuItem` for N-way choices; the convention is described in `engines/sui_window.lua`
 
 ### User data directories
 

@@ -1759,15 +1759,20 @@ function M.makeCoverHoldModeItem(opts)
     }
 end
 
--- Generic N-way radio submenu ("Type: X →" row that opens a list of radio
--- choices), extracted from the get/set/refresh shape already used above by
+-- Generic N-way radio submenu: a row with a static label and the current
+-- choice shown as its right-side value, opening a list of radio choices.
+-- Extracted from the get/set/refresh shape already used above by
 -- makeCoverHoldModeItem. Any settings-menu consumer with more than an on/off
 -- toggle (a style/type/color picker) can reuse this instead of hand-rolling
 -- its own sub_item_table_func.
 --
+-- The label never embeds the current choice (no "Type: X"); the choice is
+-- exposed only through value_func / mandatory_func.
+--
 -- opts:
 --   text          string    static row label (ignored if text_func given)
 --   text_func     function? () -> string, overrides `text`
+--   help_text     string?   long-press help for the row
 --   options       { { value = any, label = string }, ... }  (required,
 --                 ordered — this order is also the menu order)
 --   get           function() -> current value (required)
@@ -1793,6 +1798,7 @@ function M.makeRadioSubmenuItem(opts)
         text_func      = opts.text_func or function() return opts.text end,
         value_func     = function() return _labelFor(get()) end,
         mandatory_func = function() return _labelFor(get()) end,
+        help_text      = opts.help_text,
         enabled_func   = opts.enabled_func,
         separator      = opts.separator,
         sub_item_table_func = function()

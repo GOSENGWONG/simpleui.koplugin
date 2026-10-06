@@ -2509,43 +2509,48 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
     end
     plugin.makeWallpaperMenuItems = makeWallpaperMenuItems
 
-    -- KOReader's own "Start with" menu, already extended with the Home Screen
-    -- choice, reused as is so the plugin and KOReader share one menu and one
-    -- setting.
+    -- Host "Start with" menu, already extended with the Home Screen choice and
+    -- reused as is so the plugin and the host share one menu and one setting.
+    -- The row label is static; the active choice is the row value (see the
+    -- row title/value convention in engines/sui_window.lua).
     local function startWithItem()
         local FileManagerMenu = require("apps/filemanager/filemanagermenu")
-        local item = FileManagerMenu:getStartWithMenuTable()
-        for _i, choice in ipairs(item.sub_item_table) do
+        local item    = FileManagerMenu:getStartWithMenuTable()
+        local choices = item.sub_item_table
+
+        for _i, choice in ipairs(choices) do
             choice.keep_menu_open = true
         end
+
+        local function activeChoiceLabel()
+            for _i, choice in ipairs(choices) do
+                if choice.checked_func and choice.checked_func() then
+                    return choice.text
+                end
+            end
+            return ""
+        end
+
+        item.text_func      = nil
+        item.text           = _("Start with")
+        item.value_func     = activeChoiceLabel
+        item.mandatory_func = activeChoiceLabel
         return item
     end
 
     -- Radio menu for the screen shown after closing a book.
     local function bookCloseTargetItem()
         local TARGET = Config.BOOK_CLOSE_TARGET
-        local targets = {
-            { id = TARGET.HOMESCREEN,  label = _("Home Screen")  },
-            { id = TARGET.LIBRARY,     label = _("Library")      },
-            { id = TARGET.BOOK_FOLDER, label = _("Book Folder") },
-        }
-        local choices, labels = {}, {}
-        for _i, target in ipairs(targets) do
-            labels[target.id] = target.label
-            choices[#choices + 1] = {
-                text           = target.label,
-                radio          = true,
-                keep_menu_open = true,
-                checked_func   = function() return Config.getBookCloseTarget() == target.id end,
-                callback       = function() Config.setBookCloseTarget(target.id) end,
-            }
-        end
-        return {
-            text_func = function()
-                return T(_("After closing a book: %1"), labels[Config.getBookCloseTarget()])
-            end,
-            help_text      = _("Screen shown after closing a book. Gestures and quick actions that name a destination always open that destination."),
-            sub_item_table = choices,
+        return Config.makeRadioSubmenuItem{
+            text      = _("After closing a book"),
+            help_text = _("Screen shown after closing a book. Gestures and quick actions that name a destination always open that destination."),
+            options   = {
+                { value = TARGET.HOMESCREEN,  label = _("Home Screen")  },
+                { value = TARGET.LIBRARY,     label = _("Library")      },
+                { value = TARGET.BOOK_FOLDER, label = _("Book Folder")  },
+            },
+            get = Config.getBookCloseTarget,
+            set = Config.setBookCloseTarget,
         }
     end
 
