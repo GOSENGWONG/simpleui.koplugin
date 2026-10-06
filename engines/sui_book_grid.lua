@@ -1108,6 +1108,9 @@ function GridRenderer.build(w, ctx, opts)
         -- Erase the row rect before painting content so partial rebuilds
         -- (pagination / swipe) do not leave stale pixels. With a wallpaper
         -- this restores the image sub-rect; without it, paints surface.
+        -- After the erase, re-apply the module backdrop so gaps between
+        -- covers keep the configured opacity (the outer chrome layer is
+        -- drawn before this content and would otherwise be wiped).
         local content_row = row
         do
             -- Built as a WidgetContainer instance, not a plain table, so it
@@ -1125,6 +1128,12 @@ function GridRenderer.build(w, ctx, opts)
                     WP.paintEraser(bb, x, y, self.dimen.w, self.dimen.h)
                 else
                     bb:paintRect(x, y, self.dimen.w, self.dimen.h, SUIStyle.COLOR.surface)
+                end
+                local strength = GridRenderer.backdropStrength(pfx, id)
+                if strength > 0 and ok_wp and WP and WP.paintBackdrop then
+                    -- Radius 0: this rect is inside the chrome box; corners
+                    -- and frame are owned by the outer chrome layer.
+                    WP.paintBackdrop(bb, x, y, self.dimen.w, self.dimen.h, strength, 0)
                 end
             end
             content_row = OverlapGroup:new{
