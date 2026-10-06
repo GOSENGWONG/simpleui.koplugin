@@ -22,7 +22,6 @@ local SUI         = require("engines/sui_window")
 local SUIStyle    = require("features/sui_style")
 local SUISettings = require("infra/sui_store")
 local SUIPresets  = require("features/sui_presets")
-local Config      = require("infra/sui_config")
 
 -- Landscape-aware scaling for this file's screens comes from ctx.SZ(n),
 -- handed to every screen builder by SUIWindow itself (single source of
@@ -245,7 +244,6 @@ function Onboarding.show(on_finish)
         position = "bottom",
         on_close = function()
             SUISettings:set("simpleui_onboarding_done", true)
-            Config.setStartWithHomescreen(true)
             if on_finish then on_finish() end
         end,
         screen_footers = {
@@ -273,7 +271,6 @@ function Onboarding.show(on_finish)
                     on_tap = function()
                         if SUIPresets.applyBuiltin then SUIPresets.applyBuiltin(st.selected_preset) end
                         SUISettings:set("simpleui_hs_active_preset", st.selected_preset)
-                        Config.setStartWithHomescreen(true)
                         if win.close then win:close() else UIManager:close(win) end
                     end,
                 })

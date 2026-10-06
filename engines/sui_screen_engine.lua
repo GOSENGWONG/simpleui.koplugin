@@ -3915,7 +3915,7 @@ end
 -- _raiseParkedScreen (infra/sui_patches.lua) promotes the parked instance
 -- back to the foreground with a scoped partial refresh instead of a full
 -- rebuild; any reader-close path that will not show the Homescreen this
--- time (e.g. "Return to Book Folder") closes the parked instance for real
+-- time (e.g. the Library or Book Folder close targets) closes the parked instance for real
 -- instead of leaving it dangling with increasingly stale data.
 --
 -- _navbar_closing_intentionally makes onCloseWidget (above) treat a real

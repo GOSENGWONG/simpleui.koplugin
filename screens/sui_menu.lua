@@ -2509,17 +2509,51 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
     end
     plugin.makeWallpaperMenuItems = makeWallpaperMenuItems
 
+    -- KOReader's own "Start with" menu, already extended with the Home Screen
+    -- choice, reused as is so the plugin and KOReader share one menu and one
+    -- setting.
+    local function startWithItem()
+        local FileManagerMenu = require("apps/filemanager/filemanagermenu")
+        local item = FileManagerMenu:getStartWithMenuTable()
+        for _i, choice in ipairs(item.sub_item_table) do
+            choice.keep_menu_open = true
+        end
+        return item
+    end
+
+    -- Radio menu for the screen shown after closing a book.
+    local function bookCloseTargetItem()
+        local TARGET = Config.BOOK_CLOSE_TARGET
+        local targets = {
+            { id = TARGET.HOMESCREEN,  label = _("Home Screen")  },
+            { id = TARGET.LIBRARY,     label = _("Library")      },
+            { id = TARGET.BOOK_FOLDER, label = _("Book Folder") },
+        }
+        local choices, labels = {}, {}
+        for _i, target in ipairs(targets) do
+            labels[target.id] = target.label
+            choices[#choices + 1] = {
+                text           = target.label,
+                radio          = true,
+                keep_menu_open = true,
+                checked_func   = function() return Config.getBookCloseTarget() == target.id end,
+                callback       = function() Config.setBookCloseTarget(target.id) end,
+            }
+        end
+        return {
+            text_func = function()
+                return T(_("After closing a book: %1"), labels[Config.getBookCloseTarget()])
+            end,
+            help_text      = _("Screen shown after closing a book. Gestures and quick actions that name a destination always open that destination."),
+            sub_item_table = choices,
+        }
+    end
+
     local function makeBehaviourMenuItems(ctx)
         ctx = ctx or HOMESCREEN_CTX
         local items = {
-            {
-                text           = _("Start with Home Screen"),
-                checked_func   = Config.isStartWithHomescreen,
-                keep_menu_open = true,
-                callback       = function()
-                    Config.setStartWithHomescreen(not Config.isStartWithHomescreen())
-                end,
-            },
+            startWithItem(),
+            bookCloseTargetItem(),
             {
                 text           = _("Return to Home Screen on Wakeup"),
                 help_text      = _("When waking the device from sleep/suspend, always return to the Home Screen — even if a book was open when it went to sleep."),
@@ -2628,18 +2662,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         end,
                     },
                 },
-            },
-            {
-                text           = _("Return to Book Folder"),
-                help_text      = _("When closing a book from the Home Screen, go back to the folder where the book is located instead of the Library home folder."),
-                checked_func   = function()
-                    return SUISettings:isTrue("simpleui_hs_return_to_book_folder")
-                end,
-                keep_menu_open = true,
-                callback       = function()
-                    local on = SUISettings:isTrue("simpleui_hs_return_to_book_folder")
-                    SUISettings:saveSetting("simpleui_hs_return_to_book_folder", not on)
-                end,
             },
             {
                 text = _("Closing Book Notice"),

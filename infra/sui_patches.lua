@@ -839,14 +839,13 @@ function M.patchFileManagerClass(plugin)
 
             if this._navbar_container then
                 local t = Config.loadTabConfig()
-                -- "Return to Book Folder" only applies to native reader closes
+                -- The book-close target only applies to native reader closes
                 -- (KOReader onClose → showFileManager without an explicit SimpleUI
                 -- destination). Explicit paths (Homescreen, Library, …) never set
                 -- the pending flag and always force their own landing path.
                 local pending_folder = this._sui_return_to_book_folder_pending
                 this._sui_return_to_book_folder_pending = nil
-                local return_to_folder = pending_folder
-                    or SUISettings:isTrue("simpleui_hs_return_to_book_folder")
+                local return_to_folder = pending_folder or Config.returnsToBookFolder()
                 if not return_to_folder then
                     plugin.active_action = "home"
                     local home = G_reader_settings:readSetting("home_dir")
@@ -2547,7 +2546,7 @@ function M.patchUIManagerClose(plugin)
         -- closeReaderToHomescreen sets tearing_down=true, so the ReaderUI branch
         -- below is skipped for those paths. This block is a last-resort fallback
         -- for any path not covered above (e.g. a third-party plugin closing the reader).
-        if isStartWithHS()
+        if (widget.name == "ReaderUI" or isStartWithHS())
                 and widget.covers_fullscreen
                 and (widget.title_bar or widget.name)
                 and widget.name ~= "homescreen"
@@ -2605,8 +2604,7 @@ function M.patchUIManagerClose(plugin)
                     -- was never really closed from the user's point of view, so
                     -- nothing should ever try to show the Home Screen here.
                     if not widget.tearing_down and not UIManager._simpleui_reload_in_progress then
-                        local return_to_folder = SUISettings:isTrue("simpleui_hs_return_to_book_folder")
-                        if not return_to_folder then
+                        if Config.getBookCloseTarget() == Config.BOOK_CLOSE_TARGET.HOMESCREEN then
                             local prev_action = active_plugin.active_action
                             local _ao2 = { bookmark_browser=true, wifi_toggle=true, frontlight=true, power=true }
                             if active_plugin.active_action == nil or not _ao2[active_plugin.active_action] then
@@ -3043,9 +3041,8 @@ function M.showHSAfterResume(plugin, force)
         if not force then return end
         -- Forced path: the reader is open on wakeup but the user wants the
         -- Homescreen regardless. closeReaderToHomescreen() already performs
-        -- onClose(false) + showFileManager() + raising/showing the HS (or
-        -- landing in the book's folder if "Return to Book Folder" is on),
-        -- so there is nothing left to do here once it has been scheduled.
+        -- onClose(false) + showFileManager() + raising/showing the HS, so
+        -- there is nothing left to do here once it has been scheduled.
         M.closeReaderToHomescreen(plugin, false)
         return
     end
@@ -3885,7 +3882,7 @@ end
 -- _prepareReaderClose
 --
 -- Flags for an explicit reader→Homescreen close.
--- "Return to Book Folder" is intentionally NOT applied here — that setting
+-- The book-close target is intentionally NOT applied here — that setting
 -- only affects native KOReader closes (see patchUIManagerClose / FM onShow).
 -- Explicit SimpleUI destinations always win (HS, Library, History, …).
 -- Returns: file, prev_action
@@ -4013,7 +4010,7 @@ end
 
 -- Closes a soft-parked screen instance for real instead of leaving it
 -- dangling alive-but-hidden. Used by any reader-close path that will NOT
--- show the Homescreen this time (e.g. "Return to Book Folder", Library).
+-- show the Homescreen this time (e.g. the Library or Book Folder close targets).
 _dropParkedScreen = function(screen_module)
     local inst = screen_module and screen_module._instance
     if not (inst and inst._parked) then return end
@@ -4098,13 +4095,15 @@ function M.closeReaderToHomescreen(plugin, via_gesture)
     local RUI = package.loaded["apps/reader/readerui"]
     if not (RUI and RUI.instance) then return end
     local readerui = RUI.instance
+    -- A close is already in progress for this reader.
+    if readerui.tearing_down then return end
 
     local file, prev_action =
         _prepareReaderClose(plugin, readerui, via_gesture)
 
     UIManager:nextTick(function()
         local RUI2 = package.loaded["apps/reader/readerui"]
-        if RUI2 and RUI2.instance and RUI2.instance ~= readerui then return end
+        if not (RUI2 and RUI2.instance == readerui) then return end
         _closeReaderToHomescreenSync(plugin, readerui, file, prev_action)
     end)
 end
@@ -4237,10 +4236,15 @@ function M.wireReaderMenuFMTab(plugin, readerui)
 
         if menu_ref.onTapCloseMenu then menu_ref:onTapCloseMenu() end
 
-        -- Native TouchMenu exit is the only path that honours
-        -- "Return to Book Folder". Explicit SimpleUI destinations
-        -- (gesture Home, QA Home, QA Library, …) never consult it.
-        if SUISettings:isTrue("simpleui_hs_return_to_book_folder") then
+        -- Native TouchMenu exit is the only path that honours the book-close
+        -- target. Explicit SimpleUI destinations (gesture Home, QA Home,
+        -- QA Library, …) never consult it.
+        local target = Config.getBookCloseTarget()
+        if target == Config.BOOK_CLOSE_TARGET.LIBRARY then
+            M.closeReaderToLibrary(plugin)
+            return
+        end
+        if target == Config.BOOK_CLOSE_TARGET.BOOK_FOLDER then
             local file = readerui.document and readerui.document.file
             local fm_pre = liveFM()
             if fm_pre then
@@ -4302,10 +4306,6 @@ function M.wireReaderHomeKey(plugin, readerui)
     readerui._simpleui_home_key_patched = true
 end
 
--- Close the reader and return to the Library (FM at home_dir) with no
--- Homescreen appearing on top — equivalent to the user closing the reader
--- when "return to book folder" / "Start with Homescreen" are both off.
--- Safe to call when the reader is NOT open (no-op in that case).
 -- Close the reader and land on the Library (FM at home_dir) with no
 -- Homescreen on top. Safe when the reader is not open (no-op).
 function M.closeReaderToLibrary(plugin)

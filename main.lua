@@ -1288,8 +1288,8 @@ end
 
 -- Called when the user triggers the "Go to Library" gesture.
 -- When inside the Reader: closes the reader and returns to the Library
--- (home_dir) without showing the Homescreen, as if "return to book folder"
--- were disabled — the FM file browser becomes the top widget.
+-- (home_dir) without showing the Homescreen — the FM file browser becomes
+-- the top widget.
 -- When outside the Reader: equivalent to tapping the Library tab.
 function SimpleUIPlugin:onSimpleUIGoLibrary()
     local RUI = package.loaded["apps/reader/readerui"]

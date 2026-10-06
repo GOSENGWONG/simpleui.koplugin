@@ -417,6 +417,29 @@ function M.setStartWithHomescreen(on)
     end
 end
 
+-- Destination shown after closing a book. Independent of the launch screen.
+local KEY_CLOSE_TARGET = "simpleui_hs_book_close_target"
+M.BOOK_CLOSE_TARGET = {
+    HOMESCREEN  = "homescreen",
+    LIBRARY     = "library",      -- file browser at the home folder
+    BOOK_FOLDER = "book_folder",  -- file browser at the folder of the closed book
+}
+local _CLOSE_TARGETS = {}
+for _k, id in pairs(M.BOOK_CLOSE_TARGET) do _CLOSE_TARGETS[id] = true end
+
+function M.getBookCloseTarget()
+    local target = SUISettings:readSetting(KEY_CLOSE_TARGET)
+    return _CLOSE_TARGETS[target] and target or M.BOOK_CLOSE_TARGET.HOMESCREEN
+end
+
+function M.setBookCloseTarget(target)
+    if _CLOSE_TARGETS[target] then SUISettings:saveSetting(KEY_CLOSE_TARGET, target) end
+end
+
+function M.returnsToBookFolder()
+    return M.getBookCloseTarget() == M.BOOK_CLOSE_TARGET.BOOK_FOLDER
+end
+
 function M.homeLabel()
     return _("Library")
 end
@@ -2575,10 +2598,18 @@ function M.applyFirstRunDefaults()
     local function def(k, v)
         if SUISettings:get(k) == nil then SUISettings:set(k, v) end
     end
-    local function gdef(k, v)
-        if G_reader_settings:readSetting(k) == nil then
-            G_reader_settings:saveSetting(k, v)
+
+    -- Book-close destination. Existing installs keep their current behaviour:
+    -- the legacy "return to book folder" toggle wins, otherwise the Home
+    -- Screen was only shown on close when it was also the launch screen.
+    if SUISettings:get(KEY_CLOSE_TARGET) == nil then
+        local target = M.BOOK_CLOSE_TARGET.HOMESCREEN
+        if SUISettings:isTrue("simpleui_hs_return_to_book_folder") then
+            target = M.BOOK_CLOSE_TARGET.BOOK_FOLDER
+        elseif SUISettings:get("simpleui_onboarding_done") and not M.isStartWithHomescreen() then
+            target = M.BOOK_CLOSE_TARGET.LIBRARY
         end
+        SUISettings:set(KEY_CLOSE_TARGET, target)
     end
 
     -- Navbar
@@ -2691,9 +2722,6 @@ function M.applyFirstRunDefaults()
     def("simpleui_qs_bar_bg",              "flat")
     def("simpleui_qs_bar_settings_on_hold", true)
     def("simpleui_qs_bar_slots",            { "wifi_toggle", "bookmark_browser", "frontlight", "night_mode", "power", "sui_settings" })
-
-    -- KOReader global: open homescreen on launch (only set once on fresh install)
-    gdef(START_WITH_KEY, START_WITH_HOMESCREEN)
 
     SUISettings:flush()
 end
