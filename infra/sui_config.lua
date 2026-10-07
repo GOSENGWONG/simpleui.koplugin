@@ -591,14 +591,15 @@ local LABEL_SCALE_KEY  = "simpleui_hs_label_scale"
 local SCALE_LINKED_KEY = "simpleui_hs_scale_linked"
 local ITEM_LABEL_SCALE_SUFFIX = "_item_label_scale"
 
-local function _clamp(n) return math_max(SCALE_MIN, math_min(SCALE_MAX, math_floor(n))) end
+local function _clamp(n, max) return math_max(SCALE_MIN, math_min(max or SCALE_MAX, math_floor(n))) end
 
--- Percent scale stored under `key`: clamped on read and write, SCALE_DEF when unset.
-local function _readPct(key)
+-- Percent scale stored under `key`: clamped (to `max`, default SCALE_MAX) on read
+-- and write, SCALE_DEF when unset.
+local function _readPct(key, max)
     local n = tonumber(SUISettings:get(key))
-    return n and _clamp(n) or SCALE_DEF
+    return n and _clamp(n, max) or SCALE_DEF
 end
-local function _writePct(pct, key) SUISettings:set(key, _clamp(pct)) end
+local function _writePct(pct, key, max) SUISettings:set(key, _clamp(pct, max)) end
 
 -- Same accessors for settings that live outside the per-module key scheme.
 M.getScalePctByKey = _readPct
@@ -676,101 +677,30 @@ M.BOT_MARGIN_MIN  = BOT_MARGIN_MIN
 M.BOT_MARGIN_MAX  = BOT_MARGIN_MAX
 M.BOT_MARGIN_STEP = BOT_MARGIN_STEP
 
--- Reading Stats Text Scale
-local RS_TEXT_SCALE_KEY  = "simpleui_bar_rs_text_scale_pct"
-local RS_TEXT_SCALE_DEF  = 100
-local RS_TEXT_SCALE_MIN  = 50
-local RS_TEXT_SCALE_MAX  = 200
-
-function M.getRSTextScalePct()
-    local v = SUISettings:get(RS_TEXT_SCALE_KEY)
-    local n = tonumber(v)
-    if not n then return RS_TEXT_SCALE_DEF end
-    return math_max(RS_TEXT_SCALE_MIN, math_min(RS_TEXT_SCALE_MAX, math_floor(n)))
+-- Bar and style scales: fixed-key percent settings exposed as getter/setter pairs.
+local function _pctAccessors(key, max)
+    return function() return _readPct(key, max) end,
+           function(pct) _writePct(pct, key, max) end
 end
 
-function M.setRSTextScalePct(pct)
-    SUISettings:set(RS_TEXT_SCALE_KEY,
-        math_max(RS_TEXT_SCALE_MIN, math_min(RS_TEXT_SCALE_MAX, math_floor(pct))))
-end
-
-M.RS_TEXT_SCALE_DEF  = RS_TEXT_SCALE_DEF
-M.RS_TEXT_SCALE_MIN  = RS_TEXT_SCALE_MIN
-M.RS_TEXT_SCALE_MAX  = RS_TEXT_SCALE_MAX
-M.RS_TEXT_SCALE_STEP = SCALE_STEP
-
--- Navbar Icon Scale
-local ICON_SCALE_KEY  = "simpleui_bar_icon_scale_pct"
-local ICON_SCALE_DEF  = 100
-local ICON_SCALE_MIN  = 50
-local ICON_SCALE_MAX  = 200
-
-function M.getIconScalePct()
-    local v = SUISettings:get(ICON_SCALE_KEY)
-    local n = tonumber(v)
-    if not n then return ICON_SCALE_DEF end
-    return math_max(ICON_SCALE_MIN, math_min(ICON_SCALE_MAX, math_floor(n)))
-end
-
-function M.setIconScalePct(pct)
-    SUISettings:set(ICON_SCALE_KEY,
-        math_max(ICON_SCALE_MIN, math_min(ICON_SCALE_MAX, math_floor(pct))))
-end
-
-M.ICON_SCALE_DEF  = ICON_SCALE_DEF
-M.ICON_SCALE_MIN  = ICON_SCALE_MIN
-M.ICON_SCALE_MAX  = ICON_SCALE_MAX
-M.ICON_SCALE_STEP = SCALE_STEP
-
--- Navbar Label Scale
-local NAVBAR_LABEL_SCALE_KEY  = "simpleui_bar_label_scale_pct"
-local NAVBAR_LABEL_SCALE_DEF  = 100
-local NAVBAR_LABEL_SCALE_MIN  = 50
-local NAVBAR_LABEL_SCALE_MAX  = 200
-
-function M.getNavbarLabelScalePct()
-    local v = SUISettings:get(NAVBAR_LABEL_SCALE_KEY)
-    local n = tonumber(v)
-    if not n then return NAVBAR_LABEL_SCALE_DEF end
-    return math_max(NAVBAR_LABEL_SCALE_MIN, math_min(NAVBAR_LABEL_SCALE_MAX, math_floor(n)))
-end
-
-function M.setNavbarLabelScalePct(pct)
-    SUISettings:set(NAVBAR_LABEL_SCALE_KEY,
-        math_max(NAVBAR_LABEL_SCALE_MIN, math_min(NAVBAR_LABEL_SCALE_MAX, math_floor(pct))))
-end
-
-M.NAVBAR_LABEL_SCALE_DEF  = NAVBAR_LABEL_SCALE_DEF
-M.NAVBAR_LABEL_SCALE_MIN  = NAVBAR_LABEL_SCALE_MIN
-M.NAVBAR_LABEL_SCALE_MAX  = NAVBAR_LABEL_SCALE_MAX
-M.NAVBAR_LABEL_SCALE_STEP = SCALE_STEP
+-- Navbar Icon Scale / Navbar Label Scale
+local ICON_SCALE_KEY         = "simpleui_bar_icon_scale_pct"
+local NAVBAR_LABEL_SCALE_KEY = "simpleui_bar_label_scale_pct"
+M.getIconScalePct,        M.setIconScalePct        = _pctAccessors(ICON_SCALE_KEY)
+M.getNavbarLabelScalePct, M.setNavbarLabelScalePct = _pctAccessors(NAVBAR_LABEL_SCALE_KEY)
 
 -- Global Font Scale (Style ▸ Text Size)
 -- Multiplies SUIStyle's five FS_* typographic levels (title/subtitle/body/
 -- detail/caption). Unlike the per-bar scales above, FS_* is baked into
 -- module-level constants at sui_style.lua load time, so a change here only
 -- takes full effect after a restart — mirrors the UI Font picker.
-local FONT_SCALE_KEY  = "simpleui_style_font_scale_pct"
-local FONT_SCALE_DEF  = 100
-local FONT_SCALE_MIN  = 50
-local FONT_SCALE_MAX  = 150
+local FONT_SCALE_MAX = 150
+M.getFontScalePct, M.setFontScalePct = _pctAccessors("simpleui_style_font_scale_pct", FONT_SCALE_MAX)
 
-function M.getFontScalePct()
-    local v = SUISettings:get(FONT_SCALE_KEY)
-    local n = tonumber(v)
-    if not n then return FONT_SCALE_DEF end
-    return math_max(FONT_SCALE_MIN, math_min(FONT_SCALE_MAX, math_floor(n)))
-end
-
-function M.setFontScalePct(pct)
-    SUISettings:set(FONT_SCALE_KEY,
-        math_max(FONT_SCALE_MIN, math_min(FONT_SCALE_MAX, math_floor(pct))))
-end
-
-M.FONT_SCALE_DEF  = FONT_SCALE_DEF
-M.FONT_SCALE_MIN  = FONT_SCALE_MIN
+M.FONT_SCALE_MIN  = SCALE_MIN
 M.FONT_SCALE_MAX  = FONT_SCALE_MAX
 M.FONT_SCALE_STEP = SCALE_STEP
+M.FONT_SCALE_DEF  = SCALE_DEF
 
 -- Link Scale
 function M.isScaleLinked()
@@ -783,45 +713,23 @@ function M.setScaleLinked(on)
 end
 
 -- Module Scale
-function M.getModuleScale(mod_id, pfx)
+-- The module's own value, unless scales are linked or unset; otherwise the global one.
+local function _modulePct(mod_id, pfx)
     if mod_id and pfx and not M.isScaleLinked() then
-        local v = SUISettings:get(_modKey(mod_id, pfx))
-        local n = tonumber(v)
-        if n then return _clamp(n) / 100 end
+        local n = tonumber(SUISettings:get(_modKey(mod_id, pfx)))
+        if n then return _clamp(n) end
     end
-    local v = SUISettings:get(MODULE_SCALE_KEY)
-    local n = tonumber(v)
-    if not n then return 1.0 end
-    return _clamp(n) / 100
+    return _readPct(MODULE_SCALE_KEY)
 end
+
+function M.getModuleScalePct(mod_id, pfx) return _modulePct(mod_id, pfx) end
+function M.getModuleScale(mod_id, pfx)    return _modulePct(mod_id, pfx) / 100 end
 
 -- Reads the user's saved percentage directly, ignoring ctx.landscape_factor
 -- (callers of getModuleScale apply that themselves). See GridRenderer.build's
 -- `cs` (engines/sui_book_grid.lua): its column width is already narrowed for
 -- landscape, so applying landscape_factor to `cs` too would double-shrink it.
-function M.getModuleScaleRaw(mod_id, pfx)
-    if mod_id and pfx and not M.isScaleLinked() then
-        local v = SUISettings:get(_modKey(mod_id, pfx))
-        local n = tonumber(v)
-        if n then return _clamp(n) / 100 end
-    end
-    local v = SUISettings:get(MODULE_SCALE_KEY)
-    local n = tonumber(v)
-    if not n then return 1.0 end
-    return _clamp(n) / 100
-end
-
-function M.getModuleScalePct(mod_id, pfx)
-    if mod_id and pfx and not M.isScaleLinked() then
-        local v = SUISettings:get(_modKey(mod_id, pfx))
-        local n = tonumber(v)
-        if n then return _clamp(n) end
-    end
-    local v = SUISettings:get(MODULE_SCALE_KEY)
-    local n = tonumber(v)
-    if not n then return SCALE_DEF end
-    return _clamp(n)
-end
+M.getModuleScaleRaw = M.getModuleScale
 
 function M.setModuleScale(pct, mod_id, pfx)
     pct = _clamp(pct)
@@ -847,9 +755,7 @@ function M.getThumbScale(mod_id, pfx)
 end
 
 -- Same as getModuleScaleRaw, for the thumb scale setting.
-function M.getThumbScaleRaw(mod_id, pfx)
-    return _readPct(_thumbKey(mod_id, pfx)) / 100
-end
+M.getThumbScaleRaw = M.getThumbScale
 
 function M.getThumbScalePct(mod_id, pfx)
     return _readPct(_thumbKey(mod_id, pfx))
@@ -861,8 +767,10 @@ end
 
 -- Badge Scale — size of a corner badge as a percent of its base size. The
 -- per-module form shares its key shape with the book-grid modules.
+local BADGE_SCALE_KEY_SUFFIX = "_badge_scale"
+
 function M.badgeScaleKey(mod_id, pfx)
-    return (pfx or "simpleui_hs_") .. (mod_id or "") .. "_badge_scale"
+    return (pfx or "simpleui_hs_") .. (mod_id or "") .. BADGE_SCALE_KEY_SUFFIX
 end
 
 function M.getBadgeScalePct(mod_id, pfx)
@@ -1252,7 +1160,7 @@ function M.resetAllScales(pfx, pfx_qa)
     SUISettings:del(BAR_SIZE_KEY)
     SUISettings:del(TOPBAR_SIZE_KEY)
     SUISettings:del(NAVBAR_LABEL_SCALE_KEY)
-    SUISettings:del("simpleui_bar_icon_scale_pct")
+    SUISettings:del(ICON_SCALE_KEY)
     SUISettings:del("simpleui_bar_rs_text_scale_pct")
     local Registry = require("modules/moduleregistry")
     for _, mod in ipairs(Registry.list()) do
@@ -1267,16 +1175,18 @@ function M.resetAllScales(pfx, pfx_qa)
             end
         end
     end
-    -- Per-element text sizes are scales too. Collect first: the store
-    -- forbids mutation while iterating its keys.
-    local scale_pfx, text_scales = pfx or "simpleui_hs_", {}
+    -- Per-element text sizes and badge sizes are scales too. Badge sizes are
+    -- matched by suffix: they live under per-module and fixed keys alike.
+    -- Collect first: the store forbids mutation while iterating its keys.
+    local scale_pfx, stale = pfx or "simpleui_hs_", {}
     for key in SUISettings:iterateKeys() do
-        if type(key) == "string" and key:sub(1, #scale_pfx) == scale_pfx
-           and key:find(TEXT_SCALE_INFIX, #scale_pfx + 1, true) then
-            text_scales[#text_scales + 1] = key
+        if type(key) == "string"
+           and ((key:sub(1, #scale_pfx) == scale_pfx and key:find(TEXT_SCALE_INFIX, #scale_pfx + 1, true))
+                or key:sub(-#BADGE_SCALE_KEY_SUFFIX) == BADGE_SCALE_KEY_SUFFIX) then
+            stale[#stale + 1] = key
         end
     end
-    for _i, key in ipairs(text_scales) do SUISettings:del(key) end
+    for _i, key in ipairs(stale) do SUISettings:del(key) end
     if pfx_qa then
         for slot = 1, 3 do
             SUISettings:del(pfx_qa .. slot .. "_scale")

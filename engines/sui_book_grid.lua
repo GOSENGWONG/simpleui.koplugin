@@ -335,32 +335,12 @@ end
 -- See SUIStyle.BADGE_SIZE_ADJUST for the separate global size trim applied
 -- on top of both this and the Library's own scale.
 --
--- Each module instance keeps its own value (key pfx .. id .. "_badge_
--- scale"). Legacy installs that only had the shared key
--- "simpleui_bookgrid_badge_scale" are migrated once per module instance:
--- the first time a module's own key is read and found unset, the shared
--- percent is converted into the new 100%-baselined scale and copied in.
+-- Each module instance keeps its own value (Config.badgeScaleKey).
 -- ---------------------------------------------------------------------------
-local _BG_BADGE_SCALE_LEGACY_KEY = "simpleui_bookgrid_badge_scale"
 local _BG_BADGE_NATIVE_BOOST = 1.1 -- default module-badge boost over the Library baseline
 
-function GridRenderer.getBadgeScalePct(pfx, id)
-    -- One-shot migration from the shared legacy key — see doc comment
-    -- above. Divide by the boost so the migrated value renders at the same
-    -- size under the new formula (pct/100 * ADJUST * BOOST) as the legacy
-    -- percent did under the old one (pct/100 * ADJUST).
-    local key = Config.badgeScaleKey(id, pfx)
-    if tonumber(SUISettings:readSetting(key)) == nil then
-        local legacy = tonumber(SUISettings:readSetting(_BG_BADGE_SCALE_LEGACY_KEY))
-        if legacy then Config.setScaleByKey(legacy / _BG_BADGE_NATIVE_BOOST, key) end
-    end
-    return Config.getScalePctByKey(key)
-end
 function GridRenderer.getBadgeScale(pfx, id)
-    return GridRenderer.getBadgeScalePct(pfx, id) / 100 * SUIStyle.BADGE_SIZE_ADJUST * _BG_BADGE_NATIVE_BOOST
-end
-function GridRenderer.setBadgeScale(pfx, id, pct)
-    Config.setBadgeScale(pct, id, pfx)
+    return Config.getBadgeScalePct(id, pfx) / 100 * SUIStyle.BADGE_SIZE_ADJUST * _BG_BADGE_NATIVE_BOOST
 end
 
 -- Fixed +20% base-size boost for the "corner badge" family (progress
@@ -2065,8 +2045,8 @@ function GridRenderer.makeModule(spec)
             pb_group[#pb_group + 1] = Config.makeBadgeSizeItem{
                 separator = true,
                 info      = _lc("Scale for this module's corner badges (progress, pages, series, new book)."),
-                get       = function() return GridRenderer.getBadgeScalePct(pfx, id) end,
-                set       = function(v) GridRenderer.setBadgeScale(pfx, id, v) end,
+                get       = function() return Config.getBadgeScalePct(id, pfx) end,
+                set       = function(v) Config.setBadgeScale(v, id, pfx) end,
                 refresh   = refresh,
                 _lc       = _lc,
             }

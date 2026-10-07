@@ -1384,8 +1384,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     UI.invalidateDimCache(); plugin:_rebuildAllNavbars()
                     if ctx_menu and ctx_menu.refresh then ctx_menu.refresh() end
                 end,
-                value_min     = Config.ICON_SCALE_MIN, value_max = Config.ICON_SCALE_MAX,
-                value_step    = Config.ICON_SCALE_STEP, default_value = Config.ICON_SCALE_DEF,
             }),
             Config.makeScaleItem({
                 text_func     = function() return _("Label Size") end,
@@ -1397,8 +1395,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     UI.invalidateDimCache(); plugin:_rebuildAllNavbars()
                     if ctx_menu and ctx_menu.refresh then ctx_menu.refresh() end
                 end,
-                value_min     = Config.NAVBAR_LABEL_SCALE_MIN, value_max = Config.NAVBAR_LABEL_SCALE_MAX,
-                value_step    = Config.NAVBAR_LABEL_SCALE_STEP, default_value = Config.NAVBAR_LABEL_SCALE_DEF,
             }),
             Config.makeChromeLabelFontItem({
                 bar     = "navbar",
@@ -2660,6 +2656,8 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                     Config.resetAllScales(ctx.pfx, ctx.pfx_qa)
                                     local HS = package.loaded["screens/sui_homescreen"]
                                     if HS and HS.invalidateLabelCache then HS.invalidateLabelCache() end
+                                    local FC = package.loaded["features/library/sui_foldercovers"]
+                                    if FC and FC.invalidateCache then FC.invalidateCache() end
                                     _applyFullLayoutRefresh()
                                     if ctx and ctx.refresh then ctx.refresh() end
                                 end,

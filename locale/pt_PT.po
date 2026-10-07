@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: simpleui\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-06 23:12+0000\n"
+"POT-Creation-Date: 2026-10-07 08:16+0000\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -34,15 +34,15 @@ msgstr "  Definir Meta  (desativada)"
 msgid " et al."
 msgstr " e col."
 
-#: engines/sui_book_grid.lua:494 features/library/sui_foldercovers.lua:1233
+#: engines/sui_book_grid.lua:474 features/library/sui_foldercovers.lua:1233
 msgid " p."
 msgstr " pág."
 
-#: engines/sui_book_grid.lua:1601
+#: engines/sui_book_grid.lua:1581
 msgid "% Read (ascending)"
 msgstr "% Lido (crescente)"
 
-#: engines/sui_book_grid.lua:1602
+#: engines/sui_book_grid.lua:1582
 msgid "% Read (descending)"
 msgstr "% Lido (decrescente)"
 
@@ -50,7 +50,7 @@ msgstr "% Lido (decrescente)"
 msgid "%1 weeks"
 msgstr "%1 semanas"
 
-#: engines/sui_book_grid.lua:1933 engines/sui_book_grid.lua:1938
+#: engines/sui_book_grid.lua:1913 engines/sui_book_grid.lua:1918
 msgid "%1 × %2"
 msgstr "%1 × %2"
 
@@ -70,11 +70,11 @@ msgstr "%d min/dia"
 msgid "%d settings"
 msgstr "%d definições"
 
-#: engines/sui_book_grid.lua:901
+#: engines/sui_book_grid.lua:881
 msgid "%d%%"
 msgstr "%d%%"
 
-#: engines/sui_book_grid.lua:960 engines/sui_book_grid.lua:972
+#: engines/sui_book_grid.lua:940 engines/sui_book_grid.lua:952
 #: modules/module_coverdeck.lua:1030 modules/module_currently.lua:905
 #: modules/module_currently.lua:914 modules/module_new_books.lua:138
 msgid "%d%% Read"
@@ -108,7 +108,7 @@ msgstr "(%d/%d — no limite)"
 msgid "(collection not found)"
 msgstr "(coleção não encontrada)"
 
-#: screens/sui_menu.lua:2491
+#: screens/sui_menu.lua:2487
 msgid ""
 "0% transparent, 100% solid. Applies to the native page bar in Library, "
 "History, Collections and similar screens."
@@ -116,7 +116,7 @@ msgstr ""
 "0% transparente, 100% sólido. Aplica-se à barra de página nativa na "
 "Biblioteca, Histórico, Coleções e ecrãs semelhantes."
 
-#: screens/sui_menu.lua:2484
+#: screens/sui_menu.lua:2480
 msgid ""
 "0% transparent, 100% solid. Rounded background behind title bar buttons "
 "(back, search, menu, …)."
@@ -124,7 +124,7 @@ msgstr ""
 "0% transparente, 100% sólido. Fundo arredondado atrás dos botões da barra de "
 "título (voltar, pesquisar, menu, …)."
 
-#: infra/sui_config.lua:1386
+#: infra/sui_config.lua:1296
 msgid ""
 "0% transparent, 100% solid. Values in between add a scrim over the wallpaper."
 msgstr ""
@@ -135,7 +135,7 @@ msgstr ""
 msgid "4-Cover Grid"
 msgstr "Grelha de 4 Capas"
 
-#: screens/sui_menu.lua:3006
+#: screens/sui_menu.lua:3004
 msgid "4-Cover Grid (Mosaic View Only)"
 msgstr "Grelha de 4 Capas (Apenas Vista em Mosaico)"
 
@@ -148,11 +148,11 @@ msgstr ""
 "ativo — ontem não é elegível."
 
 #: features/sui_presets.lua:946 features/sui_presets.lua:1032
-#: screens/sui_menu.lua:4187 screens/sui_menu.lua:4272
+#: screens/sui_menu.lua:4185 screens/sui_menu.lua:4270
 msgid "A preset named \"%s\" already exists."
 msgstr "Já existe uma predefinição com o nome \"%s\"."
 
-#: features/sui_presets.lua:887 screens/sui_menu.lua:4133
+#: features/sui_presets.lua:887 screens/sui_menu.lua:4131
 msgid ""
 "A preset named \"%s\" already exists.\n"
 "Overwrite it?"
@@ -171,7 +171,7 @@ msgstr ""
 "\n"
 "Reiniciar agora?"
 
-#: screens/sui_menu.lua:4455
+#: screens/sui_menu.lua:4453
 msgid ""
 "A restart is required to apply the new text size everywhere.\n"
 "\n"
@@ -189,7 +189,7 @@ msgstr "Uma interface simples para o KOReader"
 msgid "ALL TIME"
 msgstr "TOTAL"
 
-#: screens/sui_menu.lua:4704 screens/sui_settings_window.lua:387
+#: screens/sui_menu.lua:4702 screens/sui_settings_window.lua:387
 #: screens/sui_settings_window.lua:1108
 msgid "About"
 msgstr "Sobre"
@@ -223,7 +223,7 @@ msgstr "Ação não disponível: %s"
 msgid "Add Action"
 msgstr "Adicionar Ação"
 
-#: screens/sui_menu.lua:1671 screens/sui_menu.lua:1709
+#: screens/sui_menu.lua:1667 screens/sui_menu.lua:1705
 msgid "Add Button"
 msgstr "Adicionar Botão"
 
@@ -236,8 +236,8 @@ msgstr "Adicionar Botão"
 #: modules/module_reading_goals.lua:1393 modules/module_reading_goals.lua:1422
 #: modules/module_reading_stats.lua:811 modules/module_reading_stats.lua:840
 #: screens/sui_menu.lua:979 screens/sui_menu.lua:1016 screens/sui_menu.lua:1239
-#: screens/sui_menu.lua:1279 screens/sui_menu.lua:2137
-#: screens/sui_menu.lua:2167 screens/sui_quicksettings_bar.lua:992
+#: screens/sui_menu.lua:1279 screens/sui_menu.lua:2133
+#: screens/sui_menu.lua:2163 screens/sui_quicksettings_bar.lua:992
 #: screens/sui_settings_window.lua:1116
 msgid "Add Item"
 msgstr "Adicionar Item"
@@ -251,7 +251,7 @@ msgid "Add Page"
 msgstr "Adicionar Página"
 
 #: modules/module_action_list.lua:322 modules/module_quick_actions.lua:384
-#: screens/sui_menu.lua:2057 screens/sui_quicksettings_bar.lua:1060
+#: screens/sui_menu.lua:2053 screens/sui_quicksettings_bar.lua:1060
 msgid "Add at least 2 actions to arrange."
 msgstr "Adicione pelo menos 2 ações para reorganizar."
 
@@ -267,7 +267,7 @@ msgstr "Adicione pelo menos 2 estatísticas para reorganizar."
 msgid "Add to To Be Read"
 msgstr "Adicionar a Quero Ler"
 
-#: screens/sui_menu.lua:2545
+#: screens/sui_menu.lua:2541
 msgid "After closing a book"
 msgstr "Depois de fechar um livro"
 
@@ -298,7 +298,7 @@ msgstr "Total — Livros"
 msgid "All time — Time"
 msgstr "Total — Tempo"
 
-#: screens/sui_menu.lua:2676
+#: screens/sui_menu.lua:2674
 msgid "Always"
 msgstr "Sempre"
 
@@ -316,10 +316,10 @@ msgid "Annual Reading Goal"
 msgstr "Meta Anual de Leitura"
 
 #: features/sui_module_chrome.lua:235 features/sui_module_chrome.lua:238
-#: features/sui_module_chrome.lua:282 infra/sui_config.lua:1205
+#: features/sui_module_chrome.lua:282 infra/sui_config.lua:1113
 #: modules/module_heatmap.lua:358 modules/module_reading_goals.lua:1529
-#: modules/module_reading_goals.lua:1641 screens/sui_menu.lua:1888
-#: screens/sui_menu.lua:1891
+#: modules/module_reading_goals.lua:1641 screens/sui_menu.lua:1884
+#: screens/sui_menu.lua:1887
 msgid "Appearance"
 msgstr "Aparência"
 
@@ -327,12 +327,12 @@ msgstr "Aparência"
 msgid "Appearance & Style"
 msgstr "Aparência e estilo"
 
-#: infra/sui_config.lua:1326 infra/sui_config.lua:1395
-#: infra/sui_config.lua:1429 infra/sui_config.lua:1544
-#: infra/sui_config.lua:1617 modules/module_clock.lua:1264
+#: infra/sui_config.lua:1236 infra/sui_config.lua:1305
+#: infra/sui_config.lua:1339 infra/sui_config.lua:1454
+#: infra/sui_config.lua:1527 modules/module_clock.lua:1264
 #: screens/sui_menu.lua:1041 screens/sui_menu.lua:1349
-#: screens/sui_menu.lua:2606 screens/sui_menu.lua:2638
-#: screens/sui_menu.lua:3400 screens/sui_menu.lua:4449
+#: screens/sui_menu.lua:2602 screens/sui_menu.lua:2634
+#: screens/sui_menu.lua:3398 screens/sui_menu.lua:4447
 msgid "Apply"
 msgstr "Aplicar"
 
@@ -356,12 +356,12 @@ msgid "Arrange"
 msgstr "Reorganizar"
 
 #: modules/module_action_list.lua:342 modules/module_quick_actions.lua:402
-#: screens/sui_menu.lua:2061
+#: screens/sui_menu.lua:2057
 msgid "Arrange %s"
 msgstr "Reorganizar %s"
 
-#: screens/sui_menu.lua:1627 screens/sui_menu.lua:1634
-#: screens/sui_menu.lua:1811 screens/sui_menu.lua:1826
+#: screens/sui_menu.lua:1623 screens/sui_menu.lua:1630
+#: screens/sui_menu.lua:1807 screens/sui_menu.lua:1822
 msgid "Arrange Buttons"
 msgstr "Reorganizar Botões"
 
@@ -374,7 +374,7 @@ msgstr "Reorganizar Coleção"
 #: modules/module_currently.lua:1579 modules/module_currently.lua:1622
 #: modules/module_quick_actions.lua:377 screens/sui_bottombar.lua:938
 #: screens/sui_menu.lua:694 screens/sui_menu.lua:761 screens/sui_menu.lua:768
-#: screens/sui_menu.lua:2051 screens/sui_quicksettings_bar.lua:991
+#: screens/sui_menu.lua:2047 screens/sui_quicksettings_bar.lua:991
 #: screens/sui_quicksettings_bar.lua:1052 screens/sui_settings_window.lua:1137
 #: screens/sui_topbar.lua:586
 msgid "Arrange Items"
@@ -418,11 +418,11 @@ msgstr "Agosto"
 msgid "Author"
 msgstr "Autor"
 
-#: engines/sui_book_grid.lua:1600 modules/module_library.lua:210
+#: engines/sui_book_grid.lua:1580 modules/module_library.lua:210
 msgid "Author (A–Z)"
 msgstr "Autor (A–Z)"
 
-#: screens/sui_menu.lua:4511
+#: screens/sui_menu.lua:4509
 msgid "Author: %s"
 msgstr "Autor: %s"
 
@@ -431,7 +431,7 @@ msgstr "Autor: %s"
 msgid "Authors"
 msgstr "Autores"
 
-#: modules/module_collections.lua:1350 screens/sui_menu.lua:3017
+#: modules/module_collections.lua:1350 screens/sui_menu.lua:3015
 msgid "Auto (Single ↔ 4-Cover Grid)"
 msgstr "Automático (Única ↔ Grelha de 4 Capas)"
 
@@ -439,11 +439,11 @@ msgstr "Automático (Única ↔ Grelha de 4 Capas)"
 msgid "Auto (first book)"
 msgstr "Auto (primeiro livro)"
 
-#: screens/sui_menu.lua:2460
+#: screens/sui_menu.lua:2456
 msgid "Auto-rotate"
 msgstr "Rodar automaticamente"
 
-#: screens/sui_menu.lua:4516
+#: screens/sui_menu.lua:4514
 msgid "Automatic Update Check"
 msgstr "Verificação Automática de Atualizações"
 
@@ -477,7 +477,7 @@ msgstr "Largura do Fundo"
 msgid "Backup"
 msgstr "Cópia de segurança"
 
-#: screens/sui_menu.lua:4538
+#: screens/sui_menu.lua:4536
 msgid "Backup & Restore"
 msgstr "Cópia de segurança e restauro"
 
@@ -514,35 +514,35 @@ msgstr ""
 "A cópia de segurança foi feita por uma versão mais recente do SimpleUI. "
 "Atualize primeiro este plugin."
 
-#: engines/sui_book_grid.lua:2128 modules/module_collections.lua:1372
-#: screens/sui_menu.lua:3304 screens/sui_menu.lua:3313
-#: screens/sui_menu.lua:3319
+#: engines/sui_book_grid.lua:2108 modules/module_collections.lua:1372
+#: screens/sui_menu.lua:3302 screens/sui_menu.lua:3311
+#: screens/sui_menu.lua:3317
 msgid "Badge"
 msgstr "Emblema"
 
-#: infra/sui_config.lua:1343 infra/sui_config.lua:1345
+#: infra/sui_config.lua:1253 infra/sui_config.lua:1255
 msgid "Badge Size"
 msgstr "Tamanho do Emblema"
 
-#: screens/sui_menu.lua:3035
+#: screens/sui_menu.lua:3033
 msgid "Badges"
 msgstr "Emblemas"
 
-#: features/library/sui_foldercovers.lua:293 screens/sui_menu.lua:3237
-#: screens/sui_menu.lua:3246 screens/sui_menu.lua:3252
+#: features/library/sui_foldercovers.lua:293 screens/sui_menu.lua:3235
+#: screens/sui_menu.lua:3244 screens/sui_menu.lua:3250
 msgid "Banner"
 msgstr "Faixa"
 
-#: engines/sui_book_grid.lua:2015
+#: engines/sui_book_grid.lua:1995
 msgid "Bar"
 msgstr "Barra"
 
-#: engines/sui_book_grid.lua:2017
+#: engines/sui_book_grid.lua:1997
 msgid "Bar + Text"
 msgstr "Barra + Texto"
 
 #: screens/sui_menu.lua:560 screens/sui_menu.lua:1103 screens/sui_menu.lua:1335
-#: screens/sui_menu.lua:1449
+#: screens/sui_menu.lua:1445
 msgid "Bar Size"
 msgstr "Tamanho da Barra"
 
@@ -555,7 +555,7 @@ msgstr "Estilo da Barra"
 msgid "Bare"
 msgstr "Simples"
 
-#: features/sui_backup.lua:115 screens/sui_menu.lua:4666
+#: features/sui_backup.lua:115 screens/sui_menu.lua:4664
 #: screens/sui_settings_window.lua:352 screens/sui_settings_window.lua:1105
 msgid "Bars"
 msgstr "Barras"
@@ -565,7 +565,7 @@ msgstr "Barras"
 msgid "Battery"
 msgstr "Bateria"
 
-#: infra/sui_config.lua:1211 screens/sui_menu.lua:2882
+#: infra/sui_config.lua:1119 screens/sui_menu.lua:2880
 #: screens/sui_settings_window.lua:440 screens/sui_settings_window.lua:1118
 msgid "Behaviour"
 msgstr "Comportamento"
@@ -586,11 +586,11 @@ msgstr "Negrito"
 msgid "Bold italic"
 msgstr "Negrito itálico"
 
-#: screens/sui_menu.lua:2719
+#: screens/sui_menu.lua:2717
 msgid "Book Cover Transition"
 msgstr "Transição da Capa do Livro"
 
-#: screens/sui_menu.lua:2550
+#: screens/sui_menu.lua:2546
 msgid "Book Folder"
 msgstr "Pasta do livro"
 
@@ -598,7 +598,7 @@ msgstr "Pasta do livro"
 msgid "Book Info"
 msgstr "Info do Livro"
 
-#: infra/sui_config.lua:1743
+#: infra/sui_config.lua:1653
 msgid "Book Menu"
 msgstr "Menu do Livro"
 
@@ -636,18 +636,18 @@ msgstr "Livros"
 msgid "Books to read in %s:"
 msgstr "Livros a ler em %s:"
 
-#: modules/module_collections.lua:1393 screens/sui_menu.lua:3055
-#: screens/sui_menu.lua:3062 screens/sui_menu.lua:3077
-#: screens/sui_menu.lua:3468 screens/sui_menu.lua:3487
+#: modules/module_collections.lua:1393 screens/sui_menu.lua:3053
+#: screens/sui_menu.lua:3060 screens/sui_menu.lua:3075
+#: screens/sui_menu.lua:3466 screens/sui_menu.lua:3485
 msgid "Bottom"
 msgstr "Inferior"
 
-#: screens/sui_menu.lua:1413 screens/sui_menu.lua:1414
-#: screens/sui_menu.lua:1452
+#: screens/sui_menu.lua:1409 screens/sui_menu.lua:1410
+#: screens/sui_menu.lua:1448
 msgid "Bottom Margin"
 msgstr "Margem Inferior"
 
-#: screens/sui_menu.lua:2720
+#: screens/sui_menu.lua:2718
 msgid ""
 "Briefly show the book cover full-screen when opening or closing a book, "
 "masking the page-layout flash. Normally requires the book to already be "
@@ -703,8 +703,8 @@ msgstr "Navegar por Autores/Séries/Etiquetas não disponível."
 msgid "Browse library"
 msgstr "Navegar na biblioteca"
 
-#: features/sui_quickactions.lua:2222 screens/sui_menu.lua:2391
-#: screens/sui_menu.lua:3899
+#: features/sui_quickactions.lua:2222 screens/sui_menu.lua:2387
+#: screens/sui_menu.lua:3897
 msgid "Browse…"
 msgstr "Procurar…"
 
@@ -716,7 +716,7 @@ msgstr "Fundo do Botão"
 msgid "Button Opacity"
 msgstr "Opacidade dos Botões"
 
-#: screens/sui_menu.lua:1899 screens/sui_menu.lua:1921
+#: screens/sui_menu.lua:1895 screens/sui_menu.lua:1917
 msgid "Button Size"
 msgstr "Tamanho dos Botões"
 
@@ -732,7 +732,7 @@ msgstr "Tipo de Botão"
 msgid "By author"
 msgstr "Por autor"
 
-#: screens/sui_menu.lua:2759
+#: screens/sui_menu.lua:2757
 msgid ""
 "By default the cover is stretched to fill the whole screen, which can "
 "distort it if its proportions don't match your screen's. When on, the cover "
@@ -777,20 +777,20 @@ msgstr "Calendário"
 #: features/sui_quickactions.lua:2668 features/sui_quickactions.lua:2746
 #: features/sui_quickactions.lua:2770 features/sui_quickactions.lua:3082
 #: features/sui_quickactions.lua:3477 features/sui_style.lua:1329
-#: infra/sui_config.lua:1327 infra/sui_config.lua:1396
-#: infra/sui_config.lua:1430 infra/sui_config.lua:1545
-#: infra/sui_config.lua:1618 infra/sui_updater.lua:500
+#: infra/sui_config.lua:1237 infra/sui_config.lua:1306
+#: infra/sui_config.lua:1340 infra/sui_config.lua:1455
+#: infra/sui_config.lua:1528 infra/sui_updater.lua:500
 #: infra/sui_updater.lua:517 modules/module_clock.lua:1265
 #: modules/module_collections.lua:356 modules/module_quote.lua:1342
 #: modules/module_reading_goals.lua:761 screens/sui_menu.lua:650
 #: screens/sui_menu.lua:912 screens/sui_menu.lua:1042 screens/sui_menu.lua:1350
-#: screens/sui_menu.lua:2607 screens/sui_menu.lua:2639
-#: screens/sui_menu.lua:3401 screens/sui_menu.lua:4107
-#: screens/sui_menu.lua:4135 screens/sui_menu.lua:4164
-#: screens/sui_menu.lua:4181 screens/sui_menu.lua:4207
-#: screens/sui_menu.lua:4248 screens/sui_menu.lua:4266
-#: screens/sui_menu.lua:4293 screens/sui_menu.lua:4450
-#: screens/sui_menu.lua:4555 screens/sui_settings_window.lua:509
+#: screens/sui_menu.lua:2603 screens/sui_menu.lua:2635
+#: screens/sui_menu.lua:3399 screens/sui_menu.lua:4105
+#: screens/sui_menu.lua:4133 screens/sui_menu.lua:4162
+#: screens/sui_menu.lua:4179 screens/sui_menu.lua:4205
+#: screens/sui_menu.lua:4246 screens/sui_menu.lua:4264
+#: screens/sui_menu.lua:4291 screens/sui_menu.lua:4448
+#: screens/sui_menu.lua:4553 screens/sui_settings_window.lua:509
 #: screens/sui_settings_window.lua:1196 screens/sui_stats_windows.lua:649
 #: screens/sui_stats_windows.lua:772 screens/sui_titlebar.lua:1038
 msgid "Cancel"
@@ -809,12 +809,12 @@ msgstr "Cartões"
 #: modules/module_quote.lua:124 modules/module_quote.lua:1609
 #: modules/module_reading_goals.lua:143 modules/module_reading_goals.lua:1595
 #: modules/module_reading_stats.lua:113 modules/module_reading_stats.lua:918
-#: screens/sui_menu.lua:710 screens/sui_menu.lua:942 screens/sui_menu.lua:3467
-#: screens/sui_menu.lua:3480
+#: screens/sui_menu.lua:710 screens/sui_menu.lua:942 screens/sui_menu.lua:3465
+#: screens/sui_menu.lua:3478
 msgid "Center"
 msgstr "Centro"
 
-#: screens/sui_menu.lua:4527
+#: screens/sui_menu.lua:4525
 msgid "Check for Updates"
 msgstr "Verificar Atualizações"
 
@@ -838,11 +838,11 @@ msgstr "Escolher ficheiro"
 msgid "Choose icon"
 msgstr "Escolher ícone"
 
-#: screens/sui_menu.lua:3909
+#: screens/sui_menu.lua:3907
 msgid "Choose icon pack"
 msgstr "Escolher pacote de ícones"
 
-#: screens/sui_menu.lua:2399
+#: screens/sui_menu.lua:2395
 msgid "Choose wallpaper"
 msgstr "Escolher papel de parede"
 
@@ -864,7 +864,7 @@ msgstr "Estilo de Relógio"
 msgid "Close"
 msgstr "Fechar"
 
-#: screens/sui_menu.lua:2672
+#: screens/sui_menu.lua:2670
 msgid "Closing Book Notice"
 msgstr "Aviso ao Fechar Livro"
 
@@ -929,22 +929,22 @@ msgstr "Coleções não disponíveis."
 msgid "Collections: Back Button"
 msgstr "Coleções: Botão Voltar"
 
-#: screens/sui_menu.lua:3100 screens/sui_menu.lua:3154
-#: screens/sui_menu.lua:3208 screens/sui_menu.lua:3275
-#: screens/sui_menu.lua:3342 screens/sui_menu.lua:3496
+#: screens/sui_menu.lua:3098 screens/sui_menu.lua:3152
+#: screens/sui_menu.lua:3206 screens/sui_menu.lua:3273
+#: screens/sui_menu.lua:3340 screens/sui_menu.lua:3494
 msgid "Color"
 msgstr "Cor"
 
-#: infra/sui_config.lua:1602 infra/sui_config.lua:1610
+#: infra/sui_config.lua:1512 infra/sui_config.lua:1520
 msgid "Column Width (Bento Grid)"
 msgstr "Largura da Coluna (Bento Grid)"
 
-#: engines/sui_book_grid.lua:1944
+#: engines/sui_book_grid.lua:1924
 msgid "Columns"
 msgstr "Colunas"
 
 #: modules/module_currently.lua:2044 modules/module_reading_goals.lua:1541
-#: screens/sui_menu.lua:1902
+#: screens/sui_menu.lua:1898
 msgid "Compact"
 msgstr "Compacto"
 
@@ -952,7 +952,7 @@ msgstr "Compacto"
 msgid "Confirm"
 msgstr "Confirmar"
 
-#: infra/sui_config.lua:1186
+#: infra/sui_config.lua:1094
 msgid "Content"
 msgstr "Conteúdo"
 
@@ -966,7 +966,7 @@ msgstr "Continuar"
 msgid "Copy this file somewhere safe (e.g. over USB)."
 msgstr "Copie este ficheiro para um local seguro (por exemplo via USB)."
 
-#: engines/sui_book_grid.lua:2019
+#: engines/sui_book_grid.lua:1999
 msgid "Corner Badge"
 msgstr "Emblema no Canto"
 
@@ -1000,11 +1000,11 @@ msgstr "Não foi possível escrever o ficheiro de cópia de segurança"
 msgid "Cover Deck"
 msgstr "Carrossel de Capas"
 
-#: screens/sui_menu.lua:2987
+#: screens/sui_menu.lua:2985
 msgid "Cover Settings"
 msgstr "Definições de Capa"
 
-#: engines/sui_book_grid.lua:1897 engines/sui_book_grid.lua:1899
+#: engines/sui_book_grid.lua:1877 engines/sui_book_grid.lua:1879
 #: modules/module_coverdeck.lua:1304 modules/module_coverdeck.lua:1305
 #: modules/module_currently.lua:1495 modules/module_currently.lua:1496
 msgid "Cover Size"
@@ -1072,7 +1072,7 @@ msgstr "Sequência atual"
 msgid "Currently Reading"
 msgstr "A Ler"
 
-#: infra/sui_config.lua:2578
+#: infra/sui_config.lua:2488
 msgid "Custom"
 msgstr "Personalizado"
 
@@ -1149,18 +1149,18 @@ msgstr "Média diária — Páginas"
 msgid "Daily avg — Time"
 msgstr "Média diária — Tempo"
 
-#: engines/sui_book_grid.lua:1990 modules/module_collections.lua:1402
+#: engines/sui_book_grid.lua:1970 modules/module_collections.lua:1402
 #: modules/module_coverdeck.lua:1674 modules/module_currently.lua:2010
-#: screens/sui_menu.lua:3102 screens/sui_menu.lua:3107
-#: screens/sui_menu.lua:3156 screens/sui_menu.lua:3161
-#: screens/sui_menu.lua:3210 screens/sui_menu.lua:3215
-#: screens/sui_menu.lua:3277 screens/sui_menu.lua:3282
-#: screens/sui_menu.lua:3344 screens/sui_menu.lua:3349
-#: screens/sui_menu.lua:3498 screens/sui_menu.lua:3510
+#: screens/sui_menu.lua:3100 screens/sui_menu.lua:3105
+#: screens/sui_menu.lua:3154 screens/sui_menu.lua:3159
+#: screens/sui_menu.lua:3208 screens/sui_menu.lua:3213
+#: screens/sui_menu.lua:3275 screens/sui_menu.lua:3280
+#: screens/sui_menu.lua:3342 screens/sui_menu.lua:3347
+#: screens/sui_menu.lua:3496 screens/sui_menu.lua:3508
 msgid "Dark"
 msgstr "Escuro"
 
-#: screens/sui_menu.lua:2471
+#: screens/sui_menu.lua:2467
 msgid "Darken"
 msgstr "Escurecer"
 
@@ -1206,10 +1206,10 @@ msgstr "Dezembro"
 
 #: features/sui_quickactions.lua:2200 features/sui_quickactions.lua:2486
 #: features/sui_style.lua:2072 features/sui_style.lua:2119
-#: infra/sui_config.lua:1033 modules/module_currently.lua:1534
+#: infra/sui_config.lua:941 modules/module_currently.lua:1534
 #: modules/module_currently.lua:2042 modules/module_reading_goals.lua:1533
 #: screens/sui_menu.lua:459 screens/sui_menu.lua:588 screens/sui_menu.lua:1296
-#: screens/sui_menu.lua:1903 screens/sui_titlebar.lua:1034
+#: screens/sui_menu.lua:1899 screens/sui_titlebar.lua:1034
 msgid "Default"
 msgstr "Predefinido"
 
@@ -1229,7 +1229,7 @@ msgstr "Predefinido (Sistema)"
 msgid "Default Quotes"
 msgstr "Citações Predefinidas"
 
-#: infra/sui_config.lua:1389
+#: infra/sui_config.lua:1299
 msgid "Default: %1"
 msgstr "Predefinição: %1"
 
@@ -1253,14 +1253,14 @@ msgstr "Predefinido: Sistema"
 #: features/library/sui_book_hold_dialog.lua:151 features/sui_presets.lua:960
 #: features/sui_presets.lua:963 features/sui_presets.lua:1003
 #: features/sui_quickactions.lua:1644 features/sui_quickactions.lua:3076
-#: features/sui_quickactions.lua:3081 screens/sui_menu.lua:4203
-#: screens/sui_menu.lua:4206 screens/sui_menu.lua:4247
+#: features/sui_quickactions.lua:3081 screens/sui_menu.lua:4201
+#: screens/sui_menu.lua:4204 screens/sui_menu.lua:4245
 #: screens/sui_settings_window.lua:536 screens/sui_settings_window.lua:581
 #: screens/sui_settings_window.lua:711
 msgid "Delete"
 msgstr "Eliminar"
 
-#: screens/sui_menu.lua:4554
+#: screens/sui_menu.lua:4552
 msgid "Delete Settings"
 msgstr "Apagar Definições"
 
@@ -1269,7 +1269,7 @@ msgid "Delete \"%s\"? This removes its layout, modules and Quick Action."
 msgstr "Eliminar \"%s\"? Isto remove a sua disposição, módulos e Ação Rápida."
 
 #: features/sui_presets.lua:962 features/sui_presets.lua:1002
-#: screens/sui_menu.lua:4205 screens/sui_menu.lua:4246
+#: screens/sui_menu.lua:4203 screens/sui_menu.lua:4244
 msgid "Delete preset \"%s\"?"
 msgstr "Eliminar a predefinição \"%s\"?"
 
@@ -1301,13 +1301,13 @@ msgstr "Consultar Dicionário"
 msgid "Digital"
 msgstr "Digital"
 
-#: screens/sui_menu.lua:2625
+#: screens/sui_menu.lua:2621
 msgid "Disable \"Lock Scale\" first to set a custom label scale."
 msgstr ""
 "Desative \"Bloquear Escala\" primeiro para definir uma escala personalizada "
 "para as etiquetas."
 
-#: infra/sui_config.lua:1312
+#: infra/sui_config.lua:1222
 msgid "Disable \"Lock Scale\" first to set a per-module scale."
 msgstr ""
 "Desative \"Bloquear Escala\" primeiro para definir uma escala por módulo."
@@ -1320,11 +1320,11 @@ msgstr "Utilização do Disco"
 msgid "Dispatcher not available."
 msgstr "Dispatcher não disponível."
 
-#: screens/sui_menu.lua:3668
+#: screens/sui_menu.lua:3666
 msgid "Display"
 msgstr "Visualização"
 
-#: screens/sui_menu.lua:4391
+#: screens/sui_menu.lua:4389
 msgid "Don't Invert Colored Icons in Night Mode"
 msgstr "Não Inverter Ícones Coloridos no Modo Noturno"
 
@@ -1364,7 +1364,7 @@ msgstr "Editar"
 msgid "Edit Custom Text"
 msgstr "Editar Texto Personalizado"
 
-#: screens/sui_menu.lua:2294 screens/sui_settings_window.lua:401
+#: screens/sui_menu.lua:2290 screens/sui_settings_window.lua:401
 msgid "Edit Home Screen Layout"
 msgstr "Editar Layout do Ecrã Inicial"
 
@@ -1399,11 +1399,11 @@ msgstr ""
 "Ative primeiro 'Explorar por Autor / Série / Etiquetas' no menu da "
 "biblioteca."
 
-#: screens/sui_menu.lua:2938
+#: screens/sui_menu.lua:2936
 msgid "Enable Browse by Author / Series / Tags"
 msgstr "Ativar Explorar por Autor / Série / Etiquetas"
 
-#: screens/sui_menu.lua:2922
+#: screens/sui_menu.lua:2920
 msgid "Enable Library Custom Covers"
 msgstr "Ativar Capas Personalizadas na Biblioteca"
 
@@ -1419,11 +1419,11 @@ msgstr "Ativar Barra de Definições Rápidas"
 msgid "Enable Status Bar"
 msgstr "Ativar Barra de Estado"
 
-#: screens/sui_menu.lua:1853
+#: screens/sui_menu.lua:1849
 msgid "Enable Title Bar"
 msgstr "Ativar Barra de Título"
 
-#: screens/sui_menu.lua:2433
+#: screens/sui_menu.lua:2429
 msgid "Enable Wallpaper"
 msgstr "Ativar Papel de Parede"
 
@@ -1443,7 +1443,7 @@ msgstr ""
 "  /koreader/fonts/nerdfonts/symbols.ttf\n"
 "Deixe em branco e prima OK para remover um ícone Nerd Font."
 
-#: screens/sui_menu.lua:3970
+#: screens/sui_menu.lua:3968
 msgid "Error applying pack:"
 msgstr "Erro ao aplicar o pacote:"
 
@@ -1455,7 +1455,7 @@ msgstr "Erro ao verificar atualizações."
 msgid "Error checking for updates: "
 msgstr "Erro ao verificar atualizações: "
 
-#: features/sui_presets.lua:1131 screens/sui_menu.lua:4375
+#: features/sui_presets.lua:1131 screens/sui_menu.lua:4373
 msgid "Error exporting preset: "
 msgstr "Erro ao exportar predefinição: "
 
@@ -1463,7 +1463,7 @@ msgstr "Erro ao exportar predefinição: "
 msgid "Error extracting zip: "
 msgstr "Erro ao extrair zip: "
 
-#: features/sui_presets.lua:1105 screens/sui_menu.lua:4348
+#: features/sui_presets.lua:1105 screens/sui_menu.lua:4346
 msgid "Error importing preset: "
 msgstr "Erro ao importar predefinição: "
 
@@ -1471,7 +1471,7 @@ msgstr "Erro ao importar predefinição: "
 msgid "Error in Reading Goals: check crash.log"
 msgstr "Erro nas Metas de Leitura: consulte o crash.log"
 
-#: screens/sui_menu.lua:3888
+#: screens/sui_menu.lua:3886
 msgid "Error installing pack:"
 msgstr "Erro ao instalar o pacote:"
 
@@ -1495,7 +1495,7 @@ msgstr "Exportar cópia de segurança completa…"
 msgid "Export now…"
 msgstr "Exportar agora…"
 
-#: features/sui_presets.lua:1119 screens/sui_menu.lua:4362
+#: features/sui_presets.lua:1119 screens/sui_menu.lua:4360
 msgid "Export preset"
 msgstr "Exportar predefinição"
 
@@ -1515,19 +1515,19 @@ msgstr "Erro na extração: "
 msgid "FREEZES"
 msgstr "CONGELAMENTOS"
 
-#: screens/sui_menu.lua:4547
+#: screens/sui_menu.lua:4545
 msgid "Factory Reset"
 msgstr "Reposição de Fábrica"
 
-#: screens/sui_menu.lua:3377
+#: screens/sui_menu.lua:3375
 msgid "Fade Finished Books"
 msgstr "Desvanecer Livros Concluídos"
 
-#: screens/sui_menu.lua:3393
+#: screens/sui_menu.lua:3391
 msgid "Fade Intensity"
 msgstr "Intensidade do Desvanecer"
 
-#: screens/sui_menu.lua:3394
+#: screens/sui_menu.lua:3392
 msgid ""
 "Fades finished book covers towards white.\n"
 "50% is the default."
@@ -1535,11 +1535,11 @@ msgstr ""
 "Desvanece as capas dos livros concluídos em direção ao branco.\n"
 "50% é o valor predefinido."
 
-#: screens/sui_menu.lua:2472
+#: screens/sui_menu.lua:2468
 msgid "Fades the wallpaper towards black."
 msgstr "Esbate o papel de parede para preto."
 
-#: screens/sui_menu.lua:2466
+#: screens/sui_menu.lua:2462
 msgid "Fades the wallpaper towards white to improve text readability."
 msgstr ""
 "Esbate o papel de parede para branco para melhorar a legibilidade do texto."
@@ -1609,7 +1609,7 @@ msgstr "Tamanho do ficheiro (menor)"
 msgid "Filter by name…"
 msgstr "Filtrar por nome…"
 
-#: screens/sui_menu.lua:3370
+#: screens/sui_menu.lua:3368
 msgid "Finished Books"
 msgstr "Livros Concluídos"
 
@@ -1622,7 +1622,7 @@ msgid "Fixed Height"
 msgstr "Altura Fixa"
 
 #: modules/module_quick_actions.lua:661 modules/module_reading_stats.lua:873
-#: screens/sui_menu.lua:4471 screens/sui_quicksettings_bar.lua:1327
+#: screens/sui_menu.lua:4469 screens/sui_quicksettings_bar.lua:1327
 msgid "Flat"
 msgstr "Plano"
 
@@ -1634,7 +1634,7 @@ msgstr "Biblioteca Completa"
 msgid "Folder"
 msgstr "Pasta"
 
-#: screens/sui_menu.lua:2992
+#: screens/sui_menu.lua:2990
 msgid "Folder Cover Type"
 msgstr "Tipo de Capa de Pasta"
 
@@ -1646,11 +1646,11 @@ msgstr "Capas de Pastas"
 msgid "Folder Covers: Empty Folder"
 msgstr "Capas de Pastas: Pasta Vazia"
 
-#: screens/sui_menu.lua:3414
+#: screens/sui_menu.lua:3412
 msgid "Folder Name"
 msgstr "Nome da Pasta"
 
-#: screens/sui_menu.lua:3523
+#: screens/sui_menu.lua:3521
 msgid "Folder Name Text Size"
 msgstr "Tamanho do Texto do Nome da Pasta"
 
@@ -1669,12 +1669,12 @@ msgstr "Capa da pasta"
 msgid "Folder covers, browse modes, series grouping"
 msgstr "Capas de pastas, modos de navegação, agrupamento de séries"
 
-#: engines/sui_book_grid.lua:1989 modules/module_coverdeck.lua:1673
+#: engines/sui_book_grid.lua:1969 modules/module_coverdeck.lua:1673
 #: modules/module_currently.lua:2009
 msgid "Follow Library"
 msgstr "Seguir Biblioteca"
 
-#: infra/sui_config.lua:1057 screens/sui_quicksettings_bar.lua:1250
+#: infra/sui_config.lua:965 screens/sui_quicksettings_bar.lua:1250
 msgid "Font"
 msgstr "Tipo de letra"
 
@@ -1703,7 +1703,7 @@ msgstr "Catorze"
 msgid "Frame"
 msgstr "Moldura"
 
-#: screens/sui_menu.lua:1308 screens/sui_menu.lua:4482
+#: screens/sui_menu.lua:1308 screens/sui_menu.lua:4480
 msgid "Framed"
 msgstr "Com Moldura"
 
@@ -1745,11 +1745,11 @@ msgstr "Luz frontal não disponível neste dispositivo."
 msgid "General — %d settings"
 msgstr "Geral — %d definições"
 
-#: screens/sui_menu.lua:2691
+#: screens/sui_menu.lua:2689
 msgid "Gesture Only"
 msgstr "Só por Gesto"
 
-#: screens/sui_menu.lua:4435 screens/sui_menu.lua:4442
+#: screens/sui_menu.lua:4433 screens/sui_menu.lua:4440
 msgid "Global Text Size"
 msgstr "Tamanho Global do Texto"
 
@@ -1757,7 +1757,7 @@ msgstr "Tamanho Global do Texto"
 msgid "Global custom actions & icons"
 msgstr "Ações e ícones globais personalizados"
 
-#: screens/sui_menu.lua:4443
+#: screens/sui_menu.lua:4441
 msgid ""
 "Global scale applied to all of KOReader's interface text — menus, dialogs, "
 "titles, and Simple UI. It does not change the book's reading font size, "
@@ -1771,7 +1771,7 @@ msgstr ""
 "100% é o tamanho predefinido. Útil quando o tipo de letra da interface "
 "escolhido (ver acima) fica mais pequeno ou maior do que o habitual."
 
-#: screens/sui_menu.lua:2600
+#: screens/sui_menu.lua:2596
 msgid ""
 "Global scale for all modules.\n"
 "Individual overrides in Module Settings take precedence.\n"
@@ -1794,7 +1794,7 @@ msgstr "Metas"
 msgid "Goals & Streaks"
 msgstr "Objetivos e sequências"
 
-#: engines/sui_book_grid.lua:1931 engines/sui_book_grid.lua:1942
+#: engines/sui_book_grid.lua:1911 engines/sui_book_grid.lua:1922
 msgid "Grid size"
 msgstr "Tamanho da Grelha"
 
@@ -1802,7 +1802,7 @@ msgstr "Tamanho da Grelha"
 msgid "Group"
 msgstr "Grupo"
 
-#: screens/sui_menu.lua:2974
+#: screens/sui_menu.lua:2972
 msgid "Group by Book Series"
 msgstr "Agrupar por Séries de Livros"
 
@@ -1856,12 +1856,12 @@ msgstr ""
 "100% é o tamanho predefinido."
 
 #: modules/module_collections.lua:1375 screens/sui_menu.lua:480
-#: screens/sui_menu.lua:539 screens/sui_menu.lua:3054 screens/sui_menu.lua:3061
-#: screens/sui_menu.lua:3088 screens/sui_menu.lua:3128
-#: screens/sui_menu.lua:3134 screens/sui_menu.lua:3145
-#: screens/sui_menu.lua:3182 screens/sui_menu.lua:3188
-#: screens/sui_menu.lua:3199 screens/sui_menu.lua:3420
-#: screens/sui_menu.lua:3451
+#: screens/sui_menu.lua:539 screens/sui_menu.lua:3052 screens/sui_menu.lua:3059
+#: screens/sui_menu.lua:3086 screens/sui_menu.lua:3126
+#: screens/sui_menu.lua:3132 screens/sui_menu.lua:3143
+#: screens/sui_menu.lua:3180 screens/sui_menu.lua:3186
+#: screens/sui_menu.lua:3197 screens/sui_menu.lua:3418
+#: screens/sui_menu.lua:3449
 msgid "Hidden"
 msgstr "Oculto"
 
@@ -1873,16 +1873,16 @@ msgstr "Ocultar Lombada do Livro"
 msgid "Hide Currently Reading book"
 msgstr "Ocultar livro de A Ler"
 
-#: screens/sui_menu.lua:3625
+#: screens/sui_menu.lua:3623
 msgid "Hide Folder Book Spine"
 msgstr "Ocultar Lombada nos Livros da Pasta"
 
 #: modules/module_quick_actions.lua:426 modules/module_quick_actions.lua:577
-#: screens/sui_menu.lua:2084 screens/sui_quicksettings_bar.lua:1255
+#: screens/sui_menu.lua:2080 screens/sui_quicksettings_bar.lua:1255
 msgid "Hide Label"
 msgstr "Ocultar Etiqueta"
 
-#: screens/sui_menu.lua:3619
+#: screens/sui_menu.lua:3617
 msgid "Hide Selection Underline"
 msgstr "Ocultar Sublinhado de Seleção"
 
@@ -1898,7 +1898,7 @@ msgstr ""
 "Oculta a barra de paginação no ecrã inicial.\n"
 "Não disponível quando o Navpager está ativo."
 
-#: screens/sui_menu.lua:2746
+#: screens/sui_menu.lua:2744
 msgid "High-Quality Cover"
 msgstr "Capa de Alta Qualidade"
 
@@ -1921,7 +1921,7 @@ msgstr "Início"
 
 #: engines/sui_screen_engine.lua:1375 features/sui_backup.lua:110
 #: infra/sui_patches.lua:1117 infra/sui_patches.lua:1127
-#: screens/sui_menu.lua:2548 screens/sui_menu.lua:4671
+#: screens/sui_menu.lua:2544 screens/sui_menu.lua:4669
 #: screens/sui_settings_window.lua:345 screens/sui_settings_window.lua:1103
 msgid "Home Screen"
 msgstr "Ecrã Inicial"
@@ -1942,7 +1942,7 @@ msgstr "Pasta raiz"
 msgid "Home folder + subfolders"
 msgstr "Pasta raiz + subpastas"
 
-#: screens/sui_menu.lua:2833
+#: screens/sui_menu.lua:2831
 msgid "Home key opens Home Screen"
 msgstr "Botão Home Abre o Ecrã Inicial"
 
@@ -1978,16 +1978,16 @@ msgstr ""
 msgid "Icon"
 msgstr "Ícone"
 
-#: screens/sui_menu.lua:3808
+#: screens/sui_menu.lua:3806
 msgid "Icon Packs"
 msgstr "Pacotes de Ícones"
 
-#: screens/sui_menu.lua:3985
+#: screens/sui_menu.lua:3983
 msgid "Icon Presets"
 msgstr "Predefinições de ícones"
 
 #: screens/sui_menu.lua:1103 screens/sui_menu.lua:1378
-#: screens/sui_menu.lua:1379 screens/sui_menu.lua:1450
+#: screens/sui_menu.lua:1379 screens/sui_menu.lua:1446
 msgid "Icon Size"
 msgstr "Tamanho do Ícone"
 
@@ -1999,7 +1999,7 @@ msgstr "Ficheiros de ícones e packs instalados de sui_icons/"
 msgid "Icon: Default"
 msgstr "Ícone: Predefinido"
 
-#: screens/sui_menu.lua:208 screens/sui_menu.lua:3754
+#: screens/sui_menu.lua:208 screens/sui_menu.lua:3752
 msgid "Icons"
 msgstr "Ícones"
 
@@ -2007,7 +2007,7 @@ msgstr "Ícones"
 msgid "Icons only"
 msgstr "Apenas ícones"
 
-#: screens/sui_menu.lua:4392
+#: screens/sui_menu.lua:4390
 msgid ""
 "Icons that contain color keep their original colors in night mode instead of "
 "being inverted.\n"
@@ -2036,7 +2036,7 @@ msgstr ""
 msgid "Import Backup…"
 msgstr "Importar cópia de segurança…"
 
-#: features/sui_presets.lua:1082 screens/sui_menu.lua:4324
+#: features/sui_presets.lua:1082 screens/sui_menu.lua:4322
 msgid "Import preset"
 msgstr "Importar predefinição"
 
@@ -2044,15 +2044,15 @@ msgstr "Importar predefinição"
 msgid "Incompatible items have been disabled:"
 msgstr "Itens incompatíveis foram desativados:"
 
-#: screens/sui_menu.lua:3893
+#: screens/sui_menu.lua:3891
 msgid "Install pack from ZIP"
 msgstr "Instalar pacote a partir de ZIP"
 
-#: screens/sui_menu.lua:3386
+#: screens/sui_menu.lua:3384
 msgid "Intensity"
 msgstr "Intensidade"
 
-#: screens/sui_menu.lua:1581
+#: screens/sui_menu.lua:1577
 msgid ""
 "Invalid arrangement.\n"
 "Keep items between the Left and Right separators."
@@ -2080,7 +2080,7 @@ msgstr "Entrada inválida. Introduza 1–6 dígitos hexadecimais (0–9, A–F).
 msgid "Invalid preset file"
 msgstr "Ficheiro de predefinição inválido"
 
-#: screens/sui_menu.lua:2462
+#: screens/sui_menu.lua:2458
 msgid "Invert in Night Mode"
 msgstr "Inverter no Modo Noturno"
 
@@ -2088,7 +2088,7 @@ msgstr "Inverter no Modo Noturno"
 msgid "Italic"
 msgstr "Itálico"
 
-#: infra/sui_config.lua:1181 modules/module_clock.lua:1089
+#: infra/sui_config.lua:1089 modules/module_clock.lua:1089
 #: modules/module_clock.lua:1098 modules/module_clock.lua:1136
 #: modules/module_coverdeck.lua:1550 modules/module_coverdeck.lua:1590
 #: modules/module_coverdeck.lua:1604 modules/module_currently.lua:1677
@@ -2096,8 +2096,8 @@ msgstr "Itálico"
 #: modules/module_reading_stats.lua:756 modules/module_reading_stats.lua:777
 #: modules/module_reading_stats.lua:799 screens/sui_menu.lua:858
 #: screens/sui_menu.lua:863 screens/sui_menu.lua:952 screens/sui_menu.lua:1112
-#: screens/sui_menu.lua:2094 screens/sui_menu.lua:2099
-#: screens/sui_menu.lua:2125
+#: screens/sui_menu.lua:2090 screens/sui_menu.lua:2095
+#: screens/sui_menu.lua:2121
 msgid "Items"
 msgstr "Itens"
 
@@ -2137,7 +2137,7 @@ msgstr "KOReader"
 msgid "LAST 7 DAYS"
 msgstr "ÚLTIMOS 7 DIAS"
 
-#: infra/sui_config.lua:1120 modules/module_action_list.lua:510
+#: infra/sui_config.lua:1028 modules/module_action_list.lua:510
 #: modules/module_action_list.lua:525 modules/module_collections.lua:1468
 #: modules/module_quick_actions.lua:598 modules/module_reading_goals.lua:1304
 #: modules/module_reading_stats.lua:854 modules/module_reading_stats.lua:1015
@@ -2145,24 +2145,24 @@ msgstr "ÚLTIMOS 7 DIAS"
 msgid "Label"
 msgstr "Etiqueta"
 
-#: screens/sui_menu.lua:1405
+#: screens/sui_menu.lua:1401
 msgid "Label Font"
 msgstr "Tipo de letra da etiqueta"
 
-#: screens/sui_menu.lua:2631
+#: screens/sui_menu.lua:2627
 msgid "Label Scale"
 msgstr "Escala das Etiquetas"
 
-#: screens/sui_menu.lua:1391 screens/sui_menu.lua:1392
-#: screens/sui_menu.lua:1451
+#: screens/sui_menu.lua:1389 screens/sui_menu.lua:1390
+#: screens/sui_menu.lua:1447
 msgid "Label Size"
 msgstr "Tamanho da Etiqueta"
 
-#: screens/sui_menu.lua:2620
+#: screens/sui_menu.lua:2616
 msgid "Labels"
 msgstr "Etiquetas"
 
-#: screens/sui_menu.lua:1904
+#: screens/sui_menu.lua:1900
 msgid "Large"
 msgstr "Grande"
 
@@ -2177,9 +2177,9 @@ msgstr "Última cópia de segurança: nunca"
 #: features/sui_backup.lua:1006 infra/sui_updater.lua:449
 #: screens/sui_menu.lua:444 screens/sui_menu.lua:848 screens/sui_menu.lua:1059
 #: screens/sui_menu.lua:1151 screens/sui_menu.lua:1367
-#: screens/sui_menu.lua:1868 screens/sui_menu.lua:3551
-#: screens/sui_menu.lua:3574 screens/sui_menu.lua:3596
-#: screens/sui_menu.lua:4457 screens/sui_menu.lua:4655
+#: screens/sui_menu.lua:1864 screens/sui_menu.lua:3549
+#: screens/sui_menu.lua:3572 screens/sui_menu.lua:3594
+#: screens/sui_menu.lua:4455 screens/sui_menu.lua:4653
 #: screens/sui_quicksettings_bar.lua:1134
 msgid "Later"
 msgstr "Mais tarde"
@@ -2206,7 +2206,7 @@ msgstr "Layout, papel de parede, predefinições e comportamento"
 #: modules/module_quote.lua:1603 modules/module_reading_goals.lua:141
 #: modules/module_reading_goals.lua:1590 modules/module_reading_stats.lua:111
 #: modules/module_reading_stats.lua:908 screens/sui_menu.lua:704
-#: screens/sui_menu.lua:938 screens/sui_menu.lua:1548 screens/sui_menu.lua:1755
+#: screens/sui_menu.lua:938 screens/sui_menu.lua:1544 screens/sui_menu.lua:1751
 msgid "Left"
 msgstr "Esquerda"
 
@@ -2215,14 +2215,14 @@ msgid "Less"
 msgstr "Menos"
 
 #: features/sui_backup.lua:120 features/sui_quickactions.lua:675
-#: infra/sui_config.lua:117 infra/sui_config.lua:444 screens/sui_menu.lua:2549
-#: screens/sui_menu.lua:4675 screens/sui_settings_window.lua:359
+#: infra/sui_config.lua:117 infra/sui_config.lua:444 screens/sui_menu.lua:2545
+#: screens/sui_menu.lua:4673 screens/sui_settings_window.lua:359
 #: screens/sui_settings_window.lua:1106 screens/sui_titlebar.lua:1120
 msgid "Library"
 msgstr "Biblioteca"
 
-#: screens/sui_menu.lua:1876 screens/sui_menu.lua:1879
-#: screens/sui_menu.lua:1919
+#: screens/sui_menu.lua:1872 screens/sui_menu.lua:1875
+#: screens/sui_menu.lua:1915
 msgid "Library Buttons"
 msgstr "Botões da Biblioteca"
 
@@ -2230,18 +2230,18 @@ msgstr "Botões da Biblioteca"
 msgid "Library View"
 msgstr "Vista de Biblioteca"
 
-#: engines/sui_book_grid.lua:1991 modules/module_collections.lua:1409
+#: engines/sui_book_grid.lua:1971 modules/module_collections.lua:1409
 #: modules/module_coverdeck.lua:1675 modules/module_currently.lua:2011
-#: screens/sui_menu.lua:3102 screens/sui_menu.lua:3114
-#: screens/sui_menu.lua:3156 screens/sui_menu.lua:3168
-#: screens/sui_menu.lua:3210 screens/sui_menu.lua:3222
-#: screens/sui_menu.lua:3277 screens/sui_menu.lua:3289
-#: screens/sui_menu.lua:3344 screens/sui_menu.lua:3356
-#: screens/sui_menu.lua:3498 screens/sui_menu.lua:3503
+#: screens/sui_menu.lua:3100 screens/sui_menu.lua:3112
+#: screens/sui_menu.lua:3154 screens/sui_menu.lua:3166
+#: screens/sui_menu.lua:3208 screens/sui_menu.lua:3220
+#: screens/sui_menu.lua:3275 screens/sui_menu.lua:3287
+#: screens/sui_menu.lua:3342 screens/sui_menu.lua:3354
+#: screens/sui_menu.lua:3496 screens/sui_menu.lua:3501
 msgid "Light"
 msgstr "Claro"
 
-#: screens/sui_menu.lua:2465
+#: screens/sui_menu.lua:2461
 msgid "Lighten"
 msgstr "Clarear"
 
@@ -2253,11 +2253,11 @@ msgstr "Lista"
 msgid "Loading statistics…"
 msgstr "A carregar estatísticas…"
 
-#: screens/sui_menu.lua:2579
+#: screens/sui_menu.lua:2575
 msgid "Lock Scale"
 msgstr "Bloquear Escala"
 
-#: infra/sui_config.lua:1745
+#: infra/sui_config.lua:1655
 msgid "Long Press"
 msgstr "Pressão Longa"
 
@@ -2275,7 +2275,7 @@ msgstr "Módulo LuaSettings indisponível"
 msgid "Make it yours"
 msgstr "Torna-o teu"
 
-#: screens/sui_menu.lua:2834
+#: screens/sui_menu.lua:2832
 msgid ""
 "Makes the device's physical Home key open the SimpleUI Home Screen — while "
 "reading and while browsing files — instead of KOReader's native Home "
@@ -2288,8 +2288,8 @@ msgstr ""
 "de título do Explorador de Ficheiros continua a abrir a pasta inicial."
 
 #: features/sui_presets.lua:907 features/sui_presets.lua:983
-#: features/sui_presets.lua:988 screens/sui_menu.lua:4152
-#: screens/sui_menu.lua:4226 screens/sui_menu.lua:4231
+#: features/sui_presets.lua:988 screens/sui_menu.lua:4150
+#: screens/sui_menu.lua:4224 screens/sui_menu.lua:4229
 msgid "Manage presets"
 msgstr "Gerir predefinições"
 
@@ -2355,23 +2355,23 @@ msgstr "Minutos por dia:"
 msgid "Mode"
 msgstr "Modo"
 
-#: screens/sui_menu.lua:2597
+#: screens/sui_menu.lua:2593
 msgid "Module Scale"
 msgstr "Escala do Módulo"
 
-#: infra/sui_config.lua:1742 screens/sui_menu.lua:2301
+#: infra/sui_config.lua:1652 screens/sui_menu.lua:2297
 msgid "Module Settings"
 msgstr "Definições do Módulo"
 
-#: screens/sui_menu.lua:3812
+#: screens/sui_menu.lua:3810
 msgid "Module unavailable"
 msgstr "Módulo indisponível"
 
-#: screens/sui_menu.lua:2590 screens/sui_menu.lua:2853
+#: screens/sui_menu.lua:2586 screens/sui_menu.lua:2851
 msgid "Modules"
 msgstr "Módulos"
 
-#: screens/sui_menu.lua:2289
+#: screens/sui_menu.lua:2285
 msgid "Modules  (%d)"
 msgstr "Módulos  (%d)"
 
@@ -2445,16 +2445,16 @@ msgstr "Nome (A–Z)"
 msgid "Name (Z–A)"
 msgstr "Nome (Z–A)"
 
-#: features/library/sui_foldercovers.lua:298 screens/sui_menu.lua:3238
-#: screens/sui_menu.lua:3247 screens/sui_menu.lua:3259
+#: features/library/sui_foldercovers.lua:298 screens/sui_menu.lua:3236
+#: screens/sui_menu.lua:3245 screens/sui_menu.lua:3257
 msgid "Native"
 msgstr "Nativo"
 
-#: screens/sui_bottombar.lua:939 screens/sui_menu.lua:2891
+#: screens/sui_bottombar.lua:939 screens/sui_menu.lua:2889
 msgid "Navigation Bar"
 msgstr "Barra de Navegação"
 
-#: screens/sui_menu.lua:2498
+#: screens/sui_menu.lua:2494
 msgid "Navigation Bar Opacity"
 msgstr "Opacidade da Barra de Navegação"
 
@@ -2510,25 +2510,25 @@ msgstr "Símbolo Nerd Font…"
 msgid "Network manager unavailable."
 msgstr "Gestor de rede indisponível."
 
-#: screens/sui_menu.lua:2702
+#: screens/sui_menu.lua:2700
 msgid "Never"
 msgstr "Nunca"
 
-#: engines/sui_book_grid.lua:551 features/library/sui_cover_widgets.lua:467
+#: engines/sui_book_grid.lua:531 features/library/sui_cover_widgets.lua:467
 #: features/library/sui_foldercovers.lua:1274
 #: features/library/sui_foldercovers.lua:1921 modules/module_new_books.lua:137
 msgid "New"
 msgstr "Novo"
 
-#: engines/sui_book_grid.lua:2141
+#: engines/sui_book_grid.lua:2121
 msgid "New Badge Color"
 msgstr "Cor do Emblema Novo"
 
-#: screens/sui_menu.lua:3301
+#: screens/sui_menu.lua:3299
 msgid "New Book"
 msgstr "Livro Novo"
 
-#: engines/sui_book_grid.lua:2133 engines/sui_book_grid.lua:2146
+#: engines/sui_book_grid.lua:2113 engines/sui_book_grid.lua:2126
 msgid "New Book Badge"
 msgstr "Emblema de Livro Novo"
 
@@ -2568,7 +2568,7 @@ msgstr "Não"
 msgid "No .lua files found in sui_quotes/"
 msgstr "Nenhum ficheiro .lua encontrado em sui_quotes/"
 
-#: screens/sui_menu.lua:3931
+#: screens/sui_menu.lua:3929
 msgid ""
 "No .zip files found.\n"
 "Place .zip files in:\n"
@@ -2743,8 +2743,8 @@ msgstr "Nenhum item disponível."
 #: modules/module_reading_goals.lua:1392 modules/module_reading_stats.lua:780
 #: modules/module_reading_stats.lua:801 screens/sui_menu.lua:876
 #: screens/sui_menu.lua:954 screens/sui_menu.lua:1177 screens/sui_menu.lua:1228
-#: screens/sui_menu.lua:1664 screens/sui_menu.lua:1771
-#: screens/sui_menu.lua:2102 screens/sui_menu.lua:2127
+#: screens/sui_menu.lua:1660 screens/sui_menu.lua:1767
+#: screens/sui_menu.lua:2098 screens/sui_menu.lua:2123
 msgid "No items selected."
 msgstr "Nenhum item selecionado."
 
@@ -2760,7 +2760,7 @@ msgstr "Sem módulos"
 msgid "No other pages available."
 msgstr "Sem outras páginas disponíveis."
 
-#: screens/sui_menu.lua:3952
+#: screens/sui_menu.lua:3950
 msgid "No packs found."
 msgstr "Nenhum pacote encontrado."
 
@@ -2768,7 +2768,7 @@ msgstr "Nenhum pacote encontrado."
 msgid "No plugins found."
 msgstr "Nenhum plugin encontrado."
 
-#: features/sui_presets.lua:1089 screens/sui_menu.lua:4332
+#: features/sui_presets.lua:1089 screens/sui_menu.lua:4330
 msgid ""
 "No preset files found.\n"
 "Place .lua files in:\n"
@@ -2778,7 +2778,7 @@ msgstr ""
 "Coloque ficheiros .lua em:\n"
 "%1"
 
-#: features/sui_presets.lua:1066 screens/sui_menu.lua:4308
+#: features/sui_presets.lua:1066 screens/sui_menu.lua:4306
 msgid "No presets found."
 msgstr "Nenhuma predefinição encontrada."
 
@@ -2815,15 +2815,15 @@ msgstr "Sem estatísticas selecionadas  —  prima sem soltar para configurar"
 msgid "No system actions found."
 msgstr "Nenhuma ação do sistema encontrada."
 
-#: screens/sui_menu.lua:2422
+#: screens/sui_menu.lua:2418
 msgid "No wallpapers found."
 msgstr "Nenhuns papéis de parede encontrados."
 
-#: engines/sui_book_grid.lua:2014 engines/sui_book_grid.lua:2127
+#: engines/sui_book_grid.lua:1994 engines/sui_book_grid.lua:2107
 #: features/library/sui_foldercovers.lua:303 features/sui_quickactions.lua:2524
-#: screens/sui_menu.lua:3239 screens/sui_menu.lua:3248
-#: screens/sui_menu.lua:3266 screens/sui_menu.lua:3306
-#: screens/sui_menu.lua:3315 screens/sui_menu.lua:3333
+#: screens/sui_menu.lua:3237 screens/sui_menu.lua:3246
+#: screens/sui_menu.lua:3264 screens/sui_menu.lua:3304
+#: screens/sui_menu.lua:3313 screens/sui_menu.lua:3331
 msgid "None"
 msgstr "Nenhum"
 
@@ -2858,15 +2858,15 @@ msgstr "nov"
 msgid "November"
 msgstr "Novembro"
 
-#: engines/sui_book_grid.lua:1915 engines/sui_book_grid.lua:1916
+#: engines/sui_book_grid.lua:1895 engines/sui_book_grid.lua:1896
 msgid "Number of Books"
 msgstr "Número de Livros"
 
-#: screens/sui_menu.lua:3052
+#: screens/sui_menu.lua:3050
 msgid "Number of Books in Folder"
 msgstr "Número de Livros na Pasta"
 
-#: screens/sui_menu.lua:3126
+#: screens/sui_menu.lua:3124
 msgid "Number of Pages"
 msgstr "Número de Páginas"
 
@@ -2886,11 +2886,11 @@ msgstr "out"
 msgid "October"
 msgstr "Outubro"
 
-#: engines/sui_book_grid.lua:2094 engines/sui_book_grid.lua:2120
+#: engines/sui_book_grid.lua:2074 engines/sui_book_grid.lua:2100
 #: modules/module_coverdeck.lua:1720 modules/module_currently.lua:2051
-#: screens/sui_menu.lua:1512 screens/sui_menu.lua:1722
-#: screens/sui_menu.lua:3372 screens/sui_menu.lua:3537
-#: screens/sui_menu.lua:4639
+#: screens/sui_menu.lua:1508 screens/sui_menu.lua:1718
+#: screens/sui_menu.lua:3370 screens/sui_menu.lua:3535
+#: screens/sui_menu.lua:4637
 msgid "Off"
 msgstr "Desligado"
 
@@ -2898,10 +2898,10 @@ msgstr "Desligado"
 msgid "Oh"
 msgstr "zero"
 
-#: engines/sui_book_grid.lua:2094 engines/sui_book_grid.lua:2120
+#: engines/sui_book_grid.lua:2074 engines/sui_book_grid.lua:2100
 #: modules/module_coverdeck.lua:1720 modules/module_currently.lua:2051
-#: screens/sui_menu.lua:1512 screens/sui_menu.lua:1722
-#: screens/sui_menu.lua:4639
+#: screens/sui_menu.lua:1508 screens/sui_menu.lua:1718
+#: screens/sui_menu.lua:4637
 msgid "On"
 msgstr "Ligado"
 
@@ -2946,17 +2946,17 @@ msgstr "Abrir este ficheiro?"
 msgid "Open with…"
 msgstr "Abrir com…"
 
-#: screens/sui_menu.lua:2784
+#: screens/sui_menu.lua:2782
 msgid "Overflow Warning"
 msgstr "Aviso de Sobrelotação"
 
-#: screens/sui_menu.lua:3031
+#: screens/sui_menu.lua:3029
 msgid "Overlays"
 msgstr "Sobreposições"
 
 #: features/sui_presets.lua:888 features/sui_presets.lua:918
-#: features/sui_presets.lua:1050 screens/sui_menu.lua:4134
-#: screens/sui_menu.lua:4163 screens/sui_menu.lua:4292
+#: features/sui_presets.lua:1050 screens/sui_menu.lua:4132
+#: screens/sui_menu.lua:4161 screens/sui_menu.lua:4290
 msgid "Overwrite"
 msgstr "Substituir"
 
@@ -2965,11 +2965,11 @@ msgid "Overwrite preset \"%s\" with the current homescreen settings?"
 msgstr ""
 "Substituir a predefinição \"%s\" pelas definições atuais do ecrã inicial?"
 
-#: screens/sui_menu.lua:4162 screens/sui_menu.lua:4291
+#: screens/sui_menu.lua:4160 screens/sui_menu.lua:4289
 msgid "Overwrite preset \"%s\" with the current icon settings?"
 msgstr "Substituir a predefinição \"%s\" pelas definições de ícones atuais?"
 
-#: screens/sui_menu.lua:3967
+#: screens/sui_menu.lua:3965
 msgid ""
 "Pack \"%s\" applied.\n"
 "%d icons replaced."
@@ -2977,7 +2977,7 @@ msgstr ""
 "Pack \"%s\" aplicado.\n"
 "%d ícones substituídos."
 
-#: screens/sui_menu.lua:3885
+#: screens/sui_menu.lua:3883
 msgid ""
 "Pack \"%s\" installed.\n"
 "You can now apply it from the list."
@@ -3008,11 +3008,11 @@ msgstr "Página 1 (Início)"
 msgid "Pages"
 msgstr "Páginas"
 
-#: engines/sui_book_grid.lua:2076 engines/sui_book_grid.lua:2092
+#: engines/sui_book_grid.lua:2056 engines/sui_book_grid.lua:2072
 msgid "Pages Badge"
 msgstr "Emblema de Páginas"
 
-#: engines/sui_book_grid.lua:2087
+#: engines/sui_book_grid.lua:2067
 msgid "Pages Badge Color"
 msgstr "Cor do Emblema de Páginas"
 
@@ -3024,11 +3024,11 @@ msgstr "Páginas por dia"
 msgid "Pages read"
 msgstr "Páginas lidas"
 
-#: features/sui_style.lua:1312 screens/sui_menu.lua:2893
+#: features/sui_style.lua:1312 screens/sui_menu.lua:2891
 msgid "Pagination Bar"
 msgstr "Barra de Paginação"
 
-#: screens/sui_menu.lua:2490
+#: screens/sui_menu.lua:2486
 msgid "Pagination Bar Opacity"
 msgstr "Opacidade da Barra de Paginação"
 
@@ -3107,11 +3107,11 @@ msgstr "Livros físicos lidos este ano:"
 msgid "Place .lua files in the plugin's sui_quotes/ folder"
 msgstr "Coloque ficheiros .lua na pasta sui_quotes/ do plugin"
 
-#: screens/sui_menu.lua:3953
+#: screens/sui_menu.lua:3951
 msgid "Place a folder or .zip in:"
 msgstr "Coloque uma pasta ou .zip em:"
 
-#: screens/sui_menu.lua:2424
+#: screens/sui_menu.lua:2420
 msgid "Place images in:"
 msgstr "Colocar imagens em:"
 
@@ -3122,7 +3122,7 @@ msgstr ""
 "Coloca os teus ficheiros em koreader/settings/simpleui/sui_wallpapers ou "
 "sui_icons."
 
-#: screens/sui_menu.lua:3635
+#: screens/sui_menu.lua:3633
 msgid "Placeholder Cover for Bookless Folders"
 msgstr "Capa Substituta para Pastas sem Livros"
 
@@ -3137,7 +3137,7 @@ msgstr ""
 msgid "Please enter a date in YYYY-MM-DD format."
 msgstr "Introduza uma data no formato AAAA-MM-DD."
 
-#: features/sui_presets.lua:870 screens/sui_menu.lua:4118
+#: features/sui_presets.lua:870 screens/sui_menu.lua:4116
 msgid "Please enter a name for the preset."
 msgstr "Por favor introduza um nome para a predefinição."
 
@@ -3161,7 +3161,7 @@ msgstr "Erro no plugin: %s"
 msgid "Plugin not available: %s"
 msgstr "Plugin não disponível: %s"
 
-#: screens/sui_menu.lua:3059 screens/sui_menu.lua:3463
+#: screens/sui_menu.lua:3057 screens/sui_menu.lua:3461
 msgid "Position"
 msgstr "Posição"
 
@@ -3169,33 +3169,33 @@ msgstr "Posição"
 msgid "Power"
 msgstr "Energia"
 
-#: screens/sui_menu.lua:2758
+#: screens/sui_menu.lua:2756
 msgid "Preserve Cover Proportions"
 msgstr "Preservar Proporções da Capa"
 
-#: screens/sui_menu.lua:2809
+#: screens/sui_menu.lua:2807
 msgid "Preserve Deleted Books in Statistics"
 msgstr "Preservar Livros Eliminados nas Estatísticas"
 
-#: features/sui_presets.lua:1102 screens/sui_menu.lua:4343
+#: features/sui_presets.lua:1102 screens/sui_menu.lua:4341
 msgid "Preset \"%s\" imported."
 msgstr "Predefinição \"%s\" importada."
 
 #: features/sui_presets.lua:753 features/sui_presets.lua:831
-#: screens/sui_menu.lua:4081
+#: screens/sui_menu.lua:4079
 msgid "Preset \"%s\" not found."
 msgstr "Predefinição \"%s\" não encontrada."
 
-#: features/sui_presets.lua:881 screens/sui_menu.lua:4125
+#: features/sui_presets.lua:881 screens/sui_menu.lua:4123
 msgid "Preset \"%s\" saved."
 msgstr "Predefinição \"%s\" guardada."
 
 #: features/sui_presets.lua:924 features/sui_presets.lua:1056
-#: screens/sui_menu.lua:4169 screens/sui_menu.lua:4298
+#: screens/sui_menu.lua:4167 screens/sui_menu.lua:4296
 msgid "Preset \"%s\" updated."
 msgstr "Predefinição \"%s\" atualizada."
 
-#: features/sui_presets.lua:1129 screens/sui_menu.lua:4373
+#: features/sui_presets.lua:1129 screens/sui_menu.lua:4371
 msgid ""
 "Preset exported to:\n"
 "%s"
@@ -3203,7 +3203,7 @@ msgstr ""
 "Preset exportado para:\n"
 "%s"
 
-#: features/sui_presets.lua:856 screens/sui_menu.lua:4104
+#: features/sui_presets.lua:856 screens/sui_menu.lua:4102
 msgid "Preset name"
 msgstr "Nome da predefinição"
 
@@ -3211,7 +3211,7 @@ msgstr "Nome da predefinição"
 msgid "Preset not found"
 msgstr "Predefinição não encontrada"
 
-#: screens/sui_menu.lua:2865 screens/sui_settings_window.lua:434
+#: screens/sui_menu.lua:2863 screens/sui_settings_window.lua:434
 msgid "Presets"
 msgstr "Predefinições"
 
@@ -3231,7 +3231,7 @@ msgstr ""
 msgid "Prev"
 msgstr "Anterior"
 
-#: screens/sui_menu.lua:3234
+#: screens/sui_menu.lua:3232
 msgid "Progress"
 msgstr "Progresso"
 
@@ -3240,28 +3240,28 @@ msgstr "Progresso"
 msgid "Progress Badge"
 msgstr "Emblema de Progresso"
 
-#: engines/sui_book_grid.lua:2040 modules/module_coverdeck.lua:1670
+#: engines/sui_book_grid.lua:2020 modules/module_coverdeck.lua:1670
 #: modules/module_currently.lua:2006
 msgid "Progress Badge Color"
 msgstr "Cor do Emblema de Progresso"
 
-#: screens/sui_menu.lua:4468
+#: screens/sui_menu.lua:4466
 msgid "Progress Bar Type"
 msgstr "Tipo de Barra de Progresso"
 
-#: engines/sui_book_grid.lua:2045
+#: engines/sui_book_grid.lua:2025
 msgid "Progress Indicator"
 msgstr "Indicador de Progresso"
 
-#: engines/sui_book_grid.lua:2032
+#: engines/sui_book_grid.lua:2012
 msgid "Progress Style"
 msgstr "Estilo de Progresso"
 
-#: engines/sui_book_grid.lua:2196 modules/module_currently.lua:1987
+#: engines/sui_book_grid.lua:2176 modules/module_currently.lua:1987
 msgid "Progress Text"
 msgstr "Texto de progresso"
 
-#: infra/sui_config.lua:1210
+#: infra/sui_config.lua:1118
 msgid "Progress and Badges"
 msgstr "Progresso e Emblemas"
 
@@ -3281,7 +3281,7 @@ msgstr "Estilo da barra de progresso"
 msgid "Project: Title is not compatible with Simple UI."
 msgstr "O Project: Title não é compatível com o Simple UI."
 
-#: infra/sui_config.lua:1193
+#: infra/sui_config.lua:1101
 msgid "Proportions"
 msgstr "Proporções"
 
@@ -3290,7 +3290,7 @@ msgstr "Proporções"
 #: modules/module_action_list.lua:373 modules/module_action_list.lua:399
 #: modules/module_quick_actions.lua:436 modules/module_quick_actions.lua:441
 #: modules/module_quick_actions.lua:467 modules/module_quick_actions.lua:576
-#: screens/sui_menu.lua:2278 screens/sui_menu.lua:4692
+#: screens/sui_menu.lua:2274 screens/sui_menu.lua:4690
 #: screens/sui_quicksettings_bar.lua:1144
 #: screens/sui_quicksettings_bar.lua:1149
 #: screens/sui_quicksettings_bar.lua:1170
@@ -3298,25 +3298,25 @@ msgstr "Proporções"
 msgid "Quick Actions"
 msgstr "Ações Rápidas"
 
-#: screens/sui_menu.lua:4696
+#: screens/sui_menu.lua:4694
 msgid "Quick Actions  (%d/%d — %d left)"
 msgstr "Ações Rápidas  (%d/%d — %d restantes)"
 
-#: screens/sui_menu.lua:4694
+#: screens/sui_menu.lua:4692
 msgid "Quick Actions  (%d/%d — at limit)"
 msgstr "Ações Rápidas  (%d/%d — no limite)"
 
 #: features/sui_quickactions.lua:1567 features/sui_quickactions.lua:1969
-#: screens/sui_menu.lua:3791
+#: screens/sui_menu.lua:3789
 msgid "Quick Actions Icons"
 msgstr "Ícones de Ações Rápidas"
 
 #: modules/module_quick_actions.lua:291 modules/module_quick_actions.lua:348
-#: modules/module_quick_actions.lua:735 screens/sui_menu.lua:2028
+#: modules/module_quick_actions.lua:735 screens/sui_menu.lua:2024
 msgid "Quick Actions Row"
 msgstr "Linha de Ações Rápidas"
 
-#: screens/sui_menu.lua:2895 screens/sui_quicksettings_bar.lua:993
+#: screens/sui_menu.lua:2893 screens/sui_quicksettings_bar.lua:993
 msgid "Quick Settings Bar"
 msgstr "Barra de Definições Rápidas"
 
@@ -3416,13 +3416,13 @@ msgstr "Remover da lista quando terminado"
 
 #: engines/sui_window.lua:1957 engines/sui_window.lua:2878
 #: features/sui_presets.lua:930 features/sui_presets.lua:937
-#: features/sui_presets.lua:1023 screens/sui_menu.lua:4175
-#: screens/sui_menu.lua:4182 screens/sui_menu.lua:4267
+#: features/sui_presets.lua:1023 screens/sui_menu.lua:4173
+#: screens/sui_menu.lua:4180 screens/sui_menu.lua:4265
 msgid "Rename"
 msgstr "Renomear"
 
 #: features/sui_presets.lua:933 features/sui_presets.lua:1019
-#: screens/sui_menu.lua:4178 screens/sui_menu.lua:4263
+#: screens/sui_menu.lua:4176 screens/sui_menu.lua:4261
 msgid "Rename \"%s\""
 msgstr "Renomear \"%s\""
 
@@ -3430,7 +3430,7 @@ msgstr "Renomear \"%s\""
 msgid "Rename screen"
 msgstr "Renomear ecrã"
 
-#: screens/sui_menu.lua:2735
+#: screens/sui_menu.lua:2733
 msgid ""
 "Replaces the \"Closing book…\" notice above with the cover for that close, "
 "when a cover is available."
@@ -3451,7 +3451,7 @@ msgstr ""
 "Com o navpager ativo, podem ser configurados entre 1 e 4 separadores."
 
 #: features/sui_quickactions.lua:1977 features/sui_style.lua:1328
-#: screens/sui_menu.lua:2658 screens/sui_stats_windows.lua:653
+#: screens/sui_menu.lua:2654 screens/sui_stats_windows.lua:653
 msgid "Reset"
 msgstr "Repor"
 
@@ -3471,7 +3471,7 @@ msgstr "Repor todos os ícones do sistema"
 msgid "Reset all Quick Actions icons to default?"
 msgstr "Repor todos os ícones das Ações Rápidas para a predefinição?"
 
-#: screens/sui_menu.lua:2657
+#: screens/sui_menu.lua:2653
 msgid "Reset all scales to default (100%)? This cannot be undone."
 msgstr ""
 "Repor todas as escalas para o valor predefinido (100%)? Esta ação não pode "
@@ -3481,16 +3481,16 @@ msgstr ""
 msgid "Reset all system icons to default?"
 msgstr "Repor todos os ícones do sistema para a predefinição?"
 
-#: screens/sui_menu.lua:2652
+#: screens/sui_menu.lua:2648
 msgid "Reset to Default Scale"
 msgstr "Repor Escala Predefinida"
 
 #: features/sui_quickactions.lua:600 infra/sui_updater.lua:448
 #: screens/sui_menu.lua:444 screens/sui_menu.lua:848 screens/sui_menu.lua:1058
 #: screens/sui_menu.lua:1151 screens/sui_menu.lua:1366
-#: screens/sui_menu.lua:1867 screens/sui_menu.lua:3551
-#: screens/sui_menu.lua:3574 screens/sui_menu.lua:3596
-#: screens/sui_menu.lua:4456 screens/sui_menu.lua:4655
+#: screens/sui_menu.lua:1863 screens/sui_menu.lua:3549
+#: screens/sui_menu.lua:3572 screens/sui_menu.lua:3594
+#: screens/sui_menu.lua:4454 screens/sui_menu.lua:4653
 #: screens/sui_quicksettings_bar.lua:1134
 msgid "Restart"
 msgstr "Reiniciar"
@@ -3532,12 +3532,12 @@ msgstr ""
 "Restaurar esta cópia de segurança? As definições existentes destas "
 "categorias serão substituídas. As predefinições guardadas são unidas."
 
-#: screens/sui_menu.lua:2563
+#: screens/sui_menu.lua:2559
 msgid "Return to Home Screen on Wakeup"
 msgstr "Regressar ao Ecrã Inicial ao Acordar"
 
-#: engines/sui_book_grid.lua:2129 screens/sui_menu.lua:3305
-#: screens/sui_menu.lua:3314 screens/sui_menu.lua:3326
+#: engines/sui_book_grid.lua:2109 screens/sui_menu.lua:3303
+#: screens/sui_menu.lua:3312 screens/sui_menu.lua:3324
 msgid "Ribbon"
 msgstr "Fita"
 
@@ -3547,7 +3547,7 @@ msgstr "Fita"
 #: modules/module_quote.lua:1615 modules/module_reading_goals.lua:142
 #: modules/module_reading_goals.lua:1600 modules/module_reading_stats.lua:112
 #: modules/module_reading_stats.lua:928 screens/sui_menu.lua:716
-#: screens/sui_menu.lua:946 screens/sui_menu.lua:1563 screens/sui_menu.lua:1761
+#: screens/sui_menu.lua:946 screens/sui_menu.lua:1559 screens/sui_menu.lua:1757
 msgid "Right"
 msgstr "Direita"
 
@@ -3567,7 +3567,7 @@ msgstr "Anéis"
 msgid "Round"
 msgstr "Redondo"
 
-#: engines/sui_book_grid.lua:2018
+#: engines/sui_book_grid.lua:1998
 msgid "Round Overlay"
 msgstr "Sobreposição Circular"
 
@@ -3575,7 +3575,7 @@ msgstr "Sobreposição Circular"
 msgid "Rounded Square"
 msgstr "Quadrado Arredondado"
 
-#: engines/sui_book_grid.lua:1952
+#: engines/sui_book_grid.lua:1932
 msgid "Rows"
 msgstr "Linhas"
 
@@ -3588,12 +3588,12 @@ msgid "Saturday"
 msgstr "Sábado"
 
 #: features/sui_presets.lua:864 features/sui_quickactions.lua:2548
-#: modules/module_reading_goals.lua:761 screens/sui_menu.lua:4112
+#: modules/module_reading_goals.lua:761 screens/sui_menu.lua:4110
 #: screens/sui_settings_window.lua:514 screens/sui_stats_windows.lua:662
 msgid "Save"
 msgstr "Guardar"
 
-#: features/sui_presets.lua:849 screens/sui_menu.lua:4097
+#: features/sui_presets.lua:849 screens/sui_menu.lua:4095
 msgid "Save as new preset"
 msgstr "Guardar como nova predefinição"
 
@@ -3601,7 +3601,7 @@ msgstr "Guardar como nova predefinição"
 msgid "Save backup as"
 msgstr "Guardar cópia de segurança como"
 
-#: screens/sui_menu.lua:4102
+#: screens/sui_menu.lua:4100
 msgid "Save icon preset"
 msgstr "Guardar predefinição de ícones"
 
@@ -3609,7 +3609,7 @@ msgstr "Guardar predefinição de ícones"
 msgid "Save preset"
 msgstr "Guardar predefinição"
 
-#: engines/sui_book_grid.lua:1888 engines/sui_book_grid.lua:1890
+#: engines/sui_book_grid.lua:1868 engines/sui_book_grid.lua:1870
 #: modules/module_action_list.lua:455 modules/module_action_list.lua:457
 #: modules/module_clock.lua:1053 modules/module_clock.lua:1055
 #: modules/module_coverdeck.lua:1295 modules/module_coverdeck.lua:1297
@@ -3620,7 +3620,7 @@ msgstr "Guardar predefinição"
 #: modules/module_quote.lua:1660 modules/module_reading_goals.lua:1285
 #: modules/module_reading_goals.lua:1287 modules/module_reading_stats.lua:717
 #: modules/module_reading_stats.lua:719 modules/module_reading_stats.lua:1028
-#: screens/sui_menu.lua:2575
+#: screens/sui_menu.lua:2571
 msgid "Scale"
 msgstr "Escala"
 
@@ -3649,7 +3649,7 @@ msgstr ""
 "Escala apenas para as miniaturas das capas.\n"
 "100% é o tamanho predefinido."
 
-#: engines/sui_book_grid.lua:1900
+#: engines/sui_book_grid.lua:1880
 msgid ""
 "Scale for the cover thumbnails only.\n"
 "Text and progress bar follow the module scale.\n"
@@ -3659,7 +3659,7 @@ msgstr ""
 "O texto e a barra de progresso seguem a escala do módulo.\n"
 "100% é o tamanho predefinido."
 
-#: screens/sui_menu.lua:3524
+#: screens/sui_menu.lua:3522
 msgid ""
 "Scale for the folder name overlay text.\n"
 "100% is the default size."
@@ -3675,7 +3675,7 @@ msgstr ""
 "Escala para o texto da etiqueta.\n"
 "100% é o tamanho predefinido."
 
-#: screens/sui_menu.lua:3041
+#: screens/sui_menu.lua:3039
 msgid ""
 "Scale for the library badges (progress, pages, etc.).\n"
 "100% is the default size."
@@ -3687,7 +3687,7 @@ msgstr ""
 msgid "Scale for the progress badge."
 msgstr "Escala para o emblema de progresso."
 
-#: engines/sui_book_grid.lua:2067
+#: engines/sui_book_grid.lua:2047
 msgid ""
 "Scale for this module's corner badges (progress, pages, series, new book)."
 msgstr ""
@@ -3698,7 +3698,7 @@ msgstr ""
 msgid "Scale for this module."
 msgstr "Escala para este módulo."
 
-#: engines/sui_book_grid.lua:1891 modules/module_action_list.lua:458
+#: engines/sui_book_grid.lua:1871 modules/module_action_list.lua:458
 #: modules/module_clock.lua:1056 modules/module_currently.lua:1484
 #: modules/module_quick_actions.lua:588 modules/module_quote.lua:1400
 #: modules/module_reading_goals.lua:1288 modules/module_reading_stats.lua:720
@@ -3723,7 +3723,7 @@ msgstr ""
 "dia, 24), pelo que não há espaço para as células crescerem além do tamanho "
 "automático sem a grelha sair do card."
 
-#: screens/sui_menu.lua:2599
+#: screens/sui_menu.lua:2595
 msgid ""
 "Scales all modules and labels together.\n"
 "100% is the default size."
@@ -3731,7 +3731,7 @@ msgstr ""
 "Ajusta a escala de todos os módulos e etiquetas em conjunto.\n"
 "100% é o tamanho predefinido."
 
-#: screens/sui_menu.lua:2632
+#: screens/sui_menu.lua:2628
 msgid ""
 "Scales the section label text above each module.\n"
 "100% is the default size."
@@ -3739,7 +3739,7 @@ msgstr ""
 "Ajusta a escala do texto das etiquetas de secção acima de cada módulo.\n"
 "100% é o tamanho predefinido."
 
-#: screens/sui_menu.lua:3648
+#: screens/sui_menu.lua:3646
 msgid "Scan Subfolders for Covers"
 msgstr "Pesquisar Capas nas Subpastas"
 
@@ -3747,7 +3747,7 @@ msgstr "Pesquisar Capas nas Subpastas"
 msgid "Screen name"
 msgstr "Nome do ecrã"
 
-#: screens/sui_menu.lua:2546
+#: screens/sui_menu.lua:2542
 msgid ""
 "Screen shown after closing a book. Gestures and quick actions that name a "
 "destination always open that destination."
@@ -3782,11 +3782,11 @@ msgid "Select"
 msgstr "Selecionar"
 
 #: features/sui_presets.lua:760 features/sui_presets.lua:768
-#: features/sui_presets.lua:773 screens/sui_menu.lua:4088
+#: features/sui_presets.lua:773 screens/sui_menu.lua:4086
 msgid "Select Preset"
 msgstr "Selecionar Predefinição"
 
-#: screens/sui_menu.lua:2443
+#: screens/sui_menu.lua:2439
 msgid "Select Wallpaper"
 msgstr "Selecionar Papel de Parede"
 
@@ -3808,15 +3808,15 @@ msgstr "Setembro"
 msgid "Series"
 msgstr "Séries"
 
-#: engines/sui_book_grid.lua:2102 engines/sui_book_grid.lua:2118
+#: engines/sui_book_grid.lua:2082 engines/sui_book_grid.lua:2098
 msgid "Series Badge"
 msgstr "Emblema de Série"
 
-#: engines/sui_book_grid.lua:2113
+#: engines/sui_book_grid.lua:2093
 msgid "Series Badge Color"
 msgstr "Cor do Emblema de Série"
 
-#: screens/sui_menu.lua:3180
+#: screens/sui_menu.lua:3178
 msgid "Series Index"
 msgstr "Índice de Série"
 
@@ -3852,7 +3852,7 @@ msgid "Settings not found."
 msgstr "Definições não encontradas."
 
 #: screens/sui_menu.lua:1089 screens/sui_menu.lua:1116
-#: screens/sui_menu.lua:1431 screens/sui_menu.lua:2796
+#: screens/sui_menu.lua:1427 screens/sui_menu.lua:2794
 #: screens/sui_quicksettings_bar.lua:1340
 #: screens/sui_quicksettings_bar.lua:1364
 msgid "Settings on Long Tap"
@@ -3866,7 +3866,7 @@ msgstr "Sete"
 msgid "Seventeen"
 msgstr "Dezassete"
 
-#: infra/sui_config.lua:1611
+#: infra/sui_config.lua:1521
 msgid ""
 "Share of the row this module occupies.\n"
 "100% = full width. Modules under 100% share a row when their widths fit "
@@ -3896,7 +3896,7 @@ msgstr "Mostrar Ícone"
 msgid "Show Page Count in Title Bar"
 msgstr "Mostrar Contagem de Páginas na Barra de Título"
 
-#: screens/sui_menu.lua:2673
+#: screens/sui_menu.lua:2671
 msgid ""
 "Show a brief \"Closing book…\" notice when closing a book, preventing "
 "accidental double-taps while e-ink refreshes."
@@ -3904,7 +3904,7 @@ msgstr ""
 "Mostra um breve aviso \"A fechar livro…\" ao fechar um livro, evitando "
 "toques duplos acidentais enquanto o ecrã de tinta eletrónica atualiza."
 
-#: screens/sui_menu.lua:2773
+#: screens/sui_menu.lua:2771
 msgid ""
 "Show a brief \"Loading statistics…\" notice when opening a statistics "
 "window, preventing accidental double-taps while e-ink refreshes."
@@ -3922,19 +3922,19 @@ msgstr "Mostrar livros terminados"
 msgid "Show legend"
 msgstr "Mostrar legenda"
 
-#: screens/sui_menu.lua:2734
+#: screens/sui_menu.lua:2732
 msgid "Show on Close"
 msgstr "Mostrar ao Fechar"
 
-#: screens/sui_menu.lua:2723
+#: screens/sui_menu.lua:2721
 msgid "Show on Open"
 msgstr "Mostrar ao Abrir"
 
-#: infra/sui_config.lua:1840
+#: infra/sui_config.lua:1750
 msgid "Show section label"
 msgstr "Mostrar rótulo de secção"
 
-#: screens/sui_menu.lua:2448
+#: screens/sui_menu.lua:2444
 msgid "Show wallpaper on all screens"
 msgstr "Mostrar papel de parede em todos os ecrãs"
 
@@ -3960,7 +3960,7 @@ msgstr ""
 "O ponto da página ativa está preenchido; os restantes estão esbatidos.\n"
 "Sempre ativo quando o Navpager está selecionado."
 
-#: engines/sui_book_grid.lua:1603
+#: engines/sui_book_grid.lua:1583
 msgid "Shuffle"
 msgstr "Aleatório"
 
@@ -3972,8 +3972,8 @@ msgstr "Baralhar agora"
 msgid "Simple"
 msgstr "Simples"
 
-#: _meta.lua:5 main.lua:2510 main.lua:2523 screens/sui_menu.lua:4639
-#: screens/sui_menu.lua:4726
+#: _meta.lua:5 main.lua:2510 main.lua:2523 screens/sui_menu.lua:4637
+#: screens/sui_menu.lua:4724
 msgid "Simple UI"
 msgstr "Simple UI"
 
@@ -4021,7 +4021,7 @@ msgstr ""
 "\n"
 "É recomendado reiniciar para aplicar todas as alterações de forma limpa."
 
-#: screens/sui_menu.lua:4654
+#: screens/sui_menu.lua:4652
 msgid ""
 "Simple UI will be %s after restart.\n"
 "\n"
@@ -4055,7 +4055,7 @@ msgstr "Simple UI: Definições"
 msgid "Simple UI: Toggle Homescreen / Library"
 msgstr "Simple UI: Alternar Ecrã Inicial / Biblioteca"
 
-#: modules/module_collections.lua:1331 screens/sui_menu.lua:2995
+#: modules/module_collections.lua:1331 screens/sui_menu.lua:2993
 msgid "Single Cover"
 msgstr "Capa Única"
 
@@ -4067,9 +4067,9 @@ msgstr "Seis"
 msgid "Sixteen"
 msgstr "Dezasseis"
 
-#: infra/sui_config.lua:1066 modules/module_action_list.lua:452
+#: infra/sui_config.lua:974 modules/module_action_list.lua:452
 #: modules/module_action_list.lua:504 screens/sui_menu.lua:1027
-#: screens/sui_menu.lua:3039 screens/sui_quicksettings_bar.lua:1241
+#: screens/sui_menu.lua:3037 screens/sui_quicksettings_bar.lua:1241
 #: screens/sui_quicksettings_bar.lua:1242
 msgid "Size"
 msgstr "Tamanho"
@@ -4082,7 +4082,7 @@ msgstr ""
 "Tamanho dos ícones dos separadores.\n"
 "100% é o tamanho predefinido."
 
-#: screens/sui_menu.lua:1393
+#: screens/sui_menu.lua:1391
 msgid ""
 "Size of the tab label text.\n"
 "100% is the default size."
@@ -4090,7 +4090,7 @@ msgstr ""
 "Tamanho do texto das etiquetas dos separadores.\n"
 "100% é o tamanho predefinido."
 
-#: engines/sui_book_grid.lua:2198 modules/module_action_list.lua:526
+#: engines/sui_book_grid.lua:2178 modules/module_action_list.lua:526
 #: modules/module_clock.lua:1181 modules/module_coverdeck.lua:1643
 #: modules/module_currently.lua:1989 modules/module_quick_actions.lua:599
 #: modules/module_quote.lua:1627 modules/module_quote.lua:1648
@@ -4110,8 +4110,8 @@ msgstr "Suspender"
 msgid "Small"
 msgstr "Pequeno"
 
-#: modules/module_quick_actions.lua:651 screens/sui_menu.lua:3421
-#: screens/sui_menu.lua:3425 screens/sui_quicksettings_bar.lua:1317
+#: modules/module_quick_actions.lua:651 screens/sui_menu.lua:3419
+#: screens/sui_menu.lua:3423 screens/sui_quicksettings_bar.lua:1317
 msgid "Solid"
 msgstr "Sólido"
 
@@ -4119,7 +4119,7 @@ msgstr "Sólido"
 msgid "Solid Background"
 msgstr "Fundo Sólido"
 
-#: engines/sui_book_grid.lua:1616 modules/module_collections.lua:1305
+#: engines/sui_book_grid.lua:1596 modules/module_collections.lua:1305
 #: modules/module_library.lua:236
 msgid "Sort"
 msgstr "Ordenar"
@@ -4128,7 +4128,7 @@ msgstr "Ordenar"
 msgid "Source"
 msgstr "Fonte"
 
-#: screens/sui_menu.lua:1415
+#: screens/sui_menu.lua:1411
 msgid ""
 "Space below the bottom navigation bar.\n"
 "100% is the default spacing."
@@ -4153,7 +4153,7 @@ msgid "Start using Simple UI"
 msgstr "Começar a usar o Simple UI"
 
 #: infra/sui_patches.lua:1127 infra/sui_patches.lua:1129
-#: screens/sui_menu.lua:2535
+#: screens/sui_menu.lua:2531
 msgid "Start with"
 msgstr "Iniciar com"
 
@@ -4168,7 +4168,7 @@ msgstr ""
 msgid "Statistics"
 msgstr "Estatísticas"
 
-#: screens/sui_menu.lua:2772
+#: screens/sui_menu.lua:2770
 msgid "Statistics Loading Notice"
 msgstr "Aviso ao Carregar Estatísticas"
 
@@ -4195,11 +4195,11 @@ msgstr "Apresentação das estatísticas"
 msgid "Stats updated successfully."
 msgstr "Estatísticas atualizadas com sucesso."
 
-#: screens/sui_menu.lua:2890
+#: screens/sui_menu.lua:2888
 msgid "Status Bar"
 msgstr "Barra de Estado"
 
-#: screens/sui_menu.lua:2477
+#: screens/sui_menu.lua:2473
 msgid "Status Bar Opacity"
 msgstr "Opacidade da Barra de Estado"
 
@@ -4241,18 +4241,18 @@ msgstr "Sequência"
 msgid "Streak Mode"
 msgstr "Modo de Sequência"
 
-#: screens/sui_menu.lua:2458
+#: screens/sui_menu.lua:2454
 msgid "Stretch to fill screen"
 msgstr "Esticar para preencher o ecrã"
 
-#: infra/sui_config.lua:1059 modules/module_reading_stats.lua:860
-#: modules/module_reading_stats.lua:1032 screens/sui_menu.lua:4683
+#: infra/sui_config.lua:967 modules/module_reading_stats.lua:860
+#: modules/module_reading_stats.lua:1032 screens/sui_menu.lua:4681
 #: screens/sui_settings_window.lua:366 screens/sui_settings_window.lua:1107
 msgid "Style"
 msgstr "Estilo"
 
-#: screens/sui_menu.lua:1882 screens/sui_menu.lua:1885
-#: screens/sui_menu.lua:1919
+#: screens/sui_menu.lua:1878 screens/sui_menu.lua:1881
+#: screens/sui_menu.lua:1915
 msgid "Sub-page Buttons"
 msgstr "Botões de Sub-página"
 
@@ -4273,8 +4273,8 @@ msgstr "Indicador de Deslize"
 msgid "System Actions"
 msgstr "Ações do Sistema"
 
-#: features/sui_style.lua:1320 screens/sui_menu.lua:3760
-#: screens/sui_menu.lua:3768
+#: features/sui_style.lua:1320 screens/sui_menu.lua:3758
+#: screens/sui_menu.lua:3766
 msgid "System Icons"
 msgstr "Ícones do sistema"
 
@@ -4371,13 +4371,13 @@ msgstr "Toque em \"Criar Ecrã\" abaixo para adicionar um."
 msgid "Ten"
 msgstr "Dez"
 
-#: engines/sui_book_grid.lua:2016 infra/sui_config.lua:1104
+#: engines/sui_book_grid.lua:1996 infra/sui_config.lua:1012
 #: modules/module_quote.lua:1662 modules/module_reading_stats.lua:1030
 #: screens/sui_menu.lua:208
 msgid "Text"
 msgstr "Texto"
 
-#: screens/sui_menu.lua:3521
+#: screens/sui_menu.lua:3519
 msgid "Text Size"
 msgstr "Tamanho do Texto"
 
@@ -4395,7 +4395,7 @@ msgstr ""
 "\n"
 "Reiniciar agora?"
 
-#: screens/sui_menu.lua:2747
+#: screens/sui_menu.lua:2745
 msgid ""
 "The cover shown right as a book opens normally comes from the library's "
 "cached thumbnail, which can look soft on higher-resolution screens. When on, "
@@ -4472,7 +4472,7 @@ msgstr "Esta semana — Páginas"
 msgid "This week — Time"
 msgstr "Esta semana — Tempo"
 
-#: screens/sui_menu.lua:4553
+#: screens/sui_menu.lua:4551
 msgid ""
 "This will delete all Simple UI settings and restart KOReader.\n"
 "Are you sure?"
@@ -4510,23 +4510,23 @@ msgstr "Tempo restante"
 msgid "Title"
 msgstr "Título"
 
-#: engines/sui_book_grid.lua:1598 modules/module_library.lua:208
+#: engines/sui_book_grid.lua:1578 modules/module_library.lua:208
 msgid "Title (A–Z)"
 msgstr "Título (A–Z)"
 
-#: engines/sui_book_grid.lua:1599 modules/module_library.lua:209
+#: engines/sui_book_grid.lua:1579 modules/module_library.lua:209
 msgid "Title (Z–A)"
 msgstr "Título (Z–A)"
 
-#: features/sui_style.lua:1310 screens/sui_menu.lua:2892
+#: features/sui_style.lua:1310 screens/sui_menu.lua:2890
 msgid "Title Bar"
 msgstr "Barra de Título"
 
-#: screens/sui_menu.lua:2483
+#: screens/sui_menu.lua:2479
 msgid "Title Bar Button Opacity"
 msgstr "Opacidade dos Botões da Barra de Título"
 
-#: screens/sui_menu.lua:1864
+#: screens/sui_menu.lua:1860
 msgid ""
 "Title Bar will be %s after restart.\n"
 "\n"
@@ -4536,15 +4536,15 @@ msgstr ""
 "\n"
 "Reiniciar agora?"
 
-#: screens/sui_menu.lua:3583
+#: screens/sui_menu.lua:3581
 msgid "Title and Author"
 msgstr "Título e Autor"
 
-#: screens/sui_menu.lua:3534
+#: screens/sui_menu.lua:3532
 msgid "Title and Author Below Covers"
 msgstr "Título e Autor Abaixo das Capas"
 
-#: screens/sui_menu.lua:3595
+#: screens/sui_menu.lua:3593
 msgid ""
 "Title and author strip enabled.\n"
 "\n"
@@ -4554,11 +4554,11 @@ msgstr ""
 "\n"
 "Reiniciar agora?"
 
-#: screens/sui_menu.lua:3561
+#: screens/sui_menu.lua:3559
 msgid "Title only"
 msgstr "Apenas o Título"
 
-#: screens/sui_menu.lua:3550
+#: screens/sui_menu.lua:3548
 msgid ""
 "Title strip disabled.\n"
 "\n"
@@ -4568,7 +4568,7 @@ msgstr ""
 "\n"
 "Reiniciar agora?"
 
-#: screens/sui_menu.lua:3573
+#: screens/sui_menu.lua:3571
 msgid ""
 "Title strip enabled.\n"
 "\n"
@@ -4605,9 +4605,9 @@ msgstr "Hoje — Tempo"
 msgid "Toggle"
 msgstr "Alternar"
 
-#: modules/module_collections.lua:1385 screens/sui_menu.lua:3055
-#: screens/sui_menu.lua:3062 screens/sui_menu.lua:3066
-#: screens/sui_menu.lua:3466 screens/sui_menu.lua:3473
+#: modules/module_collections.lua:1385 screens/sui_menu.lua:3053
+#: screens/sui_menu.lua:3060 screens/sui_menu.lua:3064
+#: screens/sui_menu.lua:3464 screens/sui_menu.lua:3471
 msgid "Top"
 msgstr "Superior"
 
@@ -4615,7 +4615,7 @@ msgstr "Superior"
 msgid "Top Bar"
 msgstr "Barra Superior"
 
-#: infra/sui_config.lua:1663
+#: infra/sui_config.lua:1573
 msgid "Top Margin"
 msgstr "Margem Superior"
 
@@ -4631,7 +4631,7 @@ msgstr "Tempo total"
 msgid "Total: %d settings, %d files (%s)"
 msgstr "Total: %d definições, %d ficheiros (%s)"
 
-#: screens/sui_menu.lua:3421 screens/sui_menu.lua:3438
+#: screens/sui_menu.lua:3419 screens/sui_menu.lua:3436
 #: screens/sui_quicksettings_bar.lua:1307
 msgid "Transparent"
 msgstr "Transparente"
@@ -4656,24 +4656,24 @@ msgstr "Vinte"
 msgid "Two"
 msgstr "Dois"
 
-#: modules/module_heatmap.lua:346 screens/sui_menu.lua:3243
-#: screens/sui_menu.lua:3310
+#: modules/module_heatmap.lua:346 screens/sui_menu.lua:3241
+#: screens/sui_menu.lua:3308
 msgid "Type"
 msgstr "Tipo"
 
-#: screens/sui_menu.lua:4405 screens/sui_menu.lua:4408
+#: screens/sui_menu.lua:4403 screens/sui_menu.lua:4406
 msgid "UI Font"
 msgstr "Tipo de letra da interface"
 
-#: screens/sui_menu.lua:4412
+#: screens/sui_menu.lua:4410
 msgid "UI Font  (default)"
 msgstr "Tipo de letra da interface  (predefinição)"
 
-#: screens/sui_menu.lua:4414
+#: screens/sui_menu.lua:4412
 msgid "UI Font  [%s]"
 msgstr "Tipo de letra da interface  [%s]"
 
-#: screens/sui_menu.lua:3610
+#: screens/sui_menu.lua:3608
 msgid "Uniformize Covers (2:3)"
 msgstr "Uniformizar Capas (2:3)"
 
@@ -4712,11 +4712,11 @@ msgstr "Atualização cancelada."
 msgid "Update check cancelled."
 msgstr "Verificação de atualizações cancelada."
 
-#: features/sui_presets.lua:915 screens/sui_menu.lua:4160
+#: features/sui_presets.lua:915 screens/sui_menu.lua:4158
 msgid "Update with current settings"
 msgstr "Atualizar com definições atuais"
 
-#: screens/sui_menu.lua:4531
+#: screens/sui_menu.lua:4529
 msgid "Updater module not found."
 msgstr "Módulo de atualização não encontrado."
 
@@ -4744,11 +4744,11 @@ msgstr "Valor"
 msgid "Version, author and updates"
 msgstr "Versão, autor e atualizações"
 
-#: screens/sui_menu.lua:4506
+#: screens/sui_menu.lua:4504
 msgid "Version: %s"
 msgstr "Versão: %s"
 
-#: infra/sui_config.lua:1665
+#: infra/sui_config.lua:1575
 msgid ""
 "Vertical space above this module.\n"
 "100% is the default spacing."
@@ -4764,14 +4764,14 @@ msgstr ""
 "Espaço vertical entre os itens.\n"
 "100% é o espaçamento predefinido."
 
-#: screens/sui_menu.lua:3132 screens/sui_menu.lua:3186
-#: screens/sui_menu.lua:3418
+#: screens/sui_menu.lua:3130 screens/sui_menu.lua:3184
+#: screens/sui_menu.lua:3416
 msgid "Visibility"
 msgstr "Visibilidade"
 
-#: screens/sui_menu.lua:3128 screens/sui_menu.lua:3134
-#: screens/sui_menu.lua:3138 screens/sui_menu.lua:3182
-#: screens/sui_menu.lua:3188 screens/sui_menu.lua:3192
+#: screens/sui_menu.lua:3126 screens/sui_menu.lua:3132
+#: screens/sui_menu.lua:3136 screens/sui_menu.lua:3180
+#: screens/sui_menu.lua:3186 screens/sui_menu.lua:3190
 msgid "Visible"
 msgstr "Visível"
 
@@ -4783,7 +4783,7 @@ msgstr "SEQUÊNCIA SEMANAL"
 msgid "WORD_CLOCK_TENS_SEP"
 msgstr " e "
 
-#: features/sui_backup.lua:135 screens/sui_menu.lua:2859
+#: features/sui_backup.lua:135 screens/sui_menu.lua:2857
 #: screens/sui_settings_window.lua:418 screens/sui_settings_window.lua:424
 msgid "Wallpaper"
 msgstr "Papel de parede"
@@ -4802,7 +4802,7 @@ msgstr "Temperatura"
 msgid "Warmth Slider"
 msgstr "Controlo de Temperatura"
 
-#: screens/sui_menu.lua:2785
+#: screens/sui_menu.lua:2783
 msgid "Warn when modules on a page exceed the available screen height."
 msgstr ""
 "Avisar quando os módulos numa página excederem a altura disponível do ecrã."
@@ -4827,7 +4827,7 @@ msgstr "Bem-vindo ao Simple UI"
 msgid "What's new:"
 msgstr "Novidades:"
 
-#: screens/sui_menu.lua:2810
+#: screens/sui_menu.lua:2808
 msgid ""
 "When a finished book is deleted from the device (file or folder), keep it "
 "counted in the Books Read statistics on the Home Screen.\n"
@@ -4841,7 +4841,7 @@ msgstr ""
 "Livros cujo estado seja alterado para A Ler ou Abandonado são removidos "
 "automaticamente desta lista."
 
-#: screens/sui_menu.lua:2797
+#: screens/sui_menu.lua:2795
 msgid ""
 "When enabled, long-pressing a module on the home screen opens its settings "
 "menu.\n"
@@ -4860,7 +4860,7 @@ msgstr ""
 "de definições.\n"
 "Desative para evitar que o menu de definições apareça ao manter premido."
 
-#: screens/sui_menu.lua:1432
+#: screens/sui_menu.lua:1428
 msgid ""
 "When enabled, long-pressing the navigation bar opens its settings menu.\n"
 "Disable this to prevent the settings menu from appearing on long tap."
@@ -4879,7 +4879,7 @@ msgstr ""
 "Desative esta opção para impedir que o menu de configurações apareça ao "
 "tocar e manter premido."
 
-#: screens/sui_menu.lua:2564
+#: screens/sui_menu.lua:2560
 msgid ""
 "When waking the device from sleep/suspend, always return to the Home Screen "
 "— even if a book was open when it went to sleep."
@@ -4983,8 +4983,8 @@ msgstr "dezembro"
 msgid "default"
 msgstr "predefinido"
 
-#: screens/sui_menu.lua:847 screens/sui_menu.lua:1150 screens/sui_menu.lua:1865
-#: screens/sui_menu.lua:4654 screens/sui_quicksettings_bar.lua:1132
+#: screens/sui_menu.lua:847 screens/sui_menu.lua:1150 screens/sui_menu.lua:1861
+#: screens/sui_menu.lua:4652 screens/sui_quicksettings_bar.lua:1132
 msgid "disabled"
 msgstr "desativado"
 
@@ -4992,8 +4992,8 @@ msgstr "desativado"
 msgid "empty"
 msgstr "vazio"
 
-#: screens/sui_menu.lua:847 screens/sui_menu.lua:1150 screens/sui_menu.lua:1865
-#: screens/sui_menu.lua:4654 screens/sui_quicksettings_bar.lua:1132
+#: screens/sui_menu.lua:847 screens/sui_menu.lua:1150 screens/sui_menu.lua:1861
+#: screens/sui_menu.lua:4652 screens/sui_quicksettings_bar.lua:1132
 msgid "enabled"
 msgstr "ativado"
 
@@ -5149,7 +5149,7 @@ msgstr "⬆ Atualização disponível: %s"
 
 #: modules/module_action_list.lua:357 modules/module_quick_actions.lua:416
 #: modules/module_reading_stats.lua:947 screens/sui_menu.lua:350
-#: screens/sui_menu.lua:2074
+#: screens/sui_menu.lua:2070
 msgid "  (%d left)"
 msgid_plural "  (%d left)"
 msgstr[0] "  (%d restante)"
@@ -5270,7 +5270,7 @@ msgstr[1] ""
 
 #: modules/module_action_list.lua:300 modules/module_action_list.lua:427
 #: modules/module_quick_actions.lua:363 modules/module_quick_actions.lua:495
-#: screens/sui_menu.lua:2039 screens/sui_menu.lua:2153
+#: screens/sui_menu.lua:2035 screens/sui_menu.lua:2149
 msgid "The maximum of %d action per module has been reached. Remove one first."
 msgid_plural ""
 "The maximum of %d actions per module has been reached. Remove one first."
