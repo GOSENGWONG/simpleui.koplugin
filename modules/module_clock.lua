@@ -859,8 +859,7 @@ local function _tick()
 
     if body and idx and body[idx] and screen._navbar_container then
         local sw      = Screen:getWidth()
-        local SIDE_PAD = require("infra/sui_core").SIDE_M()
-        local inner_w  = screen._clock_inner_w or (sw - SIDE_PAD * 2)
+        local inner_w = screen._clock_inner_w or (sw - UI.SIDE_PAD * 2)
 
         -- Pass the screen's landscape factor through explicitly so the
         -- surgical swap matches the size _updatePage would have built.

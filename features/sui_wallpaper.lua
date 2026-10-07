@@ -4,7 +4,7 @@
 -- background ImageWidget (plus its associated pre-scaled Blitbuffer used for
 -- stretch mode), every simpleui_style_wallpaper_* / simpleui_wallpaper_*
 -- setting getter/setter, the on-disk wallpaper directory scan, the
--- backdrop strength settings for bars, title bar buttons, pagination and
+-- backdrop strength settings for bars, title bar, pagination and
 -- modules (they only ever have a visible effect while a wallpaper is
 -- active, so they live here next to the settings that gate them, as part of
 -- the same sub-page), the shared backdrop / frame painters, and the
@@ -478,7 +478,7 @@ M.BACKDROP_DEFAULT = {
     statusbar       = 100,
     navbar          = 100,
     pagination      = 0,
-    titlebar_button = 0,
+    titlebar        = 0,
     module          = 0,
     card            = 100,
     button          = 100,
@@ -487,7 +487,7 @@ M.BACKDROP_DEFAULT = {
 local KEY_STATUSBAR       = "simpleui_statusbar_backdrop"
 local KEY_NAVBAR          = "simpleui_navbar_backdrop"
 local KEY_PAGINATION      = "simpleui_pagination_backdrop"
-local KEY_TITLEBAR_BUTTON = "simpleui_titlebar_button_backdrop"
+local KEY_TITLEBAR        = "simpleui_titlebar_backdrop"
 local KEY_MODULE          = "simpleui_module_backdrop"
 
 -- Rounds and clamps n to 0–100; nil when n is not a number.
@@ -571,14 +571,14 @@ function M.setPaginationBackdropStrength(n)
     M.saveBackdropStrength(KEY_PAGINATION, n)
 end
 
--- Without a wallpaper there is no button chrome to paint.
-function M.getTitlebarButtonBackdropStrength()
+-- Without a wallpaper there is no backdrop to paint.
+function M.getTitlebarBackdropStrength()
     if not M.isWallpaperActive() then return _BACKDROP_MIN end
-    return M.readBackdropStrength(KEY_TITLEBAR_BUTTON, M.BACKDROP_DEFAULT.titlebar_button)
+    return M.readBackdropStrength(KEY_TITLEBAR, M.BACKDROP_DEFAULT.titlebar)
 end
 
-function M.setTitlebarButtonBackdropStrength(n)
-    M.saveBackdropStrength(KEY_TITLEBAR_BUTTON, n)
+function M.setTitlebarBackdropStrength(n)
+    M.saveBackdropStrength(KEY_TITLEBAR, n)
 end
 
 -- Module backdrop strength.

@@ -450,7 +450,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         end
 
         -- ── menu ─────────────────────────────────────────────────────────────
-        return {
+        local items = {
                 -- ── Subfolder: General ────────────────────────────────────────────
             {
                 text           = _("Mode"),
@@ -598,10 +598,15 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     },
                 },
             },
-                -- ── Number of pages in the title bar ──────────────────────────────
-            {
+        }
+
+        -- ── Number of pages in the title bar ─────────────────────────────────
+        -- The page count lives in the title bar subtitle, which only the classic
+        -- style has.
+        local Titlebar = require("screens/sui_titlebar")
+        if Titlebar.getStyle() == Titlebar.STYLE_CLASSIC then
+            items[#items + 1] = {
                 text         = _("Show Page Count in Title Bar"),
-                separator    = true,
                 checked_func = function()
                     return SUISettings:isTrue("simpleui_bar_pagination_show_subtitle")
                 end,
@@ -612,8 +617,10 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     plugin:_scheduleRebuild()
                 end,
                 keep_menu_open = true,
-            },
-        }
+            }
+        end
+
+        return items
     end
 
     -- -----------------------------------------------------------------------
@@ -1831,19 +1838,49 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
 
     local function makeTitleBarMenu(ctx_menu)
         local Config = require("infra/sui_config")
-        local function sizeItem(label, key)
+        local function titlebar() return require("screens/sui_titlebar") end
+
+        -- Radio row bound to a getter/setter pair of the title-bar module.
+        local function radioItem(label, key, get, set, on_change)
             return {
                 text         = label,
                 radio        = true,
                 keep_menu_open = true,
-                checked_func = function() return require("screens/sui_titlebar").getSizeKey() == key end,
+                checked_func = function() return get() == key end,
                 callback     = function()
-                    require("screens/sui_titlebar").setSizeKey(key)
-                    _reapplyAllTitlebars()
+                    if get() == key then return end
+                    set(key)
+                    on_change()
                 end,
             }
         end
-        local flat = {
+        local function sizeItem(label, key)
+            return radioItem(label, key,
+                function() return titlebar().getSizeKey() end,
+                function(v) titlebar().setSizeKey(v) end,
+                _reapplyAllTitlebars)
+        end
+
+        -- Offers a restart; changes that alter the Library layout need a rebuild.
+        local function askRestart(text)
+            SUISettings:flush()
+            UIManager:show(ConfirmBox():new{
+                text        = text,
+                ok_text     = _("Restart"),
+                cancel_text = _("Later"),
+                ok_callback = function() UIManager:restartKOReader() end,
+            })
+        end
+        local function styleItem(label, key)
+            return radioItem(label, key,
+                function() return titlebar().getStyle() end,
+                function(v) titlebar().setStyle(v) end,
+                function() askRestart(_("The title bar style will change after restart.\n\nRestart now?")) end)
+        end
+        local function isEnabled() return titlebar().isEnabled() end
+
+        -- The enable toggle is the first row and stays on top as the master row.
+        local master = {
             {
                 text_func    = function()
                     return _("Enable Title Bar")
@@ -1854,81 +1891,57 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     local Titlebar = require("screens/sui_titlebar")
                     local on = Titlebar.isEnabled()
                     Titlebar.setEnabled(not on)
-                    SUISettings:flush()
-                    UIManager:show(ConfirmBox():new{
-                        text = string.format(
-                            _("Title Bar will be %s after restart.\n\nRestart now?"),
-                            on and _("disabled") or _("enabled")
-                        ),
-                        ok_text     = _("Restart"),
-                        cancel_text = _("Later"),
-                        ok_callback = function()
-                            UIManager:restartKOReader()
-                        end,
-                    })
+                    askRestart(string.format(
+                        _("Title Bar will be %s after restart.\n\nRestart now?"),
+                        on and _("disabled") or _("enabled")
+                    ))
                 end,
-            },
-            {
-                text         = _("Library Buttons"),
-                enabled_func = function() return require("screens/sui_titlebar").isEnabled() end,
-                sub_item_table_func = function() return makeTitleBarFMMenu(ctx_menu) end,
-                sui_build = makeTitleBarSUIBuild(ctx_menu, _("Library Buttons"), "fm", require("screens/sui_titlebar").getFMConfig, require("screens/sui_titlebar").saveFMConfig),
-            },
-            {
-                text         = _("Sub-page Buttons"),
-                enabled_func = function() return require("screens/sui_titlebar").isEnabled() end,
-                sub_item_table_func = function() return makeTitleBarSubMenu(ctx_menu) end,
-                sui_build = makeTitleBarSUIBuild(ctx_menu, _("Sub-page Buttons"), "sub", require("screens/sui_titlebar").getSubConfig, require("screens/sui_titlebar").saveSubConfig),
-            },
-            {
-                text      = _("Appearance"):upper(),
-                is_divider= true,
-                sui_build = function(ctx)
-                    return require("engines/sui_window").SectionLabel{ text = _("Appearance"):upper(), inner_w = ctx.inner_w }
-                end,
-                dim       = true,
-                enabled_func = function() return false end,
-                keep_menu_open = true,
-                callback  = function() end,
-            },
-            {
-                text      = _("Button Size"),
-                enabled_func = function() return require("screens/sui_titlebar").isEnabled() end,
-                sub_item_table = {
-                    sizeItem(_("Compact"), "compact"),
-                    sizeItem(_("Default"), "default"),
-                    sizeItem(_("Large"),   "large"),
-                },
             },
         }
-        -- The enable toggle is the first row and stays on top as the master row.
-        local master = { flat[1] }
-        local item_rows, size_rows, appearance_extra = {}, {}, {}
-        for i = 2, #flat do
-            local row = flat[i]
-            local label = row.text
-            if type(label) ~= "string" and row.text_func then
-                local ok, v = pcall(row.text_func)
-                if ok then label = v end
-            end
-            label = label or ""
-            if label == _("Library Buttons") or label == _("Sub-page Buttons") then
-                item_rows[#item_rows + 1] = row
-            elseif label == _("Button Size") then
-                size_rows[#size_rows + 1] = row
-            elseif row.dim or (type(label) == "string" and label:upper() == label and #label > 0) then
-                -- Section labels (e.g. APPEARANCE) are dropped; hierarchy provides structure.
-            else
-                appearance_extra[#appearance_extra + 1] = row
-            end
+        local style_row = {
+            text      = _("Style"),
+            enabled_func = isEnabled,
+            sub_item_table = {
+                styleItem(_("Classic"), "classic"),
+                styleItem(_("Tabs"),    "tabs"),
+            },
+        }
+
+        -- Item and size customization is only offered in the classic style.
+        local items, size
+        if titlebar().getStyle() ~= titlebar().STYLE_TABS then
+            local Titlebar = require("screens/sui_titlebar")
+            items = {
+                {
+                    text         = _("Library Buttons"),
+                    enabled_func = isEnabled,
+                    sub_item_table_func = function() return makeTitleBarFMMenu(ctx_menu) end,
+                    sui_build = makeTitleBarSUIBuild(ctx_menu, _("Library Buttons"), "fm", Titlebar.getFMConfig, Titlebar.saveFMConfig),
+                },
+                {
+                    text         = _("Sub-page Buttons"),
+                    enabled_func = isEnabled,
+                    sub_item_table_func = function() return makeTitleBarSubMenu(ctx_menu) end,
+                    sui_build = makeTitleBarSUIBuild(ctx_menu, _("Sub-page Buttons"), "sub", Titlebar.getSubConfig, Titlebar.saveSubConfig),
+                },
+            }
+            size = {
+                {
+                    text      = _("Button Size"),
+                    enabled_func = isEnabled,
+                    sub_item_table = {
+                        sizeItem(_("Compact"), "compact"),
+                        sizeItem(_("Default"), "default"),
+                        sizeItem(_("Large"),   "large"),
+                    },
+                },
+            }
         end
+
         return Config.buildModuleMenu({
             master     = master,
-            items      = item_rows,
-            appearance = {
-                size  = #size_rows > 0 and size_rows or nil,
-                extra = #appearance_extra > 0 and appearance_extra or nil,
-            },
+            items      = items,
+            appearance = { size = size, extra = { style_row } },
         }, ctx_menu)
     end
 
@@ -2476,11 +2489,12 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 default_value = SUIWallpaper.BACKDROP_DEFAULT.statusbar,
             }),
             strengthItem({
-                title         = _("Title Bar Button Opacity"),
-                info          = _("0% transparent, 100% solid. Rounded background behind title bar buttons (back, search, menu, …)."),
-                get           = SUIWallpaper.getTitlebarButtonBackdropStrength,
-                set           = SUIWallpaper.setTitlebarButtonBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.titlebar_button,
+                title         = _("Title Bar Opacity"),
+                info          = _("0% transparent, 100% solid. Applies across the full width of the title bar."),
+                get           = SUIWallpaper.getTitlebarBackdropStrength,
+                set           = SUIWallpaper.setTitlebarBackdropStrength,
+                default_value = SUIWallpaper.BACKDROP_DEFAULT.titlebar,
+                enabled_func  = function() return require("screens/sui_titlebar").isEnabled() end,
             }),
             strengthItem({
                 title         = _("Pagination Bar Opacity"),

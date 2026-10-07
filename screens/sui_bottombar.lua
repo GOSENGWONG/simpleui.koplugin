@@ -312,7 +312,7 @@ function M.INDIC_H()     return _cached("indic_h", function() return math.floor(
 -- Structural dimensions — not affected by the size setting.
 function M.TOP_SP()      return _cached("top_sp",  function() return Screen:scaleBySize(2)  end) end
 function M.BOT_SP()      return _cached("bot_sp",  function() return math.floor(Screen:scaleBySize(12) * _getBottomMarginPct() / 100) end) end
-function M.SIDE_M()      return _cached("side_m",  function() return Screen:scaleBySize(24) end) end
+function M.SIDE_M()      return _UI().SIDE_M() end
 function M.SEP_H()
     return _cached("sep_h", function()
         local style = M.getBarStyle()

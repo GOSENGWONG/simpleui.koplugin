@@ -78,6 +78,7 @@ local SimpleUIPlugin = WidgetContainer:new{
     _orig_booklist_new        = nil,
     _orig_menu_new            = nil,
     _orig_menu_init           = nil,
+    _orig_menu_recalculate_dimen = nil,
     _orig_fmcoll_show         = nil,
     _orig_rc_remove           = nil,
     _orig_rc_rename           = nil,
@@ -876,6 +877,21 @@ function SimpleUIPlugin:init()
         end
         -- -------------------------------------------------------------------
 
+        -- Settings migration v9:
+        -- Selects the tabs title bar style when no style was ever chosen.
+        -- An explicit choice, including classic, is kept.
+        if not SUISettings:isTrue("simpleui_settings_migrated_v9") then
+            pcall(function()
+                if SUISettings:get("simpleui_tb_style") == nil then
+                    SUISettings:set("simpleui_tb_style", "tabs")
+                    logger.info("simpleui: migration v9 — title bar style set to tabs")
+                end
+            end)
+            SUISettings:set("simpleui_settings_migrated_v9", true)
+            SUISettings:flush()
+        end
+        -- -------------------------------------------------------------------
+
         Config.applyFirstRunDefaults()
         Config.migrateOldCustomSlots()
         -- Always run sanitizeQASlots: it cleans both custom QA slot references
@@ -937,14 +953,10 @@ function SimpleUIPlugin:init()
 
 
         -- -------------------------------------------------------------------
-        -- First-run bootstrap: ensure "Start with Homescreen" is active.
+        -- First-run bootstrap: both the launch screen and the book-close
+        -- destination default to the Homescreen.
         --
-        -- On a fresh install simpleui_onboarding_done is nil and start_with
-        -- has never been set to "homescreen_simpleui", so the FM would open
-        -- directly, bypassing the homescreen entirely — meaning the onboarding
-        -- window (triggered inside ScreenEngine.show()) would never appear.
-        --
-        -- The setting is written here, before Patches.installAll, so the
+        -- The launch screen is written here, before Patches.installAll, so the
         -- setupLayout patch sees it and sets _hs_autoopen_pending = true. The
         -- normal onShow → ScreenEngine.show() → Onboarding.show() chain then
         -- handles everything.
@@ -952,7 +964,12 @@ function SimpleUIPlugin:init()
         local _sui_first_run = not SUISettings:get("simpleui_onboarding_done")
         if _sui_first_run then
             Config.setStartWithHomescreen(true)
+            Config.setBookCloseTarget(Config.BOOK_CLOSE_TARGET.HOMESCREEN)
         end
+        logger.info("simpleui[diag]: init first_run=", _sui_first_run,
+            "onboarding_done=", SUISettings:get("simpleui_onboarding_done"),
+            "start_with=", G_reader_settings:readSetting("start_with"),
+            "has_document=", self.ui and self.ui.document ~= nil)
 
         if SUISettings:nilOrTrue("simpleui_enabled") then
             Patches.installAll(self)

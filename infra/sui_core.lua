@@ -153,12 +153,12 @@ local _rotation_generation = 0
 -- PAD              : standard horizontal/vertical padding inside modules
 -- PAD2             : smaller padding (half of PAD)
 -- SIDE_PAD         : left/right inset of the homescreen content area
+--                    (derived from SIDE_M, defined below)
 -- ---------------------------------------------------------------------------
 
 M.PAD           = Screen:scaleBySize(14)
 M.PAD2          = Screen:scaleBySize(8)
 M.MOD_GAP       = Screen:scaleBySize(23)   -- includes former LABEL_PAD_TOP (8px)
-M.SIDE_PAD      = Screen:scaleBySize(14)
 M.LABEL_PAD_TOP = 0                         -- absorbed into MOD_GAP
 M.LABEL_PAD_BOT = M.PAD2                    -- padding_bottom of sectionLabel (was 4px, now 8px)
 local _ok_ss, _SUIStyle_core = pcall(require, "features/sui_style")
@@ -287,7 +287,7 @@ function M.resolveMenuItems(items)
 end
 
 -- ---------------------------------------------------------------------------
--- Side margin shared by topbar and bottombar
+-- Screen edge margin
 -- ---------------------------------------------------------------------------
 
 local function _cached(key, fn)
@@ -295,9 +295,15 @@ local function _cached(key, fn)
     return _dim[key]
 end
 
+-- Horizontal margin shared by the status bar, title bar, bottom bar and the
+-- homescreen content, so their edges line up.
 function M.SIDE_M()
-    return _cached("side_m", function() return Screen:scaleBySize(24) end)
+    return _cached("side_m", function() return Screen:scaleBySize(24) - 3 end)
 end
+
+-- Left/right inset of the homescreen content area. Modules add PAD of their
+-- own on top, so the content edge lands on SIDE_M.
+M.SIDE_PAD = M.SIDE_M() - M.PAD
 
 -- ---------------------------------------------------------------------------
 -- Invalidates all dimension caches across bottombar and topbar

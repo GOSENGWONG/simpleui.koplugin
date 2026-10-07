@@ -9,6 +9,7 @@ local logger    = require("logger")
 local _         = require("infra/sui_i18n").translate
 
 local Config    = require("infra/sui_config")
+local Size      = require("ui/size")
 local UI        = require("infra/sui_core")
 local Bottombar = require("screens/sui_bottombar")
 local SUISettings = require("infra/sui_store")
@@ -532,7 +533,9 @@ function M.patchFileManagerClass(plugin)
             end
         end
 
-        orig_setupLayout(fm_self)
+        -- The title bar is built inside setupLayout and sizes the file chooser, so
+        -- its style metrics have to apply during the build.
+        Titlebar().runWithStyleMetrics(orig_setupLayout, fm_self)
 
         -- cur_w/cur_h computed here (rather than immediately before the guard
         -- block below, where they used to live) so the diagnostic log below
@@ -799,6 +802,7 @@ function M.patchFileManagerClass(plugin)
             -- Note: we intentionally do NOT require the "homescreen" tab to be
             -- present in the navbar. "Start with Home Screen" is a launch
             -- behaviour, independent of whether the user has kept the tab.
+            logger.info("simpleui[diag]: first FM setupLayout start_with_hs=", isStartWithHS())
             if isStartWithHS() then
                 plugin.active_action      = "homescreen"
                 fm_self._hs_autoopen_pending = true
@@ -1422,7 +1426,7 @@ function M.patchFullscreenWidgets(plugin)
                 orig_tb_new = TitleBar.new
                 TitleBar.new = function(tb_class, tb_attrs, ...)
                     tb_attrs = tb_attrs or {}
-                    tb_attrs.title_h_padding = Screen:scaleBySize(24)
+                    tb_attrs.title_h_padding = UI.SIDE_M()
                     return orig_tb_new(tb_class, tb_attrs, ...)
                 end
             end
@@ -2666,8 +2670,28 @@ function M.patchMenuInitForPagination(plugin)
     local TARGET_NAMES = {
         filemanager = true, history = true, collections = true, coll_list = true,
     }
+    -- Sub pages whose title bar follows the tabs style of the library.
+    local TABS_SUB_PAGE_NAMES = { history = true, collections = true, coll_list = true }
     local orig_menu_init  = Menu.init
     plugin._orig_menu_init = orig_menu_init
+
+    -- Tabs style: list rows of these pages are inset so their text and
+    -- separators span the status bar margins. Menus that replace
+    -- _recalculateDimen on the instance lay out their own items and are left
+    -- untouched.
+    local orig_recalculate = Menu._recalculateDimen
+    plugin._orig_menu_recalculate_dimen = orig_recalculate
+    Menu._recalculateDimen = function(menu_self, ...)
+        orig_recalculate(menu_self, ...)
+        if not (TABS_SUB_PAGE_NAMES[menu_self.name] and menu_self.covers_fullscreen
+                and menu_self.item_dimen and Titlebar().isTabsStyle()) then
+            return
+        end
+        local side  = Titlebar().getSideMargin()
+        local inset = math.max(0, side - Size.padding.fullscreen)
+        menu_self.items_padding = side
+        menu_self.item_dimen.w  = menu_self.inner_dimen.w - 2 * inset
+    end
 
     Menu.init = function(menu_self, ...)
         -- Centralised keyboard-shortcut indicator suppression.
@@ -2682,7 +2706,13 @@ function M.patchMenuInitForPagination(plugin)
             menu_self.is_enable_shortcut = false
         end
 
-        orig_menu_init(menu_self, ...)
+        -- The title bar is built inside init and sizes the item area, so the
+        -- tabs style metrics have to apply during the build.
+        if TABS_SUB_PAGE_NAMES[menu_self.name] and menu_self.covers_fullscreen then
+            Titlebar().runWithStyleMetrics(orig_menu_init, menu_self, ...)
+        else
+            orig_menu_init(menu_self, ...)
+        end
 
         -- Apply icon overrides for collections/history/FM menus.
         pcall(function()
@@ -5199,6 +5229,10 @@ function M.teardownAll(plugin)
         if plugin._orig_menu_init then
             Menu.init              = plugin._orig_menu_init
             plugin._orig_menu_init = nil
+        end
+        if plugin._orig_menu_recalculate_dimen then
+            Menu._recalculateDimen              = plugin._orig_menu_recalculate_dimen
+            plugin._orig_menu_recalculate_dimen = nil
         end
         if plugin._orig_menu_update_page_info then
             Menu.updatePageInfo                = plugin._orig_menu_update_page_info

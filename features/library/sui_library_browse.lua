@@ -30,8 +30,12 @@
 --   M.install()               — apply FileChooser + ffiUtil patches
 --   M.uninstall()             — remove all patches
 --   M.getCurrentMode(fc)      — "normal"|"author"|"series"|"tags" from fc.path
+--   M.getPathMode(path)       — same, from an explicit path
 --   M.navigateTo(fm, mode)    — navigate FM to the requested mode
 --   M.navigateToRoot(fc, fm, mode)
+--   M.activateMode(fm, mode, already_active) — single entry point for mode switchers
+--   M.MODES / M.getModeLabel(mode)           — ordered mode ids and their display labels
+--   M.getPathLabel(path)                     — display name of the innermost virtual level
 --   M.isAtVirtualRoot(fc, mode)
 --   M.getSavedMode() / M.setSavedMode(mode)
 --   M.openVirtualCoverPicker(vpath, fc)
@@ -59,6 +63,14 @@ local DIM_LABELS = {
     series = _("Series"),
     tags   = _("Tags"),
 }
+
+-- Ordered browse modes: the filesystem view followed by every metadata dimension.
+M.MODES = { "normal", "author", "series", "tags" }
+
+function M.getModeLabel(mode)
+    if mode == "normal" then return _("Library") end
+    return DIM_LABELS[mode]
+end
 
 -- ---------------------------------------------------------------------------
 -- Module state
@@ -134,11 +146,14 @@ function M.getPathLevel(path)
     return level
 end
 
-function M.getCurrentMode(fc)
-    local path = fc and fc.path
+function M.getPathMode(path)
     if not VirtualPath.isVirtual(path) then return "normal" end
     local _base, _state, active_dimension = VirtualPath.parse(path)
     return active_dimension or "normal"
+end
+
+function M.getCurrentMode(fc)
+    return M.getPathMode(fc and fc.path)
 end
 
 -- ---------------------------------------------------------------------------
@@ -232,6 +247,30 @@ function M.navigateToRoot(fc, fm, mode)
         if fc.onGotoPage then
             pcall(function() fc:onGotoPage(1) end)
         end
+    end
+end
+
+-- activateMode(fm, mode, already_active)
+-- Single entry point for every control that switches browse mode (quick
+-- actions, title-bar tabs). Selecting the active mode returns to its root:
+-- page 1 for the filesystem view, the top-level list for a metadata mode.
+-- `already_active` defaults to "the file chooser is currently in this mode".
+function M.activateMode(fm, mode, already_active)
+    local fc = fm and fm.file_chooser
+    if not (fc and mode) then return end
+    if already_active == nil then
+        already_active = M.getCurrentMode(fc) == mode
+    end
+    if mode == "normal" then
+        if already_active then
+            pcall(fc.onGotoPage, fc, 1)
+        else
+            M.exitToNormal(fc, fm)
+        end
+    elseif already_active then
+        M.navigateToRoot(fc, fm, mode)
+    else
+        M.navigateTo(fm, mode)
     end
 end
 
@@ -906,6 +945,11 @@ local function _getVirtualSubtitle(path)
     end
     if active_dimension then return DIM_LABELS[active_dimension] end
     return nil
+end
+
+-- Display name of the innermost level of a virtual path; nil for real paths.
+function M.getPathLabel(path)
+    return _getVirtualSubtitle(path)
 end
 
 local function _installTitleBarPathPatch()

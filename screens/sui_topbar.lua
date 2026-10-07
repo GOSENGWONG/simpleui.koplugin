@@ -154,7 +154,6 @@ local function _getCore()
 end
 
 function M.SIDE_M()        return _getCore().SIDE_M()                                           end
-function M.TOPBAR_SIDE_M() return _cached("topbar_side_m", function() return M.SIDE_M() - 3 end) end
 
 function M.TOPBAR_H()
     return _cached("topbar_h", function()
@@ -381,7 +380,7 @@ end
 
 function M.buildTopbarWidget()
     local screen_w  = Screen:getWidth()
-    local side_m    = M.TOPBAR_SIDE_M()
+    local side_m    = M.SIDE_M()
     local pad_top   = M.TOPBAR_PAD_TOP()
     local pad_bot   = M.TOPBAR_PAD_BOT()
     local total_h   = M.TOPBAR_H() + pad_top + pad_bot

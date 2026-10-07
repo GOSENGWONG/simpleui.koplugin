@@ -73,9 +73,10 @@ function CoverFinder.entriesWithNoFilter(menu, dir_path)
     local saved = FileChooser.show_filter
     FileChooser.show_filter = _EMPTY_FILTER
     menu._dummy = true
-    local entries = menu:genItemTableFromPath(dir_path)
+    local ok, entries = pcall(menu.genItemTableFromPath, menu, dir_path)
     menu._dummy = false
     FileChooser.show_filter = saved
+    if not ok then error(entries, 0) end
     return entries
 end
 

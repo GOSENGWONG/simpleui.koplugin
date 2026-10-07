@@ -282,6 +282,7 @@ local function sgOpenGroup(file_chooser, group_item)
         parent_page = file_chooser.page or 1,
     }
     items._sg_is_series_view = true
+    items._sg_series_name    = group_item.text
     items._sg_parent_path    = file_chooser.path
     file_chooser:switchItemTable(nil, items, nil, nil, group_item.text)
     local ok_p, Patches = pcall(require, "infra/sui_patches")

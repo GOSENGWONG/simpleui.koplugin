@@ -81,7 +81,7 @@ M.SLOTS = {
         id        = "sui_menu",
         label     = function() return _("Menu Button") end,
         group     = "sui_titlebar",
-        default_ko = "appbar.menu",
+        default_ko = "icons/more-options.svg",
     },
     {
         id        = "sui_search",
@@ -93,7 +93,7 @@ M.SLOTS = {
         id        = "sui_back",
         label     = function() return _("Back Button") end,
         group     = "sui_titlebar",
-        default_ko = "chevron.left",   -- matches the ICON_UP used at runtime
+        default_ko = "icons/back.svg",   -- matches the default back icon used at runtime
     },
     -- ── Browse Meta titlebar icons ───────────────────────────────────────
     -- These override the four icons used by the Browse button in the FM
