@@ -1796,12 +1796,6 @@ function SimpleUIPlugin:onCloseDocument()
     local ScreenEngine = package.loaded["engines/sui_screen_engine"]
     if not ScreenEngine then return end
 
-    -- Cached section headers hold page-turn callbacks bound to the previous
-    -- render's ctx; clear them so the rebuilt screen creates its own.
-    if ScreenEngine.invalidateLabelCache then
-        ScreenEngine.invalidateLabelCache()
-    end
-
     -- Filepath of the book that just closed. readhistory.hist[1] is still the
     -- closing book at this point (the reader has not yet handed control back
     -- to the FM, so the history order has not been updated). Computed here,

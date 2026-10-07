@@ -816,14 +816,16 @@ function M.setLabelScale(pct)
 end
 
 local _BASE_LABEL_TEXT_H = nil
-function M.getScaledLabelH()
+-- Height of a section label at the user's label scale; `landscape_factor`
+-- (default 1) is the same multiplier the label widget is drawn with.
+function M.getScaledLabelH(landscape_factor)
     if not _BASE_LABEL_TEXT_H then
         local ok, SUIStyle = pcall(require, "features/sui_style")
         local base_fs = (ok and SUIStyle and SUIStyle.FS_BODY) or 18  -- FS_BODY (18)
         _BASE_LABEL_TEXT_H = require("device").screen:scaleBySize(base_fs)
     end
     local PAD2  = require("infra/sui_core").PAD2
-    local scale = M.getLabelScale()
+    local scale = M.getLabelScale() * (landscape_factor or 1)
     return PAD2 + math_max(8, math_floor(_BASE_LABEL_TEXT_H * scale))
 end
 
@@ -1601,14 +1603,6 @@ function M.isLabelHidden(mod_id)
     return SUISettings:get(_labelHideKey(mod_id)) == true
 end
 
-function M.applyLabelToggle(mod, default_label)
-    if M.isLabelHidden(mod.id) then
-        mod.label = nil
-    else
-        mod.label = default_label
-    end
-end
-
 -- ===========================================================================
 -- Cover Hold Mode — long-press behaviour for modules with book covers.
 -- "book_dialog" (default) opens a per-book action dialog
@@ -1745,7 +1739,7 @@ function M.makeRadioSubmenuItem(opts)
     }
 end
 
-function M.makeLabelToggleItem(mod_id, default_label, refresh, _lc)
+function M.makeLabelToggleItem(mod_id, refresh, _lc)
     return {
         text           = _lc("Show section label"),
         checked_func   = function() return not M.isLabelHidden(mod_id) end,
@@ -1769,15 +1763,29 @@ M._cover_extract_specs   = {}
 
 local _BookInfoManager = nil
 
+-- Makes the book info store drop this module's cached cover state for a book
+-- whenever it forgets that book (cover or metadata changes, manual refresh).
+-- Wrapped from the store's original method, so repeated calls never stack.
+local function _hookBookInfoDeletion(bim)
+    local orig = bim._sui_orig_deleteBookInfo or bim.deleteBookInfo
+    if type(orig) ~= "function" then return bim end
+    bim._sui_orig_deleteBookInfo = orig
+    bim.deleteBookInfo = function(self, filepath)
+        if filepath then M.dropCoverCaches(filepath) end
+        return orig(self, filepath)
+    end
+    return bim
+end
+
 function M.getBookInfoManager()
     if _BookInfoManager then return _BookInfoManager end
     local ok, bim = pcall(require, "bookinfomanager")
-    if ok and bim and type(bim) == "table" and bim.getBookInfo then
-        _BookInfoManager = bim; return bim
+    if not (ok and bim and type(bim) == "table" and bim.getBookInfo) then
+        ok, bim = pcall(require, "plugins/coverbrowser.koplugin/bookinfomanager")
     end
-    ok, bim = pcall(require, "plugins/coverbrowser.koplugin/bookinfomanager")
     if ok and bim and type(bim) == "table" and bim.getBookInfo then
-        _BookInfoManager = bim; return bim
+        _BookInfoManager = _hookBookInfoDeletion(bim)
+        return _BookInfoManager
     end
     return nil
 end
@@ -1835,6 +1843,14 @@ local function _markNoCover(filepath)
     if #_no_cover_order > _NO_COVER_MAX_ENTRIES then
         local oldest = table.remove(_no_cover_order, 1)
         _no_cover_probe[oldest] = nil
+    end
+end
+
+local function _unmarkNoCover(filepath)
+    if not _no_cover_probe[filepath] then return end
+    _no_cover_probe[filepath] = nil
+    for i, k in ipairs(_no_cover_order) do
+        if k == filepath then table.remove(_no_cover_order, i); break end
     end
 end
 
@@ -1898,18 +1914,24 @@ local function _ensureRenderImage()
     return _RenderImage
 end
 
+-- Returns the cached reference bb for `filepath` (refreshing its LRU
+-- position), or nil on a miss.
+local function _cachedRefCoverBB(filepath)
+    local cached = _bim_ref_cache[filepath]
+    if not cached then return nil end
+    _removeRefOrderKey(filepath)
+    _bim_ref_order[#_bim_ref_order + 1] = filepath
+    return cached.bb
+end
+
 -- Returns a bb that's safe to use as _scaleBBToSlot's source for `filepath`:
 -- the raw bb itself when it's already small (no point caching a second copy
 -- no bigger than the reference would be), or a cached downscaled copy
 -- otherwise. Never crops -- only ever a uniform scale-to-fit within
 -- _REF_MAX_DIM -- so the result stays a valid source for ANY target shape.
 local function _getRefCoverBB(filepath, raw_bb)
-    local cached = _bim_ref_cache[filepath]
-    if cached then
-        _removeRefOrderKey(filepath)
-        _bim_ref_order[#_bim_ref_order + 1] = filepath
-        return cached.bb
-    end
+    local cached = _cachedRefCoverBB(filepath)
+    if cached then return cached end
 
     local src_w, src_h = raw_bb:getWidth(), raw_bb:getHeight()
     if src_w <= 0 or src_h <= 0 or (src_w <= _REF_MAX_DIM and src_h <= _REF_MAX_DIM) then
@@ -2085,6 +2107,14 @@ local function _dropLocalCoverCaches(filepath)
     if _bim_ref_bytes < 0 then _bim_ref_bytes = 0 end
 end
 
+-- Forgets all locally cached cover state for one book (stretched bitmap,
+-- reference bitmap and no-cover marker). The next request rebuilds it from
+-- the current book info.
+function M.dropCoverCaches(filepath)
+    _dropLocalCoverCaches(filepath)
+    _unmarkNoCover(filepath)
+end
+
 -- Stretches `raw_bb` (bookinfo.cover_bb — BookInfoManager's own persistent
 -- entry for this file, shared with KOReader core) to exactly
 -- target_w x target_h, aspect NOT preserved. Never hands raw_bb itself to
@@ -2114,87 +2144,97 @@ local function _stretchBBToSize(raw_bb, target_w, target_h)
     return stretched_bb
 end
 
+-- Decodes the cover bitmap held by the book info store. The decode is
+-- comparatively expensive, so callers first validate through metadata-only
+-- lookups and call this only when no local cache entry can serve the request.
+local function _loadCoverBB(bim, filepath)
+    local ok, bookinfo = pcall(bim.getBookInfo, bim, filepath, true)
+    return ok and bookinfo and bookinfo.cover_bb or nil
+end
+
+local function _noCover(filepath)
+    M._cover_extract_pending[filepath] = nil
+    _markNoCover(filepath)
+    return nil
+end
+
+-- Returns the book's metadata-only info (no cover decode), or nil after
+-- queueing an extraction when the info is missing or the lookup failed.
+local function _getCoverInfo(bim, filepath, w, h)
+    local ok, bookinfo = pcall(bim.getBookInfo, bim, filepath, false)
+    if ok and bookinfo and bookinfo.cover_fetched then return bookinfo end
+    _enqueueCoverExtract(filepath, w, h)
+    M.cover_extraction_pending = true
+    return nil
+end
+
 function M.getStretchedCoverBB(filepath, w, h)
     if M.isCoverMissing(filepath) then return nil end
 
     -- Reject non-regular-file paths before the extractor (can segfault).
-    if _lfsMode(filepath) ~= "file" then _markNoCover(filepath); return nil end
+    if _lfsMode(filepath) ~= "file" then return _noCover(filepath) end
 
     local bim = M.getBookInfoManager()
     if not bim then return nil end
-    local ok, bookinfo = pcall(bim.getBookInfo, bim, filepath, true)
+    local bookinfo = _getCoverInfo(bim, filepath, w, h)
+    if not bookinfo then return nil end
+    if not bookinfo.has_cover then return _noCover(filepath) end
 
-    if not ok then
+    -- Undersized book info thumbnail: serve a stretched placeholder and
+    -- re-extract larger. Local caches are dropped so the upgraded bitmap can
+    -- replace a same-size upscale (prefer-larger is pixel-count only).
+    if _coverTooSmall(bim, bookinfo, w, h) then
+        local placeholder = SUICoverCache:get(filepath)
+        _dropLocalCoverCaches(filepath)
         _enqueueCoverExtract(filepath, w, h)
         M.cover_extraction_pending = true
-        return nil
-    end
-    if bookinfo and bookinfo.cover_fetched then
-        if bookinfo.has_cover and bookinfo.cover_bb then
-            -- List-mode / undersized BIM thumbnail: show stretched placeholder
-            -- and re-extract larger. Drop local caches so the upgraded bb can
-            -- replace a same-size upscale (prefer-larger is pixel-count only).
-            if _coverTooSmall(bim, bookinfo, w, h) then
-                local placeholder = SUICoverCache:get(filepath)
-                _dropLocalCoverCaches(filepath)
-                _enqueueCoverExtract(filepath, w, h)
-                M.cover_extraction_pending = true
-                if placeholder and placeholder:getWidth() >= w
-                        and placeholder:getHeight() >= h then
-                    return placeholder
-                end
-                return _stretchBBToSize(bookinfo.cover_bb, w, h)
-            end
-            M._cover_extract_pending[filepath] = nil
-            local cached = SUICoverCache:get(filepath)
-            if cached and cached:getWidth() >= w and cached:getHeight() >= h then
-                return cached
-            end
-            local bb = _stretchBBToSize(bookinfo.cover_bb, w, h)
-            return SUICoverCache:put(filepath, bb)
-        else
-            M._cover_extract_pending[filepath] = nil; _markNoCover(filepath); return nil
+        if placeholder and placeholder:getWidth() >= w
+                and placeholder:getHeight() >= h then
+            return placeholder
         end
+        local raw_bb = _loadCoverBB(bim, filepath)
+        return raw_bb and _stretchBBToSize(raw_bb, w, h) or nil
     end
-    _enqueueCoverExtract(filepath, w, h)
-    if M._cover_extract_pending[filepath] then M.cover_extraction_pending = true end
-    return nil
+
+    M._cover_extract_pending[filepath] = nil
+    local cached = SUICoverCache:get(filepath)
+    if cached and cached:getWidth() >= w and cached:getHeight() >= h then
+        return cached
+    end
+    local raw_bb = _loadCoverBB(bim, filepath)
+    if not raw_bb then return _noCover(filepath) end
+    return SUICoverCache:put(filepath, _stretchBBToSize(raw_bb, w, h))
 end
 
 function M.getCroppedCoverBB(filepath, w, h, align)
     if M.isCoverMissing(filepath) then return nil end
 
-    if _lfsMode(filepath) ~= "file" then _markNoCover(filepath); return nil end
+    if _lfsMode(filepath) ~= "file" then return _noCover(filepath) end
 
     local bim = M.getBookInfoManager()
     if not bim then return nil end
-    local ok, bookinfo = pcall(bim.getBookInfo, bim, filepath, true)
+    local bookinfo = _getCoverInfo(bim, filepath, w, h)
+    if not bookinfo then return nil end
+    if not bookinfo.has_cover then return _noCover(filepath) end
 
-    if not ok then
+    if _coverTooSmall(bim, bookinfo, w, h) then
+        _dropLocalCoverCaches(filepath)
         _enqueueCoverExtract(filepath, w, h)
         M.cover_extraction_pending = true
-        return nil
+        -- Crop placeholder from the small source (no ref cache).
+        local raw_bb = _loadCoverBB(bim, filepath)
+        return raw_bb and _scaleBBToSlot(raw_bb, w, h, align) or nil
     end
-    if bookinfo and bookinfo.cover_fetched then
-        if bookinfo.has_cover and bookinfo.cover_bb then
-            if _coverTooSmall(bim, bookinfo, w, h) then
-                _dropLocalCoverCaches(filepath)
-                _enqueueCoverExtract(filepath, w, h)
-                M.cover_extraction_pending = true
-                -- Crop placeholder from the small source (no ref cache).
-                return _scaleBBToSlot(bookinfo.cover_bb, w, h, align)
-            end
-            M._cover_extract_pending[filepath] = nil
-            -- Shared uncropped ref; crop fresh so callers can differ on align.
-            local ref_bb = _getRefCoverBB(filepath, bookinfo.cover_bb)
-            return _scaleBBToSlot(ref_bb, w, h, align)
-        else
-            M._cover_extract_pending[filepath] = nil; _markNoCover(filepath); return nil
-        end
+
+    M._cover_extract_pending[filepath] = nil
+    -- Shared uncropped ref; crop fresh so callers can differ on align.
+    local ref_bb = _cachedRefCoverBB(filepath)
+    if not ref_bb then
+        local raw_bb = _loadCoverBB(bim, filepath)
+        if not raw_bb then return _noCover(filepath) end
+        ref_bb = _getRefCoverBB(filepath, raw_bb)
     end
-    _enqueueCoverExtract(filepath, w, h)
-    if M._cover_extract_pending[filepath] then M.cover_extraction_pending = true end
-    return nil
+    return _scaleBBToSlot(ref_bb, w, h, align)
 end
 
 function M.clearCoverCache()

@@ -14,15 +14,17 @@
 --
 --   M.id             string   stable unique id, e.g. "clock", "collections"
 --   M.name           string   readable name for menus / Arrange
---   M.label          string?  section label text shown above the module (nil = no label);
---                             also acts as the "has a label" flag even when M.label_func is set
---   M.label_func     fun(ctx):string?  optional; when present, overrides M.label's text at
---                             build time (e.g. to append a setting-dependent suffix). Only
---                             called if M.label is truthy.
+--   M.label          string?  section label text shown above the module (nil = no label)
 --   M.label_right_func fun(ctx):string?  optional; text shown right-aligned on the same
 --                             row as the label (e.g. a setting-dependent mode indicator),
 --                             in the same style as the page indicator it takes priority
---                             over. Only called if M.label is truthy.
+--                             over. Ignored when the module defines M.getLabel.
+--   M.getLabel       fun(ctx):table?  optional; full control over the label: returns a
+--                             descriptor built with SectionLabel.makeDescriptor (text may
+--                             depend on the instance), or nil for no label. Without it the
+--                             descriptor is derived from M.label / M.label_right_func.
+--                             Visibility (the "Show section label" toggle) is applied by
+--                             the descriptor, never by mutating M.label.
 --   M.enabled_key    string?  settings suffix: pfx .. enabled_key → bool
 --   M.default_on     bool?    value when the key doesn't exist (default true)
 --

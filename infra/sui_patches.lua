@@ -919,8 +919,8 @@ function M.patchFileManagerClass(plugin)
             end
             plugin:_updateFMHomeIcon()
 
-            -- Mark the library as visited so the homescreen can invalidate its
-            -- cover cache if CoverBrowser has replaced native-size bitmaps.
+            -- Marks the file browser as visited since the last homescreen
+            -- close (consumed by ScreenWidget:onCloseWidget).
             local HS = liveHS()
             if HS then HS._library_was_visited = true end
         end

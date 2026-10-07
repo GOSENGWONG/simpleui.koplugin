@@ -433,7 +433,7 @@ end
 --
 -- Same technique infra/sui_patches.lua applies globally, for the whole
 -- lifetime of the FileManager wallpaper; this scoped variant gives any
--- other caller (e.g. GridRenderer.buildPageNavButtons) the same guarantee
+-- other caller (e.g. the section label in engines/sui_section_label.lua) the same guarantee
 -- for a handful of buttons without a global patch.
 -- ---------------------------------------------------------------------------
 function M.withWallpaperAlphaIcons(fn)
@@ -464,8 +464,8 @@ end
 -- Buttons transparent over its wallpaper (nil the frame background while
 -- painting), applied here per-instance for callers that only need it on a
 -- specific button rather than every Button in the app — e.g.
--- GridRenderer.buildPageNavButtons for the book-grid header's pagination
--- chevrons.
+-- the section label (engines/sui_section_label.lua) for the book-grid header's
+-- pagination chevrons.
 -- ---------------------------------------------------------------------------
 function M.patchWallpaperIcon(btn)
     if not btn or btn._sui_wallpaper_patched then return end

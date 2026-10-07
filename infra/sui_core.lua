@@ -323,9 +323,6 @@ function M.invalidateDimCache()
             end
         end
     end
-    -- Clear the section-label widget cache: labels embed inner_w in their key
-    -- and must be rebuilt after a screen rotation changes inner_w (fix #6).
-    if hs and hs.invalidateLabelCache then hs.invalidateLabelCache() end
 end
 
 -- ---------------------------------------------------------------------------

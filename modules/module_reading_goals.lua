@@ -26,6 +26,7 @@ local _ = require("infra/sui_i18n").translate
 local N_ = require("infra/sui_i18n").ngettext
 local logger          = require("logger")
 local Config          = require("infra/sui_config")
+local SectionLabel    = require("engines/sui_section_label")
 local AAPaint         = require("infra/sui_aa_paint")
 
 local UI           = require("infra/sui_core")
@@ -927,7 +928,6 @@ end
 
 -- Builds the widget. Branches on layout: compact, rings, or default.
 function M.build(w, ctx)
-    Config.applyLabelToggle(M, _("Reading Goals"))
     local show_ann = showAnnual()
     local show_mon = showMonthly()
     local show_day = showDaily()
@@ -1235,7 +1235,7 @@ function M.getHeight(_ctx)
     if n == 0 then return 0 end
     local pfx = _ctx and _ctx.pfx or ""
     local lf = (_ctx and _ctx.landscape_factor) or (UI.isLandscape() and UI.getLandscapeFactor() or 1)
-    local label_h = require("infra/sui_config").getScaledLabelH()
+    local label_h = SectionLabel.height(M.id, lf)
     local scale = Config.getModuleScale("reading_goals", pfx) * lf
     local styles = Config.resolveTextStyles(_ctx, M.id, TEXT_ELEMS)
     local h = 0
@@ -1604,7 +1604,7 @@ function M.getMenuItems(ctx_menu)
                           callback = function() setRingAlign(ctx_menu.pfx, "right"); refresh() end },
                     },
                 },
-                Config.makeLabelToggleItem("reading_goals", _("Reading Goals"), refresh, _lc),
+                Config.makeLabelToggleItem("reading_goals", refresh, _lc),
                                             },
         },
         {

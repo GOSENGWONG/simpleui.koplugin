@@ -2604,8 +2604,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                 default_value = Config.SCALE_DEF,
                                 callback = function(spin)
                                     Config.setModuleScale(spin.value)
-                                    local HS = package.loaded["screens/sui_homescreen"]
-                                    if HS and HS.invalidateLabelCache then HS.invalidateLabelCache() end
                                     _applyFullLayoutRefresh()
                                     if ctx and ctx.refresh then ctx.refresh() end
                                 end,
@@ -2636,8 +2634,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                 default_value = Config.SCALE_DEF,
                                 callback = function(spin)
                                     Config.setLabelScale(spin.value)
-                                    local HS = package.loaded["screens/sui_homescreen"]
-                                    if HS and HS.invalidateLabelCache then HS.invalidateLabelCache() end
                                     _applyFullLayoutRefresh()
                                     if ctx and ctx.refresh then ctx.refresh() end
                                 end,
@@ -2654,8 +2650,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                 ok_text = _("Reset"),
                                 ok_callback = function()
                                     Config.resetAllScales(ctx.pfx, ctx.pfx_qa)
-                                    local HS = package.loaded["screens/sui_homescreen"]
-                                    if HS and HS.invalidateLabelCache then HS.invalidateLabelCache() end
                                     local FC = package.loaded["features/library/sui_foldercovers"]
                                     if FC and FC.invalidateCache then FC.invalidateCache() end
                                     _applyFullLayoutRefresh()

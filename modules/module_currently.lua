@@ -28,6 +28,7 @@ local Size            = require("ui/size")
 
 -- Internal dependencies
 local Config       = require("infra/sui_config")
+local SectionLabel = require("engines/sui_section_label")
 local UI           = require("infra/sui_core")
 local SUISettings  = require("infra/sui_store")
 local SUIStyle     = require("features/sui_style")
@@ -555,7 +556,6 @@ end
 -- Builds the module widget: cover on the left, text column on the right.
 -- Elements in the text column are rendered in user-configured order.
 function M.build(w, ctx)
-    Config.applyLabelToggle(M, _("Currently Reading"))
     if not ctx.current_fp then
         return _emptyPlaceholder(w, M.getHeight(ctx), ctx.has_wallpaper)
     end
@@ -1296,7 +1296,7 @@ end
 -- under-allocating space and causing overlap with the module below.
 function M.getHeight(_ctx)
     local SH = getSH()
-    if not SH then return Config.getScaledLabelH() end
+    if not SH then return SectionLabel.height(M.id, _ctx and _ctx.landscape_factor) end
     local pfx = _ctx and _ctx.pfx
     -- Use pre-read settings bundle from ctx when available (normal HS path).
     -- c.scale/c.thumb_scale/c.lbl_scale (from ctx.cfg) are RAW; apply
@@ -1452,7 +1452,7 @@ function M.getHeight(_ctx)
             content_h = content_h + SUIStyle.BORDER_SZ * 2
         end
     end
-    return Config.getScaledLabelH() + content_h
+    return SectionLabel.height(M.id, lf) + content_h
 end
 
 
@@ -2086,7 +2086,7 @@ function M.getMenuItems(ctx_menu)
     }
 
     local appearance_extra = {
-        Config.makeLabelToggleItem("currently", _("Currently Reading"), refresh, _lc),
+        Config.makeLabelToggleItem("currently", refresh, _lc),
     }
 
     return Config.buildModuleMenu({
