@@ -592,6 +592,17 @@ local SCALE_LINKED_KEY = "simpleui_hs_scale_linked"
 local ITEM_LABEL_SCALE_SUFFIX = "_item_label_scale"
 
 local function _clamp(n) return math_max(SCALE_MIN, math_min(SCALE_MAX, math_floor(n))) end
+
+-- Percent scale stored under `key`: clamped on read and write, SCALE_DEF when unset.
+local function _readPct(key)
+    local n = tonumber(SUISettings:get(key))
+    return n and _clamp(n) or SCALE_DEF
+end
+local function _writePct(pct, key) SUISettings:set(key, _clamp(pct)) end
+
+-- Same accessors for settings that live outside the per-module key scheme.
+M.getScalePctByKey = _readPct
+M.setScaleByKey    = _writePct
 local function _modKey(mod_id, pfx) return (pfx or "simpleui_hs_") .. (mod_id or "") .. "_scale" end
 local function _itemLabelKey(mod_id, pfx) return (pfx or "simpleui_hs_") .. (mod_id or "") .. ITEM_LABEL_SCALE_SUFFIX end
 
@@ -832,29 +843,34 @@ local function _thumbKey(mod_id, pfx)
 end
 
 function M.getThumbScale(mod_id, pfx)
-    local v = SUISettings:get(_thumbKey(mod_id, pfx))
-    local n = tonumber(v)
-    if not n then return 1.0 end
-    return _clamp(n) / 100
+    return _readPct(_thumbKey(mod_id, pfx)) / 100
 end
 
 -- Same as getModuleScaleRaw, for the thumb scale setting.
 function M.getThumbScaleRaw(mod_id, pfx)
-    local v = SUISettings:get(_thumbKey(mod_id, pfx))
-    local n = tonumber(v)
-    if not n then return 1.0 end
-    return _clamp(n) / 100
+    return _readPct(_thumbKey(mod_id, pfx)) / 100
 end
 
 function M.getThumbScalePct(mod_id, pfx)
-    local v = SUISettings:get(_thumbKey(mod_id, pfx))
-    local n = tonumber(v)
-    if not n then return SCALE_DEF end
-    return _clamp(n)
+    return _readPct(_thumbKey(mod_id, pfx))
 end
 
 function M.setThumbScale(pct, mod_id, pfx)
-    SUISettings:set(_thumbKey(mod_id, pfx), _clamp(pct))
+    _writePct(pct, _thumbKey(mod_id, pfx))
+end
+
+-- Badge Scale — size of a corner badge as a percent of its base size. The
+-- per-module form shares its key shape with the book-grid modules.
+function M.badgeScaleKey(mod_id, pfx)
+    return (pfx or "simpleui_hs_") .. (mod_id or "") .. "_badge_scale"
+end
+
+function M.getBadgeScalePct(mod_id, pfx)
+    return _readPct(M.badgeScaleKey(mod_id, pfx))
+end
+
+function M.setBadgeScale(pct, mod_id, pfx)
+    _writePct(pct, M.badgeScaleKey(mod_id, pfx))
 end
 
 -- Element Scale — like Thumb Scale, but keyed by an extra `elem` name, for
@@ -867,40 +883,28 @@ local function _elemKey(mod_id, elem, pfx)
 end
 
 function M.getElemScale(mod_id, elem, pfx)
-    local v = SUISettings:get(_elemKey(mod_id, elem, pfx))
-    local n = tonumber(v)
-    if not n then return 1.0 end
-    return _clamp(n) / 100
+    return _readPct(_elemKey(mod_id, elem, pfx)) / 100
 end
 
 function M.getElemScalePct(mod_id, elem, pfx)
-    local v = SUISettings:get(_elemKey(mod_id, elem, pfx))
-    local n = tonumber(v)
-    if not n then return SCALE_DEF end
-    return _clamp(n)
+    return _readPct(_elemKey(mod_id, elem, pfx))
 end
 
 function M.setElemScale(pct, mod_id, elem, pfx)
-    SUISettings:set(_elemKey(mod_id, elem, pfx), _clamp(pct))
+    _writePct(pct, _elemKey(mod_id, elem, pfx))
 end
 
 -- Label Scale
 function M.getLabelScale()
-    local v = SUISettings:get(LABEL_SCALE_KEY)
-    local n = tonumber(v)
-    if not n then return 1.0 end
-    return _clamp(n) / 100
+    return _readPct(LABEL_SCALE_KEY) / 100
 end
 
 function M.getLabelScalePct()
-    local v = SUISettings:get(LABEL_SCALE_KEY)
-    local n = tonumber(v)
-    if not n then return SCALE_DEF end
-    return _clamp(n)
+    return _readPct(LABEL_SCALE_KEY)
 end
 
 function M.setLabelScale(pct)
-    SUISettings:set(LABEL_SCALE_KEY, _clamp(pct))
+    _writePct(pct, LABEL_SCALE_KEY)
 end
 
 local _BASE_LABEL_TEXT_H = nil
@@ -917,21 +921,15 @@ end
 
 -- Item Label Scale
 function M.getItemLabelScale(mod_id, pfx)
-    local v = SUISettings:get(_itemLabelKey(mod_id, pfx))
-    local n = tonumber(v)
-    if not n then return 1.0 end
-    return _clamp(n) / 100
+    return _readPct(_itemLabelKey(mod_id, pfx)) / 100
 end
 
 function M.getItemLabelScalePct(mod_id, pfx)
-    local v = SUISettings:get(_itemLabelKey(mod_id, pfx))
-    local n = tonumber(v)
-    if not n then return SCALE_DEF end
-    return _clamp(n)
+    return _readPct(_itemLabelKey(mod_id, pfx))
 end
 
 function M.setItemLabelScale(pct, mod_id, pfx)
-    SUISettings:set(_itemLabelKey(mod_id, pfx), _clamp(pct))
+    _writePct(pct, _itemLabelKey(mod_id, pfx))
 end
 
 -- Per-element text style: a font family, a size scale and a variant (regular,
@@ -997,7 +995,7 @@ function M.getTextStyleScalePct(mod_id, elem, pfx)
 end
 
 function M.setTextStyleScale(pct, mod_id, elem, pfx)
-    SUISettings:set(_textKey(TEXT_SCALE_INFIX, mod_id, elem, pfx), _clamp(pct))
+    _writePct(pct, _textKey(TEXT_SCALE_INFIX, mod_id, elem, pfx))
 end
 
 -- family == nil clears the choice.
@@ -1335,6 +1333,23 @@ function M.makeScaleItem(opts)
             })
         end,
     }
+end
+
+-- "Badge Size" spinner for a corner badge.
+-- opts: { get, set, refresh, info, text_func, separator, enabled_func, _lc }
+function M.makeBadgeSizeItem(opts)
+    local _lc  = opts._lc or _
+    local item = M.makeScaleItem{
+        text_func = opts.text_func or function() return _lc("Badge Size") end,
+        separator = opts.separator,
+        title     = _lc("Badge Size"),
+        info      = opts.info,
+        get       = opts.get,
+        set       = opts.set,
+        refresh   = opts.refresh,
+    }
+    item.enabled_func = opts.enabled_func
+    return item
 end
 
 -- Wallpaper strength entry (0–100 %, labelled Transparent / N% / Solid by

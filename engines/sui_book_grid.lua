@@ -343,41 +343,24 @@ end
 -- ---------------------------------------------------------------------------
 local _BG_BADGE_SCALE_LEGACY_KEY = "simpleui_bookgrid_badge_scale"
 local _BG_BADGE_NATIVE_BOOST = 1.1 -- default module-badge boost over the Library baseline
-local _BG_BADGE_SCALE_MIN  = 50
-local _BG_BADGE_SCALE_MAX  = 200
-local _BG_BADGE_SCALE_DEF  = 100
-local _BG_BADGE_SCALE_STEP = 10
-GridRenderer.BADGE_SCALE_MIN  = _BG_BADGE_SCALE_MIN
-GridRenderer.BADGE_SCALE_MAX  = _BG_BADGE_SCALE_MAX
-GridRenderer.BADGE_SCALE_DEF  = _BG_BADGE_SCALE_DEF
-GridRenderer.BADGE_SCALE_STEP = _BG_BADGE_SCALE_STEP
-
-local function _clampBGBadgeScale(n)
-    return math.max(_BG_BADGE_SCALE_MIN, math.min(_BG_BADGE_SCALE_MAX, math.floor(n)))
-end
 
 function GridRenderer.getBadgeScalePct(pfx, id)
-    local key = pfx .. id .. "_badge_scale"
-    local n = tonumber(SUISettings:readSetting(key))
-    if n then return _clampBGBadgeScale(n) end
-
     -- One-shot migration from the shared legacy key — see doc comment
     -- above. Divide by the boost so the migrated value renders at the same
     -- size under the new formula (pct/100 * ADJUST * BOOST) as the legacy
     -- percent did under the old one (pct/100 * ADJUST).
-    local legacy = tonumber(SUISettings:readSetting(_BG_BADGE_SCALE_LEGACY_KEY))
-    if legacy then
-        local migrated = _clampBGBadgeScale(legacy / _BG_BADGE_NATIVE_BOOST)
-        SUISettings:saveSetting(key, migrated)
-        return migrated
+    local key = Config.badgeScaleKey(id, pfx)
+    if tonumber(SUISettings:readSetting(key)) == nil then
+        local legacy = tonumber(SUISettings:readSetting(_BG_BADGE_SCALE_LEGACY_KEY))
+        if legacy then Config.setScaleByKey(legacy / _BG_BADGE_NATIVE_BOOST, key) end
     end
-    return _BG_BADGE_SCALE_DEF
+    return Config.getScalePctByKey(key)
 end
 function GridRenderer.getBadgeScale(pfx, id)
     return GridRenderer.getBadgeScalePct(pfx, id) / 100 * SUIStyle.BADGE_SIZE_ADJUST * _BG_BADGE_NATIVE_BOOST
 end
 function GridRenderer.setBadgeScale(pfx, id, pct)
-    SUISettings:saveSetting(pfx .. id .. "_badge_scale", _clampBGBadgeScale(pct))
+    Config.setBadgeScale(pct, id, pfx)
 end
 
 -- Fixed +20% base-size boost for the "corner badge" family (progress
@@ -2079,18 +2062,13 @@ function GridRenderer.makeModule(spec)
             -- "Follow Library"; size (below) is independent from every
             -- other module and from the Library grid's own badge size —
             -- see GridRenderer.getBadgeScale's doc comment for why.
-            pb_group[#pb_group + 1] = Config.makeScaleItem{
-                text_func     = function() return _lc("Badge Size") end,
-                separator     = true,
-                title         = _lc("Badge Size"),
-                info          = _lc("Scale for this module's corner badges (progress, pages, series, new book)."),
-                get           = function() return GridRenderer.getBadgeScalePct(pfx, id) end,
-                set           = function(v) GridRenderer.setBadgeScale(pfx, id, v) end,
-                value_min     = GridRenderer.BADGE_SCALE_MIN,
-                value_max     = GridRenderer.BADGE_SCALE_MAX,
-                value_step    = GridRenderer.BADGE_SCALE_STEP,
-                default_value = GridRenderer.BADGE_SCALE_DEF,
-                refresh       = refresh,
+            pb_group[#pb_group + 1] = Config.makeBadgeSizeItem{
+                separator = true,
+                info      = _lc("Scale for this module's corner badges (progress, pages, series, new book)."),
+                get       = function() return GridRenderer.getBadgeScalePct(pfx, id) end,
+                set       = function(v) GridRenderer.setBadgeScale(pfx, id, v) end,
+                refresh   = refresh,
+                _lc       = _lc,
             }
             if not _toggleLocked(badges.pages) then
                 local pages_group = {

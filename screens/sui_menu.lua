@@ -3035,33 +3035,18 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                 text         = _("Badges"),
                                 sub_item_table = {
                                     -- ── Size ──────────────────────────────────────────────
-                                    {
-                                        text_func      = function() return _("Size") end,
-                                        value_func     = function() return FC.getBadgeScalePct() .. "%" end,
-                                        keep_menu_open = true,
-                                        separator      = true,
-                                        callback = function()
-                                            local SpinWidget = require("ui/widget/spinwidget")
-                                            local UIM = ctx_menu and ctx_menu.UIManager or UIManager
-                                            UIM:show(SpinWidget:new{
-                                                title_text    = _("Badge Size"),
-                                                info_text     = _("Scale for the library badges (progress, pages, etc.).\n100% is the default size."),
-                                                value         = FC.getBadgeScalePct(),
-                                                value_min     = FC.FC_BADGE_SCALE_MIN,
-                                                value_max     = FC.FC_BADGE_SCALE_MAX,
-                                                value_step    = FC.FC_BADGE_SCALE_STEP,
-                                                unit          = "%",
-                                                ok_text       = _("Apply"),
-                                                cancel_text   = _("Cancel"),
-                                                default_value = FC.FC_BADGE_SCALE_DEF,
-                                                callback      = function(spin)
-                                                    FC.setBadgeScale(spin.value)
-                                                    FC.invalidateCache()
-                                                    _refreshFC()
-                                                end,
-                                            })
+                                    Config.makeBadgeSizeItem{
+                                        text_func = function() return _("Size") end,
+                                        separator = true,
+                                        info      = _("Scale for the library badges (progress, pages, etc.).\n100% is the default size."),
+                                        get       = FC.getBadgeScalePct,
+                                        set       = FC.setBadgeScale,
+                                        refresh   = function()
+                                            FC.invalidateCache()
+                                            _refreshFC()
                                         end,
                                     },
+
                                     -- ── Number of Books in Folder ─────────────────────────
                                     {
                                         text_func  = function() return _("Number of Books in Folder") end,

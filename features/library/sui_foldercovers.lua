@@ -10,6 +10,7 @@ local lfs         = require("libs/libkoreader-lfs")
 local logger      = require("logger")
 local SUISettings = require("infra/sui_store")
 local SUIStyle    = require("features/sui_style")
+local Config      = require("infra/sui_config")
 
 -- Cached at module level so require() hits the cache on every cell render.
 local BD              = require("ui/bidi")
@@ -270,26 +271,9 @@ function M.getLabelScale()    return M.getLabelScalePct() / 100         end
 function M.setLabelScale(pct) SUISettings:saveSetting(SK.label_scale, _clampFCScale(pct)) end
 
 -- Folder covers badge scale
-local _FC_BADGE_SCALE_MIN  = 50
-local _FC_BADGE_SCALE_MAX  = 200
-local _FC_BADGE_SCALE_DEF  = 100
-local _FC_BADGE_SCALE_STEP = 10
-M.FC_BADGE_SCALE_MIN  = _FC_BADGE_SCALE_MIN
-M.FC_BADGE_SCALE_MAX  = _FC_BADGE_SCALE_MAX
-M.FC_BADGE_SCALE_DEF  = _FC_BADGE_SCALE_DEF
-M.FC_BADGE_SCALE_STEP = _FC_BADGE_SCALE_STEP
-
-local function _clampFCBadgeScale(n)
-    return math.max(_FC_BADGE_SCALE_MIN, math.min(_FC_BADGE_SCALE_MAX, math.floor(n)))
-end
-
-function M.getBadgeScalePct()
-    local n = tonumber(SUISettings:readSetting(SK.badge_scale))
-    if not n then return _FC_BADGE_SCALE_DEF end
-    return _clampFCBadgeScale(n)
-end
+function M.getBadgeScalePct() return Config.getScalePctByKey(SK.badge_scale) end
 function M.getBadgeScale()    return M.getBadgeScalePct() / 100 * SUIStyle.BADGE_SIZE_ADJUST end
-function M.setBadgeScale(pct) SUISettings:saveSetting(SK.badge_scale, _clampFCBadgeScale(pct)) end
+function M.setBadgeScale(pct) Config.setScaleByKey(pct, SK.badge_scale) end
 
 -- Menu items for the progress badge sub-menu (banner / native / none).
 -- Triggers a full redraw on change so the mosaic updates immediately.
@@ -1644,7 +1628,6 @@ function M.install()
             if custom then actual_icon_path = custom end
         end)
 
-        local Config    = require("infra/sui_config")
         local nerd_char = Config.nerdIconChar(actual_icon_path)
 
         if nerd_char then

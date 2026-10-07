@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: simpleui\n"
-"POT-Creation-Date: 2026-10-06 19:17+0000\n"
+"POT-Creation-Date: 2026-10-06 23:12+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -26,19 +26,19 @@ msgstr "  Đặt mục tiêu  (%s)"
 msgid "  Set Goal  (disabled)"
 msgstr "  Đặt mục tiêu  (đã tắt)"
 
-#: modules/module_coverdeck.lua:110 modules/module_currently.lua:371
+#: modules/module_coverdeck.lua:110 modules/module_currently.lua:381
 msgid " et al."
 msgstr " và cộng sự"
 
-#: engines/sui_book_grid.lua:511 features/library/sui_foldercovers.lua:1249
+#: engines/sui_book_grid.lua:494 features/library/sui_foldercovers.lua:1233
 msgid " p."
 msgstr " tr."
 
-#: engines/sui_book_grid.lua:1618
+#: engines/sui_book_grid.lua:1601
 msgid "% Read (ascending)"
 msgstr "% đã đọc (tăng dần)"
 
-#: engines/sui_book_grid.lua:1619
+#: engines/sui_book_grid.lua:1602
 msgid "% Read (descending)"
 msgstr "% đã đọc (giảm dần)"
 
@@ -46,7 +46,7 @@ msgstr "% đã đọc (giảm dần)"
 msgid "%1 weeks"
 msgstr "%1 tuần"
 
-#: engines/sui_book_grid.lua:1950 engines/sui_book_grid.lua:1955
+#: engines/sui_book_grid.lua:1933 engines/sui_book_grid.lua:1938
 msgid "%1 × %2"
 msgstr "%1 × %2"
 
@@ -68,13 +68,13 @@ msgstr "%d phút/ngày"
 msgid "%d settings"
 msgstr "Cài đặt"
 
-#: engines/sui_book_grid.lua:918
+#: engines/sui_book_grid.lua:901
 msgid "%d%%"
 msgstr "%d%%"
 
-#: engines/sui_book_grid.lua:977 engines/sui_book_grid.lua:989
-#: modules/module_coverdeck.lua:1031 modules/module_currently.lua:895
-#: modules/module_currently.lua:904 modules/module_new_books.lua:138
+#: engines/sui_book_grid.lua:960 engines/sui_book_grid.lua:972
+#: modules/module_coverdeck.lua:1030 modules/module_currently.lua:905
+#: modules/module_currently.lua:914 modules/module_new_books.lua:138
 msgid "%d%% Read"
 msgstr "Đã đọc %d%%"
 
@@ -82,19 +82,19 @@ msgstr "Đã đọc %d%%"
 msgid "%d/%d days · %d/%d min to next freeze"
 msgstr "%d/%d ngày · %d/%d phút đến lượt đóng băng tiếp theo"
 
-#: modules/module_currently.lua:1000
+#: modules/module_currently.lua:1010
 msgid "%s left"
 msgstr "%s còn lại"
 
-#: modules/module_coverdeck.lua:1036 modules/module_currently.lua:938
-#: modules/module_currently.lua:939 modules/module_currently.lua:998
-#: modules/module_currently.lua:1012 modules/module_reading_goals.lua:865
+#: modules/module_coverdeck.lua:1035 modules/module_currently.lua:948
+#: modules/module_currently.lua:949 modules/module_currently.lua:1008
+#: modules/module_currently.lua:1022 modules/module_reading_goals.lua:865
 #: modules/module_reading_goals.lua:885
 msgid "%s read"
 msgstr "Đã đọc %s"
 
-#: modules/module_coverdeck.lua:1042 modules/module_currently.lua:961
-#: modules/module_currently.lua:965
+#: modules/module_coverdeck.lua:1041 modules/module_currently.lua:971
+#: modules/module_currently.lua:975
 msgid "%s remaining"
 msgstr "Còn lại %s"
 
@@ -118,12 +118,12 @@ msgid ""
 "(back, search, menu, …)."
 msgstr ""
 
-#: infra/sui_config.lua:1371
+#: infra/sui_config.lua:1386
 msgid ""
 "0% transparent, 100% solid. Values in between add a scrim over the wallpaper."
 msgstr ""
 
-#: modules/module_collections.lua:1350
+#: modules/module_collections.lua:1341
 msgid "4-Cover Grid"
 msgstr "Lưới 4 bìa"
 
@@ -140,11 +140,11 @@ msgstr ""
 "— hôm qua không đủ điều kiện."
 
 #: features/sui_presets.lua:946 features/sui_presets.lua:1032
-#: screens/sui_menu.lua:4202 screens/sui_menu.lua:4287
+#: screens/sui_menu.lua:4187 screens/sui_menu.lua:4272
 msgid "A preset named \"%s\" already exists."
 msgstr "Thiết lập có tên \"%s\" đã tồn tại."
 
-#: features/sui_presets.lua:887 screens/sui_menu.lua:4148
+#: features/sui_presets.lua:887 screens/sui_menu.lua:4133
 msgid ""
 "A preset named \"%s\" already exists.\n"
 "Overwrite it?"
@@ -162,7 +162,7 @@ msgstr ""
 "\n"
 "Khởi động lại ngay?"
 
-#: screens/sui_menu.lua:4470
+#: screens/sui_menu.lua:4455
 msgid ""
 "A restart is required to apply the new text size everywhere.\n"
 "\n"
@@ -180,7 +180,7 @@ msgstr ""
 msgid "ALL TIME"
 msgstr "TOÀN THỜI GIAN"
 
-#: screens/sui_menu.lua:4719 screens/sui_settings_window.lua:387
+#: screens/sui_menu.lua:4704 screens/sui_settings_window.lua:387
 #: screens/sui_settings_window.lua:1108
 msgid "About"
 msgstr "Giới thiệu"
@@ -220,9 +220,9 @@ msgstr "Thêm nút"
 
 #: engines/sui_screen_engine.lua:2172 engines/sui_window.lua:869
 #: modules/module_action_list.lua:411 modules/module_action_list.lua:441
-#: modules/module_coverdeck.lua:1477 modules/module_coverdeck.lua:1499
-#: modules/module_coverdeck.lua:1614 modules/module_coverdeck.lua:1632
-#: modules/module_currently.lua:1698 modules/module_currently.lua:1745
+#: modules/module_coverdeck.lua:1476 modules/module_coverdeck.lua:1498
+#: modules/module_coverdeck.lua:1613 modules/module_coverdeck.lua:1631
+#: modules/module_currently.lua:1706 modules/module_currently.lua:1753
 #: modules/module_quick_actions.lua:479 modules/module_quick_actions.lua:509
 #: modules/module_reading_goals.lua:1393 modules/module_reading_goals.lua:1422
 #: modules/module_reading_stats.lua:811 modules/module_reading_stats.lua:840
@@ -307,7 +307,7 @@ msgid "Annual Reading Goal"
 msgstr "Mục tiêu đọc năm"
 
 #: features/sui_module_chrome.lua:235 features/sui_module_chrome.lua:238
-#: features/sui_module_chrome.lua:282 infra/sui_config.lua:1207
+#: features/sui_module_chrome.lua:282 infra/sui_config.lua:1205
 #: modules/module_heatmap.lua:358 modules/module_reading_goals.lua:1529
 #: modules/module_reading_goals.lua:1641 screens/sui_menu.lua:1888
 #: screens/sui_menu.lua:1891
@@ -319,13 +319,12 @@ msgstr "Giao diện"
 msgid "Appearance & Style"
 msgstr "Giao diện"
 
-#: infra/sui_config.lua:1328 infra/sui_config.lua:1380
-#: infra/sui_config.lua:1414 infra/sui_config.lua:1529
-#: infra/sui_config.lua:1602 modules/module_clock.lua:1264
+#: infra/sui_config.lua:1326 infra/sui_config.lua:1395
+#: infra/sui_config.lua:1429 infra/sui_config.lua:1544
+#: infra/sui_config.lua:1617 modules/module_clock.lua:1264
 #: screens/sui_menu.lua:1041 screens/sui_menu.lua:1349
 #: screens/sui_menu.lua:2606 screens/sui_menu.lua:2638
-#: screens/sui_menu.lua:3054 screens/sui_menu.lua:3415
-#: screens/sui_menu.lua:4464
+#: screens/sui_menu.lua:3400 screens/sui_menu.lua:4449
 msgid "Apply"
 msgstr "Áp dụng"
 
@@ -364,8 +363,8 @@ msgid "Arrange Collection"
 msgstr "Sắp xếp bộ sưu tập"
 
 #: engines/sui_screen_engine.lua:2171 modules/module_action_list.lua:315
-#: modules/module_coverdeck.lua:1554 modules/module_coverdeck.lua:1560
-#: modules/module_currently.lua:1571 modules/module_currently.lua:1614
+#: modules/module_coverdeck.lua:1553 modules/module_coverdeck.lua:1559
+#: modules/module_currently.lua:1579 modules/module_currently.lua:1622
 #: modules/module_quick_actions.lua:377 screens/sui_bottombar.lua:938
 #: screens/sui_menu.lua:694 screens/sui_menu.lua:761 screens/sui_menu.lua:768
 #: screens/sui_menu.lua:2051 screens/sui_quicksettings_bar.lua:991
@@ -382,7 +381,7 @@ msgstr "Sắp xếp cài đặt nhanh"
 msgid "Arrange Reading Stats"
 msgstr "Sắp xếp thống kê đọc"
 
-#: modules/module_coverdeck.lua:1575
+#: modules/module_coverdeck.lua:1574
 msgid "Arrange Statistics"
 msgstr "Sắp xếp thống kê"
 
@@ -406,17 +405,17 @@ msgstr "th8"
 msgid "August"
 msgstr "Tháng Tám"
 
-#: modules/module_coverdeck.lua:156 modules/module_coverdeck.lua:1643
-#: modules/module_currently.lua:304 modules/module_currently.lua:1976
+#: modules/module_coverdeck.lua:156 modules/module_coverdeck.lua:1642
+#: modules/module_currently.lua:314 modules/module_currently.lua:1984
 #: modules/module_quote.lua:1626 modules/module_quote.lua:1647
 msgid "Author"
 msgstr "Tác giả"
 
-#: engines/sui_book_grid.lua:1617 modules/module_library.lua:210
+#: engines/sui_book_grid.lua:1600 modules/module_library.lua:210
 msgid "Author (A–Z)"
 msgstr "Tác giả (A-Z)"
 
-#: screens/sui_menu.lua:4526
+#: screens/sui_menu.lua:4511
 msgid "Author: %s"
 msgstr "Tác giả: %s"
 
@@ -425,11 +424,11 @@ msgstr "Tác giả: %s"
 msgid "Authors"
 msgstr "Tác giả"
 
-#: modules/module_collections.lua:1359 screens/sui_menu.lua:3017
+#: modules/module_collections.lua:1350 screens/sui_menu.lua:3017
 msgid "Auto (Single ↔ 4-Cover Grid)"
 msgstr "Tự động (Đơn ↔ Lưới 4 bìa)"
 
-#: features/library/sui_group_actions.lua:51 modules/module_collections.lua:339
+#: features/library/sui_group_actions.lua:51 modules/module_collections.lua:330
 msgid "Auto (first book)"
 msgstr "Tự động (sách đầu tiên)"
 
@@ -437,7 +436,7 @@ msgstr "Tự động (sách đầu tiên)"
 msgid "Auto-rotate"
 msgstr "Tự động xoay"
 
-#: screens/sui_menu.lua:4531
+#: screens/sui_menu.lua:4516
 msgid "Automatic Update Check"
 msgstr "Kiểm tra cập nhật tự động"
 
@@ -473,7 +472,7 @@ msgstr "Nền đặc"
 msgid "Backup"
 msgstr "Quay lại"
 
-#: screens/sui_menu.lua:4553
+#: screens/sui_menu.lua:4538
 msgid "Backup & Restore"
 msgstr ""
 
@@ -504,15 +503,13 @@ msgid ""
 "Backup was made by a newer SimpleUI version. Please update this plugin first."
 msgstr ""
 
-#: engines/sui_book_grid.lua:2150 modules/module_collections.lua:1381
-#: screens/sui_menu.lua:3319 screens/sui_menu.lua:3328
-#: screens/sui_menu.lua:3334
+#: engines/sui_book_grid.lua:2128 modules/module_collections.lua:1372
+#: screens/sui_menu.lua:3304 screens/sui_menu.lua:3313
+#: screens/sui_menu.lua:3319
 msgid "Badge"
 msgstr "Huy hiệu"
 
-#: engines/sui_book_grid.lua:2083 engines/sui_book_grid.lua:2085
-#: modules/module_collections.lua:1425 modules/module_collections.lua:1428
-#: screens/sui_menu.lua:3047
+#: infra/sui_config.lua:1343 infra/sui_config.lua:1345
 msgid "Badge Size"
 msgstr "Kích thước huy hiệu"
 
@@ -520,16 +517,16 @@ msgstr "Kích thước huy hiệu"
 msgid "Badges"
 msgstr "Huy hiệu"
 
-#: features/library/sui_foldercovers.lua:309 screens/sui_menu.lua:3252
-#: screens/sui_menu.lua:3261 screens/sui_menu.lua:3267
+#: features/library/sui_foldercovers.lua:293 screens/sui_menu.lua:3237
+#: screens/sui_menu.lua:3246 screens/sui_menu.lua:3252
 msgid "Banner"
 msgstr "Biểu ngữ"
 
-#: engines/sui_book_grid.lua:2032
+#: engines/sui_book_grid.lua:2015
 msgid "Bar"
 msgstr "Thanh"
 
-#: engines/sui_book_grid.lua:2034
+#: engines/sui_book_grid.lua:2017
 msgid "Bar + Text"
 msgstr "Thanh + chữ"
 
@@ -547,7 +544,7 @@ msgstr "Kiểu thanh"
 msgid "Bare"
 msgstr "Trơn"
 
-#: features/sui_backup.lua:115 screens/sui_menu.lua:4681
+#: features/sui_backup.lua:115 screens/sui_menu.lua:4666
 #: screens/sui_settings_window.lua:352 screens/sui_settings_window.lua:1105
 msgid "Bars"
 msgstr "Thanh"
@@ -557,7 +554,7 @@ msgstr "Thanh"
 msgid "Battery"
 msgstr "Pin"
 
-#: infra/sui_config.lua:1213 screens/sui_menu.lua:2882
+#: infra/sui_config.lua:1211 screens/sui_menu.lua:2882
 #: screens/sui_settings_window.lua:440 screens/sui_settings_window.lua:1118
 msgid "Behaviour"
 msgstr "Hành vi"
@@ -591,7 +588,7 @@ msgstr "Thư mục"
 msgid "Book Info"
 msgstr "Thông tin sách"
 
-#: infra/sui_config.lua:1728
+#: infra/sui_config.lua:1743
 msgid "Book Menu"
 msgstr "Menu sách"
 
@@ -627,9 +624,9 @@ msgstr "Sách"
 msgid "Books to read in %s:"
 msgstr "Sách cần đọc trong %s:"
 
-#: modules/module_collections.lua:1402 screens/sui_menu.lua:3070
-#: screens/sui_menu.lua:3077 screens/sui_menu.lua:3092
-#: screens/sui_menu.lua:3483 screens/sui_menu.lua:3502
+#: modules/module_collections.lua:1393 screens/sui_menu.lua:3055
+#: screens/sui_menu.lua:3062 screens/sui_menu.lua:3077
+#: screens/sui_menu.lua:3468 screens/sui_menu.lua:3487
 msgid "Bottom"
 msgstr "Dưới"
 
@@ -695,7 +692,7 @@ msgid "Browse library"
 msgstr "Duyệt thư viện"
 
 #: features/sui_quickactions.lua:2222 screens/sui_menu.lua:2391
-#: screens/sui_menu.lua:3914
+#: screens/sui_menu.lua:3899
 #, fuzzy
 msgid "Browse…"
 msgstr "Duyệt"
@@ -770,23 +767,22 @@ msgstr "Lịch"
 #: features/sui_quickactions.lua:2668 features/sui_quickactions.lua:2746
 #: features/sui_quickactions.lua:2770 features/sui_quickactions.lua:3082
 #: features/sui_quickactions.lua:3477 features/sui_style.lua:1329
-#: infra/sui_config.lua:1329 infra/sui_config.lua:1381
-#: infra/sui_config.lua:1415 infra/sui_config.lua:1530
-#: infra/sui_config.lua:1603 infra/sui_updater.lua:500
+#: infra/sui_config.lua:1327 infra/sui_config.lua:1396
+#: infra/sui_config.lua:1430 infra/sui_config.lua:1545
+#: infra/sui_config.lua:1618 infra/sui_updater.lua:500
 #: infra/sui_updater.lua:517 modules/module_clock.lua:1265
-#: modules/module_collections.lua:365 modules/module_quote.lua:1342
+#: modules/module_collections.lua:356 modules/module_quote.lua:1342
 #: modules/module_reading_goals.lua:761 screens/sui_menu.lua:650
 #: screens/sui_menu.lua:912 screens/sui_menu.lua:1042 screens/sui_menu.lua:1350
 #: screens/sui_menu.lua:2607 screens/sui_menu.lua:2639
-#: screens/sui_menu.lua:3055 screens/sui_menu.lua:3416
-#: screens/sui_menu.lua:4122 screens/sui_menu.lua:4150
-#: screens/sui_menu.lua:4179 screens/sui_menu.lua:4196
-#: screens/sui_menu.lua:4222 screens/sui_menu.lua:4263
-#: screens/sui_menu.lua:4281 screens/sui_menu.lua:4308
-#: screens/sui_menu.lua:4465 screens/sui_menu.lua:4570
-#: screens/sui_settings_window.lua:509 screens/sui_settings_window.lua:1196
-#: screens/sui_stats_windows.lua:649 screens/sui_stats_windows.lua:772
-#: screens/sui_titlebar.lua:1038
+#: screens/sui_menu.lua:3401 screens/sui_menu.lua:4107
+#: screens/sui_menu.lua:4135 screens/sui_menu.lua:4164
+#: screens/sui_menu.lua:4181 screens/sui_menu.lua:4207
+#: screens/sui_menu.lua:4248 screens/sui_menu.lua:4266
+#: screens/sui_menu.lua:4293 screens/sui_menu.lua:4450
+#: screens/sui_menu.lua:4555 screens/sui_settings_window.lua:509
+#: screens/sui_settings_window.lua:1196 screens/sui_stats_windows.lua:649
+#: screens/sui_stats_windows.lua:772 screens/sui_titlebar.lua:1038
 msgid "Cancel"
 msgstr "Hủy bỏ"
 
@@ -803,12 +799,12 @@ msgstr "Thẻ"
 #: modules/module_quote.lua:124 modules/module_quote.lua:1609
 #: modules/module_reading_goals.lua:143 modules/module_reading_goals.lua:1595
 #: modules/module_reading_stats.lua:113 modules/module_reading_stats.lua:918
-#: screens/sui_menu.lua:710 screens/sui_menu.lua:942 screens/sui_menu.lua:3482
-#: screens/sui_menu.lua:3495
+#: screens/sui_menu.lua:710 screens/sui_menu.lua:942 screens/sui_menu.lua:3467
+#: screens/sui_menu.lua:3480
 msgid "Center"
 msgstr "Giữa"
 
-#: screens/sui_menu.lua:4542
+#: screens/sui_menu.lua:4527
 msgid "Check for Updates"
 msgstr "Kiểm tra cập nhật"
 
@@ -832,7 +828,7 @@ msgstr ""
 msgid "Choose icon"
 msgstr ""
 
-#: screens/sui_menu.lua:3924
+#: screens/sui_menu.lua:3909
 msgid "Choose icon pack"
 msgstr ""
 
@@ -875,7 +871,7 @@ msgstr "Mã ký tự ngoài phạm vi của Unicode (0–10FFFF)."
 msgid "Collection"
 msgstr "Bộ sưu tập"
 
-#: modules/module_collections.lua:1490
+#: modules/module_collections.lua:1476
 msgid "Collection Menu"
 msgstr "Menu bộ sưu tập"
 
@@ -887,7 +883,7 @@ msgstr "Bộ sưu tập \"%1\" đã tạo với %2 cuốn sách."
 msgid "Collection already exists: %1"
 msgstr "Bộ sưu tập đã tồn tại: %1"
 
-#: modules/module_collections.lua:326 modules/module_collections.lua:332
+#: modules/module_collections.lua:317 modules/module_collections.lua:323
 msgid "Collection is empty."
 msgstr "Bộ sưu tập trống."
 
@@ -905,10 +901,10 @@ msgstr "Bộ sưu tập: (không có)"
 
 #: features/sui_quickactions.lua:515 features/sui_quickactions.lua:751
 #: features/sui_quickactions.lua:2283 infra/sui_config.lua:119
-#: modules/module_collections.lua:1191 modules/module_collections.lua:1210
-#: modules/module_collections.lua:1219 modules/module_collections.lua:1272
-#: modules/module_collections.lua:1480 modules/module_collections.lua:1481
-#: modules/module_coverdeck.lua:1401
+#: modules/module_collections.lua:1182 modules/module_collections.lua:1201
+#: modules/module_collections.lua:1210 modules/module_collections.lua:1263
+#: modules/module_collections.lua:1466 modules/module_collections.lua:1467
+#: modules/module_coverdeck.lua:1400
 msgid "Collections"
 msgstr "Bộ sưu tập"
 
@@ -924,21 +920,21 @@ msgstr "Bộ sưu tập không khả dụng."
 msgid "Collections: Back Button"
 msgstr "Bộ sưu tập: Nút quay lại"
 
-#: screens/sui_menu.lua:3115 screens/sui_menu.lua:3169
-#: screens/sui_menu.lua:3223 screens/sui_menu.lua:3290
-#: screens/sui_menu.lua:3357 screens/sui_menu.lua:3511
+#: screens/sui_menu.lua:3100 screens/sui_menu.lua:3154
+#: screens/sui_menu.lua:3208 screens/sui_menu.lua:3275
+#: screens/sui_menu.lua:3342 screens/sui_menu.lua:3496
 msgid "Color"
 msgstr "Màu sắc"
 
-#: infra/sui_config.lua:1587 infra/sui_config.lua:1595
+#: infra/sui_config.lua:1602 infra/sui_config.lua:1610
 msgid "Column Width (Bento Grid)"
 msgstr ""
 
-#: engines/sui_book_grid.lua:1961
+#: engines/sui_book_grid.lua:1944
 msgid "Columns"
 msgstr "Cột"
 
-#: modules/module_currently.lua:2028 modules/module_reading_goals.lua:1541
+#: modules/module_currently.lua:2044 modules/module_reading_goals.lua:1541
 #: screens/sui_menu.lua:1902
 msgid "Compact"
 msgstr "Nhỏ gọn"
@@ -947,7 +943,7 @@ msgstr "Nhỏ gọn"
 msgid "Confirm"
 msgstr "Xác nhận"
 
-#: infra/sui_config.lua:1188
+#: infra/sui_config.lua:1186
 #, fuzzy
 msgid "Content"
 msgstr "Tiếp tục"
@@ -962,7 +958,7 @@ msgstr "Tiếp tục"
 msgid "Copy this file somewhere safe (e.g. over USB)."
 msgstr ""
 
-#: engines/sui_book_grid.lua:2036
+#: engines/sui_book_grid.lua:2019
 msgid "Corner Badge"
 msgstr "Huy hiệu góc"
 
@@ -995,7 +991,7 @@ msgid "Could not write backup file"
 msgstr "Không thể xác định thư mục gói"
 
 #: features/sui_presets.lua:175 features/sui_presets.lua:193
-#: modules/module_coverdeck.lua:575
+#: modules/module_coverdeck.lua:574
 msgid "Cover Deck"
 msgstr "Bộ bìa"
 
@@ -1003,21 +999,21 @@ msgstr "Bộ bìa"
 msgid "Cover Settings"
 msgstr "Cài đặt bìa"
 
-#: engines/sui_book_grid.lua:1914 engines/sui_book_grid.lua:1916
-#: modules/module_coverdeck.lua:1305 modules/module_coverdeck.lua:1306
-#: modules/module_currently.lua:1487 modules/module_currently.lua:1488
+#: engines/sui_book_grid.lua:1897 engines/sui_book_grid.lua:1899
+#: modules/module_coverdeck.lua:1304 modules/module_coverdeck.lua:1305
+#: modules/module_currently.lua:1495 modules/module_currently.lua:1496
 msgid "Cover Size"
 msgstr "Kích thước bìa"
 
-#: modules/module_currently.lua:1502 modules/module_currently.lua:1503
+#: modules/module_currently.lua:1510 modules/module_currently.lua:1511
 msgid "Cover Spacing"
 msgstr "Khoảng cách bìa"
 
-#: modules/module_collections.lua:1336
+#: modules/module_collections.lua:1327
 msgid "Cover Style"
 msgstr "Kiểu bìa"
 
-#: modules/module_collections.lua:369
+#: modules/module_collections.lua:360
 msgid "Cover for \"%s\""
 msgstr "Bìa cho \"%s\""
 
@@ -1043,8 +1039,8 @@ msgstr "Tạo thao tác nhanh"
 msgid "Create Screen"
 msgstr "Tạo màn hình"
 
-#: features/library/sui_foldercovers.lua:730
-#: features/library/sui_foldercovers.lua:745
+#: features/library/sui_foldercovers.lua:714
+#: features/library/sui_foldercovers.lua:729
 #: features/library/sui_library_browse.lua:794
 #: features/library/sui_series_grouping.lua:374
 msgid "Create collection"
@@ -1064,13 +1060,13 @@ msgid "Current streak"
 msgstr "Chuỗi hiện tại"
 
 #: features/sui_presets.lua:143 features/sui_presets.lua:155
-#: features/sui_presets.lua:219 modules/module_currently.lua:379
-#: modules/module_currently.lua:380 modules/module_currently.lua:548
-#: modules/module_currently.lua:2073
+#: features/sui_presets.lua:219 modules/module_currently.lua:389
+#: modules/module_currently.lua:390 modules/module_currently.lua:558
+#: modules/module_currently.lua:2089
 msgid "Currently Reading"
 msgstr "Đang đọc"
 
-#: infra/sui_config.lua:2563
+#: infra/sui_config.lua:2578
 msgid "Custom"
 msgstr "Tùy chỉnh"
 
@@ -1149,14 +1145,14 @@ msgstr "Trung bình hàng ngày — Trang"
 msgid "Daily avg — Time"
 msgstr "Trung bình hàng ngày — Thời gian"
 
-#: engines/sui_book_grid.lua:2007 modules/module_collections.lua:1411
-#: modules/module_coverdeck.lua:1675 modules/module_currently.lua:2002
-#: screens/sui_menu.lua:3117 screens/sui_menu.lua:3122
-#: screens/sui_menu.lua:3171 screens/sui_menu.lua:3176
-#: screens/sui_menu.lua:3225 screens/sui_menu.lua:3230
-#: screens/sui_menu.lua:3292 screens/sui_menu.lua:3297
-#: screens/sui_menu.lua:3359 screens/sui_menu.lua:3364
-#: screens/sui_menu.lua:3513 screens/sui_menu.lua:3525
+#: engines/sui_book_grid.lua:1990 modules/module_collections.lua:1402
+#: modules/module_coverdeck.lua:1674 modules/module_currently.lua:2010
+#: screens/sui_menu.lua:3102 screens/sui_menu.lua:3107
+#: screens/sui_menu.lua:3156 screens/sui_menu.lua:3161
+#: screens/sui_menu.lua:3210 screens/sui_menu.lua:3215
+#: screens/sui_menu.lua:3277 screens/sui_menu.lua:3282
+#: screens/sui_menu.lua:3344 screens/sui_menu.lua:3349
+#: screens/sui_menu.lua:3498 screens/sui_menu.lua:3510
 msgid "Dark"
 msgstr "Tối"
 
@@ -1194,7 +1190,7 @@ msgstr "Ngày bắt đầu"
 msgid "Days"
 msgstr "Ngày"
 
-#: modules/module_coverdeck.lua:144 modules/module_currently.lua:309
+#: modules/module_coverdeck.lua:144 modules/module_currently.lua:319
 msgid "Days of reading"
 msgstr "Ngày đọc sách"
 
@@ -1208,8 +1204,8 @@ msgstr "Tháng Mười Hai"
 
 #: features/sui_quickactions.lua:2200 features/sui_quickactions.lua:2486
 #: features/sui_style.lua:2072 features/sui_style.lua:2119
-#: infra/sui_config.lua:1035 modules/module_currently.lua:1526
-#: modules/module_currently.lua:2026 modules/module_reading_goals.lua:1533
+#: infra/sui_config.lua:1033 modules/module_currently.lua:1534
+#: modules/module_currently.lua:2042 modules/module_reading_goals.lua:1533
 #: screens/sui_menu.lua:459 screens/sui_menu.lua:588 screens/sui_menu.lua:1296
 #: screens/sui_menu.lua:1903 screens/sui_titlebar.lua:1034
 msgid "Default"
@@ -1231,7 +1227,7 @@ msgstr "Mặc định (Hệ thống)"
 msgid "Default Quotes"
 msgstr "Trích dẫn mặc định"
 
-#: infra/sui_config.lua:1374
+#: infra/sui_config.lua:1389
 #, fuzzy
 msgid "Default: %1"
 msgstr "Mặc định"
@@ -1256,14 +1252,14 @@ msgstr "Mặc định: Hệ thống"
 #: features/library/sui_book_hold_dialog.lua:151 features/sui_presets.lua:960
 #: features/sui_presets.lua:963 features/sui_presets.lua:1003
 #: features/sui_quickactions.lua:1644 features/sui_quickactions.lua:3076
-#: features/sui_quickactions.lua:3081 screens/sui_menu.lua:4218
-#: screens/sui_menu.lua:4221 screens/sui_menu.lua:4262
+#: features/sui_quickactions.lua:3081 screens/sui_menu.lua:4203
+#: screens/sui_menu.lua:4206 screens/sui_menu.lua:4247
 #: screens/sui_settings_window.lua:536 screens/sui_settings_window.lua:581
 #: screens/sui_settings_window.lua:711
 msgid "Delete"
 msgstr "Xóa"
 
-#: screens/sui_menu.lua:4569
+#: screens/sui_menu.lua:4554
 msgid "Delete Settings"
 msgstr "Xóa cài đặt"
 
@@ -1273,7 +1269,7 @@ msgstr ""
 "Xóa \"%s\"? Thao tác này sẽ xóa bố cục, mô-đun và thao tác nhanh của nó."
 
 #: features/sui_presets.lua:962 features/sui_presets.lua:1002
-#: screens/sui_menu.lua:4220 screens/sui_menu.lua:4261
+#: screens/sui_menu.lua:4205 screens/sui_menu.lua:4246
 msgid "Delete preset \"%s\"?"
 msgstr "Xóa thiết lập \"%s\"?"
 
@@ -1281,7 +1277,7 @@ msgstr "Xóa thiết lập \"%s\"?"
 msgid "Delete quick action \"%s\"?"
 msgstr "Xóa thao tác nhanh \"%s\"?"
 
-#: modules/module_currently.lua:306 modules/module_currently.lua:1978
+#: modules/module_currently.lua:316 modules/module_currently.lua:1986
 msgid "Description"
 msgstr "Mô tả"
 
@@ -1309,7 +1305,7 @@ msgstr "Kỹ thuật số"
 msgid "Disable \"Lock Scale\" first to set a custom label scale."
 msgstr "Tắt \"Khóa tỷ lệ\" trước để đặt tỷ lệ nhãn tùy chỉnh."
 
-#: infra/sui_config.lua:1314
+#: infra/sui_config.lua:1312
 msgid "Disable \"Lock Scale\" first to set a per-module scale."
 msgstr "Tắt \"Khóa tỷ lệ\" trước để đặt tỷ lệ cho từng mô-đun."
 
@@ -1321,11 +1317,11 @@ msgstr "Sử dụng đĩa"
 msgid "Dispatcher not available."
 msgstr "Bộ điều phối không khả dụng."
 
-#: screens/sui_menu.lua:3683
+#: screens/sui_menu.lua:3668
 msgid "Display"
 msgstr "Hiển thị"
 
-#: screens/sui_menu.lua:4406
+#: screens/sui_menu.lua:4391
 #, fuzzy
 msgid "Don't Invert Colored Icons in Night Mode"
 msgstr "Đảo ngược trong chế độ đêm"
@@ -1354,7 +1350,7 @@ msgstr "Lỗi tải xuống: "
 msgid "Downloading Simple UI %s…"
 msgstr "Đang tải xuống Simple UI %s…"
 
-#: modules/module_currently.lua:1529
+#: modules/module_currently.lua:1537
 msgid "Dynamic"
 msgstr "Động"
 
@@ -1444,7 +1440,7 @@ msgstr ""
 "  /koreader/fonts/nerdfonts/symbols.ttf\n"
 "Để trống và nhấn Đồng ý để xóa biểu tượng."
 
-#: screens/sui_menu.lua:3985
+#: screens/sui_menu.lua:3970
 msgid "Error applying pack:"
 msgstr "Lỗi áp dụng gói:"
 
@@ -1456,7 +1452,7 @@ msgstr "Lỗi kiểm tra cập nhật."
 msgid "Error checking for updates: "
 msgstr "Lỗi kiểm tra cập nhật: "
 
-#: features/sui_presets.lua:1131 screens/sui_menu.lua:4390
+#: features/sui_presets.lua:1131 screens/sui_menu.lua:4375
 msgid "Error exporting preset: "
 msgstr "Lỗi xuất thiết lập: "
 
@@ -1464,7 +1460,7 @@ msgstr "Lỗi xuất thiết lập: "
 msgid "Error extracting zip: "
 msgstr "Lỗi giải nén zip: "
 
-#: features/sui_presets.lua:1105 screens/sui_menu.lua:4363
+#: features/sui_presets.lua:1105 screens/sui_menu.lua:4348
 msgid "Error importing preset: "
 msgstr "Lỗi nhập thiết lập: "
 
@@ -1472,7 +1468,7 @@ msgstr "Lỗi nhập thiết lập: "
 msgid "Error in Reading Goals: check crash.log"
 msgstr "Lỗi trong Mục tiêu đọc: kiểm tra crash.log"
 
-#: screens/sui_menu.lua:3903
+#: screens/sui_menu.lua:3888
 msgid "Error installing pack:"
 msgstr "Lỗi cài đặt gói:"
 
@@ -1497,7 +1493,7 @@ msgstr ""
 msgid "Export now…"
 msgstr ""
 
-#: features/sui_presets.lua:1119 screens/sui_menu.lua:4377
+#: features/sui_presets.lua:1119 screens/sui_menu.lua:4362
 msgid "Export preset"
 msgstr "Xuất thiết lập"
 
@@ -1517,19 +1513,19 @@ msgstr "Lỗi trích xuất: "
 msgid "FREEZES"
 msgstr "ĐÓNG BĂNG"
 
-#: screens/sui_menu.lua:4562
+#: screens/sui_menu.lua:4547
 msgid "Factory Reset"
 msgstr "Đặt lại nhà máy"
 
-#: screens/sui_menu.lua:3392
+#: screens/sui_menu.lua:3377
 msgid "Fade Finished Books"
 msgstr "Làm mờ sách đã đọc xong"
 
-#: screens/sui_menu.lua:3408
+#: screens/sui_menu.lua:3393
 msgid "Fade Intensity"
 msgstr "Cường độ làm mờ"
 
-#: screens/sui_menu.lua:3409
+#: screens/sui_menu.lua:3394
 msgid ""
 "Fades finished book covers towards white.\n"
 "50% is the default."
@@ -1549,7 +1545,7 @@ msgstr ""
 "0% là mặc định (không làm sáng)."
 
 #: features/sui_quickactions.lua:849 features/sui_quickactions.lua:2282
-#: infra/sui_config.lua:124 modules/module_coverdeck.lua:1383
+#: infra/sui_config.lua:124 modules/module_coverdeck.lua:1382
 msgid "Favorites"
 msgstr "Yêu thích"
 
@@ -1614,7 +1610,7 @@ msgstr "Kích thước tệp (nhỏ nhất)"
 msgid "Filter by name…"
 msgstr ""
 
-#: screens/sui_menu.lua:3385
+#: screens/sui_menu.lua:3370
 msgid "Finished Books"
 msgstr "Sách đã đọc xong"
 
@@ -1627,7 +1623,7 @@ msgid "Fixed Height"
 msgstr "Chiều cao cố định"
 
 #: modules/module_quick_actions.lua:661 modules/module_reading_stats.lua:873
-#: screens/sui_menu.lua:4486 screens/sui_quicksettings_bar.lua:1327
+#: screens/sui_menu.lua:4471 screens/sui_quicksettings_bar.lua:1327
 msgid "Flat"
 msgstr "Phẳng"
 
@@ -1651,11 +1647,11 @@ msgstr "Bìa thư mục"
 msgid "Folder Covers: Empty Folder"
 msgstr "Bìa thư mục: Thư mục trống"
 
-#: screens/sui_menu.lua:3429
+#: screens/sui_menu.lua:3414
 msgid "Folder Name"
 msgstr "Tên thư mục"
 
-#: screens/sui_menu.lua:3538
+#: screens/sui_menu.lua:3523
 msgid "Folder Name Text Size"
 msgstr "Kích thước chữ tên thư mục"
 
@@ -1663,7 +1659,7 @@ msgstr "Kích thước chữ tên thư mục"
 msgid "Folder Shortcuts"
 msgstr "Phím tắt thư mục"
 
-#: features/library/sui_foldercovers.lua:647
+#: features/library/sui_foldercovers.lua:631
 #: features/library/sui_group_actions.lua:79
 #: features/library/sui_library_browse.lua:366
 #: features/library/sui_series_grouping.lua:91
@@ -1674,12 +1670,12 @@ msgstr "Bìa thư mục"
 msgid "Folder covers, browse modes, series grouping"
 msgstr ""
 
-#: engines/sui_book_grid.lua:2006 modules/module_coverdeck.lua:1674
-#: modules/module_currently.lua:2001
+#: engines/sui_book_grid.lua:1989 modules/module_coverdeck.lua:1673
+#: modules/module_currently.lua:2009
 msgid "Follow Library"
 msgstr "Theo thư viện"
 
-#: infra/sui_config.lua:1059 screens/sui_quicksettings_bar.lua:1250
+#: infra/sui_config.lua:1057 screens/sui_quicksettings_bar.lua:1250
 #, fuzzy
 msgid "Font"
 msgstr "Phông chữ giao diện"
@@ -1710,7 +1706,7 @@ msgstr "Mười bốn"
 msgid "Frame"
 msgstr "Khung"
 
-#: screens/sui_menu.lua:1308 screens/sui_menu.lua:4497
+#: screens/sui_menu.lua:1308 screens/sui_menu.lua:4482
 msgid "Framed"
 msgstr "Có khung"
 
@@ -1756,7 +1752,7 @@ msgstr "Cài đặt mô-đun"
 msgid "Gesture Only"
 msgstr "Chỉ dùng cử chỉ"
 
-#: screens/sui_menu.lua:4450 screens/sui_menu.lua:4457
+#: screens/sui_menu.lua:4435 screens/sui_menu.lua:4442
 msgid "Global Text Size"
 msgstr "Kích thước chữ toàn cục"
 
@@ -1764,7 +1760,7 @@ msgstr "Kích thước chữ toàn cục"
 msgid "Global custom actions & icons"
 msgstr "Thao tác và biểu tượng tùy chỉnh toàn cục"
 
-#: screens/sui_menu.lua:4458
+#: screens/sui_menu.lua:4443
 msgid ""
 "Global scale applied to all of KOReader's interface text — menus, dialogs, "
 "titles, and Simple UI. It does not change the book's reading font size, "
@@ -1801,7 +1797,7 @@ msgstr "Mục tiêu"
 msgid "Goals & Streaks"
 msgstr ""
 
-#: engines/sui_book_grid.lua:1948 engines/sui_book_grid.lua:1959
+#: engines/sui_book_grid.lua:1931 engines/sui_book_grid.lua:1942
 msgid "Grid size"
 msgstr "Kích thước lưới"
 
@@ -1821,7 +1817,7 @@ msgstr "Nhóm thao tác nhanh"
 msgid "Group: select actions"
 msgstr "Nhóm: chọn thao tác"
 
-#: modules/module_currently.lua:1537
+#: modules/module_currently.lua:1545
 msgid ""
 "Grows or shrinks the cover so its height always matches the text column, "
 "keeping the cover's proportions.\n"
@@ -1861,17 +1857,17 @@ msgstr ""
 "Chiều cao thanh trạng thái trên.\n"
 "100% là kích thước mặc định."
 
-#: modules/module_collections.lua:1384 screens/sui_menu.lua:480
-#: screens/sui_menu.lua:539 screens/sui_menu.lua:3069 screens/sui_menu.lua:3076
-#: screens/sui_menu.lua:3103 screens/sui_menu.lua:3143
-#: screens/sui_menu.lua:3149 screens/sui_menu.lua:3160
-#: screens/sui_menu.lua:3197 screens/sui_menu.lua:3203
-#: screens/sui_menu.lua:3214 screens/sui_menu.lua:3435
-#: screens/sui_menu.lua:3466
+#: modules/module_collections.lua:1375 screens/sui_menu.lua:480
+#: screens/sui_menu.lua:539 screens/sui_menu.lua:3054 screens/sui_menu.lua:3061
+#: screens/sui_menu.lua:3088 screens/sui_menu.lua:3128
+#: screens/sui_menu.lua:3134 screens/sui_menu.lua:3145
+#: screens/sui_menu.lua:3182 screens/sui_menu.lua:3188
+#: screens/sui_menu.lua:3199 screens/sui_menu.lua:3420
+#: screens/sui_menu.lua:3451
 msgid "Hidden"
 msgstr "Ẩn"
 
-#: modules/module_collections.lua:1373
+#: modules/module_collections.lua:1364
 msgid "Hide Book Spine"
 msgstr "Ẩn gáy sách"
 
@@ -1880,7 +1876,7 @@ msgstr "Ẩn gáy sách"
 msgid "Hide Currently Reading book"
 msgstr "Đang đọc"
 
-#: screens/sui_menu.lua:3640
+#: screens/sui_menu.lua:3625
 msgid "Hide Folder Book Spine"
 msgstr "Ẩn gáy sách thư mục"
 
@@ -1889,7 +1885,7 @@ msgstr "Ẩn gáy sách thư mục"
 msgid "Hide Label"
 msgstr "Ẩn nhãn"
 
-#: screens/sui_menu.lua:3634
+#: screens/sui_menu.lua:3619
 msgid "Hide Selection Underline"
 msgstr "Ẩn gạch chân lựa chọn"
 
@@ -1928,7 +1924,7 @@ msgstr "Trang chủ"
 
 #: engines/sui_screen_engine.lua:1375 features/sui_backup.lua:110
 #: infra/sui_patches.lua:1117 infra/sui_patches.lua:1127
-#: screens/sui_menu.lua:2548 screens/sui_menu.lua:4686
+#: screens/sui_menu.lua:2548 screens/sui_menu.lua:4671
 #: screens/sui_settings_window.lua:345 screens/sui_settings_window.lua:1103
 msgid "Home Screen"
 msgstr "Màn hình chính"
@@ -1958,7 +1954,7 @@ msgstr "Nút Home của PocketBook mở Màn hình chính"
 msgid "Homescreen not available."
 msgstr "Màn hình chính không khả dụng."
 
-#: modules/module_currently.lua:1504
+#: modules/module_currently.lua:1512
 msgid ""
 "Horizontal space between the cover and the text.\n"
 "100% is the default spacing."
@@ -1986,11 +1982,11 @@ msgstr ""
 msgid "Icon"
 msgstr "Biểu tượng"
 
-#: screens/sui_menu.lua:3823
+#: screens/sui_menu.lua:3808
 msgid "Icon Packs"
 msgstr "Gói biểu tượng"
 
-#: screens/sui_menu.lua:4000
+#: screens/sui_menu.lua:3985
 msgid "Icon Presets"
 msgstr "Thiết lập biểu tượng"
 
@@ -2007,7 +2003,7 @@ msgstr ""
 msgid "Icon: Default"
 msgstr "Biểu tượng: Mặc định"
 
-#: screens/sui_menu.lua:208 screens/sui_menu.lua:3769
+#: screens/sui_menu.lua:208 screens/sui_menu.lua:3754
 msgid "Icons"
 msgstr "Biểu tượng"
 
@@ -2015,7 +2011,7 @@ msgstr "Biểu tượng"
 msgid "Icons only"
 msgstr "Chỉ biểu tượng"
 
-#: screens/sui_menu.lua:4407
+#: screens/sui_menu.lua:4392
 msgid ""
 "Icons that contain color keep their original colors in night mode instead of "
 "being inverted.\n"
@@ -2039,7 +2035,7 @@ msgstr ""
 msgid "Import Backup…"
 msgstr ""
 
-#: features/sui_presets.lua:1082 screens/sui_menu.lua:4339
+#: features/sui_presets.lua:1082 screens/sui_menu.lua:4324
 msgid "Import preset"
 msgstr "Nhập thiết lập"
 
@@ -2047,11 +2043,11 @@ msgstr "Nhập thiết lập"
 msgid "Incompatible items have been disabled:"
 msgstr ""
 
-#: screens/sui_menu.lua:3908
+#: screens/sui_menu.lua:3893
 msgid "Install pack from ZIP"
 msgstr "Cài đặt gói từ ZIP"
 
-#: screens/sui_menu.lua:3401
+#: screens/sui_menu.lua:3386
 msgid "Intensity"
 msgstr "Cường độ"
 
@@ -2092,11 +2088,11 @@ msgstr "Đảo ngược trong chế độ đêm"
 msgid "Italic"
 msgstr ""
 
-#: infra/sui_config.lua:1183 modules/module_clock.lua:1089
+#: infra/sui_config.lua:1181 modules/module_clock.lua:1089
 #: modules/module_clock.lua:1098 modules/module_clock.lua:1136
-#: modules/module_coverdeck.lua:1551 modules/module_coverdeck.lua:1591
-#: modules/module_coverdeck.lua:1605 modules/module_currently.lua:1669
-#: modules/module_currently.lua:1674 modules/module_currently.lua:1697
+#: modules/module_coverdeck.lua:1550 modules/module_coverdeck.lua:1590
+#: modules/module_coverdeck.lua:1604 modules/module_currently.lua:1677
+#: modules/module_currently.lua:1682 modules/module_currently.lua:1705
 #: modules/module_reading_stats.lua:756 modules/module_reading_stats.lua:777
 #: modules/module_reading_stats.lua:799 screens/sui_menu.lua:858
 #: screens/sui_menu.lua:863 screens/sui_menu.lua:952 screens/sui_menu.lua:1112
@@ -2141,8 +2137,8 @@ msgstr "KOReader"
 msgid "LAST 7 DAYS"
 msgstr "7 NGÀY GẦN ĐÂY"
 
-#: infra/sui_config.lua:1122 modules/module_action_list.lua:510
-#: modules/module_action_list.lua:525 modules/module_collections.lua:1482
+#: infra/sui_config.lua:1120 modules/module_action_list.lua:510
+#: modules/module_action_list.lua:525 modules/module_collections.lua:1468
 #: modules/module_quick_actions.lua:598 modules/module_reading_goals.lua:1304
 #: modules/module_reading_stats.lua:854 modules/module_reading_stats.lua:1015
 #: screens/sui_quicksettings_bar.lua:1238
@@ -2182,14 +2178,14 @@ msgstr ""
 #: features/sui_backup.lua:1006 infra/sui_updater.lua:449
 #: screens/sui_menu.lua:444 screens/sui_menu.lua:848 screens/sui_menu.lua:1059
 #: screens/sui_menu.lua:1151 screens/sui_menu.lua:1367
-#: screens/sui_menu.lua:1868 screens/sui_menu.lua:3566
-#: screens/sui_menu.lua:3589 screens/sui_menu.lua:3611
-#: screens/sui_menu.lua:4472 screens/sui_menu.lua:4670
+#: screens/sui_menu.lua:1868 screens/sui_menu.lua:3551
+#: screens/sui_menu.lua:3574 screens/sui_menu.lua:3596
+#: screens/sui_menu.lua:4457 screens/sui_menu.lua:4655
 #: screens/sui_quicksettings_bar.lua:1134
 msgid "Later"
 msgstr "Sau đó"
 
-#: modules/module_currently.lua:1523 modules/module_reading_goals.lua:1531
+#: modules/module_currently.lua:1531 modules/module_reading_goals.lua:1531
 msgid "Layout"
 msgstr "Bố cục"
 
@@ -2222,7 +2218,7 @@ msgstr "Ít hơn"
 
 #: features/sui_backup.lua:120 features/sui_quickactions.lua:675
 #: infra/sui_config.lua:117 infra/sui_config.lua:444 screens/sui_menu.lua:2549
-#: screens/sui_menu.lua:4690 screens/sui_settings_window.lua:359
+#: screens/sui_menu.lua:4675 screens/sui_settings_window.lua:359
 #: screens/sui_settings_window.lua:1106 screens/sui_titlebar.lua:1120
 msgid "Library"
 msgstr "Thư viện"
@@ -2236,14 +2232,14 @@ msgstr "Nút thư viện"
 msgid "Library View"
 msgstr "Chế độ xem thư viện"
 
-#: engines/sui_book_grid.lua:2008 modules/module_collections.lua:1418
-#: modules/module_coverdeck.lua:1676 modules/module_currently.lua:2003
-#: screens/sui_menu.lua:3117 screens/sui_menu.lua:3129
-#: screens/sui_menu.lua:3171 screens/sui_menu.lua:3183
-#: screens/sui_menu.lua:3225 screens/sui_menu.lua:3237
-#: screens/sui_menu.lua:3292 screens/sui_menu.lua:3304
-#: screens/sui_menu.lua:3359 screens/sui_menu.lua:3371
-#: screens/sui_menu.lua:3513 screens/sui_menu.lua:3518
+#: engines/sui_book_grid.lua:1991 modules/module_collections.lua:1409
+#: modules/module_coverdeck.lua:1675 modules/module_currently.lua:2011
+#: screens/sui_menu.lua:3102 screens/sui_menu.lua:3114
+#: screens/sui_menu.lua:3156 screens/sui_menu.lua:3168
+#: screens/sui_menu.lua:3210 screens/sui_menu.lua:3222
+#: screens/sui_menu.lua:3277 screens/sui_menu.lua:3289
+#: screens/sui_menu.lua:3344 screens/sui_menu.lua:3356
+#: screens/sui_menu.lua:3498 screens/sui_menu.lua:3503
 msgid "Light"
 msgstr "Sáng"
 
@@ -2263,7 +2259,7 @@ msgstr "Đang tải thống kê…"
 msgid "Lock Scale"
 msgstr "Khóa tỷ lệ"
 
-#: infra/sui_config.lua:1730
+#: infra/sui_config.lua:1745
 msgid "Long Press"
 msgstr "Nhấn giữ"
 
@@ -2293,12 +2289,12 @@ msgstr ""
 "cả khi đọc lẫn khi duyệt tệp — thay vì hành vi Home mặc định của KOReader."
 
 #: features/sui_presets.lua:907 features/sui_presets.lua:983
-#: features/sui_presets.lua:988 screens/sui_menu.lua:4167
-#: screens/sui_menu.lua:4241 screens/sui_menu.lua:4246
+#: features/sui_presets.lua:988 screens/sui_menu.lua:4152
+#: screens/sui_menu.lua:4226 screens/sui_menu.lua:4231
 msgid "Manage presets"
 msgstr "Quản lý thiết lập"
 
-#: modules/module_collections.lua:525
+#: modules/module_collections.lua:516
 msgid "Manual order"
 msgstr "Thứ tự thủ công"
 
@@ -2363,11 +2359,11 @@ msgstr "Chế độ"
 msgid "Module Scale"
 msgstr "Tỷ lệ mô-đun"
 
-#: infra/sui_config.lua:1727 screens/sui_menu.lua:2301
+#: infra/sui_config.lua:1742 screens/sui_menu.lua:2301
 msgid "Module Settings"
 msgstr "Cài đặt mô-đun"
 
-#: screens/sui_menu.lua:3827
+#: screens/sui_menu.lua:3812
 msgid "Module unavailable"
 msgstr "Mô-đun không khả dụng"
 
@@ -2441,16 +2437,16 @@ msgstr "Thiết lập của tôi"
 msgid "Name"
 msgstr "Tên"
 
-#: modules/module_collections.lua:526
+#: modules/module_collections.lua:517
 msgid "Name (A–Z)"
 msgstr "Tên (A-Z)"
 
-#: modules/module_collections.lua:527
+#: modules/module_collections.lua:518
 msgid "Name (Z–A)"
 msgstr "Tên (Z-A)"
 
-#: features/library/sui_foldercovers.lua:314 screens/sui_menu.lua:3253
-#: screens/sui_menu.lua:3262 screens/sui_menu.lua:3274
+#: features/library/sui_foldercovers.lua:298 screens/sui_menu.lua:3238
+#: screens/sui_menu.lua:3247 screens/sui_menu.lua:3259
 msgid "Native"
 msgstr "Gốc"
 
@@ -2519,21 +2515,21 @@ msgstr "Trình quản lý mạng không khả dụng."
 msgid "Never"
 msgstr "Không bao giờ"
 
-#: engines/sui_book_grid.lua:568 features/library/sui_cover_widgets.lua:467
-#: features/library/sui_foldercovers.lua:1290
-#: features/library/sui_foldercovers.lua:1938 modules/module_new_books.lua:137
+#: engines/sui_book_grid.lua:551 features/library/sui_cover_widgets.lua:467
+#: features/library/sui_foldercovers.lua:1274
+#: features/library/sui_foldercovers.lua:1921 modules/module_new_books.lua:137
 msgid "New"
 msgstr "Mới"
 
-#: engines/sui_book_grid.lua:2163
+#: engines/sui_book_grid.lua:2141
 msgid "New Badge Color"
 msgstr "Màu huy hiệu sách mới"
 
-#: screens/sui_menu.lua:3316
+#: screens/sui_menu.lua:3301
 msgid "New Book"
 msgstr "Sách mới"
 
-#: engines/sui_book_grid.lua:2155 engines/sui_book_grid.lua:2168
+#: engines/sui_book_grid.lua:2133 engines/sui_book_grid.lua:2146
 msgid "New Book Badge"
 msgstr "Huy hiệu sách mới"
 
@@ -2573,7 +2569,7 @@ msgstr "Không"
 msgid "No .lua files found in sui_quotes/"
 msgstr "Không tìm thấy tệp .lua nào trong sui_quotes/"
 
-#: screens/sui_menu.lua:3946
+#: screens/sui_menu.lua:3931
 msgid ""
 "No .zip files found.\n"
 "Place .zip files in:\n"
@@ -2620,8 +2616,8 @@ msgstr "Không có sách nào trong lịch sử."
 msgid "No books finished in %s"
 msgstr "Không có sách nào hoàn thành trong %s"
 
-#: features/library/sui_foldercovers.lua:651
-#: features/library/sui_foldercovers.lua:754
+#: features/library/sui_foldercovers.lua:635
+#: features/library/sui_foldercovers.lua:738
 msgid "No books found in this folder."
 msgstr "Không tìm thấy sách nào trong thư mục này."
 
@@ -2651,7 +2647,7 @@ msgstr "Không có sách nào trong bộ sưu tập này."
 msgid "No books opened yet"
 msgstr "Chưa mở cuốn sách nào"
 
-#: modules/module_coverdeck.lua:637 modules/module_currently.lua:516
+#: modules/module_coverdeck.lua:636 modules/module_currently.lua:526
 msgid "No books to show yet — open a book to see it here."
 msgstr ""
 
@@ -2663,20 +2659,20 @@ msgstr "Chưa chọn bộ sưu tập nào"
 msgid "No collection selected  —  long press to configure"
 msgstr "Chưa chọn bộ sưu tập nào — nhấn giữ để cấu hình"
 
-#: modules/module_coverdeck.lua:1353
+#: modules/module_coverdeck.lua:1352
 msgid "No collections found"
 msgstr "Không tìm thấy bộ sưu tập nào"
 
-#: modules/module_collections.lua:1274 modules/module_collections.lua:1442
+#: modules/module_collections.lua:1265 modules/module_collections.lua:1428
 #: modules/module_feat_coll.lua:121
 msgid "No collections found."
 msgstr "Không tìm thấy bộ sưu tập nào."
 
-#: modules/module_collections.lua:1528
+#: modules/module_collections.lua:1514
 msgid "No collections selected"
 msgstr "Chưa chọn bộ sưu tập nào"
 
-#: modules/module_collections.lua:1527
+#: modules/module_collections.lua:1513
 msgid "No collections selected  —  long press to configure"
 msgstr "Chưa chọn bộ sưu tập nào — nhấn giữ để cấu hình"
 
@@ -2741,10 +2737,10 @@ msgstr "Không có mục nào khả dụng."
 
 #: engines/sui_window.lua:3099 modules/module_action_list.lua:376
 #: modules/module_action_list.lua:401 modules/module_clock.lua:1101
-#: modules/module_collections.lua:1222 modules/module_coverdeck.lua:1599
-#: modules/module_coverdeck.lua:1607 modules/module_currently.lua:1691
-#: modules/module_currently.lua:1775 modules/module_currently.lua:1907
-#: modules/module_currently.lua:1950 modules/module_quick_actions.lua:444
+#: modules/module_collections.lua:1213 modules/module_coverdeck.lua:1598
+#: modules/module_coverdeck.lua:1606 modules/module_currently.lua:1699
+#: modules/module_currently.lua:1783 modules/module_currently.lua:1915
+#: modules/module_currently.lua:1958 modules/module_quick_actions.lua:444
 #: modules/module_quick_actions.lua:469 modules/module_reading_goals.lua:1385
 #: modules/module_reading_goals.lua:1392 modules/module_reading_stats.lua:780
 #: modules/module_reading_stats.lua:801 screens/sui_menu.lua:876
@@ -2767,7 +2763,7 @@ msgstr "Không có mô-đun"
 msgid "No other pages available."
 msgstr "Không có trang nào khác."
 
-#: screens/sui_menu.lua:3967
+#: screens/sui_menu.lua:3952
 msgid "No packs found."
 msgstr "Không tìm thấy gói nào."
 
@@ -2775,7 +2771,7 @@ msgstr "Không tìm thấy gói nào."
 msgid "No plugins found."
 msgstr "Không tìm thấy plugin nào."
 
-#: features/sui_presets.lua:1089 screens/sui_menu.lua:4347
+#: features/sui_presets.lua:1089 screens/sui_menu.lua:4332
 msgid ""
 "No preset files found.\n"
 "Place .lua files in:\n"
@@ -2785,7 +2781,7 @@ msgstr ""
 "Đặt tệp .lua vào:\n"
 "%1"
 
-#: features/sui_presets.lua:1066 screens/sui_menu.lua:4323
+#: features/sui_presets.lua:1066 screens/sui_menu.lua:4308
 msgid "No presets found."
 msgstr "Không tìm thấy thiết lập nào."
 
@@ -2807,7 +2803,7 @@ msgstr "Không tìm thấy thiết lập nào."
 msgid "No statistics found for this book."
 msgstr "Không tìm thấy thống kê nào cho cuốn sách này."
 
-#: modules/module_coverdeck.lua:1474
+#: modules/module_coverdeck.lua:1473
 msgid "No statistics selected."
 msgstr "Chưa chọn thống kê nào."
 
@@ -2827,11 +2823,11 @@ msgstr "Không tìm thấy thao tác hệ thống nào."
 msgid "No wallpapers found."
 msgstr "Không tìm thấy tường nền nào."
 
-#: engines/sui_book_grid.lua:2031 engines/sui_book_grid.lua:2149
-#: features/library/sui_foldercovers.lua:319 features/sui_quickactions.lua:2524
-#: screens/sui_menu.lua:3254 screens/sui_menu.lua:3263
-#: screens/sui_menu.lua:3281 screens/sui_menu.lua:3321
-#: screens/sui_menu.lua:3330 screens/sui_menu.lua:3348
+#: engines/sui_book_grid.lua:2014 engines/sui_book_grid.lua:2127
+#: features/library/sui_foldercovers.lua:303 features/sui_quickactions.lua:2524
+#: screens/sui_menu.lua:3239 screens/sui_menu.lua:3248
+#: screens/sui_menu.lua:3266 screens/sui_menu.lua:3306
+#: screens/sui_menu.lua:3315 screens/sui_menu.lua:3333
 msgid "None"
 msgstr "Không"
 
@@ -2866,15 +2862,15 @@ msgstr "th11"
 msgid "November"
 msgstr "Tháng Mười Một"
 
-#: engines/sui_book_grid.lua:1932 engines/sui_book_grid.lua:1933
+#: engines/sui_book_grid.lua:1915 engines/sui_book_grid.lua:1916
 msgid "Number of Books"
 msgstr "Số lượng sách"
 
-#: screens/sui_menu.lua:3067
+#: screens/sui_menu.lua:3052
 msgid "Number of Books in Folder"
 msgstr "Số lượng sách trong thư mục"
 
-#: screens/sui_menu.lua:3141
+#: screens/sui_menu.lua:3126
 msgid "Number of Pages"
 msgstr "Số trang"
 
@@ -2894,11 +2890,11 @@ msgstr "th10"
 msgid "October"
 msgstr "Tháng Mười"
 
-#: engines/sui_book_grid.lua:2116 engines/sui_book_grid.lua:2142
-#: modules/module_coverdeck.lua:1713 modules/module_currently.lua:2035
+#: engines/sui_book_grid.lua:2094 engines/sui_book_grid.lua:2120
+#: modules/module_coverdeck.lua:1720 modules/module_currently.lua:2051
 #: screens/sui_menu.lua:1512 screens/sui_menu.lua:1722
-#: screens/sui_menu.lua:3387 screens/sui_menu.lua:3552
-#: screens/sui_menu.lua:4654
+#: screens/sui_menu.lua:3372 screens/sui_menu.lua:3537
+#: screens/sui_menu.lua:4639
 msgid "Off"
 msgstr "Tắt"
 
@@ -2906,14 +2902,14 @@ msgstr "Tắt"
 msgid "Oh"
 msgstr "À"
 
-#: engines/sui_book_grid.lua:2116 engines/sui_book_grid.lua:2142
-#: modules/module_coverdeck.lua:1713 modules/module_currently.lua:2035
+#: engines/sui_book_grid.lua:2094 engines/sui_book_grid.lua:2120
+#: modules/module_coverdeck.lua:1720 modules/module_currently.lua:2051
 #: screens/sui_menu.lua:1512 screens/sui_menu.lua:1722
-#: screens/sui_menu.lua:4654
+#: screens/sui_menu.lua:4639
 msgid "On"
 msgstr "Bật"
 
-#: modules/module_coverdeck.lua:1660
+#: modules/module_coverdeck.lua:1659
 msgid "On side covers too"
 msgstr ""
 
@@ -2928,7 +2924,7 @@ msgstr "Một"
 msgid "Open"
 msgstr "Mở"
 
-#: modules/module_collections.lua:1108
+#: modules/module_collections.lua:1099
 msgid "Open Module Settings"
 msgstr "Cài đặt mô-đun"
 
@@ -2963,8 +2959,8 @@ msgid "Overlays"
 msgstr "Lớp phủ"
 
 #: features/sui_presets.lua:888 features/sui_presets.lua:918
-#: features/sui_presets.lua:1050 screens/sui_menu.lua:4149
-#: screens/sui_menu.lua:4178 screens/sui_menu.lua:4307
+#: features/sui_presets.lua:1050 screens/sui_menu.lua:4134
+#: screens/sui_menu.lua:4163 screens/sui_menu.lua:4292
 msgid "Overwrite"
 msgstr "Ghi đè"
 
@@ -2972,11 +2968,11 @@ msgstr "Ghi đè"
 msgid "Overwrite preset \"%s\" with the current homescreen settings?"
 msgstr "Ghi đè thiết lập \"%s\" bằng cài đặt màn hình chính hiện tại?"
 
-#: screens/sui_menu.lua:4177 screens/sui_menu.lua:4306
+#: screens/sui_menu.lua:4162 screens/sui_menu.lua:4291
 msgid "Overwrite preset \"%s\" with the current icon settings?"
 msgstr "Ghi đè thiết lập \"%s\" bằng cài đặt biểu tượng hiện tại?"
 
-#: screens/sui_menu.lua:3982
+#: screens/sui_menu.lua:3967
 msgid ""
 "Pack \"%s\" applied.\n"
 "%d icons replaced."
@@ -2984,7 +2980,7 @@ msgstr ""
 "Gói \"%s\" đã áp dụng.\n"
 "%d biểu tượng đã thay thế."
 
-#: screens/sui_menu.lua:3900
+#: screens/sui_menu.lua:3885
 msgid ""
 "Pack \"%s\" installed.\n"
 "You can now apply it from the list."
@@ -3015,11 +3011,11 @@ msgstr "Trang 1 (Trang chủ)"
 msgid "Pages"
 msgstr "Trang"
 
-#: engines/sui_book_grid.lua:2098 engines/sui_book_grid.lua:2114
+#: engines/sui_book_grid.lua:2076 engines/sui_book_grid.lua:2092
 msgid "Pages Badge"
 msgstr "Huy hiệu trang"
 
-#: engines/sui_book_grid.lua:2109
+#: engines/sui_book_grid.lua:2087
 msgid "Pages Badge Color"
 msgstr "Màu huy hiệu trang"
 
@@ -3099,8 +3095,8 @@ msgstr "Đường dẫn không tồn tại: "
 msgid "Percentage"
 msgstr "Phần trăm đã đọc"
 
-#: modules/module_coverdeck.lua:143 modules/module_currently.lua:308
-#: modules/module_currently.lua:1650
+#: modules/module_coverdeck.lua:143 modules/module_currently.lua:318
+#: modules/module_currently.lua:1658
 msgid "Percentage read"
 msgstr "Phần trăm đã đọc"
 
@@ -3116,7 +3112,7 @@ msgstr "Sách giấy đọc trong năm nay:"
 msgid "Place .lua files in the plugin's sui_quotes/ folder"
 msgstr "Đặt tệp .lua vào thư mục sui_quotes/ của plugin"
 
-#: screens/sui_menu.lua:3968
+#: screens/sui_menu.lua:3953
 msgid "Place a folder or .zip in:"
 msgstr "Đặt thư mục hoặc .zip vào:"
 
@@ -3130,7 +3126,7 @@ msgid ""
 msgstr ""
 "Đặt tệp của bạn vào koreader/settings/simpleui/sui_wallpapers hoặc sui_icons."
 
-#: screens/sui_menu.lua:3650
+#: screens/sui_menu.lua:3635
 msgid "Placeholder Cover for Bookless Folders"
 msgstr "Bìa giữ chỗ cho thư mục không có sách"
 
@@ -3144,7 +3140,7 @@ msgstr ""
 msgid "Please enter a date in YYYY-MM-DD format."
 msgstr "Vui lòng nhập ngày theo định dạng YYYY-MM-DD."
 
-#: features/sui_presets.lua:870 screens/sui_menu.lua:4133
+#: features/sui_presets.lua:870 screens/sui_menu.lua:4118
 msgid "Please enter a name for the preset."
 msgstr "Vui lòng nhập tên cho thiết lập."
 
@@ -3168,7 +3164,7 @@ msgstr "Lỗi plugin: %s"
 msgid "Plugin not available: %s"
 msgstr "Plugin không khả dụng: %s"
 
-#: screens/sui_menu.lua:3074 screens/sui_menu.lua:3478
+#: screens/sui_menu.lua:3059 screens/sui_menu.lua:3463
 msgid "Position"
 msgstr "Vị trí"
 
@@ -3184,25 +3180,25 @@ msgstr "Giữ nguyên tỷ lệ bìa"
 msgid "Preserve Deleted Books in Statistics"
 msgstr "Giữ sách đã xóa trong thống kê"
 
-#: features/sui_presets.lua:1102 screens/sui_menu.lua:4358
+#: features/sui_presets.lua:1102 screens/sui_menu.lua:4343
 msgid "Preset \"%s\" imported."
 msgstr "Thiết lập \"%s\" đã nhập."
 
 #: features/sui_presets.lua:753 features/sui_presets.lua:831
-#: screens/sui_menu.lua:4096
+#: screens/sui_menu.lua:4081
 msgid "Preset \"%s\" not found."
 msgstr "Không tìm thấy thiết lập \"%s\"."
 
-#: features/sui_presets.lua:881 screens/sui_menu.lua:4140
+#: features/sui_presets.lua:881 screens/sui_menu.lua:4125
 msgid "Preset \"%s\" saved."
 msgstr "Thiết lập \"%s\" đã lưu."
 
 #: features/sui_presets.lua:924 features/sui_presets.lua:1056
-#: screens/sui_menu.lua:4184 screens/sui_menu.lua:4313
+#: screens/sui_menu.lua:4169 screens/sui_menu.lua:4298
 msgid "Preset \"%s\" updated."
 msgstr "Thiết lập \"%s\" đã cập nhật."
 
-#: features/sui_presets.lua:1129 screens/sui_menu.lua:4388
+#: features/sui_presets.lua:1129 screens/sui_menu.lua:4373
 msgid ""
 "Preset exported to:\n"
 "%s"
@@ -3210,7 +3206,7 @@ msgstr ""
 "Thiết lập đã xuất tới:\n"
 "%s"
 
-#: features/sui_presets.lua:856 screens/sui_menu.lua:4119
+#: features/sui_presets.lua:856 screens/sui_menu.lua:4104
 msgid "Preset name"
 msgstr "Tên thiết lập"
 
@@ -3238,50 +3234,50 @@ msgstr ""
 msgid "Prev"
 msgstr "Trước"
 
-#: screens/sui_menu.lua:3249
+#: screens/sui_menu.lua:3234
 msgid "Progress"
 msgstr "Tiến trình"
 
-#: modules/module_coverdeck.lua:1651 modules/module_coverdeck.lua:1711
-#: modules/module_currently.lua:1989 modules/module_currently.lua:2033
+#: modules/module_coverdeck.lua:1650 modules/module_coverdeck.lua:1718
+#: modules/module_currently.lua:1997 modules/module_currently.lua:2049
 msgid "Progress Badge"
 msgstr "Huy hiệu tiến trình"
 
-#: engines/sui_book_grid.lua:2057 modules/module_coverdeck.lua:1671
-#: modules/module_currently.lua:1998
+#: engines/sui_book_grid.lua:2040 modules/module_coverdeck.lua:1670
+#: modules/module_currently.lua:2006
 msgid "Progress Badge Color"
 msgstr "Màu huy hiệu tiến trình"
 
-#: screens/sui_menu.lua:4483
+#: screens/sui_menu.lua:4468
 msgid "Progress Bar Type"
 msgstr "Loại thanh tiến trình"
 
-#: engines/sui_book_grid.lua:2062
+#: engines/sui_book_grid.lua:2045
 msgid "Progress Indicator"
 msgstr "Chỉ báo tiến trình"
 
-#: engines/sui_book_grid.lua:2049
+#: engines/sui_book_grid.lua:2032
 msgid "Progress Style"
 msgstr "Kiểu thanh tiến trình"
 
-#: engines/sui_book_grid.lua:2218 modules/module_currently.lua:1979
+#: engines/sui_book_grid.lua:2196 modules/module_currently.lua:1987
 #, fuzzy
 msgid "Progress Text"
 msgstr "Tiến trình"
 
-#: infra/sui_config.lua:1212
+#: infra/sui_config.lua:1210
 msgid "Progress and Badges"
 msgstr "Tiến trình và huy hiệu"
 
-#: modules/module_currently.lua:2012
+#: modules/module_currently.lua:2028
 msgid "Progress and Stats"
 msgstr "Tiến trình và thống kê"
 
-#: modules/module_coverdeck.lua:157 modules/module_currently.lua:307
+#: modules/module_coverdeck.lua:157 modules/module_currently.lua:317
 msgid "Progress bar"
 msgstr "Thanh tiến trình"
 
-#: modules/module_currently.lua:2015
+#: modules/module_currently.lua:2031
 msgid "Progress bar style"
 msgstr "Kiểu thanh tiến trình"
 
@@ -3289,7 +3285,7 @@ msgstr "Kiểu thanh tiến trình"
 msgid "Project: Title is not compatible with Simple UI."
 msgstr ""
 
-#: infra/sui_config.lua:1195
+#: infra/sui_config.lua:1193
 #, fuzzy
 msgid "Proportions"
 msgstr "Vị trí"
@@ -3299,7 +3295,7 @@ msgstr "Vị trí"
 #: modules/module_action_list.lua:373 modules/module_action_list.lua:399
 #: modules/module_quick_actions.lua:436 modules/module_quick_actions.lua:441
 #: modules/module_quick_actions.lua:467 modules/module_quick_actions.lua:576
-#: screens/sui_menu.lua:2278 screens/sui_menu.lua:4707
+#: screens/sui_menu.lua:2278 screens/sui_menu.lua:4692
 #: screens/sui_quicksettings_bar.lua:1144
 #: screens/sui_quicksettings_bar.lua:1149
 #: screens/sui_quicksettings_bar.lua:1170
@@ -3307,16 +3303,16 @@ msgstr "Vị trí"
 msgid "Quick Actions"
 msgstr "Thao tác nhanh"
 
-#: screens/sui_menu.lua:4711
+#: screens/sui_menu.lua:4696
 msgid "Quick Actions  (%d/%d — %d left)"
 msgstr "Thao tác nhanh (%d/%d — còn lại %d)"
 
-#: screens/sui_menu.lua:4709
+#: screens/sui_menu.lua:4694
 msgid "Quick Actions  (%d/%d — at limit)"
 msgstr "Thao tác nhanh (%d/%d — đã đạt giới hạn)"
 
 #: features/sui_quickactions.lua:1567 features/sui_quickactions.lua:1969
-#: screens/sui_menu.lua:3806
+#: screens/sui_menu.lua:3791
 msgid "Quick Actions Icons"
 msgstr "Biểu tượng thao tác nhanh"
 
@@ -3407,7 +3403,7 @@ msgid "Recent"
 msgstr "Gần đây"
 
 #: features/sui_presets.lua:143 features/sui_presets.lua:193
-#: modules/module_coverdeck.lua:1379 modules/module_recent.lua:15
+#: modules/module_coverdeck.lua:1378 modules/module_recent.lua:15
 #: modules/module_recent.lua:16
 msgid "Recent Books"
 msgstr "Sách gần đây"
@@ -3426,13 +3422,13 @@ msgstr "Xóa khỏi danh sách khi đọc xong"
 
 #: engines/sui_window.lua:1957 engines/sui_window.lua:2878
 #: features/sui_presets.lua:930 features/sui_presets.lua:937
-#: features/sui_presets.lua:1023 screens/sui_menu.lua:4190
-#: screens/sui_menu.lua:4197 screens/sui_menu.lua:4282
+#: features/sui_presets.lua:1023 screens/sui_menu.lua:4175
+#: screens/sui_menu.lua:4182 screens/sui_menu.lua:4267
 msgid "Rename"
 msgstr "Đổi tên"
 
 #: features/sui_presets.lua:933 features/sui_presets.lua:1019
-#: screens/sui_menu.lua:4193 screens/sui_menu.lua:4278
+#: screens/sui_menu.lua:4178 screens/sui_menu.lua:4263
 msgid "Rename \"%s\""
 msgstr "Đổi tên \"%s\""
 
@@ -3497,9 +3493,9 @@ msgstr "Đặt lại về tỷ lệ mặc định"
 #: features/sui_quickactions.lua:600 infra/sui_updater.lua:448
 #: screens/sui_menu.lua:444 screens/sui_menu.lua:848 screens/sui_menu.lua:1058
 #: screens/sui_menu.lua:1151 screens/sui_menu.lua:1366
-#: screens/sui_menu.lua:1867 screens/sui_menu.lua:3566
-#: screens/sui_menu.lua:3589 screens/sui_menu.lua:3611
-#: screens/sui_menu.lua:4471 screens/sui_menu.lua:4670
+#: screens/sui_menu.lua:1867 screens/sui_menu.lua:3551
+#: screens/sui_menu.lua:3574 screens/sui_menu.lua:3596
+#: screens/sui_menu.lua:4456 screens/sui_menu.lua:4655
 #: screens/sui_quicksettings_bar.lua:1134
 msgid "Restart"
 msgstr "Khởi động lại"
@@ -3546,8 +3542,8 @@ msgstr ""
 msgid "Return to Home Screen on Wakeup"
 msgstr "Trở về màn hình chính khi đánh thức"
 
-#: engines/sui_book_grid.lua:2151 screens/sui_menu.lua:3320
-#: screens/sui_menu.lua:3329 screens/sui_menu.lua:3341
+#: engines/sui_book_grid.lua:2129 screens/sui_menu.lua:3305
+#: screens/sui_menu.lua:3314 screens/sui_menu.lua:3326
 msgid "Ribbon"
 msgstr "Ruy băng"
 
@@ -3580,7 +3576,7 @@ msgstr "Cài đặt"
 msgid "Round"
 msgstr "Tròn"
 
-#: engines/sui_book_grid.lua:2035
+#: engines/sui_book_grid.lua:2018
 msgid "Round Overlay"
 msgstr "Lớp phủ tròn"
 
@@ -3588,7 +3584,7 @@ msgstr "Lớp phủ tròn"
 msgid "Rounded Square"
 msgstr "Vuông bo tròn"
 
-#: engines/sui_book_grid.lua:1969
+#: engines/sui_book_grid.lua:1952
 msgid "Rows"
 msgstr "Hàng"
 
@@ -3601,12 +3597,12 @@ msgid "Saturday"
 msgstr "Thứ Bảy"
 
 #: features/sui_presets.lua:864 features/sui_quickactions.lua:2548
-#: modules/module_reading_goals.lua:761 screens/sui_menu.lua:4127
+#: modules/module_reading_goals.lua:761 screens/sui_menu.lua:4112
 #: screens/sui_settings_window.lua:514 screens/sui_stats_windows.lua:662
 msgid "Save"
 msgstr "Lưu"
 
-#: features/sui_presets.lua:849 screens/sui_menu.lua:4112
+#: features/sui_presets.lua:849 screens/sui_menu.lua:4097
 msgid "Save as new preset"
 msgstr "Lưu làm thiết lập mới"
 
@@ -3614,7 +3610,7 @@ msgstr "Lưu làm thiết lập mới"
 msgid "Save backup as"
 msgstr ""
 
-#: screens/sui_menu.lua:4117
+#: screens/sui_menu.lua:4102
 msgid "Save icon preset"
 msgstr "Lưu thiết lập biểu tượng"
 
@@ -3622,11 +3618,11 @@ msgstr "Lưu thiết lập biểu tượng"
 msgid "Save preset"
 msgstr "Lưu thiết lập"
 
-#: engines/sui_book_grid.lua:1905 engines/sui_book_grid.lua:1907
+#: engines/sui_book_grid.lua:1888 engines/sui_book_grid.lua:1890
 #: modules/module_action_list.lua:455 modules/module_action_list.lua:457
 #: modules/module_clock.lua:1053 modules/module_clock.lua:1055
-#: modules/module_coverdeck.lua:1296 modules/module_coverdeck.lua:1298
-#: modules/module_currently.lua:1473 modules/module_currently.lua:1475
+#: modules/module_coverdeck.lua:1295 modules/module_coverdeck.lua:1297
+#: modules/module_currently.lua:1481 modules/module_currently.lua:1483
 #: modules/module_heatmap.lua:315 modules/module_heatmap.lua:317
 #: modules/module_quick_actions.lua:585 modules/module_quick_actions.lua:587
 #: modules/module_quote.lua:1394 modules/module_quote.lua:1398
@@ -3637,13 +3633,13 @@ msgstr "Lưu thiết lập"
 msgid "Scale"
 msgstr "Tỷ lệ"
 
-#: modules/module_collections.lua:1429
+#: modules/module_collections.lua:1418
 msgid "Scale for the collection count badge."
 msgstr ""
 "Tỷ lệ cho huy hiệu số lượng sách trong bộ sưu tập.\n"
 "100% là kích thước mặc định."
 
-#: modules/module_currently.lua:1489
+#: modules/module_currently.lua:1497
 msgid ""
 "Scale for the cover thumbnail only.\n"
 "100% is the default size.\n"
@@ -3655,7 +3651,7 @@ msgstr ""
 "Khi Kích thước bìa động được bật, tỷ lệ này sẽ áp dụng theo kích thước động "
 "hiện tại thay vào đó, và bìa không bao giờ nhỏ hơn 100% kích thước của nó."
 
-#: modules/module_coverdeck.lua:1307
+#: modules/module_coverdeck.lua:1306
 msgid ""
 "Scale for the cover thumbnails only.\n"
 "100% is the default size."
@@ -3663,7 +3659,7 @@ msgstr ""
 "Tỷ lệ cho hình thu nhỏ bìa.\n"
 "100% là kích thước mặc định."
 
-#: engines/sui_book_grid.lua:1917
+#: engines/sui_book_grid.lua:1900
 msgid ""
 "Scale for the cover thumbnails only.\n"
 "Text and progress bar follow the module scale.\n"
@@ -3673,7 +3669,7 @@ msgstr ""
 "Chữ và thanh tiến trình theo tỷ lệ mô-đun.\n"
 "100% là kích thước mặc định."
 
-#: screens/sui_menu.lua:3539
+#: screens/sui_menu.lua:3524
 msgid ""
 "Scale for the folder name overlay text.\n"
 "100% is the default size."
@@ -3689,7 +3685,7 @@ msgstr ""
 "Tỷ lệ cho chữ nhãn.\n"
 "100% là kích thước mặc định."
 
-#: screens/sui_menu.lua:3048
+#: screens/sui_menu.lua:3041
 msgid ""
 "Scale for the library badges (progress, pages, etc.).\n"
 "100% is the default size."
@@ -3697,7 +3693,11 @@ msgstr ""
 "Tỷ lệ cho huy hiệu thư viện (tiến trình, trang, v.v.).\n"
 "100% là kích thước mặc định."
 
-#: engines/sui_book_grid.lua:2086
+#: modules/module_coverdeck.lua:1682 modules/module_currently.lua:2018
+msgid "Scale for the progress badge."
+msgstr ""
+
+#: engines/sui_book_grid.lua:2067
 msgid ""
 "Scale for this module's corner badges (progress, pages, series, new book)."
 msgstr ""
@@ -3705,12 +3705,12 @@ msgstr ""
 "mới).\n"
 "100% là kích thước mặc định."
 
-#: modules/module_coverdeck.lua:1299
+#: modules/module_coverdeck.lua:1298
 msgid "Scale for this module."
 msgstr "Tỷ lệ cho mô-đun này."
 
-#: engines/sui_book_grid.lua:1908 modules/module_action_list.lua:458
-#: modules/module_clock.lua:1056 modules/module_currently.lua:1476
+#: engines/sui_book_grid.lua:1891 modules/module_action_list.lua:458
+#: modules/module_clock.lua:1056 modules/module_currently.lua:1484
 #: modules/module_quick_actions.lua:588 modules/module_quote.lua:1400
 #: modules/module_reading_goals.lua:1288 modules/module_reading_stats.lua:720
 msgid ""
@@ -3750,7 +3750,7 @@ msgstr ""
 "Tỷ lệ chữ nhãn phần phía trên mỗi mô-đun.\n"
 "100% là kích thước mặc định."
 
-#: screens/sui_menu.lua:3663
+#: screens/sui_menu.lua:3648
 msgid "Scan Subfolders for Covers"
 msgstr "Quét thư mục con để tìm bìa"
 
@@ -3793,7 +3793,7 @@ msgid "Select"
 msgstr "Chọn"
 
 #: features/sui_presets.lua:760 features/sui_presets.lua:768
-#: features/sui_presets.lua:773 screens/sui_menu.lua:4103
+#: features/sui_presets.lua:773 screens/sui_menu.lua:4088
 msgid "Select Preset"
 msgstr "Chọn thiết lập"
 
@@ -3801,7 +3801,7 @@ msgstr "Chọn thiết lập"
 msgid "Select Wallpaper"
 msgstr "Chọn hình nền"
 
-#: modules/module_collections.lua:1195
+#: modules/module_collections.lua:1186
 msgid "Select at least 2 collections to arrange."
 msgstr "Chọn ít nhất 2 bộ sưu tập để sắp xếp."
 
@@ -3815,19 +3815,19 @@ msgstr "Tháng Chín"
 
 #: features/library/sui_library_browse.lua:59
 #: features/sui_quickactions.lua:1022 infra/sui_config.lua:135
-#: modules/module_currently.lua:305 modules/module_currently.lua:1977
+#: modules/module_currently.lua:315 modules/module_currently.lua:1985
 msgid "Series"
 msgstr "Bộ sách"
 
-#: engines/sui_book_grid.lua:2124 engines/sui_book_grid.lua:2140
+#: engines/sui_book_grid.lua:2102 engines/sui_book_grid.lua:2118
 msgid "Series Badge"
 msgstr "Huy hiệu bộ sách"
 
-#: engines/sui_book_grid.lua:2135
+#: engines/sui_book_grid.lua:2113
 msgid "Series Badge Color"
 msgstr "Màu huy hiệu bộ sách"
 
-#: screens/sui_menu.lua:3195
+#: screens/sui_menu.lua:3180
 msgid "Series Index"
 msgstr "Chỉ mục bộ sách"
 
@@ -3840,11 +3840,11 @@ msgstr "Đặt"
 msgid "Set Goal"
 msgstr "Đặt mục tiêu"
 
-#: modules/module_collections.lua:1100
+#: modules/module_collections.lua:1091
 msgid "Set collection cover"
 msgstr "Đặt bìa bộ sưu tập"
 
-#: features/library/sui_foldercovers.lua:684
+#: features/library/sui_foldercovers.lua:668
 #: features/library/sui_library_browse.lua:786
 #: features/library/sui_series_grouping.lua:362
 msgid "Set folder cover"
@@ -3877,7 +3877,7 @@ msgstr "Bảy"
 msgid "Seventeen"
 msgstr "Mười bảy"
 
-#: infra/sui_config.lua:1596
+#: infra/sui_config.lua:1611
 msgid ""
 "Share of the row this module occupies.\n"
 "100% = full width. Modules under 100% share a row when their widths fit "
@@ -3920,7 +3920,7 @@ msgstr ""
 "Hiển thị thông báo ngắn \"Đang tải thống kê…\" khi mở cửa sổ thống kê, ngăn "
 "chặn nhấn đúp ngoài ý muốn trong khi e-ink làm mới."
 
-#: modules/module_coverdeck.lua:1688 modules/module_library.lua:342
+#: modules/module_coverdeck.lua:1695 modules/module_library.lua:342
 #: modules/module_recent.lua:54
 msgid "Show finished books"
 msgstr "Hiển thị sách đã đọc xong"
@@ -3937,7 +3937,7 @@ msgstr "Hiện khi đóng"
 msgid "Show on Open"
 msgstr "Hiện khi mở"
 
-#: infra/sui_config.lua:1825
+#: infra/sui_config.lua:1840
 msgid "Show section label"
 msgstr "Hiển thị nhãn phần"
 
@@ -3967,7 +3967,7 @@ msgstr ""
 "Chấm trang hoạt động được tô đầy; các chấm khác bị mờ.\n"
 "Luôn hoạt động khi Navpager được chọn."
 
-#: engines/sui_book_grid.lua:1620
+#: engines/sui_book_grid.lua:1603
 msgid "Shuffle"
 msgstr "Xáo trộn"
 
@@ -3975,12 +3975,12 @@ msgstr "Xáo trộn"
 msgid "Shuffle now"
 msgstr "Xáo trộn ngay"
 
-#: modules/module_currently.lua:2017
+#: modules/module_currently.lua:2033
 msgid "Simple"
 msgstr "Đơn giản"
 
-#: _meta.lua:5 main.lua:2510 main.lua:2523 screens/sui_menu.lua:4654
-#: screens/sui_menu.lua:4741
+#: _meta.lua:5 main.lua:2510 main.lua:2523 screens/sui_menu.lua:4639
+#: screens/sui_menu.lua:4726
 msgid "Simple UI"
 msgstr "Simple UI"
 
@@ -4025,7 +4025,7 @@ msgid ""
 "A restart is recommended to apply all changes cleanly."
 msgstr ""
 
-#: screens/sui_menu.lua:4669
+#: screens/sui_menu.lua:4654
 msgid ""
 "Simple UI will be %s after restart.\n"
 "\n"
@@ -4059,7 +4059,7 @@ msgstr "Simple UI: Cài đặt"
 msgid "Simple UI: Toggle Homescreen / Library"
 msgstr "Simple UI: Chuyển màn hình chính / Thư viện"
 
-#: modules/module_collections.lua:1340 screens/sui_menu.lua:2995
+#: modules/module_collections.lua:1331 screens/sui_menu.lua:2995
 msgid "Single Cover"
 msgstr "Bìa đơn"
 
@@ -4071,7 +4071,7 @@ msgstr "Sáu"
 msgid "Sixteen"
 msgstr "Mười sáu"
 
-#: infra/sui_config.lua:1068 modules/module_action_list.lua:452
+#: infra/sui_config.lua:1066 modules/module_action_list.lua:452
 #: modules/module_action_list.lua:504 screens/sui_menu.lua:1027
 #: screens/sui_menu.lua:3039 screens/sui_quicksettings_bar.lua:1241
 #: screens/sui_quicksettings_bar.lua:1242
@@ -4094,9 +4094,9 @@ msgstr ""
 "Kích thước chữ nhãn tab.\n"
 "100% là kích thước mặc định."
 
-#: engines/sui_book_grid.lua:2220 modules/module_action_list.lua:526
-#: modules/module_clock.lua:1181 modules/module_coverdeck.lua:1644
-#: modules/module_currently.lua:1981 modules/module_quick_actions.lua:599
+#: engines/sui_book_grid.lua:2198 modules/module_action_list.lua:526
+#: modules/module_clock.lua:1181 modules/module_coverdeck.lua:1643
+#: modules/module_currently.lua:1989 modules/module_quick_actions.lua:599
 #: modules/module_quote.lua:1627 modules/module_quote.lua:1648
 #: modules/module_reading_goals.lua:1305 modules/module_reading_stats.lua:1016
 #, fuzzy
@@ -4115,8 +4115,8 @@ msgstr "Ngủ"
 msgid "Small"
 msgstr "Nhỏ"
 
-#: modules/module_quick_actions.lua:651 screens/sui_menu.lua:3436
-#: screens/sui_menu.lua:3440 screens/sui_quicksettings_bar.lua:1317
+#: modules/module_quick_actions.lua:651 screens/sui_menu.lua:3421
+#: screens/sui_menu.lua:3425 screens/sui_quicksettings_bar.lua:1317
 msgid "Solid"
 msgstr "Đặc"
 
@@ -4124,12 +4124,12 @@ msgstr "Đặc"
 msgid "Solid Background"
 msgstr "Nền đặc"
 
-#: engines/sui_book_grid.lua:1633 modules/module_collections.lua:1314
+#: engines/sui_book_grid.lua:1616 modules/module_collections.lua:1305
 #: modules/module_library.lua:236
 msgid "Sort"
 msgstr "Sắp xếp"
 
-#: modules/module_coverdeck.lua:1389 modules/module_quote.lua:1426
+#: modules/module_coverdeck.lua:1388 modules/module_quote.lua:1426
 msgid "Source"
 msgstr "Nguồn"
 
@@ -4166,9 +4166,9 @@ msgstr "Bắt đầu với"
 msgid "Start with a ready-made layout. You can change everything later."
 msgstr "Bắt đầu với bỗ cục có sẵn. Bạn có thể thay đổi mọi thứ sau."
 
-#: modules/module_coverdeck.lua:158 modules/module_coverdeck.lua:1472
-#: modules/module_coverdeck.lua:1505 modules/module_coverdeck.lua:1572
-#: modules/module_coverdeck.lua:1643
+#: modules/module_coverdeck.lua:158 modules/module_coverdeck.lua:1471
+#: modules/module_coverdeck.lua:1504 modules/module_coverdeck.lua:1571
+#: modules/module_coverdeck.lua:1642
 msgid "Statistics"
 msgstr "Thống kê"
 
@@ -4185,16 +4185,16 @@ msgid "Statistics plugin not available."
 msgstr "Plugin thống kê không khả dụng."
 
 #: features/sui_quickactions.lua:949 infra/sui_config.lua:130
-#: modules/module_currently.lua:1685 modules/module_currently.lua:1767
-#: modules/module_currently.lua:1828
+#: modules/module_currently.lua:1693 modules/module_currently.lua:1775
+#: modules/module_currently.lua:1836
 msgid "Stats"
 msgstr "Thống kê"
 
-#: modules/module_currently.lua:2024
+#: modules/module_currently.lua:2040
 msgid "Stats layout"
 msgstr "Bố cục thống kê"
 
-#: modules/module_coverdeck.lua:1737 modules/module_currently.lua:2068
+#: modules/module_coverdeck.lua:1744 modules/module_currently.lua:2084
 #: modules/module_reading_goals.lua:1629 modules/module_reading_stats.lua:1007
 msgid "Stats updated successfully."
 msgstr "Thống kê đã cập nhật thành công."
@@ -4250,8 +4250,8 @@ msgstr "Chế độ chuỗi ngày"
 msgid "Stretch to fill screen"
 msgstr "Kéo giãn để lấp đầy màn hình"
 
-#: infra/sui_config.lua:1061 modules/module_reading_stats.lua:860
-#: modules/module_reading_stats.lua:1032 screens/sui_menu.lua:4698
+#: infra/sui_config.lua:1059 modules/module_reading_stats.lua:860
+#: modules/module_reading_stats.lua:1032 screens/sui_menu.lua:4683
 #: screens/sui_settings_window.lua:366 screens/sui_settings_window.lua:1107
 msgid "Style"
 msgstr "Kiểu"
@@ -4278,8 +4278,8 @@ msgstr "Chỉ báo vuốt"
 msgid "System Actions"
 msgstr "Thao tác hệ thống"
 
-#: features/sui_style.lua:1320 screens/sui_menu.lua:3775
-#: screens/sui_menu.lua:3783
+#: features/sui_style.lua:1320 screens/sui_menu.lua:3760
+#: screens/sui_menu.lua:3768
 msgid "System Icons"
 msgstr "Biểu tượng hệ thống"
 
@@ -4376,13 +4376,13 @@ msgstr "Chạm \"Tạo màn hình\" bên dưới để thêm một cái."
 msgid "Ten"
 msgstr "Mười"
 
-#: engines/sui_book_grid.lua:2033 infra/sui_config.lua:1106
+#: engines/sui_book_grid.lua:2016 infra/sui_config.lua:1104
 #: modules/module_quote.lua:1662 modules/module_reading_stats.lua:1030
 #: screens/sui_menu.lua:208
 msgid "Text"
 msgstr "Chữ"
 
-#: screens/sui_menu.lua:3536
+#: screens/sui_menu.lua:3521
 msgid "Text Size"
 msgstr "Kích thước chữ"
 
@@ -4475,7 +4475,7 @@ msgstr "Tuần này — Trang"
 msgid "This week — Time"
 msgstr "Tuần này — Thời gian"
 
-#: screens/sui_menu.lua:4568
+#: screens/sui_menu.lua:4553
 msgid ""
 "This will delete all Simple UI settings and restart KOReader.\n"
 "Are you sure?"
@@ -4499,25 +4499,25 @@ msgstr "Thứ Năm"
 msgid "Time of day"
 msgstr "Thời điểm trong ngày"
 
-#: modules/module_coverdeck.lua:145 modules/module_currently.lua:310
+#: modules/module_coverdeck.lua:145 modules/module_currently.lua:320
 msgid "Time read"
 msgstr "Thời gian đọc"
 
-#: modules/module_coverdeck.lua:146 modules/module_currently.lua:311
+#: modules/module_coverdeck.lua:146 modules/module_currently.lua:321
 msgid "Time remaining"
 msgstr "Thời gian còn lại"
 
-#: modules/module_coverdeck.lua:155 modules/module_coverdeck.lua:1643
-#: modules/module_currently.lua:303 modules/module_currently.lua:1975
+#: modules/module_coverdeck.lua:155 modules/module_coverdeck.lua:1642
+#: modules/module_currently.lua:313 modules/module_currently.lua:1983
 #: screens/sui_titlebar.lua:106
 msgid "Title"
 msgstr "Tiêu đề"
 
-#: engines/sui_book_grid.lua:1615 modules/module_library.lua:208
+#: engines/sui_book_grid.lua:1598 modules/module_library.lua:208
 msgid "Title (A–Z)"
 msgstr "Tiêu đề (A-Z)"
 
-#: engines/sui_book_grid.lua:1616 modules/module_library.lua:209
+#: engines/sui_book_grid.lua:1599 modules/module_library.lua:209
 msgid "Title (Z–A)"
 msgstr "Tiêu đề (Z-A)"
 
@@ -4539,15 +4539,15 @@ msgstr ""
 "\n"
 "Khởi động lại ngay?"
 
-#: screens/sui_menu.lua:3598
+#: screens/sui_menu.lua:3583
 msgid "Title and Author"
 msgstr "Tiêu đề và tác giả"
 
-#: screens/sui_menu.lua:3549
+#: screens/sui_menu.lua:3534
 msgid "Title and Author Below Covers"
 msgstr "Tiêu đề và tác giả dưới bìa"
 
-#: screens/sui_menu.lua:3610
+#: screens/sui_menu.lua:3595
 msgid ""
 "Title and author strip enabled.\n"
 "\n"
@@ -4557,11 +4557,11 @@ msgstr ""
 "\n"
 "Khởi động lại ngay?"
 
-#: screens/sui_menu.lua:3576
+#: screens/sui_menu.lua:3561
 msgid "Title only"
 msgstr "Chỉ tiêu đề"
 
-#: screens/sui_menu.lua:3565
+#: screens/sui_menu.lua:3550
 msgid ""
 "Title strip disabled.\n"
 "\n"
@@ -4571,7 +4571,7 @@ msgstr ""
 "\n"
 "Khởi động lại ngay?"
 
-#: screens/sui_menu.lua:3588
+#: screens/sui_menu.lua:3573
 msgid ""
 "Title strip enabled.\n"
 "\n"
@@ -4581,7 +4581,7 @@ msgstr ""
 "\n"
 "Khởi động lại ngay?"
 
-#: modules/module_coverdeck.lua:1381 modules/module_tbr.lua:504
+#: modules/module_coverdeck.lua:1380 modules/module_tbr.lua:504
 #: modules/module_tbr.lua:564 modules/module_tbr.lua:565
 msgid "To Be Read"
 msgstr "Cần đọc"
@@ -4608,9 +4608,9 @@ msgstr "Hôm nay — Thời gian"
 msgid "Toggle"
 msgstr "Chuyển đổi"
 
-#: modules/module_collections.lua:1394 screens/sui_menu.lua:3070
-#: screens/sui_menu.lua:3077 screens/sui_menu.lua:3081
-#: screens/sui_menu.lua:3481 screens/sui_menu.lua:3488
+#: modules/module_collections.lua:1385 screens/sui_menu.lua:3055
+#: screens/sui_menu.lua:3062 screens/sui_menu.lua:3066
+#: screens/sui_menu.lua:3466 screens/sui_menu.lua:3473
 msgid "Top"
 msgstr "Trên"
 
@@ -4618,7 +4618,7 @@ msgstr "Trên"
 msgid "Top Bar"
 msgstr "Thanh trên"
 
-#: infra/sui_config.lua:1648
+#: infra/sui_config.lua:1663
 msgid "Top Margin"
 msgstr "Lề trên"
 
@@ -4634,7 +4634,7 @@ msgstr "Tổng thời gian"
 msgid "Total: %d settings, %d files (%s)"
 msgstr ""
 
-#: screens/sui_menu.lua:3436 screens/sui_menu.lua:3453
+#: screens/sui_menu.lua:3421 screens/sui_menu.lua:3438
 #: screens/sui_quicksettings_bar.lua:1307
 msgid "Transparent"
 msgstr "Trong suốt"
@@ -4659,24 +4659,24 @@ msgstr "Hai mươi"
 msgid "Two"
 msgstr "Hai"
 
-#: modules/module_heatmap.lua:346 screens/sui_menu.lua:3258
-#: screens/sui_menu.lua:3325
+#: modules/module_heatmap.lua:346 screens/sui_menu.lua:3243
+#: screens/sui_menu.lua:3310
 msgid "Type"
 msgstr "Loại"
 
-#: screens/sui_menu.lua:4420 screens/sui_menu.lua:4423
+#: screens/sui_menu.lua:4405 screens/sui_menu.lua:4408
 msgid "UI Font"
 msgstr "Phông chữ giao diện"
 
-#: screens/sui_menu.lua:4427
+#: screens/sui_menu.lua:4412
 msgid "UI Font  (default)"
 msgstr "Phông chữ giao diện (mặc định)"
 
-#: screens/sui_menu.lua:4429
+#: screens/sui_menu.lua:4414
 msgid "UI Font  [%s]"
 msgstr "Phông chữ giao diện [%s]"
 
-#: screens/sui_menu.lua:3625
+#: screens/sui_menu.lua:3610
 msgid "Uniformize Covers (2:3)"
 msgstr "Đồng nhất hóa bìa (2:3)"
 
@@ -4701,7 +4701,7 @@ msgstr ""
 msgid "Update"
 msgstr "Cập nhật"
 
-#: modules/module_coverdeck.lua:1720 modules/module_currently.lua:2050
+#: modules/module_coverdeck.lua:1727 modules/module_currently.lua:2066
 #: modules/module_reading_goals.lua:1611 modules/module_reading_goals.lua:1647
 #: modules/module_reading_stats.lua:989 modules/module_reading_stats.lua:1036
 msgid "Update Stats Now"
@@ -4715,11 +4715,11 @@ msgstr "Đã hủy cập nhật."
 msgid "Update check cancelled."
 msgstr "Đã hủy kiểm tra cập nhật."
 
-#: features/sui_presets.lua:915 screens/sui_menu.lua:4175
+#: features/sui_presets.lua:915 screens/sui_menu.lua:4160
 msgid "Update with current settings"
 msgstr "Cập nhật với cài đặt hiện tại"
 
-#: screens/sui_menu.lua:4546
+#: screens/sui_menu.lua:4531
 msgid "Updater module not found."
 msgstr "Không tìm thấy mô-đun cập nhật."
 
@@ -4747,11 +4747,11 @@ msgstr ""
 msgid "Version, author and updates"
 msgstr "Phiên bản, tác giả và cập nhật"
 
-#: screens/sui_menu.lua:4521
+#: screens/sui_menu.lua:4506
 msgid "Version: %s"
 msgstr "Phiên bản: %s"
 
-#: infra/sui_config.lua:1650
+#: infra/sui_config.lua:1665
 msgid ""
 "Vertical space above this module.\n"
 "100% is the default spacing."
@@ -4768,14 +4768,14 @@ msgstr ""
 "Khoảng cách dọc phía trên mô-đun này.\n"
 "100% là khoảng cách mặc định."
 
-#: screens/sui_menu.lua:3147 screens/sui_menu.lua:3201
-#: screens/sui_menu.lua:3433
+#: screens/sui_menu.lua:3132 screens/sui_menu.lua:3186
+#: screens/sui_menu.lua:3418
 msgid "Visibility"
 msgstr "Hiển thị"
 
-#: screens/sui_menu.lua:3143 screens/sui_menu.lua:3149
-#: screens/sui_menu.lua:3153 screens/sui_menu.lua:3197
-#: screens/sui_menu.lua:3203 screens/sui_menu.lua:3207
+#: screens/sui_menu.lua:3128 screens/sui_menu.lua:3134
+#: screens/sui_menu.lua:3138 screens/sui_menu.lua:3182
+#: screens/sui_menu.lua:3188 screens/sui_menu.lua:3192
 msgid "Visible"
 msgstr "Hiển thị"
 
@@ -4906,7 +4906,7 @@ msgstr "WiFi không khả dụng trên thiết bị này."
 msgid "Wikipedia Lookup"
 msgstr "Tra cứu Wikipedia"
 
-#: modules/module_currently.lua:2019
+#: modules/module_currently.lua:2035
 msgid "With percentage"
 msgstr "Với phần trăm"
 
@@ -4983,7 +4983,7 @@ msgid "default"
 msgstr "mặc định"
 
 #: screens/sui_menu.lua:847 screens/sui_menu.lua:1150 screens/sui_menu.lua:1865
-#: screens/sui_menu.lua:4669 screens/sui_quicksettings_bar.lua:1132
+#: screens/sui_menu.lua:4654 screens/sui_quicksettings_bar.lua:1132
 msgid "disabled"
 msgstr "đã tắt"
 
@@ -4993,7 +4993,7 @@ msgid "empty"
 msgstr "Trống"
 
 #: screens/sui_menu.lua:847 screens/sui_menu.lua:1150 screens/sui_menu.lua:1865
-#: screens/sui_menu.lua:4669 screens/sui_quicksettings_bar.lua:1132
+#: screens/sui_menu.lua:4654 screens/sui_quicksettings_bar.lua:1132
 msgid "enabled"
 msgstr "đã bật"
 
@@ -5185,8 +5185,8 @@ msgid_plural "%d days"
 msgstr[0] "%d ngày"
 msgstr[1] "%d ngày"
 
-#: modules/module_coverdeck.lua:1034 modules/module_currently.lua:921
-#: modules/module_currently.lua:922 modules/module_currently.lua:1002
+#: modules/module_coverdeck.lua:1033 modules/module_currently.lua:931
+#: modules/module_currently.lua:932 modules/module_currently.lua:1012
 msgid "%d day of reading"
 msgid_plural "%d days of reading"
 msgstr[0] "%d ngày đọc"
@@ -5223,7 +5223,7 @@ msgid_plural "%d/%d books"
 msgstr[0] "%d/%d sách"
 msgstr[1] "%d/%d sách"
 
-#: modules/module_collections.lua:1579
+#: modules/module_collections.lua:1565
 msgid "(%d collection)"
 msgid_plural "(%d collections)"
 msgstr[0] "(%d bộ sưu tập)"

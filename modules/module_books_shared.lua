@@ -432,10 +432,11 @@ end
 --   Pure builder. color is "dark"|"light"|nil (nil follows Library).
 --   Book-grid callers place the widget into their multi-badge OverlapGroup.
 --
--- applyProgressBadge(cover_widget, bd, cw, ch, color, ref_w, ref_h)
+-- applyProgressBadge(cover_widget, bd, cw, ch, color, ref_w, ref_h, scale_pct)
 --   Convenience for single-cover modules: computes size/margin, builds
 --   the badge, wraps in OverlapGroup. ref_w/ref_h keep size consistent
---   on narrower peeks.
+--   on narrower peeks. scale_pct (default 100) scales the badge only; its
+--   edge margin stays fixed.
 -- ---------------------------------------------------------------------------
 local _CoverWidgets = nil
 local function getCoverWidgets()
@@ -477,18 +478,13 @@ function SH.buildProgressBadgeWidget(bd, eff_size, color)
     return CW.buildProgressBadgeWidget(desc)
 end
 
-function SH.applyProgressBadge(cover_widget, bd, cw, ch, color, ref_w, ref_h)
-    local edge_margin, eff_size
+function SH.applyProgressBadge(cover_widget, bd, cw, ch, color, ref_w, ref_h, scale_pct)
+    local base_min, fit = math_min(cw, ch), 1
     if ref_h and ref_h > 0 and ref_w and ref_w > 0 then
-        local scale   = ch / ref_h
-        local ref_min = math_min(ref_w, ref_h)
-        edge_margin   = math_max(1, math_floor(ref_min * 0.08 * scale))
-        eff_size      = math_max(8, math_floor(ref_min * 0.14 * scale))
-    else
-        local cell_min = math_min(cw, ch)
-        edge_margin    = math_max(1, math_floor(cell_min * 0.08))
-        eff_size       = math_max(8, math_floor(cell_min * 0.14))
+        base_min, fit = math_min(ref_w, ref_h), ch / ref_h
     end
+    local edge_margin = math_max(1, math_floor(base_min * 0.08 * fit))
+    local eff_size    = math_max(8, math_floor(base_min * 0.14 * fit * ((scale_pct or 100) / 100)))
 
     local wg = SH.buildProgressBadgeWidget(bd, eff_size, color)
     if not wg then return cover_widget end

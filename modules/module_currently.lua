@@ -116,6 +116,16 @@ local function setProgressBadgeColor(pfx, v)
     SUISettings:saveSetting(pfx .. SETTING_PROGRESS_BADGE_COLOR, v)
 end
 
+-- Draws the progress pentagon over a cover through the shared helper, using
+-- the module's own color and size settings.
+local function applyProgressBadge(cover, bd, cw, ch, pfx)
+    local SH = getSH()
+    if not SH or not SH.applyProgressBadge then return cover end
+    return SH.applyProgressBadge(cover, bd, cw, ch,
+        getProgressBadgeColorOverride(pfx), nil, nil,
+        Config.getBadgeScalePct("currently", pfx))
+end
+
 -- Setting key for stats layout: "default" (one line per stat) or "compact" (single row with · separator + ETA)
 local STATS_STYLE_KEY = "currently_stats_style"
 
@@ -1139,9 +1149,8 @@ function M.build(w, ctx)
     -- Optional progress pentagon on the cover (same primitive as Coverdeck
     -- and the book-grid modules). Applied after the cover is resolved so
     -- late loads in updateCovers can re-apply it the same way.
-    if showProgressBadge(pfx) and SH.applyProgressBadge then
-        local color = getProgressBadgeColorOverride(pfx)
-        cover = SH.applyProgressBadge(cover, bd, cover_w, cover_h, color)
+    if showProgressBadge(pfx) then
+        cover = applyProgressBadge(cover, bd, cover_w, cover_h, pfx)
     end
 
     local full_h = content_h
@@ -1269,10 +1278,9 @@ function M.updateCovers(widget, _ctx)
     for _, slot in ipairs(tappable._cover_slots) do
         local new_cover = SH.getBookCover(slot.fp, slot.w, slot.h)
         if new_cover then
-            if show_badge and SH.applyProgressBadge then
+            if show_badge then
                 local bd = SH.getBookData(slot.fp, _ctx and _ctx.prefetched and _ctx.prefetched[slot.fp])
-                local color = getProgressBadgeColorOverride(pfx)
-                new_cover = SH.applyProgressBadge(new_cover, bd, slot.w, slot.h, color)
+                new_cover = applyProgressBadge(new_cover, bd, slot.w, slot.h, pfx)
             end
             slot.container[slot.idx] = new_cover
         elseif not Config.isCoverMissing(slot.fp) then
@@ -2005,6 +2013,14 @@ function M.getMenuItems(ctx_menu)
             get          = function() return getProgressBadgeColorOverride(pfx) end,
             set          = function(v) setProgressBadgeColor(pfx, v) end,
             refresh      = refresh,
+        },
+        Config.makeBadgeSizeItem{
+            info         = _lc("Scale for the progress badge."),
+            enabled_func = function() return showProgressBadge(pfx) end,
+            get          = function() return Config.getBadgeScalePct("currently", pfx) end,
+            set          = function(v) Config.setBadgeScale(v, "currently", pfx) end,
+            refresh      = refresh,
+            _lc          = _lc,
         },
     }
 

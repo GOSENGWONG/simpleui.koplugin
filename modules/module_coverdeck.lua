@@ -308,16 +308,15 @@ end
 
 -- ---------------------------------------------------------------------------
 -- Progress badge (pentagon) — delegated to the shared helper so the
--- drawing primitive matches every other progress badge in the app.
--- Coverdeck is a single-instance module (no per-instance id), so there
--- is no per-instance size override — only color, via
--- getProgressBadgeColorOverride/setProgressBadgeColor above.
+-- drawing primitive matches every other progress badge in the app. Color
+-- and size come from the module's own settings.
 -- ---------------------------------------------------------------------------
 local function applyProgressBadge(cover_widget, bd, cw, ch, pfx, ref_w, ref_h)
     local SH = getSH()
     if not SH or not SH.applyProgressBadge then return cover_widget end
-    local color = getProgressBadgeColorOverride(pfx)
-    return SH.applyProgressBadge(cover_widget, bd, cw, ch, color, ref_w, ref_h)
+    return SH.applyProgressBadge(cover_widget, bd, cw, ch,
+        getProgressBadgeColorOverride(pfx), ref_w, ref_h,
+        Config.getBadgeScalePct("coverdeck", pfx))
 end
 
 -- ---------------------------------------------------------------------------
@@ -1678,6 +1677,14 @@ function M.getMenuItems(ctx_menu)
             get          = function() return getProgressBadgeColorOverride(pfx) end,
             set          = function(v) setProgressBadgeColor(pfx, v) end,
             refresh      = refresh,
+        },
+        Config.makeBadgeSizeItem{
+            info         = _lc("Scale for the progress badge."),
+            enabled_func = function() return showProgressBadge(pfx) end,
+            get          = function() return Config.getBadgeScalePct("coverdeck", pfx) end,
+            set          = function(v) Config.setBadgeScale(v, "coverdeck", pfx) end,
+            refresh      = refresh,
+            _lc          = _lc,
         },
     }
     return Config.buildModuleMenu({

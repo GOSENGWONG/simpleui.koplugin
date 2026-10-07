@@ -236,27 +236,18 @@ end
 
 -- Count badge SIZE — independent from this module's own Scale/Cover Size
 -- (which also affect the badge via `cs` in getDims, see below) and from
--- every other module's badge size. Reuses GridRenderer's badge-scale bounds
--- (50-200%, step 10, 100% default) purely for a consistent spinner feel
--- across the plugin — this is its own setting, not shared storage; the
--- count badge isn't part of the pages/series/new/progress family that
+-- every other module's badge size. It has its own key because the count
+-- badge isn't part of the pages/series/new/progress family that
 -- GridRenderer.getBadgeScale governs (see SUIStyle.BADGE_SIZE_ADJUST's doc
--- comment), so it needs its own key instead of reusing that one.
-local function _clampCollBadgeScale(n)
-    return math.max(GridRenderer.BADGE_SCALE_MIN, math.min(GridRenderer.BADGE_SCALE_MAX, math.floor(n)))
-end
-local function getBadgeScalePct()
-    local n = tonumber(SUISettings:readSetting(BADGE_SCALE_KEY))
-    if not n then return GridRenderer.BADGE_SCALE_DEF end
-    return _clampCollBadgeScale(n)
-end
+-- comment).
+local function getBadgeScalePct() return Config.getScalePctByKey(BADGE_SCALE_KEY) end
 -- Fixed +20% base-size boost, same idea and same value as
 -- engines/sui_book_grid.lua's _BG_CORNER_BADGE_BASE_BOOST — not
 -- user-adjustable, multiplies on top of whatever percent the user has
 -- chosen in Badge Size above.
 local _COLL_BADGE_BASE_BOOST = 1.2
 local function getBadgeScale() return getBadgeScalePct() / 100 * _COLL_BADGE_BASE_BOOST end
-local function saveBadgeScale(pct) SUISettings:saveSetting(BADGE_SCALE_KEY, _clampCollBadgeScale(pct)) end
+local function saveBadgeScale(pct) Config.setScaleByKey(pct, BADGE_SCALE_KEY) end
 
 -- "stack" (default) = single cover of the first book, no spine implied —
 --                      see getHideSpine below, the book-spine decoration is
@@ -1421,19 +1412,14 @@ local function extraMenuItemsAfter(ctx_menu)
                 keep_menu_open = true,
                 callback       = function() saveBadgeColor("light"); refresh() end,
             },
-            Config.makeScaleItem{
-                text_func     = function() return _lc("Badge Size") end,
-                separator     = true,
-                enabled_func  = function() return not getBadgeHidden() end,
-                title         = _lc("Badge Size"),
-                info          = _lc("Scale for the collection count badge."),
-                get           = getBadgeScalePct,
-                set           = saveBadgeScale,
-                value_min     = GridRenderer.BADGE_SCALE_MIN,
-                value_max     = GridRenderer.BADGE_SCALE_MAX,
-                value_step    = GridRenderer.BADGE_SCALE_STEP,
-                default_value = GridRenderer.BADGE_SCALE_DEF,
-                refresh       = refresh,
+            Config.makeBadgeSizeItem{
+                separator    = true,
+                enabled_func = function() return not getBadgeHidden() end,
+                info         = _lc("Scale for the collection count badge."),
+                get          = getBadgeScalePct,
+                set          = saveBadgeScale,
+                refresh      = refresh,
+                _lc          = _lc,
             },
         },
     }
