@@ -9,6 +9,8 @@
 --       height    = px,
 --       face      = Font face used for every label,
 --       tabs      = { { id = "a", label = "A" }, ... },  -- optional; omit for a label-only strip
+--                   -- { id = "x", spacer_w = px } reserves a blank cell for an
+--                   -- external widget; it is never selectable
 --       on_select = function(id) end,
 --       fgcolor   = optional color (defaults to the primary text color),
 --   }
@@ -16,6 +18,8 @@
 --   strip:setLabel(text)   -- show a static label; nil restores the tabs
 --   strip:setSpan(x, w)    -- move/resize the strip; the next setActive/setLabel
 --                          -- call rebuilds the content for the new width
+--   strip:getCellX(id)     -- offset where the content of a tab or spacer cell starts;
+--                          -- nil while a label is shown. Valid after setActive/setLabel
 --
 -- The first tab has no leading padding, so its text starts exactly at the
 -- strip's left edge. Content swaps never change the strip's geometry; only
@@ -59,48 +63,71 @@ local function _measureLabel(self, label, max_w)
     return regular, bold, math.max(regular:getWidth(), bold:getWidth())
 end
 
-function TabStrip:_buildTabs()
-    local n = #self.tabs
-    local nominal_pad = Screen:scaleBySize(14)
-    local max_text_w  = math.floor(self.width / n)
+-- Builds the cell of one text tab: the label plus, for the active tab, an underline.
+function TabStrip:_buildTextCell(e, lead_pad, cell_w)
+    local active = e.tab.id == self._active
+    local text   = active and e.bold or e.regular
+    local unused = active and e.regular or e.bold
+    unused:free()
 
-    local entries, text_total = {}, 0
-    for _, tab in ipairs(self.tabs) do
-        local regular, bold, w = _measureLabel(self, tab.label, max_text_w)
-        entries[#entries + 1] = { tab = tab, regular = regular, bold = bold, w = w }
-        text_total = text_total + w
+    local cell_dim = Geom:new{ w = cell_w, h = self.height }
+    local cell = OverlapGroup:new{
+        allow_mirroring = false,
+        dimen           = cell_dim,
+        LeftContainer:new{
+            dimen = cell_dim,
+            HorizontalGroup:new{ HorizontalSpan:new{ width = lead_pad }, text },
+        },
+    }
+    if active then
+        local underline_h = Screen:scaleBySize(2)
+        cell[#cell + 1] = LineWidget:new{
+            dimen          = Geom:new{ w = e.w, h = underline_h },
+            background     = self.fgcolor,
+            overlap_offset = { lead_pad, self.height - underline_h },
+        }
+    end
+    return _tapContainer(cell, cell_w, self.height, e.tab.id, self.on_select)
+end
+
+function TabStrip:_buildTabs()
+    local nominal_pad = Screen:scaleBySize(14)
+
+    local text_count, spacer_total = 0, 0
+    for _i, tab in ipairs(self.tabs) do
+        if tab.spacer_w then
+            spacer_total = spacer_total + tab.spacer_w
+        else
+            text_count = text_count + 1
+        end
+    end
+    local max_text_w = math.floor((self.width - spacer_total) / math.max(1, text_count))
+
+    local entries, content_total = {}, spacer_total
+    for _i, tab in ipairs(self.tabs) do
+        if tab.spacer_w then
+            entries[#entries + 1] = { tab = tab, w = tab.spacer_w }
+        else
+            local regular, bold, w = _measureLabel(self, tab.label, max_text_w)
+            entries[#entries + 1] = { tab = tab, regular = regular, bold = bold, w = w }
+            content_total = content_total + w
+        end
     end
 
-    -- Shrink the horizontal padding evenly when the labels do not fit.
-    local pad = math.min(nominal_pad, math.max(0, math.floor((self.width - text_total) / (2 * n))))
-    local underline_h = Screen:scaleBySize(2)
+    -- Shrink the horizontal padding evenly when the content does not fit.
+    local cells = math.max(1, #entries)
+    local pad   = math.min(nominal_pad, math.max(0, math.floor((self.width - content_total) / (2 * cells))))
 
-    local row = HorizontalGroup:new{ allow_mirroring = false }
+    self._cell_x = {}
+
+    local row, x = HorizontalGroup:new{ allow_mirroring = false }, 0
     for i, e in ipairs(entries) do
-        local active = e.tab.id == self._active
-        local text   = active and e.bold or e.regular
-        local unused = active and e.regular or e.bold
-        unused:free()
-
         local lead_pad = i == 1 and 0 or pad
         local cell_w   = lead_pad + e.w + pad
-        local cell_dim = Geom:new{ w = cell_w, h = self.height }
-        local cell = OverlapGroup:new{
-            allow_mirroring = false,
-            dimen           = cell_dim,
-            LeftContainer:new{
-                dimen = cell_dim,
-                HorizontalGroup:new{ HorizontalSpan:new{ width = lead_pad }, text },
-            },
-        }
-        if active then
-            cell[#cell + 1] = LineWidget:new{
-                dimen          = Geom:new{ w = e.w, h = underline_h },
-                background     = self.fgcolor,
-                overlap_offset = { lead_pad, self.height - underline_h },
-            }
-        end
-        row[#row + 1] = _tapContainer(cell, cell_w, self.height, e.tab.id, self.on_select)
+        self._cell_x[e.tab.id] = x + lead_pad
+        x = x + cell_w
+        row[#row + 1] = e.tab.spacer_w and HorizontalSpan:new{ width = cell_w }
+            or self:_buildTextCell(e, lead_pad, cell_w)
     end
     return row
 end
@@ -140,6 +167,11 @@ function TabStrip:setActive(id)
     self._active = id
     self._label  = nil
     return self:_render("tab:" .. tostring(id), function() return self:_buildTabs() end)
+end
+
+function TabStrip:getCellX(id)
+    if self._label or not self._cell_x then return nil end
+    return self._cell_x[id]
 end
 
 function TabStrip:setLabel(text)

@@ -1502,7 +1502,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         if fm then UIManager:setDirty(fm[1], "ui") end
     end
 
-    -- Builds a visibility toggle list for one context ("fm" or "inj").
+    -- Builds a visibility toggle list for one context ("fm" or "sub").
     local function makeTitleBarItemsForCtx(ctx)
         local Titlebar = require("screens/sui_titlebar")
         local items = {}
@@ -1836,6 +1836,122 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         return items
     end
 
+    -- Tabs style: one list for the browse tabs and the search button. The eye
+    -- shows or hides an entry; the arrows reorder it.
+    local function makeTitleBarTabsItems(ctx_menu)
+        local Titlebar = require("screens/sui_titlebar")
+        local title    = _("Tabs and Search")
+
+        local function isEnabled() return Titlebar.isEnabled() end
+
+        -- Toggles an entry unless it is the last visible one. Returns whether it changed.
+        local function toggleEntry(id)
+            local visible = Titlebar.isItemVisible(id)
+            if visible then
+                local others = 0
+                for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                    if e.visible and e.id ~= id then others = others + 1 end
+                end
+                if others == 0 then
+                    UI.Notify.toast(_("At least one item must stay visible."), 2)
+                    return false
+                end
+            end
+            Titlebar.setItemVisible(id, not visible)
+            _reapplyAllTitlebars()
+            return true
+        end
+
+        local function saveOrder(sort_items)
+            local order = {}
+            for _i, it in ipairs(sort_items) do order[#order + 1] = it.orig_item end
+            Titlebar.setTabsOrder(order)
+            _reapplyAllTitlebars()
+        end
+
+        local function summary()
+            local names = {}
+            for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                if e.visible then names[#names + 1] = e.label end
+            end
+            return #names > 0 and table.concat(names, "  ·  ") or _("No items selected.")
+        end
+
+        local function arrangeItems(ctx)
+            local items = {}
+            for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                local id   = e.id
+                local item = { text = e.label, orig_item = id }
+                local function sync()
+                    local visible = Titlebar.isItemVisible(id)
+                    item.dim_row     = not visible or nil
+                    item.toggle_icon = visible and "show" or "hide"
+                end
+                item.on_toggle = function()
+                    if toggleEntry(id) then
+                        sync()
+                        ctx.repaint()
+                    end
+                end
+                sync()
+                items[#items + 1] = item
+            end
+            return items
+        end
+
+        local items = {
+            {
+                text           = title,
+                enabled_func   = isEnabled,
+                keep_menu_open = true,
+                callback       = function()
+                    local sort_items = {}
+                    for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                        sort_items[#sort_items + 1] = { text = e.label, orig_item = e.id }
+                    end
+                    local SortWidget = ctx_menu.SortWidget or require("ui/widget/sortwidget")
+                    UIManager:show(SortWidget:new{
+                        title             = title,
+                        item_table        = sort_items,
+                        covers_fullscreen = true,
+                        callback          = function() saveOrder(sort_items) end,
+                    })
+                end,
+                sui_build = ctx_menu.is_sui and function(ctx, _item)
+                    local SUIWindow = require("engines/sui_window")
+                    return SUIWindow.ListRow{
+                        title        = title,
+                        subtitle     = summary,
+                        inner_w      = ctx.inner_w,
+                        show_chevron = true,
+                        on_tap       = function()
+                            ctx.push("arrange", {
+                                title     = title,
+                                items     = arrangeItems(ctx),
+                                on_change = saveOrder,
+                            })
+                        end,
+                    }
+                end or nil,
+            },
+        }
+
+        -- Classic menu: visibility checklist (the SUI list has the eye toggle).
+        if not ctx_menu.is_sui then
+            for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                local id = e.id
+                items[#items + 1] = {
+                    text           = e.label,
+                    checked_func   = function() return Titlebar.isItemVisible(id) end,
+                    enabled_func   = isEnabled,
+                    keep_menu_open = true,
+                    callback       = function() toggleEntry(id) end,
+                }
+            end
+        end
+        return items
+    end
+
     local function makeTitleBarMenu(ctx_menu)
         local Config = require("infra/sui_config")
         local function titlebar() return require("screens/sui_titlebar") end
@@ -1907,9 +2023,12 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
             },
         }
 
-        -- Item and size customization is only offered in the classic style.
+        -- The classic style offers the full item and size customization; the
+        -- tabs style the arrangement of its tabs and search button.
         local items, size
-        if titlebar().getStyle() ~= titlebar().STYLE_TABS then
+        if titlebar().getStyle() == titlebar().STYLE_TABS then
+            items = makeTitleBarTabsItems(ctx_menu)
+        else
             local Titlebar = require("screens/sui_titlebar")
             items = {
                 {
@@ -2909,19 +3028,20 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
 
     plugin.makeBarsMenuItems = makeBarsMenuItems
 
+    -- Refreshes the library mosaic view immediately after a setting change.
+    local function _refreshFC()
+        local FM = package.loaded["apps/filemanager/filemanager"]
+        local fm = FM and FM.instance
+        if fm and fm.file_chooser then
+            fm._navbar_suppress_path_change = true
+            fm.file_chooser:refreshPath()
+            fm._navbar_suppress_path_change = nil
+        end
+    end
+
     local function makeLibraryMenuItems(ctx_menu)
         local ok_fc, FC = pcall(require, "features/library/sui_foldercovers")
         if not ok_fc or not FC then return {} end
-        -- Refresh the mosaic view immediately after any setting change.
-        local function _refreshFC()
-            local FM = package.loaded["apps/filemanager/filemanager"]
-            local fm = FM and FM.instance
-            if fm and fm.file_chooser then
-                fm._navbar_suppress_path_change = true
-                fm.file_chooser:refreshPath()
-                fm._navbar_suppress_path_change = nil
-            end
-        end
         return {
             -- ── Enable Library Custom Covers ────────────────────────────
             {
@@ -3709,8 +3829,8 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         table.insert(items, tmp.filemanager_display_mode)
                     end
 
-                    -- 2. "Mosaic and detailed list settings" filtered:
-                    --    only the first 3 items (grid/list spinners).
+                    -- 2. "Mosaic and detailed list settings" filtered to the
+                    --    first 3 entries (grid/list size dialogs).
                     --    CoverBrowser inserts at pos 4+ of the stub.
                     local mosaic_item
                     for i, child in ipairs(tmp.filebrowser_settings.sub_item_table) do
@@ -3720,24 +3840,34 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         end
                     end
 
-                    if mosaic_item and type(mosaic_item.sub_item_table) == "table" then
-                        -- The first 3 entries are always:
-                        --   [1] Items per page in portrait mosaic mode  (DoubleSpinWidget)
-                        --   [2] Items per page in landscape mosaic mode (DoubleSpinWidget, separator=true)
-                        --   [3] Items per page in portrait list mode    (SpinWidget)
-                        -- We clone [2] without the separator so as not to break the visuals.
+                    local fc = fm.file_chooser
+                    if mosaic_item and fc and type(mosaic_item.sub_item_table) == "table" then
+                        -- Entries keep their native dialogs. Each row gets a
+                        -- static label and shows the current size as its value
+                        -- (see the row title/value convention in
+                        -- engines/sui_window.lua). Defaults mirror the native ones.
+                        local size_rows = {
+                            { label = _("Portrait mosaic mode"),
+                              value = function()
+                                  return T(_("%1 × %2"), fc.nb_cols_portrait or 3, fc.nb_rows_portrait or 3)
+                              end },
+                            { label = _("Landscape mosaic mode"),
+                              value = function()
+                                  return T(_("%1 × %2"), fc.nb_cols_landscape or 4, fc.nb_rows_landscape or 2)
+                              end },
+                            { label = _("Portrait list mode"),
+                              value = function() return tostring(fc.files_per_page or 10) end },
+                        }
                         local filtered = {}
-                        for i = 1, 3 do
+                        for i, row in ipairs(size_rows) do
                             local entry = mosaic_item.sub_item_table[i]
                             if not entry then break end
-                            if i == 2 then
-                                local clean = {}
-                                for k, v in pairs(entry) do clean[k] = v end
-                                clean.separator = nil
-                                table.insert(filtered, clean)
-                            else
-                                table.insert(filtered, entry)
-                            end
+                            entry.text           = row.label
+                            entry.text_func      = nil
+                            entry.value_func     = row.value
+                            entry.mandatory_func = row.value
+                            entry.separator      = nil
+                            filtered[#filtered + 1] = entry
                         end
                         table.insert(items, {
                             text           = mosaic_item.text,
@@ -4406,6 +4536,33 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     },
                 }, -- end Icons sub_item_table
             },   -- end Icons submenu
+            -- ── Cover Shadow ──────────────────────────────────────────────
+            {
+                text = _("Cover Shadow"),
+                sub_item_table_func = function()
+                    local SUIStyle = require("features/sui_style")
+                    -- One checkbox per surface; `refresh` redraws that surface.
+                    local function scopeItem(label, scope, refresh)
+                        return {
+                            text           = label,
+                            checked_func   = function() return SUIStyle.coverShadowEnabled(scope) end,
+                            keep_menu_open = true,
+                            callback       = function()
+                                SUIStyle.setCoverShadowEnabled(scope, not SUIStyle.coverShadowEnabled(scope))
+                                refresh()
+                            end,
+                        }
+                    end
+                    return {
+                        scopeItem(_("Library"), SUIStyle.SHADOW_LIBRARY, function()
+                            local ok_fc, FC = pcall(require, "features/library/sui_foldercovers")
+                            if ok_fc and FC then FC.invalidateCache() end
+                            _refreshFC()
+                        end),
+                        scopeItem(_("Modules"), SUIStyle.SHADOW_MODULES, _applyFullLayoutRefresh),
+                    }
+                end,
+            },
             -- ── UI Font ───────────────────────────────────────────────────
             {
                 text = _("UI Font"),

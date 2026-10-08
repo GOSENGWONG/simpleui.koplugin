@@ -379,7 +379,7 @@ local function buildCompactGoalRow(inner_w, lbl_w, pct_w, label_str, pct, pct_st
 end
 
 local function _buildInnerDefault(inner_w, label_str, pct, pct_str, detail_str, d, clr_sub_eff, clr_blk_eff)
-    local PCT_W       = d.pct_w
+    local PCT_W       = _measureLblW({ pct_str }, d.face_pct, d.bold_pct, d.pct_w)
     local LBL_BAR_GAP = d.col_gap
     local BAR_PCT_GAP = d.col_gap
     local available   = inner_w - d.lbl_w - LBL_BAR_GAP - BAR_PCT_GAP - PCT_W
@@ -896,6 +896,26 @@ local function _dailyData(today_secs)
     return pct, pct_str, detail_text
 end
 
+-- Collects the goal data of every visible row, keyed by row id, together with
+-- the width of the percentage column shared by all of them. `show` maps the row
+-- ids ("annual", "monthly", "daily") to their visibility.
+local function _collectRowData(show, books_read, month_secs, today_secs, face, bold, floor_w)
+    local data, pct_strs = {}, {}
+    local sources = {
+        annual  = function() return _annualData(books_read) end,
+        monthly = function() return _monthlyData(month_secs) end,
+        daily   = function() return _dailyData(today_secs) end,
+    }
+    for id, fetch in pairs(sources) do
+        if show[id] then
+            local pct, pct_str, detail = fetch()
+            data[id] = { pct = pct, pct_str = pct_str, detail = detail }
+            if pct_str ~= "" then pct_strs[#pct_strs + 1] = pct_str end
+        end
+    end
+    return data, _measureLblW(pct_strs, face, bold, floor_w)
+end
+
 -- Module API
 local M = {}
 
@@ -954,6 +974,7 @@ function M.build(w, ctx)
     if sp.db_conn_fatal and ctx then ctx.db_conn_fatal = true end
     local rows_children = { align = "left" }
     local layout = getLayout()
+    local show_rows = { annual = show_ann, monthly = show_mon, daily = show_day }
 
     local rg_update_funcs = {}
     local CLR_TEXT_BLK_EFF = SUIStyle.COLOR.text_primary
@@ -1042,20 +1063,8 @@ function M.build(w, ctx)
         -- Capture year/month strings once — avoids repeated os.date calls.
         local year_str  = _getYearStr()
         local month_str = _getMonthStr()
-        -- Pre-compute data for all active rows so we can measure pct_w across
-        -- all of them and use the same column width (prevents overlap at 100%+).
-        local ann_pct, ann_pct_str, ann_detail
-        local mon_pct, mon_pct_str, mon_detail
-        local day_pct, day_pct_str, day_detail
-        if show_ann then ann_pct, ann_pct_str, ann_detail = _annualData(books_read) end
-        if show_mon then mon_pct, mon_pct_str, mon_detail = _monthlyData(month_secs) end
-        if show_day then day_pct, day_pct_str, day_detail = _dailyData(today_secs) end
-        -- Measure pct column width across all active rows.
-        local pct_strs = {}
-        if show_ann and ann_pct_str ~= "" then pct_strs[#pct_strs+1] = ann_pct_str end
-        if show_mon and mon_pct_str ~= "" then pct_strs[#pct_strs+1] = mon_pct_str end
-        if show_day and day_pct_str ~= "" then pct_strs[#pct_strs+1] = day_pct_str end
-        local pct_w = _measureLblW(pct_strs, cd.face_pct, cd.bold_pct, Screen:scaleBySize(28))
+        local rows, pct_w = _collectRowData(show_rows, books_read, month_secs, today_secs,
+            cd.face_pct, cd.bold_pct, Screen:scaleBySize(28))
         local rendered_count = 0
         for _i, k in ipairs(_getElemOrder(ctx.pfx)) do
             if k == "annual" and show_ann then
@@ -1063,7 +1072,7 @@ function M.build(w, ctx)
                 local lbl_w = _measureLblW({ year_str }, cd.face_lbl, cd.bold_lbl, cd.lbl_w)
                 cd.lbl_w = lbl_w
                 local row_widget, row_update_fn = buildCompactGoalRow(
-                    inner_w, lbl_w, pct_w, year_str, ann_pct, ann_pct_str, ann_detail,
+                    inner_w, lbl_w, pct_w, year_str, rows.annual.pct, rows.annual.pct_str, rows.annual.detail,
                     function()
                         local ok, SW = pcall(require, "screens/sui_stats_windows")
                         if ok and SW and SW.showFinishedBooksDialog then
@@ -1082,7 +1091,7 @@ function M.build(w, ctx)
                 local lbl_w = _measureLblW({ month_str }, cd.face_lbl, cd.bold_lbl, cd.lbl_w)
                 cd.lbl_w = lbl_w
                 local row_widget, row_update_fn = buildCompactGoalRow(
-                    inner_w, lbl_w, pct_w, month_str, mon_pct, mon_pct_str, mon_detail,
+                    inner_w, lbl_w, pct_w, month_str, rows.monthly.pct, rows.monthly.pct_str, rows.monthly.detail,
                     function() showMonthlySettingsDialog() end, cd, CLR_TEXT_SUB_EFF, CLR_TEXT_BLK_EFF)
                 rows_children[#rows_children+1] = row_widget
                 table.insert(rg_update_funcs, { cat = "timeseries", fn = function(_books_r, _today_s, month_s)
@@ -1094,7 +1103,7 @@ function M.build(w, ctx)
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = cd.row_gap } end
                 local lbl_w = _measureLblW({ _("Today") }, cd.face_lbl, cd.bold_lbl, cd.lbl_w)
                 local row_widget, row_update_fn = buildCompactGoalRow(
-                    inner_w, lbl_w, pct_w, _("Today"), day_pct, day_pct_str, day_detail,
+                    inner_w, lbl_w, pct_w, _("Today"), rows.daily.pct, rows.daily.pct_str, rows.daily.detail,
                     function() showDailySettingsDialog() end, cd, CLR_TEXT_SUB_EFF, CLR_TEXT_BLK_EFF)
                 rows_children[#rows_children+1] = row_widget
                 table.insert(rg_update_funcs, { cat = "timeseries", fn = function(_books_r, today_s, _month_s)
@@ -1109,15 +1118,17 @@ function M.build(w, ctx)
         -- Capture year/month strings once — avoids repeated os.date calls.
         local year_str  = _getYearStr()
         local month_str = _getMonthStr()
+        local rows, pct_w = _collectRowData(show_rows, books_read, month_secs, today_secs,
+            d.face_pct, d.bold_pct, d.pct_w)
+        d.pct_w = pct_w
         local rendered_count = 0
         for _i, k in ipairs(_getElemOrder(ctx.pfx)) do
             if k == "annual" and show_ann then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = d.row_gap } end
-                local pct, pct_str, detail = _annualData(books_read)
                 local ann_lbl_w = _measureLblW({ year_str }, d.face_lbl, d.bold_lbl, d.lbl_w)
                 d.lbl_w = ann_lbl_w
                 local row_widget, row_update_fn = buildGoalRow(
-                    inner_w, year_str, pct, pct_str, detail,
+                    inner_w, year_str, rows.annual.pct, rows.annual.pct_str, rows.annual.detail,
                     function()
                         local ok, SW = pcall(require, "screens/sui_stats_windows")
                         if ok and SW and SW.showFinishedBooksDialog then
@@ -1133,11 +1144,10 @@ function M.build(w, ctx)
                 rendered_count = rendered_count + 1
             elseif k == "monthly" and show_mon then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = d.row_gap } end
-                local pct, pct_str, detail = _monthlyData(month_secs)
                 local mon_lbl_w = _measureLblW({ month_str }, d.face_lbl, d.bold_lbl, d.lbl_w)
                 d.lbl_w = mon_lbl_w
                 local row_widget, row_update_fn = buildGoalRow(
-                    inner_w, month_str, pct, pct_str, detail,
+                    inner_w, month_str, rows.monthly.pct, rows.monthly.pct_str, rows.monthly.detail,
                     function() showMonthlySettingsDialog() end, d, CLR_TEXT_SUB_EFF, CLR_TEXT_BLK_EFF)
                 rows_children[#rows_children+1] = row_widget
                 table.insert(rg_update_funcs, { cat = "timeseries", fn = function(_books_r, _today_s, month_s)
@@ -1147,11 +1157,10 @@ function M.build(w, ctx)
                 rendered_count = rendered_count + 1
             elseif k == "daily" and show_day then
                 if rendered_count > 0 then rows_children[#rows_children+1] = VerticalSpan:new{ width = d.row_gap } end
-                local pct, pct_str, detail = _dailyData(today_secs)
                 local day_lbl_w = _measureLblW({ _("Today") }, d.face_lbl, d.bold_lbl, d.lbl_w)
                 d.lbl_w = day_lbl_w
                 local row_widget, row_update_fn = buildGoalRow(
-                    inner_w, _("Today"), pct, pct_str, detail,
+                    inner_w, _("Today"), rows.daily.pct, rows.daily.pct_str, rows.daily.detail,
                     function() showDailySettingsDialog() end, d, CLR_TEXT_SUB_EFF, CLR_TEXT_BLK_EFF)
                 rows_children[#rows_children+1] = row_widget
                 table.insert(rg_update_funcs, { cat = "timeseries", fn = function(_books_r, today_s, _month_s)
@@ -1247,7 +1256,7 @@ function M.getHeight(_ctx)
         local approx_inner
         local bw = Config.getBentoWidth("reading_goals", pfx)
         if bw < 100 then
-            local content_w = Screen:getWidth() - UI.SIDE_PAD * 2
+            local content_w = UI.getInnerW()
             if UI.isLandscape() then
                 content_w = UI.getSpreadColWidth(content_w)
             end
@@ -1307,6 +1316,21 @@ function M.getMenuItems(ctx_menu)
         refresh = refresh,
         _lc     = _lc,
     }
+    -- Arrange-screen row for one goal. Tapping the row and the "Set Goal"
+    -- action both open the same value dialog.
+    local function goalArrangeItem(kind, label, subtitle, showDialog)
+        local function setGoal() showDialog(refresh) end
+        return {
+            text       = label,
+            subtitle   = subtitle,
+            orig_item  = kind,
+            on_tap     = setGoal,
+            more_items = {
+                { text = _lc("Set Goal"), icon = "edit", on_tap = setGoal },
+            },
+        }
+    end
+
     local rows = {
         {
             text = _lc("Goals"),
@@ -1426,51 +1450,27 @@ function M.getMenuItems(ctx_menu)
                             items_func = function()
                                 local sort_items = {}
                                 for _, k in ipairs(_getElemOrder(ctx_menu.pfx)) do
+                                    local item
                                     if k == "annual" and showAnnual() then
                                         local g = getAnnualGoal()
-                                        local subtitle = g > 0
-                                            and string.format(N_lc("%d book in %s", "%d books in %s", g), g, _getYearStr())
-                                            or  _lc("Not set")
-                                        sort_items[#sort_items+1] = {
-                                            text       = _lc("Annual Goal"),
-                                            subtitle   = subtitle,
-                                            orig_item  = "annual",
-                                            more_items = {
-                                                { text = _lc("Set Goal"), icon = "edit",
-                                                  on_tap = function() showAnnualGoalDialog(function() refresh() end) end },
-                                            },
-                                        }
+                                        item = goalArrangeItem(k, _lc("Annual Goal"),
+                                            g > 0 and string.format(N_lc("%d book in %s", "%d books in %s", g), g, _getYearStr())
+                                                  or  _lc("Not set"),
+                                            showAnnualGoalDialog)
                                     elseif k == "monthly" and showMonthly() then
                                         local secs = getMonthlyGoalSecs()
-                                        local h    = math.floor(secs / 3600)
-                                        local subtitle = secs > 0
-                                            and string.format(_lc("%d hr/month"), h)
-                                            or  _lc("Not set")
-                                        sort_items[#sort_items+1] = {
-                                            text       = _lc("Monthly Goal"),
-                                            subtitle   = subtitle,
-                                            orig_item  = "monthly",
-                                            more_items = {
-                                                { text = _lc("Set Goal"), icon = "edit",
-                                                  on_tap = function() showMonthlySettingsDialog(function() refresh() end) end },
-                                            },
-                                        }
+                                        item = goalArrangeItem(k, _lc("Monthly Goal"),
+                                            secs > 0 and string.format(_lc("%d hr/month"), math.floor(secs / 3600))
+                                                     or  _lc("Not set"),
+                                            showMonthlySettingsDialog)
                                     elseif k == "daily" and showDaily() then
                                         local secs = getDailyGoalSecs()
-                                        local m    = math.floor(secs / 60)
-                                        local subtitle = secs > 0
-                                            and string.format(_lc("%d min/day"), m)
-                                            or  _lc("Not set")
-                                        sort_items[#sort_items+1] = {
-                                            text       = _lc("Daily Goal"),
-                                            subtitle   = subtitle,
-                                            orig_item  = "daily",
-                                            more_items = {
-                                                { text = _lc("Set Goal"), icon = "edit",
-                                                  on_tap = function() showDailySettingsDialog(function() refresh() end) end },
-                                            },
-                                        }
+                                        item = goalArrangeItem(k, _lc("Daily Goal"),
+                                            secs > 0 and string.format(_lc("%d min/day"), math.floor(secs / 60))
+                                                     or  _lc("Not set"),
+                                            showDailySettingsDialog)
                                     end
+                                    if item then sort_items[#sort_items + 1] = item end
                                 end
                                 return sort_items
                             end,

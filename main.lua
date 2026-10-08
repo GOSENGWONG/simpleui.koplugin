@@ -78,7 +78,7 @@ local SimpleUIPlugin = WidgetContainer:new{
     _orig_booklist_new        = nil,
     _orig_menu_new            = nil,
     _orig_menu_init           = nil,
-    _orig_menu_recalculate_dimen = nil,
+    _cover_menu_patches       = nil,
     _orig_fmcoll_show         = nil,
     _orig_rc_remove           = nil,
     _orig_rc_rename           = nil,
@@ -965,6 +965,7 @@ function SimpleUIPlugin:init()
         if _sui_first_run then
             Config.setStartWithHomescreen(true)
             Config.setBookCloseTarget(Config.BOOK_CLOSE_TARGET.HOMESCREEN)
+            Config.applyFirstRunLibraryDefaults()
         end
         logger.info("simpleui[diag]: init first_run=", _sui_first_run,
             "onboarding_done=", SUISettings:get("simpleui_onboarding_done"),

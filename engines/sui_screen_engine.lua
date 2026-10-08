@@ -124,7 +124,6 @@ local _cold_boot_pending = true
 
 -- Layout constants sourced from sui_core (single source of truth).
 local MOD_GAP            = UI.MOD_GAP
-local SIDE_PAD           = UI.SIDE_PAD
 
 -- Static color defaults.
 
@@ -1406,8 +1405,8 @@ function ScreenWidget:_initLayout()
     -- skipped or runs late for some reason, content still stops above the
     -- bar instead of silently extending underneath it.
     local content_h = self._navbar_content_h or UI.getContentHeight()
-    local side_off  = SIDE_PAD
-    local inner_w   = sw - side_off * 2
+    local side_off  = UI.SIDE_PAD()
+    local inner_w   = UI.getInnerW(sw)
 
     self._layout_sw        = sw
     self._layout_content_h = content_h
@@ -1527,7 +1526,7 @@ end
 -- _buildCtx — constructs the module build context for the current render.
 -- ---------------------------------------------------------------------------
 function ScreenWidget:_buildCtx()
-    local inner_w = self._layout_inner_w or (Screen:getWidth() - SIDE_PAD * 2)
+    local inner_w = self._layout_inner_w or UI.getInnerW()
 
     -- Provisional; _updatePage() overwrites it with the column-width-derived
     -- factor before modules build. 1 in portrait.
@@ -1819,7 +1818,7 @@ end
 -- ---------------------------------------------------------------------------
 -- _updateFooter — mutates the persistent footer in-place (zero allocation).
 -- ---------------------------------------------------------------------------
-function ScreenWidget:_updateFooter(current_page, total_pages, topbar_on)
+function ScreenWidget:_updateFooter(current_page, total_pages)
     local footer_bc = self._footer_bc
     if not footer_bc then return end
 
@@ -2113,7 +2112,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
     -- Landscape scale factor; refined below once the real column width is known.
     local _landscape_factor = ctx.landscape_factor or 1
 
-    local inner_w = self._layout_inner_w or (Screen:getWidth() - SIDE_PAD * 2)
+    local inner_w = self._layout_inner_w or UI.getInnerW()
     local body    = self._body
     if not body then return end
 
@@ -2258,8 +2257,6 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
 
     body:clear()
 
-    local topbar_on = SUISettings:nilOrTrue("simpleui_topbar_enabled")
-
     self._clock_body_idx    = nil
     self._clock_body_ref    = body
     self._stats_mod_slots   = {}
@@ -2387,20 +2384,15 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
         end
 
         -- Packs mods into parent_body. container_w is the full available
-        -- width for a 100% module. first is a one-element table toggled so
-        -- the first row can apply top-of-page padding.
+        -- width for a 100% module. first is a one-element table cleared once
+        -- a row has been placed.
         local function _pack_bento(mods, parent_body, container_w, first)
             local function _flush_row(row_cols)
                 if not row_cols or #row_cols == 0 then return end
                 local lead_mod = row_cols[1].mods[1]
                 local gap_px = mod_gaps[lead_mod.id] or MOD_GAP
-                if first[1] then
-                    first[1] = false
-                    local initial_pad = topbar_on and gap_px or (gap_px + MOD_GAP)
-                    parent_body[#parent_body+1] = self:_vspan(initial_pad)
-                else
-                    parent_body[#parent_body+1] = self:_vspan(gap_px)
-                end
+                first[1] = false
+                parent_body[#parent_body+1] = self:_vspan(gap_px)
 
                 local n = #row_cols
                 local gaps_w = (n - 1) * H_COL_GAP
@@ -2566,8 +2558,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
 
     if empty_widget then
         if first_mod then
-            local top_pad = topbar_on and MOD_GAP or (MOD_GAP * 2)
-            body[#body+1] = self:_vspan(top_pad)
+            body[#body+1] = self:_vspan(MOD_GAP)
         end
         body[#body+1] = empty_widget
     end
@@ -2586,7 +2577,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
         footer_page  = self._current_page
     end
 
-    self:_updateFooter(footer_page, footer_total, topbar_on)
+    self:_updateFooter(footer_page, footer_total)
     _updateNavpager(self, footer_page, footer_total)
 
     -- Reschedule the clock tick when the clock module is on the current page,

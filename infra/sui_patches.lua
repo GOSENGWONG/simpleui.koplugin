@@ -356,11 +356,6 @@ function M.patchFileManagerClass(plugin)
         -- not following actual navigation (e.g. staying lit on "Homescreen"
         -- after tapping into the Library).
         local plugin = _live_plugin or plugin
-        -- Calculate total navbar height (bottom bar + optional top bar).
-        local topbar_on = SUISettings:nilOrTrue("simpleui_topbar_enabled")
-        fm_self._navbar_height = Bottombar.TOTAL_H()
-            + (topbar_on and require("screens/sui_topbar").TOTAL_TOP_H() or 0)
-
         -- Reset the "first show" guard so onShow reinitialises on the next open.
         fm_self._navbar_already_shown = nil
 
@@ -1150,9 +1145,7 @@ function M.patchBookList(plugin)
     BookList.new = function(class, attrs, ...)
         attrs = attrs or {}
         if not attrs.height and not attrs._navbar_height_reduced then
-            attrs.height                 = UI.getContentHeight()
-            attrs.y                      = UI.getContentTop()
-            attrs._navbar_height_reduced = true
+            UI.fitToContentArea(attrs)
         end
         return orig_bl_new(class, attrs, ...)
     end
@@ -1188,10 +1181,8 @@ function M.patchCollections(plugin)
                 and attrs.covers_fullscreen and attrs.is_borderless
                 and attrs.is_popout == false
                 and not attrs.height and not attrs._navbar_height_reduced then
-            attrs.height                 = UI.getContentHeight()
-            attrs.y                      = UI.getContentTop()
-            attrs._navbar_height_reduced = true
-            attrs.name                   = attrs.name or "coll_list"
+            UI.fitToContentArea(attrs)
+            attrs.name = attrs.name or "coll_list"
         end
         return orig_menu_new(class, attrs, ...)
     end
@@ -1415,9 +1406,7 @@ function M.patchFullscreenWidgets(plugin)
         SortWidget.new = function(class, attrs, ...)
             attrs = attrs or {}
             if attrs.covers_fullscreen and not attrs._navbar_height_reduced then
-                attrs.height                 = UI.getContentHeight()
-                attrs.y                      = UI.getContentTop()
-                attrs._navbar_height_reduced = true
+                UI.fitToContentArea(attrs)
             end
             -- Temporarily wrap TitleBar.new to inject horizontal padding, then
             -- restore it immediately after SortWidget is built.
@@ -1461,9 +1450,7 @@ function M.patchFullscreenWidgets(plugin)
         PathChooser.new = function(class, attrs, ...)
             attrs = attrs or {}
             if attrs.covers_fullscreen and not attrs._navbar_height_reduced then
-                attrs.height                 = UI.getContentHeight()
-                attrs.y                      = UI.getContentTop()
-                attrs._navbar_height_reduced = true
+                UI.fitToContentArea(attrs)
             end
             return orig_pc_new(class, attrs, ...)
         end
@@ -2660,6 +2647,159 @@ function M.patchUIManagerClose(plugin)
 end
 
 -- ---------------------------------------------------------------------------
+-- Library pages — side margin
+-- Every display mode lays its items out over the full menu width. The hooks
+-- below inset the item area so its first and last items sit on the side
+-- margin shared with every other full-width surface.
+-- ---------------------------------------------------------------------------
+
+-- Menus of the library pages: file browser, history and collections.
+local LIBRARY_PAGE_NAMES = {
+    filemanager = true, history = true, collections = true, coll_list = true,
+}
+
+-- Distance between the side margin and the margin a display mode already
+-- applies at the item area edge. Zero outside the library pages.
+local function _sideInset(menu, native_margin)
+    if not (LIBRARY_PAGE_NAMES[menu.name] and menu.covers_fullscreen) then return 0 end
+    return math.max(0, UI.SIDE_M() - native_margin)
+end
+
+-- Menu fields that carry the full menu width. Display modes read them to size
+-- items and row separators, which must all share one width.
+local MENU_WIDTH_FIELDS = { "width", "screen_w" }
+
+-- Calls fn(menu, ...) with the menu width reduced by `inset` on both sides.
+local function _withInsetWidth(menu, inset, fn, ...)
+    if inset == 0 then return fn(menu, ...) end
+    local inner = menu.inner_dimen
+    inner.w = inner.w - 2 * inset
+    local saved = {}
+    for _, field in ipairs(MENU_WIDTH_FIELDS) do
+        saved[field] = menu[field]
+        if saved[field] then menu[field] = saved[field] - 2 * inset end
+    end
+    local ok, result = pcall(fn, menu, ...)
+    inner.w = inner.w + 2 * inset
+    for _, field in ipairs(MENU_WIDTH_FIELDS) do
+        if saved[field] then menu[field] = saved[field] end
+    end
+    if not ok then error(result, 0) end
+    return result
+end
+
+-- Shifts the item area right by `inset`, wrapping it on first use.
+local function _setBodyInset(menu, inset)
+    local body = menu._sui_inset_body
+    if not body then
+        if inset == 0 then return end
+        local HorizontalGroup = require("ui/widget/horizontalgroup")
+        local HorizontalSpan  = require("ui/widget/horizontalspan")
+        body = HorizontalGroup:new{
+            align = "top",
+            HorizontalSpan:new{ width = inset },
+            menu.item_group,
+        }
+        for i, child in ipairs(menu.content_group) do
+            if child == menu.item_group then
+                menu.content_group[i] = body
+                break
+            end
+        end
+        menu._sui_inset_body = body
+    end
+    body[1].width = inset
+    body:resetLayout()
+end
+
+-- Calls the class-level _recalculateDimen of the menu's current display mode,
+-- bypassing any instance override.
+local function _callClassRecalculate(menu, ...)
+    local instance_fn = rawget(menu, "_recalculateDimen")
+    menu._recalculateDimen = nil
+    local ok, err = pcall(menu._recalculateDimen, menu, ...)
+    menu._recalculateDimen = instance_fn
+    if not ok then error(err, 0) end
+end
+
+-- Classic list mode: the menu builds its own rows over the full menu width.
+-- Each row is narrowed by the inset and its content is moved in by the side
+-- margin through items_padding.
+local function _applyClassicInset(menu)
+    local side  = UI.SIDE_M()
+    local inset = math.max(0, side - Size.padding.fullscreen)
+    menu._sui_side_inset = 0
+    _setBodyInset(menu, 0)
+    menu.items_padding = side
+    menu.item_dimen.w  = menu.inner_dimen.w - 2 * inset
+end
+
+-- Instance-level _recalculateDimen of the library page menus. The display mode
+-- of a menu can change while it is open and rebinds the class-level function,
+-- so the classic inset is decided here on every layout pass. Mosaic and list
+-- modes are handled by the display mode hooks below.
+local function _libraryRecalculate(menu, ...)
+    _callClassRecalculate(menu, ...)
+    if menu._updateItemsBuildUI == nil and menu.item_dimen then
+        _applyClassicInset(menu)
+    end
+end
+
+function M.patchCoverMenuSideMargin(plugin)
+    local patches = {}
+    plugin._cover_menu_patches = patches
+    local FileChooser = require("ui/widget/filechooser")
+
+    -- Replaces target[key] with `wrapped`. The file browser binds display mode
+    -- functions on its own class when a mode is set up, so that binding is
+    -- replaced as well while it still holds `orig`.
+    local function install(target, key, orig, wrapped)
+        patches[#patches + 1] = { target = target, key = key, orig = orig, wrapped = wrapped }
+        target[key] = wrapped
+        if rawget(FileChooser, key) == orig then
+            patches[#patches + 1] = { target = FileChooser, key = key, orig = orig, wrapped = wrapped }
+            FileChooser[key] = wrapped
+        end
+    end
+
+    -- native_margin(menu) returns the margin the display mode applies at the
+    -- item area edge; it is read after the mode has run _recalculateDimen.
+    local function wrap(DisplayMode, native_margin)
+        local orig_recalculate = DisplayMode._recalculateDimen
+        local orig_build       = DisplayMode._updateItemsBuildUI
+
+        local function recalculate(menu, ...)
+            orig_recalculate(menu, ...)
+            local inset = _sideInset(menu, native_margin(menu))
+            menu._sui_side_inset = inset
+            if inset > 0 then _withInsetWidth(menu, inset, orig_recalculate, ...) end
+        end
+
+        local function build(menu, ...)
+            local inset  = menu._sui_side_inset or 0
+            local result = _withInsetWidth(menu, inset, orig_build, ...)
+            _setBodyInset(menu, inset)
+            return result
+        end
+
+        -- Keeps the builder that holds the item class upvalue reachable.
+        DisplayMode._simpleui_native_build = orig_build
+
+        install(DisplayMode, "_recalculateDimen",   orig_recalculate, recalculate)
+        install(DisplayMode, "_updateItemsBuildUI", orig_build,       build)
+    end
+
+    local ok_mosaic, MosaicMenu = pcall(require, "mosaicmenu")
+    if ok_mosaic and MosaicMenu then
+        wrap(MosaicMenu, function(menu) return menu.item_margin end)
+    end
+    local ok_list, ListMenu = pcall(require, "listmenu")
+    if ok_list and ListMenu then
+        wrap(ListMenu, function() return 0 end)
+    end
+end
+
+-- ---------------------------------------------------------------------------
 -- Menu.init patch — pagination bar visibility
 -- Removes the pagination bar from fullscreen FM-style menus when
 -- "navbar_pagination_visible" is off, and fixes horizontal swipe propagation.
@@ -2667,31 +2807,10 @@ end
 
 function M.patchMenuInitForPagination(plugin)
     local Menu = require("ui/widget/menu")
-    local TARGET_NAMES = {
-        filemanager = true, history = true, collections = true, coll_list = true,
-    }
-    -- Sub pages whose title bar follows the tabs style of the library.
-    local TABS_SUB_PAGE_NAMES = { history = true, collections = true, coll_list = true }
+    -- Sub pages of the library.
+    local SUB_PAGE_NAMES = { history = true, collections = true, coll_list = true }
     local orig_menu_init  = Menu.init
     plugin._orig_menu_init = orig_menu_init
-
-    -- Tabs style: list rows of these pages are inset so their text and
-    -- separators span the status bar margins. Menus that replace
-    -- _recalculateDimen on the instance lay out their own items and are left
-    -- untouched.
-    local orig_recalculate = Menu._recalculateDimen
-    plugin._orig_menu_recalculate_dimen = orig_recalculate
-    Menu._recalculateDimen = function(menu_self, ...)
-        orig_recalculate(menu_self, ...)
-        if not (TABS_SUB_PAGE_NAMES[menu_self.name] and menu_self.covers_fullscreen
-                and menu_self.item_dimen and Titlebar().isTabsStyle()) then
-            return
-        end
-        local side  = Titlebar().getSideMargin()
-        local inset = math.max(0, side - Size.padding.fullscreen)
-        menu_self.items_padding = side
-        menu_self.item_dimen.w  = menu_self.inner_dimen.w - 2 * inset
-    end
 
     Menu.init = function(menu_self, ...)
         -- Centralised keyboard-shortcut indicator suppression.
@@ -2706,9 +2825,13 @@ function M.patchMenuInitForPagination(plugin)
             menu_self.is_enable_shortcut = false
         end
 
+        if LIBRARY_PAGE_NAMES[menu_self.name] and menu_self.covers_fullscreen then
+            menu_self._recalculateDimen = _libraryRecalculate
+        end
+
         -- The title bar is built inside init and sizes the item area, so the
         -- tabs style metrics have to apply during the build.
-        if TABS_SUB_PAGE_NAMES[menu_self.name] and menu_self.covers_fullscreen then
+        if SUB_PAGE_NAMES[menu_self.name] and menu_self.covers_fullscreen then
             Titlebar().runWithStyleMetrics(orig_menu_init, menu_self, ...)
         else
             orig_menu_init(menu_self, ...)
@@ -2732,7 +2855,7 @@ function M.patchMenuInitForPagination(plugin)
         -- Fix: Menu:onSwipe does not return true, so horizontal swipes propagate
         -- to FM's filemanager_swipe zone and advance two pages. Wrap onSwipe to
         -- consume the event after it is handled.
-        local is_target = TARGET_NAMES[menu_self.name]
+        local is_target = LIBRARY_PAGE_NAMES[menu_self.name]
             or (menu_self.covers_fullscreen and menu_self.is_borderless and menu_self.title_bar_fm_style)
         if is_target then
             local orig_onSwipe = menu_self.onSwipe
@@ -2757,12 +2880,12 @@ function M.patchMenuInitForPagination(plugin)
         -- liveFM() ~= nil restricts the fallback to menus actually created
         -- while FM is the active screen (e.g. Collections' property/folder
         -- sub-lists, which have no explicit name), matching the same intent
-        -- as TARGET_NAMES without re-exposing the Reader-side leak.
+        -- as LIBRARY_PAGE_NAMES without re-exposing the Reader-side leak.
         local is_fm_style_overlay = menu_self.covers_fullscreen
                                  and menu_self.is_borderless
                                  and menu_self.title_bar_fm_style
                                  and liveFM() ~= nil
-        if not TARGET_NAMES[menu_self.name] and not is_fm_style_overlay then
+        if not LIBRARY_PAGE_NAMES[menu_self.name] and not is_fm_style_overlay then
             return
         end
 
@@ -2789,6 +2912,7 @@ function M.patchMenuInitForPagination(plugin)
         -- Override _recalculateDimen to suppress pagination widget updates.
         -- page_return_arrow and page_info are no longer layout children here,
         -- so nil them out during the call to prevent KOReader sizing them.
+        local layout_recalculate = rawget(menu_self, "_recalculateDimen") or _callClassRecalculate
         menu_self._recalculateDimen = function(self_inner, no_recalculate_dimen)
             local saved_arrow = self_inner.page_return_arrow
             local saved_text  = self_inner.page_info_text
@@ -2796,12 +2920,7 @@ function M.patchMenuInitForPagination(plugin)
             self_inner.page_return_arrow = nil
             self_inner.page_info_text    = nil
             self_inner.page_info         = nil
-            local instance_fn = self_inner._recalculateDimen
-            self_inner._recalculateDimen = nil
-            local ok, err = pcall(function()
-                self_inner:_recalculateDimen(no_recalculate_dimen)
-            end)
-            self_inner._recalculateDimen = instance_fn
+            local ok, err = pcall(layout_recalculate, self_inner, no_recalculate_dimen)
             self_inner.page_return_arrow = saved_arrow
             self_inner.page_info_text    = saved_text
             self_inner.page_info         = saved_info
@@ -5102,6 +5221,7 @@ function M.installAll(plugin)
     M.patchReaderShowCoroutine(plugin)
     M.patchUIManagerClose(plugin)
     M.patchMenuInitForPagination(plugin)
+    M.patchCoverMenuSideMargin(plugin)
     M.patchMenuForNavpager(plugin)
     M.patchBookInfoNavigation(plugin)
     M.patchStatusButtons(plugin)
@@ -5230,15 +5350,20 @@ function M.teardownAll(plugin)
             Menu.init              = plugin._orig_menu_init
             plugin._orig_menu_init = nil
         end
-        if plugin._orig_menu_recalculate_dimen then
-            Menu._recalculateDimen              = plugin._orig_menu_recalculate_dimen
-            plugin._orig_menu_recalculate_dimen = nil
-        end
         if plugin._orig_menu_update_page_info then
             Menu.updatePageInfo                = plugin._orig_menu_update_page_info
             plugin._orig_menu_update_page_info = nil
         end
         Menu._simpleui_navpager_patched = nil
+    end
+
+    if plugin._cover_menu_patches then
+        for i = #plugin._cover_menu_patches, 1, -1 do
+            local p = plugin._cover_menu_patches[i]
+            if rawget(p.target, p.key) == p.wrapped then p.target[p.key] = p.orig end
+            p.target._simpleui_native_build = nil
+        end
+        plugin._cover_menu_patches = nil
     end
 
     local FileManager = package.loaded["apps/filemanager/filemanager"]

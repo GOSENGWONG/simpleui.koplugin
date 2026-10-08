@@ -1319,7 +1319,7 @@ function M.getHeight(_ctx)
     -- contract, M.getHeight(ctx)), so it estimates it the same way
     -- module_clock/module_coverdeck/module_quick_actions already do.
     local w_estimate = (_ctx and (_ctx.col_w or _ctx.inner_w))
-                        or (Screen:getWidth() - UI.SIDE_PAD * 2)
+                        or UI.getInnerW()
     local _cover_ratio = SH.getDims(1.0, 1.0).COVER_H / SH.getDims(1.0, 1.0).COVER_W
     local cover_w, cover_h = _computeCoverDims(w_estimate, raw_thumb_scale * raw_scale, _cover_ratio)
     local D = { COVER_W = cover_w, COVER_H = cover_h }

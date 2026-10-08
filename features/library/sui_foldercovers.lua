@@ -199,7 +199,7 @@ function M.setRecursiveCover(v) _setFlag(SK.recursive_cover, v)               en
 function M.getFolderStyle()  return SUISettings:readSetting(SK.folder_style) or "single" end
 function M.setFolderStyle(v) SUISettings:saveSetting(SK.folder_style, v)                 end
 
--- Hide the book spine decoration on folder covers.
+-- Hide the book pile behind folder covers.
 function M.getHideSpine()  return SUISettings:isTrue(SK.hide_spine)  end
 function M.setHideSpine(v) SUISettings:saveSetting(SK.hide_spine, v) end
 
@@ -315,18 +315,12 @@ end
 local _BASE_COVER_H = math.floor(Screen:scaleBySize(96))
 local _BASE_NB_SIZE = Screen:scaleBySize(10)
 local _BASE_NB_FS   = SUIStyle.FS_DETAIL  -- 15: folder-count number badge overlay
-local _BASE_DIR_FS  = SUIStyle.FS_SUBTITLE -- 20: directory name label ceiling for binary-search
 
-local _EDGE_THICK  = math.max(1, Screen:scaleBySize(3))
 local _EDGE_MARGIN = math.max(1, Screen:scaleBySize(1))
-local _SPINE_W     = _EDGE_THICK * 2 + _EDGE_MARGIN * 2
 
 local _LATERAL_PAD        = Screen:scaleBySize(10)
-local _VERTICAL_PAD       = Screen:scaleBySize(4)
 local _BADGE_MARGIN_BASE  = Screen:scaleBySize(8)
 local _BADGE_MARGIN_R_BASE = Screen:scaleBySize(4)
-
-local _LABEL_ALPHA = 0.75
 
 -- Same ratio KOReader's stock listmenu.lua uses to convert a "nominal"
 -- (64px-reference) font size into an actual scaled size. Keeping this
@@ -369,11 +363,10 @@ local _ICON_EXISTS = lfs.attributes(_ICON_PATH, "mode") == "file"
 --   On overflow: B = A, A = {}, counter reset.
 --   Lookup hits A first, falls back to B (effective capacity 2×MAX).
 --
--- The font-size cache (was here, for _getFolderNameWidget) and the
--- .cover.* file cache have moved to sui_cover_widgets.lua and
--- sui_library/sui_cover_finder.lua respectively — both are pure lookup
--- caches with no settings/monkeypatch dependency, so they live with the
--- code that populates them. This file keeps only the ListMenuItem
+-- The label metrics cache and the .cover.* file cache live in
+-- sui_cover_widgets.lua and sui_library/sui_cover_finder.lua respectively —
+-- both are pure lookup caches with no settings/monkeypatch dependency, so
+-- they live with the code that populates them. This file keeps only the ListMenuItem
 -- directory-cover cache below, since _setListFolderCover's disk scan
 -- stays here (it renders differently than the mosaic cover path).
 local _DIR_CACHE_MAX    = 300
@@ -766,7 +759,7 @@ end
 -- ---------------------------------------------------------------------------
 -- 9. Widget builders — moved to features/sui_cover_widgets.lua
 -- ---------------------------------------------------------------------------
--- Pentagon progress badge, corner ribbon, rounded-rect badges, spine,
+-- Pentagon progress badge, corner ribbon, rounded-rect badges, book pile,
 -- folder-name label, book-count badge, cell geometry, cover assembly, and
 -- the 2×2 quad-cover grid are all in sui_cover_widgets.lua now — pure
 -- rendering code with no settings reads (this file passes the values in).
@@ -776,13 +769,19 @@ end
 -- 10. Core patches — M.install and M.uninstall
 -- ---------------------------------------------------------------------------
 
+-- The display mode's own item builder, which holds the item class as an
+-- upvalue. Layout hooks may wrap the public function and keep it here.
+local function _nativeItemsBuilder(DisplayMode)
+    return DisplayMode._simpleui_native_build or DisplayMode._updateItemsBuildUI
+end
+
 -- Helper: retrieve MosaicMenuItem from mosaicmenu via userpatch upvalue lookup.
 local function _getMosaicMenuItemAndPatch()
     local ok_mm, MosaicMenu = pcall(require, "mosaicmenu")
     if not ok_mm or not MosaicMenu then return nil, nil end
     local ok_up, userpatch = pcall(require, "userpatch")
     if not ok_up or not userpatch then return nil, nil end
-    return userpatch.getUpValue(MosaicMenu._updateItemsBuildUI, "MosaicMenuItem"), userpatch
+    return userpatch.getUpValue(_nativeItemsBuilder(MosaicMenu), "MosaicMenuItem"), userpatch
 end
 
 -- Helper: retrieve ListMenuItem from listmenu via userpatch upvalue lookup.
@@ -791,7 +790,66 @@ local function _getListMenuItem()
     if not ok_lm or not ListMenu then return nil end
     local ok_up, userpatch = pcall(require, "userpatch")
     if not ok_up or not userpatch then return nil end
-    return userpatch.getUpValue(ListMenu._updateItemsBuildUI, "ListMenuItem")
+    return userpatch.getUpValue(_nativeItemsBuilder(ListMenu), "ListMenuItem")
+end
+
+-- List rows keep their cover in a square slot, centred by default. Anchors the
+-- cover to the slot's left edge so it starts at the row's left margin; the text
+-- column keeps its position.
+local function _leftAlignListCover(item)
+    if not item.do_cover_image then return end
+    local group = item._underline_container and item._underline_container[1]
+    local row   = group and group[2]
+    local slot  = row and row[1]
+    if not (slot and slot.dimen and slot[1])
+            or slot.paintTo ~= CenterContainer.paintTo then
+        return
+    end
+    row[1] = LeftContainer:new{ dimen = slot.dimen, slot[1] }
+end
+
+-- Folder rows show their name without a trailing slash, whether the folder is
+-- real or virtual.
+local function _stripListFolderSlash(item)
+    local entry = item.entry
+    if entry and not entry.is_file and not entry.file and not entry.is_go_up and item.text then
+        item.text = (item.text:gsub("/$", ""))
+    end
+end
+
+-- The widget drawn as the cell's cover: the cover frame of a book, the cover
+-- group (cover plus pile) of a folder with a generated cover, or the whole
+-- frame of a plain folder tile.
+local function _coverWidget(item)
+    local root = item[1] and item[1][1]
+    if not root then return nil end
+    if item.is_directory and not item._foldercover_processed then return root end
+    return root[1]
+end
+
+-- Px a book cover gives up on its right and bottom edges for its drop shadow.
+-- Folder covers reserve theirs in CoverWidgets.computeCellGeometry.
+local function _bookShadowInset(item)
+    local entry = item.entry
+    if entry and (entry.is_file or entry.file) then
+        return SUIStyle.coverShadowOffset(SUIStyle.SHADOW_LIBRARY)
+    end
+    return 0
+end
+
+-- Returns the cover's width and the y offset, from the cell top, of the first
+-- row below the cover and its shadow. The cover is centred vertically in
+-- `cover_area_h` minus the shadow's room, the part of the cell above the
+-- strip. Falls back to the whole cell area when the cover widget cannot be
+-- located.
+local function _coverMetrics(item, cover_area_h)
+    local cover = _coverWidget(item)
+    if not cover then return item.width, cover_area_h end
+    local inset  = _bookShadowInset(item)
+    local area_h = cover_area_h - inset
+    local size   = cover:getSize()
+    local h      = math.min(size.h, area_h)
+    return math.min(size.w, item.width), math.floor((area_h - h) / 2) + h + inset
 end
 
 -- Install the title/author strip paintTo patch.
@@ -827,7 +885,6 @@ local function _installStripPatch(MosaicMenuItem, BookInfoManager, _STRIP_H,
         local AUTHOR_FONT_S = SUIStyle.FS_CAPTION   -- 12: cover author in size-probe context
         local PAD_S         = Screen_s:scaleBySize(3)
         local GAP_S         = Screen_s:scaleBySize(2)
-        local PAD_H_S       = Screen_s:scaleBySize(6)
 
         local function _mhs(fs, bold)
             local tw = TextWidget_s:new{ text="Ag", face=Font_s:getFace(SUIStyle.FACE_REGULAR,fs),
@@ -855,6 +912,8 @@ local function _installStripPatch(MosaicMenuItem, BookInfoManager, _STRIP_H,
 
             -- Build/use the cached strip blitbuffer.
             if not self._simpleui_strip_bb then
+                local text_w
+                text_w, self._simpleui_strip_top = _coverMetrics(self, self.height - _STRIP_H)
 
                 -- Folders: render the folder name centred in the strip.
                 if self.is_directory then
@@ -868,7 +927,7 @@ local function _installStripPatch(MosaicMenuItem, BookInfoManager, _STRIP_H,
                         bold                   = true,
                         padding                = 0,
                         fgcolor                = Blitbuffer_s.COLOR_BLACK,
-                        max_width              = self.width - 2 * PAD_H_S,
+                        max_width              = text_w,
                         truncate_with_ellipsis = true,
                     }
                     local tsz = tw:getSize()
@@ -920,7 +979,6 @@ local function _installStripPatch(MosaicMenuItem, BookInfoManager, _STRIP_H,
 
                     local strip_bb = Blitbuffer_s.new(self.width, _STRIP_H, bb:getType())
                     strip_bb:fill(Blitbuffer_s.COLOR_WHITE)
-                    local text_w = self.width - 2 * PAD_H_S
                     local cur_y  = PAD_S
 
                     if _show_title_strip and self._simpleui_strip_data.title then
@@ -958,7 +1016,7 @@ local function _installStripPatch(MosaicMenuItem, BookInfoManager, _STRIP_H,
                 end
             end
 
-            -- Blit the strip immediately below the cover area.
+            -- Blit the strip directly below the cover.
             if self._simpleui_strip_bb then
                 local ok_wp, SUIWallpaper = pcall(require, "features/sui_wallpaper")
                 local wp_active = ok_wp and SUIWallpaper
@@ -975,12 +1033,12 @@ local function _installStripPatch(MosaicMenuItem, BookInfoManager, _STRIP_H,
                             Blitbuffer_s.new(self.width, _STRIP_H, Blitbuffer_s.TYPE_BB8)
                     end
                     UI_core.paintWithAlphaMask(self, bb,
-                        x, y + self.height - _STRIP_H, self.width, _STRIP_H,
+                        x, y + self._simpleui_strip_top, self.width, _STRIP_H,
                         Blitbuffer_s.COLOR_BLACK,
                         _stripPaintFn, self._simpleui_strip_mask_bb)
                 else
                     bb:blitFrom(self._simpleui_strip_bb,
-                        x, y + self.height - _STRIP_H,
+                        x, y + self._simpleui_strip_top,
                         0, 0, self.width, _STRIP_H)
                 end
             end
@@ -1076,6 +1134,29 @@ function M.install()
     _module_strip_h                    = _STRIP_H
     MosaicMenuItem._simpleui_strip_h   = _STRIP_H
 
+    -- Display settings every folder-cover builder consumes, read in one place.
+    local function _readDisplay()
+        local display = {
+            label_mode  = M.getLabelMode(),
+            show_name   = M.getShowName(),
+            label_style = M.getLabelStyle(),
+            label_pos   = M.getLabelPosition(),
+            label_color = M.getLabelColor(),
+            label_scale = M.getLabelScale(),
+            hide_pile   = M.getHideSpine(),
+            badge = {
+                hidden   = M.getBadgeHidden(),
+                scale    = M.getBadgeScale(),
+                dark     = M.getBadgeColorFolder() == "dark",
+                position = M.getBadgePosition(),
+            },
+        }
+        -- When the strip is active it already shows the folder name below
+        -- the cover — suppress the overlay label to avoid redundancy.
+        if _STRIP_H > 0 then display.label_mode = "hidden" end
+        return display
+    end
+
     -- Guard flag: prevents the update() wrapper from double-shrinking self.height
     -- when init() calls orig_init (which calls update internally).
     local _in_strip_init = false
@@ -1088,8 +1169,9 @@ function M.install()
         end
         if self.width and self.height then
             local border_size = Size.border.thin
-            max_img_w = self.width  - 2 * border_size
-            max_img_h = self.height - 2 * border_size
+            local inset       = _bookShadowInset(self)
+            max_img_w = self.width  - inset - 2 * border_size
+            max_img_h = self.height - inset - 2 * border_size
         end
         _in_strip_init = true
         if orig_init then orig_init(self) end
@@ -1117,7 +1199,11 @@ function M.install()
         if not _in_strip_init and _STRIP_H > 0 and self.height then
             self.height = self.height - _STRIP_H
         end
+        -- Book covers are laid out in the cell minus their shadow's room.
+        local inset = _bookShadowInset(self)
+        self.width, self.height = self.width - inset, self.height - inset
         original_update(self, ...)
+        self.width, self.height = self.width + inset, self.height + inset
         if not _in_strip_init and _STRIP_H > 0 and self.height then
             self.height = self.height + _STRIP_H
             -- KOReader evaluated show_progress_bar with the reduced height and
@@ -1319,23 +1405,7 @@ function M.install()
         if not dir_path then return end
 
         -- Read display settings once; helpers receive them as a single table.
-        local display = {
-            label_mode  = M.getLabelMode(),
-            show_name   = M.getShowName(),
-            label_style = M.getLabelStyle(),
-            label_pos   = M.getLabelPosition(),
-            label_color = M.getLabelColor(),
-            label_scale = M.getLabelScale(),
-            badge = {
-                hidden   = M.getBadgeHidden(),
-                scale    = M.getBadgeScale(),
-                dark     = M.getBadgeColorFolder() == "dark",
-                position = M.getBadgePosition(),
-            },
-        }
-        -- When the strip is active it already shows the folder name below
-        -- the cover — suppress the overlay label to avoid redundancy.
-        if _STRIP_H > 0 then display.label_mode = "hidden" end
+        local display = _readDisplay()
 
         local folder_style = _resolveStyle(self.menu, dir_path, self.entry)
 
@@ -1376,8 +1446,8 @@ function M.install()
                     end
                 end
                 if #covers > 0 then
-                    local border, spine_w, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
-                    local widget = CoverWidgets.buildQuadCover(self, covers, border, spine_w, max_img_w, max_img_h, display)
+                    local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
+                    local widget = CoverWidgets.buildQuadCover(self, covers, border, pile, max_img_w, max_img_h, display)
                     if widget then
                         CoverWidgets.installWidget(self, widget)
                         return
@@ -1434,8 +1504,8 @@ function M.install()
 
             local covers = CoverFinder.collectCovers(self.menu, dir_path, 4, BookInfoManager, M.getRecursiveCover())
             if #covers > 0 then
-                local border, spine_w, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
-                local widget = CoverWidgets.buildQuadCover(self, covers, border, spine_w, max_img_w, max_img_h, display)
+                local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
+                local widget = CoverWidgets.buildQuadCover(self, covers, border, pile, max_img_w, max_img_h, display)
                 if widget then
                     CoverWidgets.installWidget(self, widget)
                     return
@@ -1539,25 +1609,9 @@ function M.install()
         -- this parameter (e.g. patches/2-automatic-book-series.lua).  Fall back
         -- to reading the settings directly so the rest of the pipeline never
         -- receives a nil table.
-        if not display then
-            display = {
-                label_mode  = M.getLabelMode(),
-                show_name   = M.getShowName(),
-                label_style = M.getLabelStyle(),
-                label_pos   = M.getLabelPosition(),
-                label_color = M.getLabelColor(),
-                label_scale = M.getLabelScale(),
-                badge = {
-                    hidden   = M.getBadgeHidden(),
-                    scale    = M.getBadgeScale(),
-                    dark     = M.getBadgeColorFolder() == "dark",
-                    position = M.getBadgePosition(),
-                },
-            }
-            if _STRIP_H > 0 then display.label_mode = "hidden" end
-        end
+        display = display or _readDisplay()
         self._foldercover_processed = true
-        local border, spine_w, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
+        local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
 
         local img_options = {}
         if img.file then img_options.file  = img.file end
@@ -1585,30 +1639,14 @@ function M.install()
         local image   = ImageWidget:new(img_options)
         local size    = image:getSize()
         local content = FrameContainer:new{ padding = 0, bordersize = border, image }
-        CoverWidgets.installWidget(self, CoverWidgets.assembleCoverWidget(self, content, size, border, spine_w, display))
+        CoverWidgets.installWidget(self, CoverWidgets.assembleCoverWidget(self, content, size, border, pile, display))
     end
 
     -- Placeholder cover for bookless folders (subfolders only or empty).
     function MosaicMenuItem:_setEmptyFolderCover(display)
-        if not display then
-            display = {
-                label_mode  = M.getLabelMode(),
-                show_name   = M.getShowName(),
-                label_style = M.getLabelStyle(),
-                label_pos   = M.getLabelPosition(),
-                label_color = M.getLabelColor(),
-                label_scale = M.getLabelScale(),
-                badge = {
-                    hidden   = M.getBadgeHidden(),
-                    scale    = M.getBadgeScale(),
-                    dark     = M.getBadgeColorFolder() == "dark",
-                    position = M.getBadgePosition(),
-                },
-            }
-            if _STRIP_H > 0 then display.label_mode = "hidden" end
-        end
+        display = display or _readDisplay()
         self._foldercover_processed = true
-        local border, spine_w, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
+        local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
 
         local ratio = 2 / 3
         local img_w, img_h
@@ -1686,14 +1724,7 @@ function M.install()
 
         local size    = Geom:new{ w = img_w, h = img_h }
         local content = FrameContainer:new{ padding = 0, bordersize = border, bg_canvas }
-        CoverWidgets.installWidget(self, CoverWidgets.assembleCoverWidget(self, content, size, border, spine_w, display))
-    end
-
-    -- Font-sizing algorithm + cache now live in sui_cover_widgets.lua
-    -- (CoverWidgets.buildFolderNameWidget) — shared with the standalone
-    -- buildLabel() path used for series-group / virtual-meta covers.
-    function MosaicMenuItem:_getFolderNameWidget(available_w, dir_max_font_size, fgcolor, bgcolor)
-        return CoverWidgets.buildFolderNameWidget(self, available_w, dir_max_font_size, fgcolor, bgcolor)
+        CoverWidgets.installWidget(self, CoverWidgets.assembleCoverWidget(self, content, size, border, pile, display))
     end
 
     -- onFocus: apply the pre-computed underline color (no settings read in the hot path).
@@ -1781,7 +1812,7 @@ function M.install()
                     end
                     local iy        = self.height - math.ceil((self.height - tgt.dimen.h) / 2) - cm_size
                     local rect_size = cm_size - tgt.bordersize
-                    bb:paintRect(x + ix, tgt.dimen.y + iy + tgt.bordersize,
+                    bb:paintRect(x + ix, y + iy + tgt.bordersize,
                                  rect_size, rect_size, SUIStyle.COLOR.gray_soft)
                     cm_widget:paintTo(bb, x + ix, y + iy)
                 end
@@ -1951,6 +1982,34 @@ function M.install()
 
     end -- MosaicMenuItem:paintTo
 
+    -- Repaints the description hint on the cover's right edge over the shadow,
+    -- on a solid background so the shadow does not show through it.
+    local function paintDescriptionHint(item, bb, cover)
+        if not item.has_description or BookInfoManager:getSetting("no_hint_description") then return end
+        local w = Screen:scaleBySize(3)
+        local h = math.ceil(cover.h / 8)
+        local x = BD.mirroredUILayout() and (cover.x - w + 1) or (cover.x + cover.w - 1)
+        bb:paintRect(x, cover.y, w, h, Blitbuffer.COLOR_WHITE)
+        bb:paintBorder(x, cover.y, w, h, 1)
+    end
+
+    -- Book covers are painted in the cell minus their shadow's room, so the
+    -- cover and its marks centre on the cover; the shadow is then cast beside it.
+    local paint_with_marks = MosaicMenuItem.paintTo
+    function MosaicMenuItem:paintTo(bb, x, y)
+        local inset = _bookShadowInset(self)
+        if inset == 0 then return paint_with_marks(self, bb, x, y) end
+        self.width, self.height = self.width - inset, self.height - inset
+        paint_with_marks(self, bb, x, y)
+        self.width, self.height = self.width + inset, self.height + inset
+        local cover = self._cover_frame or (self[1] and self[1][1] and self[1][1][1])
+        local dimen = cover and cover.dimen
+        if dimen then
+            CoverWidgets.paintShadow(bb, dimen.x, dimen.y, dimen.w, dimen.h, inset)
+            paintDescriptionHint(self, bb, dimen)
+        end
+    end
+
     local orig_free = MosaicMenuItem.free
     MosaicMenuItem._simpleui_fc_orig_free = orig_free
     function MosaicMenuItem:free()
@@ -1987,7 +2046,7 @@ function M.install()
         ListMenuItem._simpleui_lm_orig_update = ListMenuItem.update
 
         local orig_lm_update = ListMenuItem.update
-        function ListMenuItem:update(...)
+        local function updateFolderCover(self, ...)
             orig_lm_update(self, ...)
 
             if not self.do_cover_image                   then return end
@@ -2142,7 +2201,13 @@ function M.install()
                     table.insert(self.menu.items_to_update, self)
                 end
             end
-        end -- ListMenuItem:update
+        end -- updateFolderCover
+
+        function ListMenuItem:update(...)
+            _stripListFolderSlash(self)
+            updateFolderCover(self, ...)
+            _leftAlignListCover(self)
+        end
 
         -- Renders a cover thumbnail on the left, folder name + item count on the right.
         function ListMenuItem:_setListFolderCover(bookinfo)
@@ -2175,7 +2240,7 @@ function M.install()
             wimage:_render()
             local image_size = wimage:getSize()
 
-            local wleft = CenterContainer:new{
+            local wleft = LeftContainer:new{
                 dimen = Geom:new{ w = img_size, h = dimen.h },
                 FrameContainer:new{
                     width      = image_size.w + 2 * border_size,
@@ -2277,7 +2342,6 @@ function M.uninstall()
         MosaicMenuItem._simpleui_fc_stretched_iw = nil
     end
     MosaicMenuItem._setFolderCover      = nil
-    MosaicMenuItem._getFolderNameWidget = nil
     MosaicMenuItem._simpleui_fc_patched = nil
     MosaicMenuItem._simpleui_strip_h    = nil
     _module_strip_h = 0
@@ -2290,7 +2354,7 @@ function M.uninstall()
     for k in pairs(_lm_dir_cover_cache) do _lm_dir_cover_cache[k]  = nil end
     for k in pairs(_lmc_b)              do _lmc_b[k]               = nil end
     _lmc_cnt = 0
-    CoverWidgets.clearFontSizeCache()
+    CoverWidgets.clearLabelMetricsCache()
     CoverWidgets.clearRibbonCache()
     CoverWidgets.clearPentagonMaskCache()
 

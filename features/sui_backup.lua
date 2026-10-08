@@ -83,6 +83,7 @@ local EXCLUDED_EXACT = {
     ["simpleui_last_backup"]              = true,
     ["simpleui_backup_scope"]             = true,
     ["simpleui_last_restore"]             = true,
+    ["simpleui_library_defaults_applied"] = true,
 }
 
 for _i = 2, 9 do

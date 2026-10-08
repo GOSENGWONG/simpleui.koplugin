@@ -703,6 +703,23 @@ M.FONT_SCALE_MAX  = FONT_SCALE_MAX
 M.FONT_SCALE_STEP = SCALE_STEP
 M.FONT_SCALE_DEF  = SCALE_DEF
 
+-- Saved ids that are in `defaults` (deduplicated, saved order kept), followed
+-- by the defaults missing from `saved`.
+function M.mergeOrder(saved, defaults)
+    local is_default, seen, order = {}, {}, {}
+    for _i, id in ipairs(defaults) do is_default[id] = true end
+    for _i, id in ipairs(type(saved) == "table" and saved or {}) do
+        if is_default[id] and not seen[id] then
+            seen[id] = true
+            order[#order + 1] = id
+        end
+    end
+    for _i, id in ipairs(defaults) do
+        if not seen[id] then order[#order + 1] = id end
+    end
+    return order
+end
+
 -- Link Scale
 function M.isScaleLinked()
     local v = SUISettings:get(SCALE_LINKED_KEY)
@@ -2696,6 +2713,37 @@ function M.applyFirstRunDefaults()
     def("simpleui_qs_bar_slots",            { "wifi_toggle", "bookmark_browser", "frontlight", "night_mode", "power", "sui_settings" })
 
     SUISettings:flush()
+end
+
+-- Library defaults for a fresh install, applied once: mosaic with covers,
+-- 3 columns × 2 rows in portrait, and title and author under each cover.
+-- The display mode and grid live in the cover browser's own store, so they are
+-- written there and then applied to the file manager that is already built.
+function M.applyFirstRunLibraryDefaults()
+    if SUISettings:get("simpleui_library_defaults_applied") ~= nil then return end
+    SUISettings:set("simpleui_library_defaults_applied", true)
+    SUISettings:set("simpleui_fc_show_title_strip",  true)
+    SUISettings:set("simpleui_fc_show_author_strip", true)
+    SUISettings:flush()
+
+    local bim = M.getBookInfoManager()
+    if not bim then return end
+    local COLS, ROWS, MODE = 3, 2, "mosaic_image"
+    bim:saveSetting("filemanager_display_mode", MODE)
+    bim:saveSetting("nb_cols_portrait", COLS)
+    bim:saveSetting("nb_rows_portrait", ROWS)
+
+    require("ui/uimanager"):scheduleIn(0, function()
+        local FileChooser = require("ui/widget/filechooser")
+        FileChooser.nb_cols_portrait, FileChooser.nb_rows_portrait = COLS, ROWS
+        local FM = package.loaded["apps/filemanager/filemanager"]
+        local fm = FM and FM.instance
+        if not fm then return end
+        if fm.file_chooser then
+            fm.file_chooser.nb_cols_portrait, fm.file_chooser.nb_rows_portrait = COLS, ROWS
+        end
+        if fm.coverbrowser then fm.coverbrowser:setupFileManagerDisplayMode(MODE) end
+    end)
 end
 
 function M.reset()

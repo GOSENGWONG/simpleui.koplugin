@@ -279,7 +279,7 @@ end
 
 function M.getHeight(ctx)
     -- Match chrome contentWidth: full column minus label-aligned outer margins.
-    local col_w = (ctx and (ctx.col_w or ctx.inner_w)) or (Screen:getWidth() - UI.SIDE_PAD * 2)
+    local col_w = (ctx and (ctx.col_w or ctx.inner_w)) or UI.getInnerW()
     local content_w = math.max(1, col_w - UI.PAD * 2)
     local L = computeLayout(content_w, ctx)
     return L.body_h

@@ -558,7 +558,7 @@ local function makeInstance(inst_id)
         local show_labels = SUISettings:nilOrTrue(labels_key)
         -- Estimate content width the same way chrome contentWidth does for a
         -- full column (outer margin = PAD each side).
-        local col_w = ctx.col_w or ctx.inner_w or (Screen:getWidth() - UI.SIDE_PAD * 2)
+        local col_w = ctx.col_w or ctx.inner_w or UI.getInnerW()
         local content_w = math.max(1, col_w - PAD * 2)
         local d = _getQADims(Config.getModuleScaleRaw(S.id, ctx.pfx), content_w)
         return (show_labels and (d.frame_sz + d.lbl_sp + d.lbl_h) or d.frame_sz)

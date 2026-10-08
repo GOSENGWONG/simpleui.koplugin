@@ -457,6 +457,10 @@ function GridRenderer.applyBadges(cover_widget, bd, fp, cw, ch, badges_cfg, pfx,
     -- _BG_CORNER_BADGE_BASE_BOOST's doc comment. Not applied to the New
     -- Book ribbon, which keeps using the plain `badge_scale` below.
     local corner_badge_scale = badge_scale * _BG_CORNER_BADGE_BASE_BOOST
+    local overlap = OverlapGroup:new{ dimen = Geom:new{ w = cw, h = ch }, cover_widget }
+    -- Badges sit on the card, not on the room its shadow takes.
+    local inset = SUIStyle.coverShadowOffset(SUIStyle.SHADOW_MODULES)
+    cw, ch = cw - inset, ch - inset
     local cell_min     = math.min(cw, ch)
     local margin       = math.max(1, math.floor(cell_min * 0.04))
     -- Lateral (left/right) inset — wider than the vertical `margin` so
@@ -465,7 +469,6 @@ function GridRenderer.applyBadges(cover_widget, bd, fp, cw, ch, badges_cfg, pfx,
     -- Series/New's top) except Progress, which goes flush (0) at the top.
     local edge_margin  = math.max(1, math.floor(cell_min * 0.08))
     local badges_added = false
-    local overlap = OverlapGroup:new{ dimen = Geom:new{ w = cw, h = ch }, cover_widget }
 
     -- Pages badge (bottom-left) — hidden for finished books, same rule as
     -- the Library grid (a finished book doesn't need its page count).
@@ -817,9 +820,10 @@ function GridRenderer.build(w, ctx, opts)
                     },
                 },
             }
+            local inset = SUIStyle.coverShadowOffset(SUIStyle.SHADOW_MODULES)
             badge.overlap_offset = {
-                math.floor((cw - badge_d) / 2),
-                ch - badge_r,
+                math.floor((cw - inset - badge_d) / 2),
+                ch - inset - badge_r,
             }
             cover_widget = OverlapGroup:new{
                 dimen = Geom:new{ w = cw, h = ch + badge_r },
@@ -1254,7 +1258,7 @@ function GridRenderer.getHeight(_ctx, opts)
     local grid_rows = opts.grid_rows or 1
     local grid_cols = opts.grid_cols or opts.max_items or 5
     local w = (_ctx and (_ctx.col_w or _ctx.inner_w))
-              or (Screen:getWidth() - UI.SIDE_PAD * 2)
+              or UI.getInnerW()
     -- Frame border / solid background — computed up front so inner_w below
     -- mirrors build()'s own corrected value exactly (see build()'s comment
     -- on why the border must be reserved here too, not just the padding).

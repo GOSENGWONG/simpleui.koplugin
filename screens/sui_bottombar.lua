@@ -312,7 +312,6 @@ function M.INDIC_H()     return _cached("indic_h", function() return math.floor(
 -- Structural dimensions — not affected by the size setting.
 function M.TOP_SP()      return _cached("top_sp",  function() return Screen:scaleBySize(2)  end) end
 function M.BOT_SP()      return _cached("bot_sp",  function() return math.floor(Screen:scaleBySize(12) * _getBottomMarginPct() / 100) end) end
-function M.SIDE_M()      return _UI().SIDE_M() end
 function M.SEP_H()
     return _cached("sep_h", function()
         local style = M.getBarStyle()
@@ -696,6 +695,7 @@ end
 
 -- Shared helper to assemble the final FrameContainer for all bottom bar variants.
 local function _buildBarContainer(hg_args, is_navpager)
+    local side_m = _UI().SIDE_M()
     local style = M.getBarStyle()
     if style == "framed" then
         local radius = math.floor(Screen:scaleBySize(12) * _getNavbarScale())
@@ -745,8 +745,8 @@ local function _buildBarContainer(hg_args, is_navpager)
 
         local wrapper = FrameContainer():new{
             bordersize     = 0, padding = 0, margin = 0,
-            padding_left   = M.SIDE_M(),
-            padding_right  = M.SIDE_M(),
+            padding_left   = side_m,
+            padding_right  = side_m,
             padding_top    = M.TOP_SP(),
             padding_bottom = M.BOT_SP(),
             background     = nil,
@@ -764,8 +764,8 @@ local function _buildBarContainer(hg_args, is_navpager)
     local fc = FrameContainer():new{
         bordersize      = 0,
         padding         = 0,
-        padding_left    = M.SIDE_M(),
-        padding_right   = M.SIDE_M(),
+        padding_left    = side_m,
+        padding_right   = side_m,
         padding_bottom  = M.BOT_SP(),
         margin          = 0,
         background      = _getBarBg(),
@@ -782,7 +782,7 @@ local function _buildBarContainer(hg_args, is_navpager)
             top_vg[#top_vg + 1] = VerticalSpan():new{ width = pad_above }
         end
         top_vg[#top_vg + 1] = LineWidget():new{
-            dimen      = Geom():new{ w = Screen:getWidth() - M.SIDE_M() * 2, h = sep_h },
+            dimen      = Geom():new{ w = _UI().getUsableW(), h = sep_h },
             background = sep_bg,
         }
     else
@@ -791,8 +791,8 @@ local function _buildBarContainer(hg_args, is_navpager)
 
     local top_fc = FrameContainer():new{
         bordersize = 0, padding = 0, margin = 0,
-        padding_left  = M.SIDE_M(),
-        padding_right = M.SIDE_M(),
+        padding_left  = side_m,
+        padding_right = side_m,
         background = nil,
         top_vg,
     }
@@ -817,8 +817,8 @@ function M.buildBarWidget(active_action_id, tab_config, num_tabs, mode)
     num_tabs    = num_tabs or Config.getNumTabs()
     mode        = mode     or Config.getNavbarMode()
     local screen_w = Screen:getWidth()
-    local side_m   = M.SIDE_M()
-    local usable_w = screen_w - side_m * 2
+    local side_m   = _UI().SIDE_M()
+    local usable_w = _UI().getUsableW(screen_w)
     local hg_args  = { align = "top" }
 
     if Config.isNavpagerEnabled() then
@@ -844,8 +844,8 @@ function M.buildBarWidgetWithArrows(active_action_id, tab_config, mode, has_prev
     local HorizontalSpan = require("ui/widget/horizontalspan")
     mode = mode or Config.getNavbarMode()
     local screen_w  = Screen:getWidth()
-    local side_m    = M.SIDE_M()
-    local usable_w  = screen_w - side_m * 2
+    local side_m    = _UI().SIDE_M()
+    local usable_w  = _UI().getUsableW(screen_w)
     local center_n  = #tab_config
     local hg_args   = { align = "top" }
 
@@ -884,8 +884,8 @@ function M.buildBarWidgetWithKeyFocus(active_action_id, tab_config, kbfocus_idx,
     num_tabs = num_tabs or Config.getNumTabs()
     mode     = mode     or Config.getNavbarMode()
     local screen_w = Screen:getWidth()
-    local side_m   = M.SIDE_M()
-    local usable_w = screen_w - side_m * 2
+    local side_m   = _UI().SIDE_M()
+    local usable_w = _UI().getUsableW(screen_w)
     local widths   = M.getTabWidths(num_tabs, usable_w)
     local hg_args  = { align = "top" }
     local bw       = Screen:scaleBySize(3)
@@ -998,8 +998,8 @@ function M.registerTouchZones(plugin, fm_self)
     -- Using BAR_H() alone leaves the top separator and bottom safe-area bands
     -- where underlying scroll/content can still win hit-testing.
     local nav_h     = navbar_on and M.TOTAL_H() or 0
-    local side_m    = M.SIDE_M()
-    local usable_w  = screen_w - side_m * 2
+    local side_m    = _UI().SIDE_M()
+    local usable_w  = _UI().getUsableW(screen_w)
     local bar_y     = navbar_on and (screen_h - nav_h) or screen_h
     local navpager  = Config.isNavpagerEnabled()
 
