@@ -2412,13 +2412,13 @@ function M.openStatsDB()
     if not (ok and conn) then return nil end
     -- Retry briefly when the Statistics plugin is mid-write.
     pcall(function() conn:exec("PRAGMA busy_timeout = 3000;") end)
+    -- Per-book lookups resolve book.id from md5, which the reading-stats schema
+    -- does not index. page_stat is a view (not indexable); its base table
+    -- page_stat_data already carries indexes on (id_book, ...) and start_time.
     if not _indexes_created then
-        local idx_ok = pcall(function()
+        _indexes_created = pcall(function()
             conn:exec("CREATE INDEX IF NOT EXISTS idx_simpleui_book_md5 ON book(md5);")
-            conn:exec("CREATE INDEX IF NOT EXISTS idx_simpleui_pagestat_book ON page_stat(id_book);")
-            conn:exec("CREATE INDEX IF NOT EXISTS idx_simpleui_pagestat_time ON page_stat(start_time);")
         end)
-        if idx_ok then _indexes_created = true end
     end
     return conn
 end

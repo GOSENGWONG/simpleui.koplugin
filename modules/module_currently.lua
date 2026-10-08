@@ -238,8 +238,9 @@ local function fetchBookStats(md5, shared_conn, ctx, force)
         -- ps_agg accumulates per-page totals; the outer SELECT aggregates them.
         -- sum(page_dur) replaces a correlated subquery that caused a second
         -- full scan of page_stat on every call.
-        -- Relies on idx_simpleui_book_md5 / idx_simpleui_pagestat_book indexes
-        -- created by openStatsDB() for O(log n) lookup instead of full-table scan.
+        -- Relies on idx_simpleui_book_md5 (created by openStatsDB()) for the
+        -- md5 lookup and on page_stat_data's (id_book, page, start_time) index
+        -- for the per-book scan.
         local row = conn:exec(string.format([[
             WITH b AS (
                 %s

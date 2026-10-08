@@ -1522,6 +1522,26 @@ function ScreenWidget:_swapLayoutTree(overlap)
     _deferredFreeOldTree(old)
 end
 
+-- Resolves the current and recent books for the book modules enabled on this
+-- screen. Returns nil when the shared book module is unavailable.
+--
+-- Show-finished filtering is not applied here: each module (module_recent,
+-- module_coverdeck) filters finished books at render time using its own
+-- setting. 15 entries are fetched so that at least 5 unfinished books remain
+-- after that filtering.
+function ScreenWidget:_prefetchBooks()
+    local SH = _getBookShared()
+    if not SH then return nil end
+    local mod_r  = Registry.get("recent")
+    local mod_cd = Registry.get("coverdeck")
+    local show_c = Registry.isEnabled(Registry.get("currently"), self._pfx)
+    local show_r = (mod_r and Registry.isEnabled(mod_r, self._pfx))
+        or (mod_cd and Registry.isEnabled(mod_cd, self._pfx))
+    local excl = SUISettings:readSetting(self._pfx .. "recent_exclude_currently")
+    if excl == nil then excl = true end
+    return SH.prefetchBooks(show_c, show_r, 15, { exclude_current = excl })
+end
+
 -- ---------------------------------------------------------------------------
 -- _buildCtx — constructs the module build context for the current render.
 -- ---------------------------------------------------------------------------
@@ -1602,18 +1622,7 @@ function ScreenWidget:_buildCtx()
         local SH = _getBookShared()
         if SH then
             if show_c or show_r then
-                local max_recent = 15
-                -- show_finished is no longer computed here: each module
-                -- (module_recent, module_coverdeck) filters finished books
-                -- independently at render time using its own setting.
-                -- max_recent is set to 15 so that after each module filters
-                -- finished books at render time, at least 5 unfinished entries
-                -- remain available for display.
-                local excl = SUISettings:readSetting(self._pfx .. "recent_exclude_currently")
-                if excl == nil then excl = true end
-                self._cached_books_state = SH.prefetchBooks(show_c, show_r, max_recent, {
-                    exclude_current = excl,
-                })
+                self._cached_books_state = self:_prefetchBooks()
                 if Config.cover_extraction_pending then
                     self:_scheduleCoverPoll()
                 end
@@ -1669,7 +1678,7 @@ function ScreenWidget:_buildCtx()
         self._db_conn = Config.openStatsDB()
     end
 
-    -- Pre-fetch numeric stats via the shared provider (at most 2 DB roundtrips).
+    -- Pre-fetch numeric stats via the shared provider (a few window-bounded queries).
     -- needs_books: true only when reading_goals is active, OR reading_stats is
     -- active and "total_books" is among the selected stat items.  When false,
     -- SP.get() skips the sidecar scan (up to 200 DS.open calls) entirely.
@@ -2692,26 +2701,19 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
                 -- Read live rather than the closed-over parameter: a later
                 -- caller may have upgraded this pending refresh (see above).
                 local stats_only = self._refresh_pending_stats_only
+                local books_fresh = self._books_fresh
+                self._books_fresh = nil
 
                 if not self._db_conn then
                     self._db_conn = Config.openStatsDB()
                 end
 
                 if self._ctx_cache then
-                    -- 1. Get new book metadata (prefetchBooks)
-                    if not stats_only then
-                        local SH = _getBookShared()
-                        if SH then
-                            local mod_r  = Registry.get("recent")
-                            local mod_cd = Registry.get("coverdeck")
-                            local show_c = Registry.isEnabled(Registry.get("currently"), self._pfx)
-                            local show_r = (mod_r and Registry.isEnabled(mod_r, self._pfx)) or (mod_cd and Registry.isEnabled(mod_cd, self._pfx))
-                            -- show_finished removed: each module filters independently at render time.
-                            local excl = SUISettings:readSetting(self._pfx .. "recent_exclude_currently")
-                            if excl == nil then excl = true end
-                            local new_bs = SH.prefetchBooks(show_c, show_r, 15, {
-                                exclude_current = excl,
-                            })
+                    -- 1. Get new book metadata (prefetchBooks). Skipped when
+                    -- onShow() already resolved it for this open.
+                    if not stats_only and not (books_fresh and self._cached_books_state) then
+                        local new_bs = self:_prefetchBooks()
+                        if new_bs then
                             self._cached_books_state = new_bs
                             self._ctx_cache.prefetched = new_bs.prefetched_data
                             self._ctx_cache.current_fp = new_bs.current_fp
@@ -3234,28 +3236,16 @@ function ScreenWidget:onShow()
     end
 
     if not self._cached_books_state then
-        if is_app_cold_boot then
-            -- App startup: fetch the real book state synchronously instead
-            -- of seeding from SH.getStaleBooks(). Mirrors the prefetchBooks()
-            -- call the deferred tick in _refresh() makes further below in
-            -- this file — same show_c/show_r resolution, same count — so the
-            -- very first paint already has authoritative data and needs no
-            -- follow-up correction.
-            local SH = _getBookShared()
-            if SH then
-                local mod_r  = Registry.get("recent")
-                local mod_cd = Registry.get("coverdeck")
-                local show_c = Registry.isEnabled(Registry.get("currently"), self._pfx)
-                local show_r = (mod_r and Registry.isEnabled(mod_r, self._pfx))
-                    or (mod_cd and Registry.isEnabled(mod_cd, self._pfx))
-                local excl = SUISettings:readSetting(self._pfx .. "recent_exclude_currently")
-                if excl == nil then excl = true end
-                self._cached_books_state = SH.prefetchBooks(show_c, show_r, 15, {
-                    exclude_current = excl,
-                })
-            end
-            self._cached_books_state = self._cached_books_state
-                or { current_fp = nil, recent_fps = {}, prefetched_data = {} }
+        -- App startup, or a screen flagged stale by a reading session: resolve
+        -- the book list synchronously so the first paint already has
+        -- authoritative data. Only the sidecar that changed misses the cache,
+        -- so this stays cheap, and the deferred pass below skips repeating it.
+        local books = (is_app_cold_boot or need_async) and self:_prefetchBooks()
+        if books then
+            self._cached_books_state = books
+            self._books_fresh = need_async and not is_app_cold_boot
+        elseif is_app_cold_boot then
+            self._cached_books_state = { current_fp = nil, recent_fps = {}, prefetched_data = {} }
         else
             -- Cold-open path: _cached_books_state is nil, so _buildCtx would
             -- otherwise call prefetchBooks() (sidecar I/O for every recent

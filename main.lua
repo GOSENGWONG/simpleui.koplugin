@@ -81,7 +81,6 @@ local SimpleUIPlugin = WidgetContainer:new{
     _orig_rc_remove           = nil,
     _orig_rc_rename           = nil,
     _orig_fc_init             = nil,
-    _orig_fm_setup            = nil,
 
     _makeNavbarMenu           = nil,
     _makeTopbarMenu           = nil,
@@ -1758,35 +1757,26 @@ function SimpleUIPlugin:onResume()
 end
 
 function SimpleUIPlugin:onReaderReady()
-    -- Warm the sidecar cache for the opened book as soon as it is opened,
-    -- so that onCloseDocument has access to its pre-session summary state
-    -- even if the file browser didn't scan it recently (e.g. direct boot to book).
+    -- Warm the sidecar cache for the opened book from the reader's own
+    -- in-memory settings, so that onCloseDocument has access to its
+    -- pre-session summary state even if the file browser didn't scan it
+    -- recently (e.g. direct boot to book). No sidecar re-read is needed.
     local RUI = package.loaded["apps/reader/readerui"]
-    local fp = RUI and RUI.instance and RUI.instance.document and RUI.instance.document.file
-    if fp then
-        local SH = package.loaded["modules/module_books_shared"]
-        if SH and SH._cachePut then
-            local ok_ds, DocSettings = pcall(require, "docsettings")
-            if ok_ds and DocSettings then
-                local ok_open, ds = pcall(function() return DocSettings:open(fp) end)
-                if ok_open and ds then
-                    local summary = ds:readSetting("summary")
-                    local doc_props = ds:readSetting("doc_props")
-                    local title = doc_props and doc_props.title
-                    local authors = doc_props and doc_props.authors
-                    SH._cachePut(fp, ds.source_candidate, {
-                        percent              = ds:readSetting("percent_finished") or 0,
-                        title                = title,
-                        authors              = authors,
-                        doc_pages            = ds:readSetting("doc_pages"),
-                        partial_md5_checksum = ds:readSetting("partial_md5_checksum"),
-                        summary              = summary,
-                    })
-                    pcall(function() ds:close() end)
-                end
-            end
-        end
-    end
+    local ui  = RUI and RUI.instance
+    local fp  = ui and ui.document and ui.document.file
+    local ds  = ui and ui.doc_settings
+    local SH  = package.loaded["modules/module_books_shared"]
+    if not (fp and ds and SH and SH._cachePut) then return end
+
+    local doc_props = ds:readSetting("doc_props")
+    SH._cachePut(fp, ds.source_candidate, {
+        percent              = ds:readSetting("percent_finished") or 0,
+        title                = doc_props and doc_props.title,
+        authors              = doc_props and doc_props.authors,
+        doc_pages            = ds:readSetting("doc_pages"),
+        partial_md5_checksum = ds:readSetting("partial_md5_checksum"),
+        summary              = ds:readSetting("summary"),
+    })
 end
 
 function SimpleUIPlugin:onCloseDocument()
@@ -1914,9 +1904,6 @@ function SimpleUIPlugin:onCloseDocument()
     -- pcalls. Only taken when NO screen at all is currently live, since a
     -- live screen always needs its own fresh check below.
     if #live_ids == 0 and #screen_ids == 1 and ScreenEngine.needsRefresh("hs") then
-        if SUISettings:nilOrTrue("simpleui_topbar_enabled") then
-            Topbar.scheduleRefresh(self, 0)
-        end
         return
     end
 
@@ -2012,6 +1999,9 @@ function SimpleUIPlugin:onCloseDocument()
         end
         if SP then
             local status_changed = true  -- default: full invalidation (safe)
+            -- True when the cached library status counts were adjusted for the
+            -- closed book and need no recount.
+            local status_counts_patched = false
             if closed_fp and SP.invalidateTimeSeries then
                 local SH = package.loaded["modules/module_books_shared"]
                 -- Pre-session status: read from sidecar cache (no I/O).
@@ -2023,27 +2013,31 @@ function SimpleUIPlugin:onCloseDocument()
                 -- determine the pre-session status from the cache, so we must
                 -- not assume the book just became complete — it may have been
                 -- complete for years.
-                local pre_status
+                local pre_status, pre_percent
                 local cache_hit = false
                 if SH and (SH._cacheGetRaw or SH._cacheGet) then
                     local cached = (SH._cacheGetRaw or SH._cacheGet)(closed_fp)
                     if cached then
                         cache_hit = true
                         local s = cached.summary
-                        pre_status = type(s) == "table" and s.status or nil
+                        pre_status  = type(s) == "table" and s.status or nil
+                        pre_percent = cached.percent
                     end
                 end
-                -- Post-session status: read from the in-memory doc_settings.
-                -- ReaderUI:onClose() calls saveSettings() (flush) before firing
-                -- CloseDocument, so doc_settings reflects the final on-disk state.
-                -- doc_settings is not destroyed until UIManager:close() → onCloseWidget,
-                -- which runs after this handler — so RUI.instance.doc_settings is
-                -- valid here. This avoids a DS.open (file-open + WAL header read).
-                local post_status
+                -- Post-session status and progress: read from the live reader.
+                -- The status comes from the in-memory doc_settings; the progress
+                -- from the footer, which tracks the current page (doc_settings
+                -- only receives it when the settings are saved). Both stay valid
+                -- until UIManager:close() → onCloseWidget, which runs after this
+                -- handler, so no DS.open is needed.
+                local post_status, post_percent
                 local RUI = package.loaded["apps/reader/readerui"]
                 if RUI and RUI.instance and type(RUI.instance.doc_settings) == "table" then
                     local s = RUI.instance.doc_settings:readSetting("summary")
-                    post_status = type(s) == "table" and s.status or nil
+                    post_status  = type(s) == "table" and s.status or nil
+                    local footer = RUI.instance.view and RUI.instance.view.footer
+                    post_percent = footer and footer.percent_finished
+                        or RUI.instance.doc_settings:readSetting("percent_finished")
                 end
                 local pre_complete  = pre_status  == "complete"
                 local post_complete = post_status == "complete"
@@ -2054,6 +2048,13 @@ function SimpleUIPlugin:onCloseDocument()
                 -- (status_changed = true) without writing date_finished.
                 if cache_hit then
                     status_changed = pre_complete ~= post_complete
+                    -- Keep the library-wide status counts current by moving
+                    -- this one book between buckets instead of recounting.
+                    if SP.applyStatusChange then
+                        SP.applyStatusChange(closed_fp, pre_percent, pre_status,
+                                             post_percent, post_status)
+                        status_counts_patched = true
+                    end
                 else
                     -- Cache miss: assume counts may have changed (safe default).
                     -- pre_complete is unknown, so treat it as equal to post_complete
@@ -2136,7 +2137,7 @@ function SimpleUIPlugin:onCloseDocument()
             end
 
             if status_changed then
-                SP.invalidate()
+                SP.invalidate(status_counts_patched)
             elseif SP.invalidateTimeSeries then
                 -- Counts unchanged: only discard DB-derived fields (time, pages,
                 -- streak). books_year/books_total survive in the cache intact.
@@ -2358,15 +2359,6 @@ function SimpleUIPlugin:onCloseDocument()
         end
     end
 
-    -- Restart the topbar clock chain. While the reader was open, shouldRunTimer()
-    -- returned false (RUI.instance present) so the chain stopped naturally.
-    -- Without this, the topbar is frozen until the next hardware event (frontlight,
-    -- charge) — wifi state changes that happened during reading would not be
-    -- reflected for up to 60 s. scheduleRefresh guards against suspend internally
-    -- via shouldRunTimer, so this is safe to call unconditionally here.
-    if SUISettings:nilOrTrue("simpleui_topbar_enabled") then
-        Topbar.scheduleRefresh(self, 0)
-    end
 end
 
 -- ---------------------------------------------------------------------------
