@@ -11,7 +11,7 @@
 -- This is possible thanks to two additive GridRenderer hooks, introduced
 -- specifically for this module (see the notes in sui_book_grid.lua):
 --   opts.renderCell(item, cw, cell_h, ctx)  — replaces the "book
---       cover" cell with our own (stack or quad — see buildCollectionCell).
+--       cover" cell with our own (single or quad — see buildCollectionCell).
 --   opts.getCellHeight(cw, pfx)             — replaces the "cover + bar +
 --       text" height calculation with the coll_cell_h formula (see getDims).
 -- Without these two fields, GridRenderer.build/getHeight behave
@@ -36,9 +36,9 @@
 -- _resolveCoverStyleForCount below and sui_foldercovers.lua's _resolveStyle).
 --
 -- The book pile behind the cover (CoverWidgets.buildPile) is a separate
--- toggle ("Hide Book Spine", see getHideSpine) independent of Cover Style —
+-- toggle ("Hide Book Stack", see getHidePile) independent of Cover Style —
 -- applies the same way to Single and 4-Cover Grid, mirroring the library's
--- own decoupling of Folder Cover Type from Hide Folder Book Spine. This is
+-- own decoupling of Folder Cover Type from Hide Folder Book Stack. This is
 -- what keeps Auto visually uniform: every cell either has the pile or none
 -- does, regardless of which style it individually resolves to.
 
@@ -107,13 +107,13 @@ local LABEL_H = UI.LABEL_H  -- kept for any external callers; getHeight() uses g
 local MAX_ITEMS = 5  -- default_cols for the grid (Featured Collection uses the same value)
 
 -- ---------------------------------------------------------------------------
--- getDims(scale, thumb_scale, lbl_scale, cw, hide_spine, badge_scale) — cell
+-- getDims(scale, thumb_scale, lbl_scale, cw, hide_pile, badge_scale) — cell
 -- geometry.
 --
 -- cw is the column width already computed by the engine (GridRenderer.build via
 -- GridRenderer.computeAutoFitCell). The book pile (see
 -- CoverWidgets.buildPile) is independent of Cover Style (Single/Quad/Auto) —
--- same decoupling as the library's "Hide Folder Book Spine" toggle, which
+-- same decoupling as the library's "Hide Folder Book Stack" toggle, which
 -- applies to both its Single and 4-Cover Grid folder covers. When shown,
 -- the cover/grid gives up `pile` px on its right and bottom for the layers
 -- behind it; when hidden, `pile` is only the room the cover shadow takes
@@ -123,7 +123,7 @@ local MAX_ITEMS = 5  -- default_cols for the grid (Featured Collection uses the 
 -- how much of it the cover/grid takes.
 --
 -- Because pile does not depend on Cover Style, coll_w/coll_h/coll_cell_h
--- are identical for Single and Quad given the same hide_spine setting —
+-- are identical for Single and Quad given the same hide_pile setting —
 -- this is what lets Auto mode mix styles per collection without any
 -- per-style height reconciliation (see collectionsCellHeight).
 --
@@ -131,7 +131,7 @@ local MAX_ITEMS = 5  -- default_cols for the grid (Featured Collection uses the 
 -- the engine already handles the auto-fit (cw/gap) according to grid_cols (4-5,
 -- configurable), just like for any other grid module.
 -- ---------------------------------------------------------------------------
-local function getDims(scale, thumb_scale, lbl_scale, cw, hide_spine, badge_scale)
+local function getDims(scale, thumb_scale, lbl_scale, cw, hide_pile, badge_scale)
     scale       = scale       or 1.0
     thumb_scale = thumb_scale or 1.0
     lbl_scale   = lbl_scale   or 1.0
@@ -151,7 +151,7 @@ local function getDims(scale, thumb_scale, lbl_scale, cw, hide_spine, badge_scal
     local coll_lbl_fs  = math.max(6, math.floor(_BASE_COLL_LBL_FS * scale * lbl_scale))
     local label_h      = math.max(1, math.floor(1.3 * coll_lbl_fs + 0.5))
 
-    local pile   = CoverWidgets.backingInset(SUIStyle.SHADOW_MODULES, hide_spine, cs)
+    local pile   = CoverWidgets.backingInset(SUIStyle.SHADOW_MODULES, hide_pile, cs)
     local border = SUIStyle.BADGE_BORDER_SZ
     local coll_w = math.max(1, cw - pile)
     local coll_h = math.max(1, math.floor(coll_w * _BASE_COLL_ASPECT))
@@ -179,8 +179,8 @@ local function getDims(scale, thumb_scale, lbl_scale, cw, hide_spine, badge_scal
         badge_margin   = badge_margin,
         badge_margin_t = badge_margin_t,
         pile         = pile,
-        hide_pile    = hide_spine,
-        stack_cell_w = coll_w + pile,   -- == cw, always
+        hide_pile    = hide_pile,
+        cell_w       = coll_w + pile,   -- == cw, always
         cell_h       = coll_h + accent_h + pile,
         coll_cell_h  = coll_h + accent_h + pile + label_gap + label_h,
         ph_cover_fs  = math.max(7, math.floor(_BASE_PH_COVER_FS * cs)),
@@ -207,7 +207,7 @@ local BADGE_COLOR_KEY    = "simpleui_coll_badge_color"
 local BADGE_HIDDEN_KEY   = "simpleui_coll_badge_hidden"
 local BADGE_SCALE_KEY    = "simpleui_coll_badge_scale"
 local COVER_STYLE_KEY    = "simpleui_coll_cover_style"
-local HIDE_SPINE_KEY     = "simpleui_coll_hide_spine"
+local HIDE_PILE_KEY      = "simpleui_coll_hide_spine"
 
 local function getBadgePosition()
     return SUISettings:readSetting(BADGE_POSITION_KEY) or "top"
@@ -247,17 +247,23 @@ local _COLL_BADGE_BASE_BOOST = 1.2
 local function getBadgeScale() return getBadgeScalePct() / 100 * _COLL_BADGE_BASE_BOOST end
 local function saveBadgeScale(pct) Config.setScaleByKey(pct, BADGE_SCALE_KEY) end
 
--- "stack" (default) = single cover of the first book — see getHideSpine
---                      below, the book pile is an independent toggle, not
---                      tied to this style.
+-- "single" (default) = single cover of the first book — see getHidePile
+--                       below, the book pile is an independent toggle, not
+--                       tied to this style.
 -- "quad"             = 2×2 grid with up to 4 covers from the collection.
 -- "auto"             = resolved per collection below (see
---                       _resolveCoverStyleForCount): "stack" up to 3 books,
+--                       _resolveCoverStyleForCount): "single" up to 3 books,
 --                       "quad" from 4 books upward — same threshold and
 --                       naming convention as the library's Folder Cover Type
 --                       "Auto" option (sui_foldercovers.lua's _resolveStyle).
 local function getCoverStyle()
-    return SUISettings:readSetting(COVER_STYLE_KEY) or "stack"
+    local style = SUISettings:readSetting(COVER_STYLE_KEY)
+    -- Persisted legacy id for "single".
+    if style == "stack" then
+        style = "single"
+        SUISettings:saveSetting(COVER_STYLE_KEY, style)
+    end
+    return style or "single"
 end
 local function saveCoverStyle(v)
     SUISettings:saveSetting(COVER_STYLE_KEY, v)
@@ -265,26 +271,26 @@ end
 
 -- Book pile (layers peeking out behind the cover/grid), shown by default.
 -- Independent of Cover Style — applies the same way whether a given cell
--- resolves to "stack" (single cover) or "quad" (4-cover grid), mirroring the
+-- resolves to "single" or "quad" (4-cover grid), mirroring the
 -- library's own decoupling of "Folder Cover Type" from "Hide Folder Book
--- Spine" (sui_foldercovers.lua's getHideSpine/setHideSpine). This is what
+-- Stack" (sui_foldercovers.lua's getHidePile/setHidePile). This is what
 -- lets Cover Style = Auto keep a uniform look — every cell either has the
 -- pile or none does, regardless of which style it individually resolves to.
-local function getHideSpine()
-    return SUISettings:readSetting(HIDE_SPINE_KEY) or false
+local function getHidePile()
+    return SUISettings:readSetting(HIDE_PILE_KEY) or false
 end
-local function saveHideSpine(v)
-    SUISettings:saveSetting(HIDE_SPINE_KEY, v)
+local function saveHidePile(v)
+    SUISettings:saveSetting(HIDE_PILE_KEY, v)
 end
 
 -- Resolve the effective cover style for a collection with `count` books,
--- given the raw setting `raw_style`. Only "auto" needs resolving — "stack"/
+-- given the raw setting `raw_style`. Only "auto" needs resolving — "single"/
 -- "quad" pass through unchanged. Mirrors the library's Folder Cover Type
--- "Auto" behaviour (quad from 4 books, single/stack below that).
+-- "Auto" behaviour (quad from 4 books, single below that).
 local function _resolveCoverStyleForCount(raw_style, count)
     if raw_style ~= "auto" then return raw_style end
     if count and count >= 4 then return "quad" end
-    return "stack"
+    return "single"
 end
 
 local function getCoverOverrides()
@@ -296,7 +302,7 @@ end
 
 -- ---------------------------------------------------------------------------
 -- openCollectionCoverPicker — "Set cover" dialog for a single collection,
--- letting the person pick which book's cover represents it in Stack style
+-- letting the person pick which book's cover represents it in Single style
 -- (mirrors KOReader's own "set folder cover" long-press action for a
 -- series). Shared by:
 --   • extraMenuItemsAfter's collection checklist (long-press a row there)
@@ -602,14 +608,14 @@ local function _resolveCoverStyleFor(coll_name)
 end
 
 -- ---------------------------------------------------------------------------
--- Cover loading — Single/stack style only (fixed 3:2, stretch, no crop).
+-- Cover loading — Single style only (fixed 3:2, stretch, no crop).
 -- Quad style has its own loader further down (buildQuadCell), backed by
 -- Config.getCroppedCoverBB instead: Quad crops to ~1:1 by design (2x2 collage,
 -- every quadrant must fill its box with no gaps), so it can't share this
 -- cache — see infra/sui_cover_cache.lua's header comment for why the two
 -- shapes can't collapse into one.
 -- ---------------------------------------------------------------------------
-local function getStackBookCover(filepath, w, h)
+local function getSingleBookCover(filepath, w, h)
     local bb = Config.getStretchedCoverBB(filepath, w, h)
     if not bb then return nil end
     local ok, img = pcall(function()
@@ -632,7 +638,7 @@ end
 -- `content` is the cover/grid widget (outer size coll_w × coll_h), without accent or
 -- badge. The accent bar joins it to form the front card; the pile sits
 -- behind that card and the badge floats over it. Returns the final widget
--- (stack_cell_w × cell_h) ready to carry only the label underneath.
+-- (cell_w × cell_h) ready to carry only the label underneath.
 -- ---------------------------------------------------------------------------
 local function wrapAccentAndBadge(content, count, d, accent_color)
     local accent = LineWidget:new{
@@ -641,7 +647,7 @@ local function wrapAccentAndBadge(content, count, d, accent_color)
     }
     local card_h = d.coll_h + d.accent_h
 
-    local group = OverlapGroup:new{ dimen = Geom:new{ w = d.stack_cell_w, h = d.cell_h } }
+    local group = OverlapGroup:new{ dimen = Geom:new{ w = d.cell_w, h = d.cell_h } }
     local backing = CoverWidgets.buildBacking(d.coll_w, card_h, d.pile, d.hide_pile)
     if backing then group[#group + 1] = backing end
     group[#group + 1] = VerticalGroup:new{ align = "left", content, accent }
@@ -689,7 +695,7 @@ end
 -- ---------------------------------------------------------------------------
 -- Cover cell — Single (one cover, optional pile — see wrapAccentAndBadge)
 -- ---------------------------------------------------------------------------
-local function buildStackCell(files, cover_override, coll_name, count, d, accent_color)
+local function buildSingleCell(files, cover_override, coll_name, count, d, accent_color)
     local front_fp = cover_override
     if front_fp and lfs.attributes(front_fp, "mode") ~= "file" then front_fp = nil end
     if not front_fp and #files > 0 then front_fp = files[1] end
@@ -697,7 +703,7 @@ local function buildStackCell(files, cover_override, coll_name, count, d, accent
     -- Main cover (or placeholder).
     local cover
     if front_fp and lfs.attributes(front_fp, "mode") == "file" then
-        local raw = getStackBookCover(front_fp, d.img_w, d.img_h)
+        local raw = getSingleBookCover(front_fp, d.img_w, d.img_h)
         if raw then
             cover = FrameContainer:new{
                 bordersize = d.border, color = SUIStyle.COLOR.text_primary,
@@ -730,7 +736,7 @@ local function buildStackCell(files, cover_override, coll_name, count, d, accent
     local cover_slots = nil
     if front_fp then
         cover_slots = {
-            { kind = "stack", container = content, idx = 1, fp = front_fp, w = d.img_w, h = d.img_h },
+            { kind = "single", container = content, idx = 1, fp = front_fp, w = d.img_w, h = d.img_h },
         }
     end
 
@@ -763,7 +769,7 @@ local function buildQuadCell(files, count, d, accent_color)
     -- pending). Quadrants already loaded successfully are not re-registered:
     -- the reference cache backing getCroppedCoverBB (see infra/sui_config.lua)
     -- is global and byte-budgeted, shared across every Quad collection —
-    -- Quad already uses up to 4 entries per collection (vs 1 in Stack), so
+    -- Quad already uses up to 4 entries per collection (vs 1 in Single), so
     -- reducing redundant requests per updateCovers poll relieves that
     -- pressure quite a bit.
     local cover_slots = {}
@@ -879,10 +885,10 @@ end
 -- returns (see the twin note in sui_book_grid.lua).
 --
 -- Under "auto", different collections on the same screen can resolve to
--- different Cover Styles (some "stack", some "quad") depending on their own
+-- different Cover Styles (some "single", some "quad") depending on their own
 -- book count, but the grid still needs one uniform row height. Since the
--- pile is independent of Cover Style (see getDims/getHideSpine), coll_cell_h
--- does not depend on the resolved style at all — only on hide_spine, which
+-- pile is independent of Cover Style (see getDims/getHidePile), coll_cell_h
+-- does not depend on the resolved style at all — only on hide_pile, which
 -- is the same for every cell on the screen — so a single getDims call is
 -- always correct here, "auto" or not.
 -- ---------------------------------------------------------------------------
@@ -894,7 +900,7 @@ local function collectionsCellHeight(cw, pfx)
     local thumb_scale = Config.getThumbScale("collections", pfx) * lf
     local styles      = Config.resolveTextStyles({ pfx = pfx }, "collections", { "label" })
     local lbl_scale   = (styles.label and styles.label.scale) or 1
-    local d = getDims(scale, thumb_scale, lbl_scale, cw, getHideSpine())
+    local d = getDims(scale, thumb_scale, lbl_scale, cw, getHidePile())
     return d.coll_cell_h
 end
 
@@ -915,11 +921,11 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     local overrides = getCoverOverrides()
 
     -- Resolve "auto" per collection now that its book count is known — see
-    -- _resolveCoverStyleForCount. "stack"/"quad" pass through unchanged.
-    -- The pile is independent of style (see getDims/getHideSpine) — passed
+    -- _resolveCoverStyleForCount. "single"/"quad" pass through unchanged.
+    -- The pile is independent of style (see getDims/getHidePile) — passed
     -- separately so it stays uniform across every cell on screen.
     local style = _resolveCoverStyleForCount(getCoverStyle(), count)
-    local d     = getDims(scale, thumb_scale, lbl_scale, cw, getHideSpine(), getBadgeScale())
+    local d     = getDims(scale, thumb_scale, lbl_scale, cw, getHidePile(), getBadgeScale())
 
     local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
     local CLR_ACCENT_EFF   = SUIStyle.COLOR.text_primary
@@ -928,7 +934,7 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     if style == "quad" then
         cover_widget, cover_slots = buildQuadCell(files, count, d, CLR_ACCENT_EFF)
     else
-        cover_widget, cover_slots = buildStackCell(files, overrides[coll_name], coll_name, count, d, CLR_ACCENT_EFF)
+        cover_widget, cover_slots = buildSingleCell(files, overrides[coll_name], coll_name, count, d, CLR_ACCENT_EFF)
     end
 
     local display_name = coll_name
@@ -950,7 +956,7 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
         alignment              = "center",
     }
 
-    -- Centered under the front card, not under stack_cell_w, which also
+    -- Centered under the front card, not under cell_w, which also
     -- includes the pile: a trailing span of the pile's width offsets it.
     local label_aligned = HorizontalGroup:new{
         label_w,
@@ -965,7 +971,7 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     }
 
     local tappable = InputContainer:new{
-        dimen      = Geom:new{ w = d.stack_cell_w, h = cell_h },
+        dimen      = Geom:new{ w = d.cell_w, h = cell_h },
         [1]        = cell_vg,
         _coll_name = coll_name,
     }
@@ -985,7 +991,7 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     -- Long-press → collection-level actions, NOT the per-book dialog: a
     -- collection cell represents many books, so "hold on the cover" mirrors
     -- KOReader's own long-press on a series folder (pick which book's cover
-    -- represents it) rather than opening a single book's actions. In Stack
+    -- represents it) rather than opening a single book's actions. In Single
     -- style that's exactly openCollectionCoverPicker (same dialog already
     -- used from the module's own "Manage collections" settings list); Quad
     -- style has no single front cover to reassign, so only "Open Module
@@ -1005,7 +1011,7 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
             local ButtonDialog = require("ui/widget/buttondialog")
             local menu_dialog
             local menu_buttons = {}
-            if style == "stack" then
+            if style == "single" then
                 menu_buttons[#menu_buttons + 1] = {{
                     text     = _("Set collection cover"),
                     callback = function()
@@ -1036,7 +1042,7 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
 end
 
 -- ---------------------------------------------------------------------------
--- updateCovers — handles the two cover_slots types (stack/quad). Passed to
+-- updateCovers — handles the two cover_slots types (single/quad). Passed to
 -- GridRenderer via spec.updateCovers (replaces the generic
 -- GridRenderer.updateCovers because Quad mode needs ImageWidgets with no
 -- border of their own, unlike the bordered FrameContainer that SH.getBookCover returns).
@@ -1045,10 +1051,10 @@ local function collectionsUpdateCovers(widget, _ctx)
     if not widget or not widget._cover_slots then return true end
     local all_done = true
     for _, slot in ipairs(widget._cover_slots) do
-        -- Dispatch to the matching cache by shape family: stack slots are
+        -- Dispatch to the matching cache by shape family: single slots are
         -- fixed 3:2 stretch-only (infra/sui_cover_cache.lua), quad slots
         -- crop to ~1:1 (see infra/sui_config.lua's getCroppedCoverBB) — same
-        -- split as buildStackCell/buildQuadCell above.
+        -- split as buildSingleCell/buildQuadCell above.
         local bb = (slot.kind == "quad")
             and Config.getCroppedCoverBB(slot.fp, slot.w, slot.h)
             or Config.getStretchedCoverBB(slot.fp, slot.w, slot.h)
@@ -1060,7 +1066,7 @@ local function collectionsUpdateCovers(widget, _ctx)
                     width            = slot.w,
                     height           = slot.h,
                     -- Quad's bb is always already exactly slot.w x slot.h
-                    -- (getCroppedCoverBB's contract, unchanged). Stack's bb
+                    -- (getCroppedCoverBB's contract, unchanged). Single's bb
                     -- may be larger (shared, session-max-sized entry) — no
                     -- scale_factor for either case: a no-op blit when
                     -- sizes already match, a plain downscale otherwise.
@@ -1248,9 +1254,9 @@ local function extraMenuItemsAfter(ctx_menu)
                 -- Same text as the library's Folder Cover Type "Single Cover".
                 text           = _lc("Single Cover"),
                 radio          = true,
-                checked_func   = function() return getCoverStyle() == "stack" end,
+                checked_func   = function() return getCoverStyle() == "single" end,
                 keep_menu_open = true,
-                callback       = function() saveCoverStyle("stack"); refresh() end,
+                callback       = function() saveCoverStyle("single"); refresh() end,
             },
             {
                 -- Same text as the library's Folder Cover Type "4-Cover Grid
@@ -1275,15 +1281,15 @@ local function extraMenuItemsAfter(ctx_menu)
     }
 
     items[#items + 1] = {
-        -- Independent of Cover Style — see getHideSpine. Same text/behaviour
-        -- as the library's "Hide Folder Book Spine" (sui_menu.lua), applied
+        -- Independent of Cover Style — see getHidePile. Same text/behaviour
+        -- as the library's "Hide Folder Book Stack" (sui_menu.lua), applied
         -- here to whichever style each collection resolves to (Single or
         -- 4-Cover Grid), so Auto stays visually uniform across cells.
-        text           = _lc("Hide Book Spine"),
+        text           = _lc("Hide Book Stack"),
         separator      = true,
-        checked_func   = function() return getHideSpine() end,
+        checked_func   = function() return getHidePile() end,
         keep_menu_open = true,
-        callback       = function() saveHideSpine(not getHideSpine()); refresh() end,
+        callback       = function() saveHidePile(not getHidePile()); refresh() end,
     }
 
     items[#items + 1] = {
@@ -1365,7 +1371,7 @@ local function extraMenuItemsAfter(ctx_menu)
                     if is_hidden then unhideCollection(_n) else hideCollection(_n) end
                     refresh()
                 end,
-                hold_callback = (_resolveCoverStyleFor(_n) == "stack") and function() openCoverPicker(_n) end or nil,
+                hold_callback = (_resolveCoverStyleFor(_n) == "single") and function() openCoverPicker(_n) end or nil,
                 sui_hidden = ctx_menu.is_sui or nil,
             }
         end
@@ -1473,8 +1479,8 @@ function mod.getBadgeScalePct()      return getBadgeScalePct() end
 function mod.saveBadgeScale(v)       saveBadgeScale(v) end
 function mod.getCoverStyle()         return getCoverStyle() end
 function mod.saveCoverStyle(v)       saveCoverStyle(v) end
-function mod.getHideSpine()          return getHideSpine() end
-function mod.saveHideSpine(v)        saveHideSpine(v) end
+function mod.getHidePile()          return getHidePile() end
+function mod.saveHidePile(v)        saveHidePile(v) end
 
 -- No limit on collections now — shows only the count (no "x/5").
 function mod.getCountLabel(_pfx)

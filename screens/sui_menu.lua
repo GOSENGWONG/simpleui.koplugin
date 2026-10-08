@@ -3748,11 +3748,11 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         callback       = function() FC.setHideUnderline(not FC.getHideUnderline()); _refreshFC() end,
                     },
                     {
-                        text           = _("Hide Folder Book Spine"),
-                        checked_func   = function() return FC.getHideSpine() end,
+                        text           = _("Hide Folder Book Stack"),
+                        checked_func   = function() return FC.getHidePile() end,
                         keep_menu_open = true,
                         callback       = function()
-                            FC.setHideSpine(not FC.getHideSpine())
+                            FC.setHidePile(not FC.getHidePile())
                             FC.invalidateCache()
                             _refreshFC()
                         end,

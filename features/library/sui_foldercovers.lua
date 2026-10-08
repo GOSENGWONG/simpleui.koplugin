@@ -62,7 +62,7 @@ local SK = {
     recursive_cover   = "simpleui_fc_recursive_cover",
     label_scale       = "simpleui_fc_label_scale",
     folder_style      = "simpleui_fc_folder_style",
-    hide_spine        = "simpleui_fc_hide_spine",
+    hide_pile         = "simpleui_fc_hide_spine",
     show_title_strip  = "simpleui_fc_show_title_strip",
     show_author_strip = "simpleui_fc_show_author_strip",
     badge_color_pages    = "simpleui_fc_badge_color_pages",
@@ -200,8 +200,8 @@ function M.getFolderStyle()  return SUISettings:readSetting(SK.folder_style) or 
 function M.setFolderStyle(v) SUISettings:saveSetting(SK.folder_style, v)                 end
 
 -- Hide the book pile behind folder covers.
-function M.getHideSpine()  return SUISettings:isTrue(SK.hide_spine)  end
-function M.setHideSpine(v) SUISettings:saveSetting(SK.hide_spine, v) end
+function M.getHidePile()  return SUISettings:isTrue(SK.hide_pile)  end
+function M.setHidePile(v) SUISettings:saveSetting(SK.hide_pile, v) end
 
 -- Title/author strip below mosaic covers. Requires restart to take effect.
 function M.getShowTitleStrip()   return SUISettings:isTrue(SK.show_title_strip)   end
@@ -1143,7 +1143,7 @@ function M.install()
             label_pos   = M.getLabelPosition(),
             label_color = M.getLabelColor(),
             label_scale = M.getLabelScale(),
-            hide_pile   = M.getHideSpine(),
+            hide_pile   = M.getHidePile(),
             badge = {
                 hidden   = M.getBadgeHidden(),
                 scale    = M.getBadgeScale(),
@@ -1446,7 +1446,7 @@ function M.install()
                     end
                 end
                 if #covers > 0 then
-                    local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
+                    local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
                     local widget = CoverWidgets.buildQuadCover(self, covers, border, pile, max_img_w, max_img_h, display)
                     if widget then
                         CoverWidgets.installWidget(self, widget)
@@ -1504,7 +1504,7 @@ function M.install()
 
             local covers = CoverFinder.collectCovers(self.menu, dir_path, 4, BookInfoManager, M.getRecursiveCover())
             if #covers > 0 then
-                local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
+                local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
                 local widget = CoverWidgets.buildQuadCover(self, covers, border, pile, max_img_w, max_img_h, display)
                 if widget then
                     CoverWidgets.installWidget(self, widget)
@@ -1611,7 +1611,7 @@ function M.install()
         -- receives a nil table.
         display = display or _readDisplay()
         self._foldercover_processed = true
-        local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
+        local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
 
         local img_options = {}
         if img.file then img_options.file  = img.file end
@@ -1646,7 +1646,7 @@ function M.install()
     function MosaicMenuItem:_setEmptyFolderCover(display)
         display = display or _readDisplay()
         self._foldercover_processed = true
-        local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHideSpine())
+        local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
 
         local ratio = 2 / 3
         local img_w, img_h
