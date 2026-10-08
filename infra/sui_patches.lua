@@ -2745,57 +2745,116 @@ local function _libraryRecalculate(menu, ...)
     end
 end
 
-function M.patchCoverMenuSideMargin(plugin)
-    local patches = {}
-    plugin._cover_menu_patches = patches
-    local FileChooser = require("ui/widget/filechooser")
+-- ---------------------------------------------------------------------------
+-- Shared hooks
+-- Hook state lives on the patched class, so it outlives plugin instances: the
+-- hooks are installed once and shared by every instance using them.
+-- ---------------------------------------------------------------------------
 
-    -- Replaces target[key] with `wrapped`. The file browser binds display mode
-    -- functions on its own class when a mode is set up, so that binding is
-    -- replaced as well while it still holds `orig`.
-    local function install(target, key, orig, wrapped)
-        patches[#patches + 1] = { target = target, key = key, orig = orig, wrapped = wrapped }
-        target[key] = wrapped
+-- Registers `owner` as a user of the hooks stored on `target` under
+-- `state_key`. Returns a new state ({ users, hooks }) when the caller must
+-- install the hooks, nil when they are already installed.
+local function _acquireHooks(target, state_key, owner)
+    local state = rawget(target, state_key)
+    if state then
+        state.users[owner] = true
+        return nil
+    end
+    state = { users = { [owner] = true }, hooks = {} }
+    target[state_key] = state
+    return state
+end
+
+-- Replaces target[key] with `wrapped` and records it in `state` for removal.
+local function _addHook(state, target, key, wrapped)
+    state.hooks[#state.hooks + 1] = { target = target, key = key, orig = target[key], wrapped = wrapped }
+    target[key] = wrapped
+end
+
+-- Unregisters `owner` and removes the hooks once no user is left. Returns
+-- true when they were removed.
+local function _releaseHooks(target, state_key, owner)
+    local state = rawget(target, state_key)
+    if not state then return false end
+    state.users[owner] = nil
+    if next(state.users) then return false end
+    for i = #state.hooks, 1, -1 do
+        local h = state.hooks[i]
+        if rawget(h.target, h.key) == h.wrapped then h.target[h.key] = h.orig end
+    end
+    target[state_key] = nil
+    return true
+end
+
+-- Display modes whose layout is inset, with the margin each one already
+-- applies at the item area edge.
+local SIDE_MARGIN_MODES = {
+    { module = "mosaicmenu", native_margin = function(menu) return menu.item_margin end },
+    { module = "listmenu",   native_margin = function() return 0 end },
+}
+
+local SIDE_MARGIN_STATE = "_simpleui_side_margin"
+
+-- Installs the side margin hooks on `DisplayMode` unless already present.
+local function _installSideMargin(DisplayMode, native_margin, owner)
+    local state = _acquireHooks(DisplayMode, SIDE_MARGIN_STATE, owner)
+    if not state then return end
+
+    local FileChooser      = require("ui/widget/filechooser")
+    local orig_recalculate = DisplayMode._recalculateDimen
+    local orig_build       = DisplayMode._updateItemsBuildUI
+
+    -- native_margin(menu) is read after the mode has run _recalculateDimen.
+    local function recalculate(menu, ...)
+        orig_recalculate(menu, ...)
+        local inset = _sideInset(menu, native_margin(menu))
+        menu._sui_side_inset = inset
+        if inset > 0 then _withInsetWidth(menu, inset, orig_recalculate, ...) end
+    end
+
+    local function build(menu, ...)
+        local inset  = menu._sui_side_inset or 0
+        local result = _withInsetWidth(menu, inset, orig_build, ...)
+        _setBodyInset(menu, inset)
+        return result
+    end
+
+    -- The item builder holding the item class upvalue stays reachable here.
+    DisplayMode._simpleui_native_build = orig_build
+
+    for key, wrapped in pairs({
+        _recalculateDimen   = recalculate,
+        _updateItemsBuildUI = build,
+    }) do
+        local orig = DisplayMode[key]
+        _addHook(state, DisplayMode, key, wrapped)
+        -- The file browser binds display mode functions on its own class when
+        -- a mode is set up, so that binding is replaced as well.
         if rawget(FileChooser, key) == orig then
-            patches[#patches + 1] = { target = FileChooser, key = key, orig = orig, wrapped = wrapped }
-            FileChooser[key] = wrapped
+            _addHook(state, FileChooser, key, wrapped)
         end
     end
+end
 
-    -- native_margin(menu) returns the margin the display mode applies at the
-    -- item area edge; it is read after the mode has run _recalculateDimen.
-    local function wrap(DisplayMode, native_margin)
-        local orig_recalculate = DisplayMode._recalculateDimen
-        local orig_build       = DisplayMode._updateItemsBuildUI
-
-        local function recalculate(menu, ...)
-            orig_recalculate(menu, ...)
-            local inset = _sideInset(menu, native_margin(menu))
-            menu._sui_side_inset = inset
-            if inset > 0 then _withInsetWidth(menu, inset, orig_recalculate, ...) end
-        end
-
-        local function build(menu, ...)
-            local inset  = menu._sui_side_inset or 0
-            local result = _withInsetWidth(menu, inset, orig_build, ...)
-            _setBodyInset(menu, inset)
-            return result
-        end
-
-        -- Keeps the builder that holds the item class upvalue reachable.
-        DisplayMode._simpleui_native_build = orig_build
-
-        install(DisplayMode, "_recalculateDimen",   orig_recalculate, recalculate)
-        install(DisplayMode, "_updateItemsBuildUI", orig_build,       build)
+local function _uninstallSideMargin(DisplayMode, owner)
+    if _releaseHooks(DisplayMode, SIDE_MARGIN_STATE, owner) then
+        DisplayMode._simpleui_native_build = nil
     end
+end
 
-    local ok_mosaic, MosaicMenu = pcall(require, "mosaicmenu")
-    if ok_mosaic and MosaicMenu then
-        wrap(MosaicMenu, function(menu) return menu.item_margin end)
+function M.patchCoverMenuSideMargin(plugin)
+    for _, mode in ipairs(SIDE_MARGIN_MODES) do
+        local ok, DisplayMode = pcall(require, mode.module)
+        if ok and DisplayMode then
+            _installSideMargin(DisplayMode, mode.native_margin, plugin)
+        end
     end
-    local ok_list, ListMenu = pcall(require, "listmenu")
-    if ok_list and ListMenu then
-        wrap(ListMenu, function() return 0 end)
+end
+
+function M.unpatchCoverMenuSideMargin(plugin)
+    for _, mode in ipairs(SIDE_MARGIN_MODES) do
+        local DisplayMode = package.loaded[mode.module]
+        if DisplayMode then _uninstallSideMargin(DisplayMode, plugin) end
     end
 end
 
@@ -2805,12 +2864,15 @@ end
 -- "navbar_pagination_visible" is off, and fixes horizontal swipe propagation.
 -- ---------------------------------------------------------------------------
 
+local MENU_INIT_STATE = "_simpleui_menu_init"
+
 function M.patchMenuInitForPagination(plugin)
     local Menu = require("ui/widget/menu")
     -- Sub pages of the library.
     local SUB_PAGE_NAMES = { history = true, collections = true, coll_list = true }
-    local orig_menu_init  = Menu.init
-    plugin._orig_menu_init = orig_menu_init
+    local state = _acquireHooks(Menu, MENU_INIT_STATE, plugin)
+    if not state then return end
+    local orig_menu_init = Menu.init
 
     Menu.init = function(menu_self, ...)
         -- Centralised keyboard-shortcut indicator suppression.
@@ -2928,6 +2990,8 @@ function M.patchMenuInitForPagination(plugin)
         end
         menu_self:_recalculateDimen()
     end
+
+    state.hooks[1] = { target = Menu, key = "init", orig = orig_menu_init, wrapped = Menu.init }
 end
 
 -- ---------------------------------------------------------------------------
@@ -5346,10 +5410,7 @@ function M.teardownAll(plugin)
             Menu.new              = plugin._orig_menu_new
             plugin._orig_menu_new = nil
         end
-        if plugin._orig_menu_init then
-            Menu.init              = plugin._orig_menu_init
-            plugin._orig_menu_init = nil
-        end
+        _releaseHooks(Menu, MENU_INIT_STATE, plugin)
         if plugin._orig_menu_update_page_info then
             Menu.updatePageInfo                = plugin._orig_menu_update_page_info
             plugin._orig_menu_update_page_info = nil
@@ -5357,14 +5418,7 @@ function M.teardownAll(plugin)
         Menu._simpleui_navpager_patched = nil
     end
 
-    if plugin._cover_menu_patches then
-        for i = #plugin._cover_menu_patches, 1, -1 do
-            local p = plugin._cover_menu_patches[i]
-            if rawget(p.target, p.key) == p.wrapped then p.target[p.key] = p.orig end
-            p.target._simpleui_native_build = nil
-        end
-        plugin._cover_menu_patches = nil
-    end
+    M.unpatchCoverMenuSideMargin(plugin)
 
     local FileManager = package.loaded["apps/filemanager/filemanager"]
     if FileManager then
@@ -5383,10 +5437,10 @@ function M.teardownAll(plugin)
         if plugin._orig_fm_setup then
             FileManager.setupLayout = plugin._orig_fm_setup
             plugin._orig_fm_setup   = nil
+            -- Cleared with the restore so the next installAll reinstalls the
+            -- wrapper; other instances leave the shared guard untouched.
+            FileManager._simpleui_setup_patched = nil
         end
-        -- Clear the setupLayout guard so patchFileManagerClass reinstalls the
-        -- wrapper cleanly on the next installAll (e.g. after disable→enable).
-        FileManager._simpleui_setup_patched = nil
     end
 
     local FMColl = package.loaded["apps/filemanager/filemanagercollection"]

@@ -358,34 +358,10 @@ local _ICON_EXISTS = lfs.attributes(_ICON_PATH, "mode") == "file"
 -- 5. Caches
 -- ---------------------------------------------------------------------------
 
--- Two-generation LRU cache pattern used throughout:
---   generation A is the active table; B is the previous one.
---   On overflow: B = A, A = {}, counter reset.
---   Lookup hits A first, falls back to B (effective capacity 2×MAX).
---
--- The label metrics cache and the .cover.* file cache live in
--- sui_cover_widgets.lua and sui_library/sui_cover_finder.lua respectively —
--- both are pure lookup caches with no settings/monkeypatch dependency, so
--- they live with the code that populates them. This file keeps only the ListMenuItem
--- directory-cover cache below, since _setListFolderCover's disk scan
--- stays here (it renders differently than the mosaic cover path).
-local _DIR_CACHE_MAX    = 300
-
--- ListMenuItem directory cover cache (avoids repeated lfs.dir scans).
-local _lm_dir_cover_cache = {}
-local _lmc_b              = {}
-local _lmc_cnt            = 0
-
-local function _lmcGet(key) return _lm_dir_cover_cache[key] or _lmc_b[key] end
-local function _lmcSet(key, v)
-    if _lmc_cnt >= _DIR_CACHE_MAX then
-        _lmc_b              = _lm_dir_cover_cache
-        _lm_dir_cover_cache = {}
-        _lmc_cnt            = 0
-    end
-    _lm_dir_cover_cache[key] = v
-    _lmc_cnt = _lmc_cnt + 1
-end
+-- The label metrics cache, the .cover.* file cache and the folder listing
+-- caches live in sui_cover_widgets.lua and sui_cover_finder.lua — pure
+-- lookup caches with no settings/monkeypatch dependency, so they live with
+-- the code that populates them.
 
 -- Single-entry item-table cache for FileChooser:genItemTableFromPath.
 -- Encodes path + mtime + collate settings in the key so stale entries are
@@ -399,25 +375,10 @@ local _orig_genItemTableFromPath     = nil
 local function _itc_invalidate() _itc = nil end
 
 local function _itc_key(path, fc)
-    local mtime      = lfs.attributes(path, "modification") or 0
-    local filter_raw = fc.show_filter and fc.show_filter.status
-    local filter_str
-    if type(filter_raw) == "table" then
-        local parts = {}
-        for k, v in pairs(filter_raw) do
-            if v then parts[#parts + 1] = tostring(k) end
-        end
-        table.sort(parts)
-        filter_str = table.concat(parts, "\1")
-    else
-        filter_str = tostring(filter_raw or "")
-    end
+    local mtime = lfs.attributes(path, "modification") or 0
     return path .. "\0" .. mtime .. "\0"
-        .. (G_reader_settings:readSetting("collate") or "strcoll") .. "\0"
-        .. tostring(G_reader_settings:isTrue("collate_mixed"))     .. "\0"
-        .. tostring(G_reader_settings:isTrue("reverse_collate"))   .. "\0"
-        .. tostring(fc.show_hidden or false) .. "\0"
-        .. filter_str
+        .. CoverFinder.listingSignature(fc) .. "\0"
+        .. CoverFinder.statusFilterSignature(fc)
 end
 
 local function _installItemCache()
@@ -430,6 +391,7 @@ local function _installItemCache()
         _orig_setBookInfoCacheProperty = BookList.setBookInfoCacheProperty
         BookList.setBookInfoCacheProperty = function(file, prop_name, prop_value)
             _itc_invalidate()
+            CoverFinder.clearListings()
             return _orig_setBookInfoCacheProperty(file, prop_name, prop_value)
         end
     end
@@ -489,16 +451,13 @@ function M.invalidateItemTableCache()
     _itc_invalidate()
 end
 
--- Flushes every disk-derived cover cache: the .cover.* file cache and
--- font-size cache (sui_cover_finder.lua / sui_cover_widgets.lua) plus the
--- ListMenuItem directory-cover cache kept locally in this file. Called
+-- Flushes every disk-derived cover cache: the .cover.* file cache, folder
+-- listings and cover misses (sui_cover_finder.lua) and the font-size cache
+-- (sui_cover_widgets.lua). Called
 -- after the library changes on disk (books added/removed) — see
 -- sui_series_grouping.lua's refreshPath override.
 function M.clearCoverFinderCache()
     CoverFinder.clearCache()
-    for k in pairs(_lm_dir_cover_cache) do _lm_dir_cover_cache[k] = nil end
-    for k in pairs(_lmc_b)              do _lmc_b[k]              = nil end
-    _lmc_cnt = 0
 end
 
 -- ---------------------------------------------------------------------------
@@ -517,6 +476,18 @@ end
 -- three separate copies. CoverOverrides.get/set/clear/invalidateGridItem
 -- replace _getCoverOverrides/_saveCoverOverride/_clearCoverOverride/
 -- _invalidateFolderItem below.
+
+-- Queues a folder item whose cover is not extracted yet; the menu's periodic
+-- update pass calls its update() again.
+local function _registerRetry(item)
+    local menu = item.menu
+    if not (menu and menu.items_to_update) then return end
+    menu._fc_pending_set = menu._fc_pending_set or {}
+    if not menu._fc_pending_set[item] then
+        menu._fc_pending_set[item] = true
+        table.insert(menu.items_to_update, item)
+    end
+end
 
 -- Lazy reference to sui_series_grouping.lua: that module requires THIS one
 -- at its own top level (for isEnabled/getSeriesGrouping/resolveStyle/
@@ -540,7 +511,7 @@ _resolveStyle = function(menu, dir_path, entry)
     if not menu or not dir_path then return "single" end
 
     -- Series-group virtual folders have a synthetic path that can't be scanned
-    -- via CoverFinder.entriesWithNoFilter, so count directly from the cache.
+    -- via CoverFinder.getDirSummary, so count directly from the cache.
     local SG = _seriesGrouping()
     local is_sg = (entry and entry.is_series_group) or (SG and SG.hasGroup(dir_path))
     if is_sg then
@@ -549,25 +520,17 @@ _resolveStyle = function(menu, dir_path, entry)
         return "single"
     end
 
-    local entries = CoverFinder.entriesWithNoFilter(menu, dir_path)
-    if not entries then return "single" end
-    local book_count = 0
-    for _, e in ipairs(entries) do
-        if e.is_file or e.file then
-            book_count = book_count + 1
-            if book_count >= 4 then return "quad" end
-        end
-    end
-    if book_count < 4 and M.getRecursiveCover() then
+    local summary    = CoverFinder.getDirSummary(menu, dir_path)
+    local book_count = #summary.books
+    if book_count >= 4 then return "quad" end
+    if M.getRecursiveCover() then
         local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
         if ok_bim and BookInfoManager then
-            for _, e in ipairs(entries) do
-                if not (e.is_file or e.file) and not e.is_go_up then
-                    local sub = CoverFinder._collectCoversRecursive(
-                        menu, e.path, 1, 3, 4 - book_count, BookInfoManager)
-                    book_count = book_count + #sub
-                    if book_count >= 4 then return "quad" end
-                end
+            for _, sub_path in ipairs(summary.dirs) do
+                local sub = CoverFinder._collectCoversRecursive(
+                    menu, sub_path, 1, 3, 4 - book_count, BookInfoManager)
+                book_count = book_count + #sub
+                if book_count >= 4 then return "quad" end
             end
         end
     end
@@ -1454,13 +1417,7 @@ function M.install()
                     end
                 end
                 -- No covers ready — register for async retry.
-                if self.menu and self.menu.items_to_update then
-                    if not self.menu._fc_pending_set then self.menu._fc_pending_set = {} end
-                    if not self.menu._fc_pending_set[self] then
-                        self.menu._fc_pending_set[self] = true
-                        table.insert(self.menu.items_to_update, self)
-                    end
-                end
+                _registerRetry(self)
                 return
             end
 
@@ -1512,13 +1469,7 @@ function M.install()
                 end
             end
             -- No covers yet — register for async retry.
-            if self.menu and self.menu.items_to_update then
-                if not self.menu._fc_pending_set then self.menu._fc_pending_set = {} end
-                if not self.menu._fc_pending_set[self] then
-                    self.menu._fc_pending_set[self] = true
-                    table.insert(self.menu.items_to_update, self)
-                end
-            end
+            _registerRetry(self)
             return
         end
 
@@ -1556,35 +1507,20 @@ function M.install()
         end
 
         -- 3. First cached book cover inside the folder.
-        local has_files      = false
-        local has_subfolders = false
-
-        local entries = CoverFinder.entriesWithNoFilter(self.menu, dir_path)
-        if entries then
-            for _, entry in ipairs(entries) do
-                if entry.is_file or entry.file then
-                    has_files = true
-                    local bi = BookInfoManager:getBookInfo(entry.path, true)
-                    if bi and bi.cover_bb and bi.has_cover and bi.cover_fetched
-                            and not bi.ignore_cover
-                            and not BookInfoManager.isCachedCoverInvalid(bi, self.menu.cover_specs)
-                    then
-                        self:_setFolderCover(
-                            { data = bi.cover_bb, w = bi.cover_w, h = bi.cover_h }, display)
-                        return
-                    end
-                else
-                    has_subfolders = true
-                end
-            end
+        local cover, summary = CoverFinder.findFirstCover(self.menu, dir_path, BookInfoManager)
+        if cover then
+            self:_setFolderCover(cover, display)
+            return
         end
+        local has_files      = #summary.books > 0
+        local has_subfolders = #summary.dirs  > 0
 
         -- 4. Bookless folder: recursive scan or placeholder.
         if not has_files then
             if has_subfolders and M.getSubfolderCover() and M.getRecursiveCover() then
-                local cover = CoverFinder.findCoverRecursive(self.menu, dir_path, 1, 3, BookInfoManager)
-                if cover then
-                    self:_setFolderCover(cover, display)
+                local sub_cover = CoverFinder.findCoverRecursive(self.menu, dir_path, 1, 3, BookInfoManager)
+                if sub_cover then
+                    self:_setFolderCover(sub_cover, display)
                     return
                 end
             end
@@ -1593,13 +1529,7 @@ function M.install()
         end
 
         -- 5. No cover found yet — register for async retry.
-        if self.menu and self.menu.items_to_update then
-            if not self.menu._fc_pending_set then self.menu._fc_pending_set = {} end
-            if not self.menu._fc_pending_set[self] then
-                self.menu._fc_pending_set[self] = true
-                table.insert(self.menu.items_to_update, self)
-            end
-        end
+        _registerRetry(self)
     end -- MosaicMenuItem:update
 
     -- Builds and installs a single-image cover widget.
@@ -2144,63 +2074,18 @@ function M.install()
                 end
             end
 
-            -- 3. First cached book cover — cached per directory to avoid
-            --    repeating the lfs.dir + lfs.attributes walk on every render.
-            local cached_lm = _lmcGet(dir_path)
-            if cached_lm == false then
-                -- confirmed miss — fall through to async retry
-            elseif cached_lm ~= nil then
-                self:_setListFolderCover(cached_lm)
+            -- 3. First cached book cover inside the folder.
+            local cover = self.menu
+                and CoverFinder.findFirstCover(self.menu, dir_path, BookInfoManager)
+            if cover then
+                self:_setListFolderCover({
+                    cover_bb = cover.data, cover_w = cover.w, cover_h = cover.h,
+                })
                 return
-            else
-                local saved_filter = FileChooser.show_filter
-                FileChooser.show_filter = {}
-                local ok_dir, iter, dir_obj = pcall(lfs.dir, dir_path)
-                if ok_dir and iter then
-                    for f in iter, dir_obj do
-                        if f ~= "." and f ~= ".." then
-                            local fp   = dir_path .. "/" .. f
-                            local attr = lfs.attributes(fp) or {}
-                            if attr.mode == "file"
-                                    and not f:match("^%._")
-                                    and FileChooser:show_file(f, fp)
-                            then
-                                local bi = BookInfoManager:getBookInfo(fp, true)
-                                if bi and bi.cover_bb and bi.has_cover and bi.cover_fetched
-                                        and not bi.ignore_cover
-                                        and not (cover_specs and
-                                            BookInfoManager.isCachedCoverInvalid(bi, cover_specs))
-                                then
-                                    FileChooser.show_filter = saved_filter
-                                    local entry_data = {
-                                        cover_bb      = bi.cover_bb,
-                                        cover_w       = bi.cover_w,
-                                        cover_h       = bi.cover_h,
-                                        has_cover     = true,
-                                        cover_fetched = true,
-                                    }
-                                    _lmcSet(dir_path, entry_data)
-                                    self:_setListFolderCover(entry_data)
-                                    return
-                                end
-                            end
-                        end
-                    end
-                end
-                FileChooser.show_filter = saved_filter
-                _lmcSet(dir_path, false)
             end
 
             -- 4. No cover — register for async retry.
-            if self.menu and self.menu.items_to_update then
-                if not self.menu._fc_pending_set then
-                    self.menu._fc_pending_set = {}
-                end
-                if not self.menu._fc_pending_set[self] then
-                    self.menu._fc_pending_set[self] = true
-                    table.insert(self.menu.items_to_update, self)
-                end
-            end
+            _registerRetry(self)
         end -- updateFolderCover
 
         function ListMenuItem:update(...)
@@ -2351,9 +2236,6 @@ function M.uninstall()
     _uninstallFileDialogButton()
 
     CoverFinder.clearCache()
-    for k in pairs(_lm_dir_cover_cache) do _lm_dir_cover_cache[k]  = nil end
-    for k in pairs(_lmc_b)              do _lmc_b[k]               = nil end
-    _lmc_cnt = 0
     CoverWidgets.clearLabelMetricsCache()
     CoverWidgets.clearRibbonCache()
     CoverWidgets.clearPentagonMaskCache()

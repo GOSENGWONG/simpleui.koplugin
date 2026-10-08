@@ -14,9 +14,10 @@
 -- thing to the facet lists, their counts and the leaf listings (see
 -- FilterState.matcher and FilterState.eachFacetValue).
 --
--- Every query covers the whole subtree under base_dir. Call
--- MetadataSource.clearCache(base_dir) when the library changes (book
--- added/removed/re-scanned) for that subtree.
+-- Every query covers the whole subtree under base_dir. Caches are dropped
+-- automatically when the book-info database changes (see sui_bim_stamp);
+-- call MetadataSource.clearCache(base_dir) when files change on disk
+-- (book added/removed/moved) for that subtree.
 --
 -- Public API
 -- ----------
@@ -25,12 +26,21 @@
 --             series_index=, keywords=}, ... }  sorted by directory, filename
 --   MetadataSource.getFacetValues(bim, base_dir, dimension, filter_state)
 --       -> { {value, count, key=, _first=row}, ... } sorted for display
+--   MetadataSource.getValidRows(bim, base_dir, filter_state, variant, accept)
+--       -> rows matching the trail for which accept(row) is true (cached,
+--          read-only; `variant` identifies what accept depends on)
+--   MetadataSource.getValidFacetCounts(bim, base_dir, dimension, filter_state, variant, accept)
+--       -> counts, reprs: per facet key, the number of accepted rows and the
+--          path of the first one (cached, read-only)
+--   MetadataSource.getFolderSeries(bim, dir)
+--       -> { [filename] = {series=, series_index=}, ... } | nil
 --   MetadataSource.sortFiles(files, active_dimension)  -- mutates in place
 --   MetadataSource.clearCache(base_dir)  -- base_dir == nil clears everything
 
 local logger      = require("logger")
 local ffiUtil     = require("ffi/util")
 local FilterState = require("features/library/sui_filter_state")
+local BimStamp    = require("features/library/sui_bim_stamp")
 
 local MetadataSource = {}
 
@@ -42,6 +52,8 @@ local _scope_rows_cache     = {} -- [base_dir]  = resolved rows for the whole su
 local _matching_files_cache = {} -- [cache_key] = rows matching a trail
 local _facet_values_cache   = {} -- [cache_key .. "\31" .. dimension] = { {value, count, key=, _first=row}, ... }
 local _calibre_index_cache  = {} -- [base_dir]  = index table | false
+local _valid_rows_cache     = {} -- [cache_key .. "\29" .. variant] = rows accepted by the caller
+local _valid_facets_cache   = {} -- [cache_key .. "\31" .. dimension .. "\29" .. variant] = { counts, reprs }
 
 local function normalizeBaseDir(dir)
     while #dir > 1 and dir:sub(-1) == "/" do dir = dir:sub(1, -2) end
@@ -80,7 +92,8 @@ end
 function MetadataSource.clearCache(base_dir)
     if not base_dir then
         for _, cache in ipairs({ _scope_rows_cache, _matching_files_cache,
-                                 _facet_values_cache, _calibre_index_cache }) do
+                                 _facet_values_cache, _valid_rows_cache,
+                                 _valid_facets_cache, _calibre_index_cache }) do
             for key in pairs(cache) do cache[key] = nil end
         end
         return
@@ -89,7 +102,21 @@ function MetadataSource.clearCache(base_dir)
     evictWithin(_scope_rows_cache, prefix)
     evictWithin(_matching_files_cache, prefix)
     evictWithin(_facet_values_cache, prefix)
+    evictWithin(_valid_rows_cache, prefix)
+    evictWithin(_valid_facets_cache, prefix)
     _calibre_index_cache[prefix] = nil
+end
+
+-- Stamp of the book-info database the caches were filled from.
+local _cache_stamp = nil
+
+-- Drops every cache when the book-info database changed since the last query.
+local function syncWithDatabase()
+    local stamp = BimStamp.get() or ""
+    if stamp ~= _cache_stamp then
+        if _cache_stamp ~= nil then MetadataSource.clearCache() end
+        _cache_stamp = stamp
+    end
 end
 
 -- ---------------------------------------------------------------------------
@@ -195,31 +222,50 @@ local _SQL_SCOPE = "SELECT directory, filename, title, authors, series, series_i
                 .. " FROM bookinfo WHERE directory GLOB ?"
                 .. " ORDER BY directory ASC, filename ASC"
 
-local function queryBookInfo(bim, base_dir)
-    local rows = {}
+-- Runs `sql` with one bound parameter and passes every result row to
+-- `on_row`. Returns false when the query fails.
+local function eachRow(bim, sql, param, on_row)
     local stmt
     local ok, err = pcall(function()
         bim:openDbConnection()
-        stmt = bim.db_conn:prepare(_SQL_SCOPE)
-        stmt:bind(base_dir .. "/*")
+        stmt = bim.db_conn:prepare(sql)
+        stmt:bind(param)
         while true do
             local row = stmt:step()
             if not row then break end
-            -- The `directory` column always stores a trailing slash, so the
-            -- full path is a plain concatenation.
-            rows[#rows + 1] = {
-                row[1] .. row[2], row[2],
-                title = row[3], authors = row[4], series = row[5],
-                series_index = tonumber(row[6]), keywords = row[7],
-            }
+            on_row(row)
         end
     end)
     if stmt then pcall(function() stmt:finalize() end) end
-    if not ok then
-        logger.warn("sui_metadata_source: SQL error:", tostring(err))
-        return nil
-    end
-    return rows
+    if not ok then logger.warn("sui_metadata_source: SQL error:", tostring(err)) end
+    return ok
+end
+
+local function queryBookInfo(bim, base_dir)
+    local rows = {}
+    local ok = eachRow(bim, _SQL_SCOPE, base_dir .. "/*", function(row)
+        -- The `directory` column always stores a trailing slash, so the
+        -- full path is a plain concatenation.
+        rows[#rows + 1] = {
+            row[1] .. row[2], row[2],
+            title = row[3], authors = row[4], series = row[5],
+            series_index = tonumber(row[6]), keywords = row[7],
+        }
+    end)
+    return ok and rows or nil
+end
+
+local _SQL_FOLDER_SERIES = "SELECT filename, series, series_index FROM bookinfo WHERE directory = ?"
+
+-- Series name and index of every book the database holds for the folder
+-- `dir` (trailing slash included, subfolders excluded), in a single query.
+-- Returns nil when the query fails.
+function MetadataSource.getFolderSeries(bim, dir)
+    local props = {}
+    local ok = eachRow(bim, _SQL_FOLDER_SERIES, dir, function(row)
+        props[row[1]] = { series = row[2], series_index = tonumber(row[3]) }
+    end)
+    return ok and props or nil
 end
 
 -- Resolved rows for every book under base_dir: bookinfo rows in
@@ -301,6 +347,7 @@ end
 -- can never corrupt the result another caller expects in a different order.
 function MetadataSource.getMatchingFiles(bim, base_dir, filter_state)
     if not bim or not base_dir then return {} end
+    syncWithDatabase()
     return copyArray(matchingRows(bim, base_dir, filter_state))
 end
 
@@ -353,6 +400,7 @@ end
 
 function MetadataSource.getFacetValues(bim, base_dir, dimension, filter_state)
     if not FilterState.isDimension(dimension) then return {} end
+    syncWithDatabase()
 
     local key = cacheKey(base_dir, filter_state) .. "\31" .. dimension
     local cached = _facet_values_cache[key]
@@ -365,6 +413,57 @@ function MetadataSource.getFacetValues(bim, base_dir, dimension, filter_state)
     -- callers free to sort/mutate what they receive without corrupting the
     -- cache — same contract as getMatchingFiles.
     return copyArray(cached)
+end
+
+-- ---------------------------------------------------------------------------
+-- Validated rows (rows the caller's predicate accepts)
+-- ---------------------------------------------------------------------------
+
+-- `accept(row)` is typically a filesystem check (file exists, file chooser
+-- shows it), which costs a syscall per row. The outcome is cached under
+-- `variant`, a string naming the state accept depends on: callers must use
+-- the same variant only for predicates that behave identically. Returned
+-- arrays are shared — callers must not mutate them.
+function MetadataSource.getValidRows(bim, base_dir, filter_state, variant, accept)
+    if not bim or not base_dir then return {} end
+    syncWithDatabase()
+
+    local key = cacheKey(base_dir, filter_state) .. "\29" .. variant
+    local valid = _valid_rows_cache[key]
+    if not valid then
+        valid = {}
+        for _, row in ipairs(matchingRows(bim, base_dir, filter_state)) do
+            if accept(row) then valid[#valid + 1] = row end
+        end
+        _valid_rows_cache[key] = valid
+    end
+    return valid
+end
+
+-- Per facet key (entry.key of getFacetValues): the number of accepted rows
+-- and the path of the first one. Same caching contract as getValidRows.
+function MetadataSource.getValidFacetCounts(bim, base_dir, dimension, filter_state, variant, accept)
+    if not FilterState.isDimension(dimension) then return {}, {} end
+
+    local rows = MetadataSource.getValidRows(bim, base_dir, filter_state, variant, accept)
+    local key = cacheKey(base_dir, filter_state) .. "\31" .. dimension .. "\29" .. variant
+    local cached = _valid_facets_cache[key]
+    if not cached then
+        local counts, reprs = {}, {}
+        local current_path
+        local function count(facet_key)
+            counts[facet_key] = (counts[facet_key] or 0) + 1
+            if not reprs[facet_key] then reprs[facet_key] = current_path end
+        end
+        local definition = FilterState.DIMENSIONS[dimension]
+        for _, row in ipairs(rows) do
+            current_path = row[1]
+            FilterState.eachFacetValue(row, definition, count)
+        end
+        cached = { counts, reprs }
+        _valid_facets_cache[key] = cached
+    end
+    return cached[1], cached[2]
 end
 
 -- ---------------------------------------------------------------------------
