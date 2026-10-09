@@ -500,23 +500,23 @@ local function saveManualOrder(list)
     SUISettings:saveSetting(SETTINGS_KEY, list)
 end
 
-local DEFAULT_SORT_MODE = "manual"
-local function getSortMode()
-    return SUISettings:readSetting(SORT_KEY) or DEFAULT_SORT_MODE
-end
-local function saveSortMode(mode)
-    SUISettings:saveSetting(SORT_KEY, mode)
-end
-
--- Labels for the "Sort" menu (extraMenuItemsAfter) — "Manual order" makes
--- the persisted drag-arrangement (getManualOrder) take effect; the two
--- alphabetical modes ignore it entirely (see getVisibleCollections).
-local SORT_MODE_LABELS = {
+-- Sort modes in menu order. "Manual order" makes the persisted
+-- drag-arrangement (getManualOrder) take effect; the two alphabetical modes
+-- ignore it entirely (see getVisibleCollections).
+local SORT_MODE_ORDER   = { "manual", "alpha_asc", "alpha_desc" }
+local SORT_MODE_LABELS  = {
     manual     = _("Manual order"),
     alpha_asc  = _("Name (A–Z)"),
     alpha_desc = _("Name (Z–A)"),
 }
-local SORT_MODE_ORDER = { "manual", "alpha_asc", "alpha_desc" }
+local DEFAULT_SORT_MODE = "manual"
+
+local function getSortMode()
+    return Config.readChoice(SORT_KEY, SORT_MODE_ORDER, DEFAULT_SORT_MODE)
+end
+local function saveSortMode(mode)
+    SUISettings:saveSetting(SORT_KEY, mode)
+end
 
 -- _orderCollections(names) — applies the current sort mode to an arbitrary
 -- list of collection names. Shared by getVisibleCollections (excluded ones
@@ -1210,65 +1210,32 @@ local function extraMenuItemsAfter(ctx_menu)
 
     local items = {}
 
-    items[#items + 1] = {
-        -- Title stays static — the chosen mode is surfaced only via
-        -- mandatory_func (native Menu's right-side value) / SUIWindow's
-        -- automatic right_value inference from the checked radio child
-        -- below (see the "Row title vs. right-side value" note in
-        -- engines/sui_window.lua's SUIWindow.MenuTable doc block). It must
-        -- never be baked into the row's own text/text_func.
-        text_func = function() return _lc("Sort") end,
-        mandatory_func = function()
-            return SORT_MODE_LABELS[getSortMode()] or SORT_MODE_LABELS[DEFAULT_SORT_MODE]
-        end,
-        separator      = true,
-        sub_item_table_func = function()
-            local sub = {}
-            for _, mode in ipairs(SORT_MODE_ORDER) do
-                local _m = mode
-                sub[#sub + 1] = {
-                    text           = SORT_MODE_LABELS[_m],
-                    radio          = true,
-                    checked_func   = function() return getSortMode() == _m end,
-                    keep_menu_open = true,
-                    callback       = function() saveSortMode(_m); refresh() end,
-                }
-            end
-            return sub
-        end,
+    local sort_options = {}
+    for _, mode in ipairs(SORT_MODE_ORDER) do
+        sort_options[#sort_options + 1] = { value = mode, label = SORT_MODE_LABELS[mode] }
+    end
+    items[#items + 1] = Config.makeRadioSubmenuItem{
+        text      = _lc("Sort"),
+        options   = sort_options,
+        get       = getSortMode,
+        set       = saveSortMode,
+        refresh   = refresh,
+        separator = true,
     }
 
-    items[#items + 1] = {
-        text         = _lc("Cover Style"),
-        sub_item_table = {
-            {
-                -- Same text as the library's Folder Cover Type "Single Cover".
-                text           = _lc("Single Cover"),
-                radio          = true,
-                checked_func   = function() return getCoverStyle() == "single" end,
-                keep_menu_open = true,
-                callback       = function() saveCoverStyle("single"); refresh() end,
-            },
-            {
-                -- Same text as the library's Folder Cover Type "4-Cover Grid
-                -- (Mosaic View Only)", minus the Mosaic-only caveat — Collections
-                -- has no separate List view, so it doesn't apply here.
-                text           = _lc("4-Cover Grid"),
-                radio          = true,
-                checked_func   = function() return getCoverStyle() == "quad" end,
-                keep_menu_open = true,
-                callback       = function() saveCoverStyle("quad"); refresh() end,
-            },
-            {
-                -- Same naming convention as the library's Folder Cover Type
-                -- "Auto (Single ↔ 4-Cover Grid)" — see sui_menu.lua.
-                text           = _lc("Auto (Single ↔ 4-Cover Grid)"),
-                radio          = true,
-                checked_func   = function() return getCoverStyle() == "auto" end,
-                keep_menu_open = true,
-                callback       = function() saveCoverStyle("auto"); refresh() end,
-            },
+    items[#items + 1] = Config.makeRadioSubmenuItem{
+        text    = _lc("Cover Style"),
+        options = {
+            -- Same labels as the library's Folder Cover Type options; the
+            -- Mosaic-only caveat is dropped because Collections has no
+            -- separate List view.
+            { value = "single", label = _lc("Single Cover") },
+            { value = "quad",   label = _lc("4-Cover Grid") },
+            { value = "auto",   label = _lc("Auto (Single ↔ 4-Cover Grid)") },
         },
+        get     = getCoverStyle,
+        set     = saveCoverStyle,
+        refresh = refresh,
     }
 
     items[#items + 1] = {
@@ -1283,61 +1250,48 @@ local function extraMenuItemsAfter(ctx_menu)
         callback       = function() saveHidePile(not getHidePile()); refresh() end,
     }
 
-    items[#items + 1] = {
-        text         = _lc("Badge"),
-        sub_item_table = {
-            {
-                text           = _lc("Hidden"),
-                checked_func   = function() return getBadgeHidden() end,
-                keep_menu_open = true,
-                separator      = true,
-                callback       = function()
-                    saveBadgeHidden(not getBadgeHidden())
-                    refresh()
-                end,
-            },
-            {
-                text           = _lc("Top"),
-                radio          = true,
-                checked_func   = function() return not getBadgeHidden() and getBadgePosition() == "top" end,
-                enabled_func   = function() return not getBadgeHidden() end,
-                keep_menu_open = true,
-                callback       = function() saveBadgePosition("top"); refresh() end,
-            },
-            {
-                text           = _lc("Bottom"),
-                radio          = true,
-                checked_func   = function() return not getBadgeHidden() and getBadgePosition() == "bottom" end,
-                enabled_func   = function() return not getBadgeHidden() end,
-                keep_menu_open = true,
-                separator      = true,
-                callback       = function() saveBadgePosition("bottom"); refresh() end,
-            },
-            {
-                text           = _lc("Dark"),
-                radio          = true,
-                checked_func   = function() return getBadgeColor() == "dark" end,
-                keep_menu_open = true,
-                callback       = function() saveBadgeColor("dark"); refresh() end,
-            },
-            {
-                text           = _lc("Light"),
-                radio          = true,
-                checked_func   = function() return getBadgeColor() == "light" end,
-                keep_menu_open = true,
-                callback       = function() saveBadgeColor("light"); refresh() end,
-            },
-            Config.makeBadgeSizeItem{
-                separator    = true,
-                enabled_func = function() return not getBadgeHidden() end,
-                info         = _lc("Scale for the collection count badge."),
-                get          = getBadgeScalePct,
-                set          = saveBadgeScale,
-                refresh      = refresh,
-                _lc          = _lc,
-            },
+    local function badgeShown() return not getBadgeHidden() end
+
+    local badge_items = {
+        {
+            text           = _lc("Hidden"),
+            checked_func   = getBadgeHidden,
+            keep_menu_open = true,
+            separator      = true,
+            callback       = function()
+                saveBadgeHidden(not getBadgeHidden())
+                refresh()
+            end,
         },
     }
+    Config.appendRadioItems(badge_items, {
+        options = {
+            { value = "top",    label = _lc("Top"),    enabled_func = badgeShown },
+            { value = "bottom", label = _lc("Bottom"), enabled_func = badgeShown, separator = true },
+        },
+        get     = function() return badgeShown() and getBadgePosition() or nil end,
+        set     = saveBadgePosition,
+        refresh = refresh,
+    })
+    Config.appendRadioItems(badge_items, {
+        options = {
+            { value = "dark",  label = _lc("Dark") },
+            { value = "light", label = _lc("Light") },
+        },
+        get     = getBadgeColor,
+        set     = saveBadgeColor,
+        refresh = refresh,
+    })
+    badge_items[#badge_items + 1] = Config.makeBadgeSizeItem{
+        separator    = true,
+        enabled_func = badgeShown,
+        info         = _lc("Scale for the collection count badge."),
+        get          = getBadgeScalePct,
+        set          = saveBadgeScale,
+        refresh      = refresh,
+        _lc          = _lc,
+    }
+    items[#items + 1] = { text = _lc("Badge"), sub_item_table = badge_items }
 
     if #all_colls == 0 then
         items[#items + 1] = { text = _lc("No collections found."), enabled = false }

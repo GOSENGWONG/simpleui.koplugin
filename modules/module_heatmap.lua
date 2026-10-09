@@ -322,31 +322,18 @@ local function _makeScaleItem(ctx_menu)
     }
 end
 
--- Builds one radio-button item for the view-mode setting — mirrors the
--- _makeStyleRadioItem helper module_currently.lua uses for its own
--- persisted-string-setting radio choices.
-local function _makeViewModeRadioItem(text, pfx, mode, refresh)
-    return {
-        text           = text,
-        radio          = true,
-        keep_menu_open = true,
-        checked_func   = function() return getMode(pfx) == mode end,
-        callback       = function()
-            setMode(pfx, mode)
-            refresh()
-        end,
-    }
-end
-
 local function _makeViewItem(ctx_menu)
     local pfx = ctx_menu.pfx
     local _lc = ctx_menu._
-    return {
-        text           = _lc("Type"),
-        sub_item_table = {
-            _makeViewModeRadioItem(_lc("Calendar"), pfx, MODE_CALENDAR, ctx_menu.refresh),
-            _makeViewModeRadioItem(_lc("Time of day"), pfx, MODE_DAYPART, ctx_menu.refresh),
+    return Config.makeRadioSubmenuItem{
+        text    = _lc("Type"),
+        options = {
+            { value = MODE_CALENDAR, label = _lc("Calendar") },
+            { value = MODE_DAYPART,  label = _lc("Time of day") },
         },
+        get     = function() return getMode(pfx) end,
+        set     = function(v) setMode(pfx, v) end,
+        refresh = ctx_menu.refresh,
     }
 end
 
@@ -371,7 +358,6 @@ local function _makeAppearanceItem(ctx_menu)
 end
 
 function M.getMenuItems(ctx_menu)
-    local Config = require("infra/sui_config")
     local appearance = _makeAppearanceItem(ctx_menu)
     local extra = appearance and appearance.sub_item_table or { appearance }
     return Config.buildModuleMenu({

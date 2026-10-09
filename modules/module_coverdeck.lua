@@ -138,6 +138,13 @@ local SETTING_PROGRESS_BADGE_ON_PEEKS = "coverdeck_progress_badge_on_peeks"
 -- user collection as the book source.
 local COLLECTION_PREFIX = "collection:"
 
+-- Collection name encoded in `source`, or nil when it is not a collection source.
+local function collectionNameOf(source)
+    if source:sub(1, #COLLECTION_PREFIX) == COLLECTION_PREFIX then
+        return source:sub(#COLLECTION_PREFIX + 1)
+    end
+end
+
 local _ELEM_DEFAULT_ORDER = { "percent", "book_days", "book_time", "book_remaining" }
 local _ELEM_LABELS = {
     percent        = _("Percentage read"),
@@ -543,9 +550,8 @@ local function getFps(source, ctx)
         fps = buildTBRFps(ctx)
     elseif source == "favorites" then
         fps = buildFavoritesFps(ctx)
-    elseif source:match("^" .. COLLECTION_PREFIX) then
-        local coll_name = source:sub(#COLLECTION_PREFIX + 1)
-        fps = buildCollectionFps(coll_name, ctx)
+    elseif collectionNameOf(source) then
+        fps = buildCollectionFps(collectionNameOf(source), ctx)
     else
         fps = buildRecentFps(ctx)
     end
@@ -1317,100 +1323,79 @@ function M.getMenuItems(ctx_menu)
         }),
     }
 
-    local function makeCollectionsSubMenu()
-        local submenu = {}
+    local fixed_sources = {
+        { value = "recent",    label = _lc("Recent Books") },
+        { value = "tbr",       label = _lc("To Be Read") },
+        { value = "favorites", label = _lc("Favorites") },
+    }
+
+    local function getSourceValue() return getSource(pfx) end
+    local function setSource(value) SUISettings:saveSetting(pfx .. SETTING_SOURCE, value) end
+
+    -- One option per collection, excluding favorites and TBR (they have
+    -- dedicated top-level options).
+    local function collectionSourceOptions()
+        local options = {}
         local ok_rc, rc = pcall(require, "readcollection")
-        if ok_rc and rc then
-            -- Not calling rc:_read() — see note above; it can wipe
-            -- uncommitted collection changes made via the native
-            -- Collections UI.
-            local coll_set = {}
-            if rc.coll then for n in pairs(rc.coll) do coll_set[n] = true end end
-            if rc.coll_folders then for n in pairs(rc.coll_folders) do coll_set[n] = true end end
+        if not (ok_rc and rc) then return options end
 
-            -- Remove favorites and TBR from this list as they have dedicated top-level options
-            local fav = rc.default_collection_name or "favorites"
-            coll_set[fav] = nil
-            local TBR = package.loaded["modules/module_tbr"]
-            local tbr_name = TBR and TBR.TBR_COLL_NAME or "To Be Read"
-            coll_set[tbr_name] = nil
+        -- Not calling rc:_read(): it can wipe uncommitted collection changes
+        -- made via the native Collections UI.
+        local coll_set = {}
+        if rc.coll then for n in pairs(rc.coll) do coll_set[n] = true end end
+        if rc.coll_folders then for n in pairs(rc.coll_folders) do coll_set[n] = true end end
+        coll_set[rc.default_collection_name or "favorites"] = nil
+        local TBR = package.loaded["modules/module_tbr"]
+        coll_set[TBR and TBR.TBR_COLL_NAME or "To Be Read"] = nil
 
-            local coll_names = {}
-            for name in pairs(coll_set) do
-                coll_names[#coll_names + 1] = name
+        local coll_names = {}
+        for name in pairs(coll_set) do
+            coll_names[#coll_names + 1] = name
+        end
+        table.sort(coll_names, function(a, b) return a:lower() < b:lower() end)
+
+        for _i, name in ipairs(coll_names) do
+            options[#options + 1] = { value = COLLECTION_PREFIX .. name, label = name }
+        end
+        return options
+    end
+
+    local source_item = Config.makeRadioSubmenuItem{
+        text    = _lc("Source"),
+        options = function()
+            local options = {}
+            for _i, option in ipairs(fixed_sources) do
+                options[#options + 1] = option
             end
-            table.sort(coll_names, function(a, b) return a:lower() < b:lower() end)
-
-            for _, name in ipairs(coll_names) do
-                local c_name = name
-                submenu[#submenu + 1] = {
-                    text         = c_name, radio = true,
-                    checked_func = function() return getSource(pfx) == COLLECTION_PREFIX .. c_name end,
-                    keep_menu_open = true,
-                    callback     = function()
-                        SUISettings:saveSetting(pfx .. SETTING_SOURCE, COLLECTION_PREFIX .. c_name)
-                        refresh()
+            if pcall(require, "readcollection") then
+                options[#options + 1] = {
+                    label    = _lc("Collections"),
+                    selected = function(source) return collectionNameOf(source) ~= nil end,
+                    sub_item_table_func = function()
+                        return Config.appendRadioItems({}, {
+                            options    = collectionSourceOptions,
+                            empty_text = _lc("No collections found"),
+                            get        = getSourceValue,
+                            set        = setSource,
+                            refresh    = refresh,
+                        })
                     end,
                 }
             end
-        end
-        if #submenu == 0 then
-            submenu[#submenu + 1] = {
-                text         = _lc("No collections found"),
-                enabled_func = function() return false end,
-            }
-        end
-        return submenu
-    end
-
-    -- A single-choice "source" entry: selecting it saves `value` under
-    -- SETTING_SOURCE and refreshes the menu.
-    local function _sourceRadioItem(label, value)
-        return {
-            text         = _lc(label), radio = true,
-            checked_func = function() return getSource(pfx) == value end,
-            keep_menu_open = true,
-            callback     = function()
-                SUISettings:saveSetting(pfx .. SETTING_SOURCE, value)
-                refresh()
-            end,
-        }
-    end
-
-    local source_item = {
-        text_func = function()
-            local src = getSource(pfx)
-            local display_src
-            if src == "recent" then
-                display_src = _lc("Recent Books")
-            elseif src == "tbr" then
-                display_src = _lc("To Be Read")
-            elseif src == "favorites" then
-                display_src = _lc("Favorites")
-            elseif src:match("^" .. COLLECTION_PREFIX) then
-                display_src = src:sub(#COLLECTION_PREFIX + 1)
-            else
-                display_src = src
-            end
-            return string.format("%s: %s", _lc("Source"), display_src)
+            return options
         end,
-        sub_item_table_func = function()
-            local items = {
-                _sourceRadioItem("Recent Books", "recent"),
-                _sourceRadioItem("To Be Read",   "tbr"),
-                _sourceRadioItem("Favorites",    "favorites"),
-            }
-
-            local ok_rc, rc = pcall(require, "readcollection")
-            if ok_rc and rc then
-                items[#items + 1] = {
-                    text                = _lc("Collections"),
-                    sub_item_table_func = makeCollectionsSubMenu,
-                }
+        current_label = function()
+            local source = getSource(pfx)
+            local coll_name = collectionNameOf(source)
+            if coll_name then return coll_name end
+            for _i, option in ipairs(fixed_sources) do
+                if option.value == source then return option.label end
             end
-
-            return items
+            return source
         end,
+        get     = getSourceValue,
+        set     = setSource,
+        refresh = refresh,
     }
 
     -- True if any key in `keys` is currently hidden — used to enable the

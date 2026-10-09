@@ -24,6 +24,7 @@
 local lfs    = require("libs/libkoreader-lfs")
 local _ = require("infra/sui_i18n").translate
 
+local Config       = require("infra/sui_config")
 local SUISettings  = require("infra/sui_store")
 local GridRenderer = require("engines/sui_book_grid")
 local LibraryScan  = require("engines/sui_library_scan")
@@ -34,6 +35,10 @@ local SORT_KEY    = "flat_library_sort_mode"    -- pfx .. SORT_KEY
 local SHUFFLE_KEY = "flat_library_shuffle_order" -- pfx .. SHUFFLE_KEY
 
 local DEFAULT_SORT = "title_asc"
+local SORT_ORDER   = {
+    "title_asc", "title_desc", "author_asc",
+    "date_desc", "date_asc", "size_desc", "size_asc", "shuffle",
+}
 
 -- Unlike Recent/New Books (where hiding finished books by default keeps the
 -- "what should I pick up next" list short), the whole point of the flat
@@ -46,7 +51,7 @@ local SHOW_FINISHED_DEFAULT = true
 -- setting in this codebase).
 -- ---------------------------------------------------------------------------
 local function getSortMode(pfx)
-    return SUISettings:readSetting(pfx .. SORT_KEY) or DEFAULT_SORT
+    return Config.readChoice(pfx .. SORT_KEY, SORT_ORDER, DEFAULT_SORT)
 end
 local function saveSortMode(pfx, mode)
     SUISettings:saveSetting(pfx .. SORT_KEY, mode)
@@ -214,10 +219,6 @@ local SORT_LABELS = {
     size_asc    = _("File size (smallest)"),
     shuffle     = _("Random"),
 }
-local SORT_ORDER = {
-    "title_asc", "title_desc", "author_asc",
-    "date_desc", "date_asc", "size_desc", "size_asc", "shuffle",
-}
 
 local function extraMenuItemsBefore(ctx_menu)
     local _lc     = ctx_menu._
@@ -226,41 +227,24 @@ local function extraMenuItemsBefore(ctx_menu)
 
     local items = {}
 
-    items[#items + 1] = {
-        -- Title stays static — the chosen mode is surfaced only via
-        -- mandatory_func (native Menu's right-side value) / SUIWindow's
-        -- automatic right_value inference from the checked radio child
-        -- below (see the "Row title vs. right-side value" note in
-        -- engines/sui_window.lua's SUIWindow.MenuTable doc block). It must
-        -- never be baked into the row's own text/text_func.
-        text_func = function() return _lc("Sort") end,
-        mandatory_func = function()
-            return SORT_LABELS[getSortMode(pfx)] or SORT_LABELS[DEFAULT_SORT]
-        end,
-        sub_item_table_func = function()
-            local sub = {}
-            for _, mode in ipairs(SORT_ORDER) do
-                local _m = mode
-                sub[#sub + 1] = {
-                    text           = SORT_LABELS[_m],
-                    radio          = true,
-                    checked_func   = function() return getSortMode(pfx) == _m end,
-                    keep_menu_open = true,
-                    callback       = function()
-                        saveSortMode(pfx, _m)
-                        -- Picking "Random" for the first time (or switching
-                        -- back to it) rolls a fresh order right away, rather
-                        -- than silently reusing whatever was last persisted.
-                        if _m == "shuffle" then
-                            local home = LibraryScan.resolveHomeDir()
-                            if home then generateShuffleOrder(pfx, LibraryScan.getRaw(home)) end
-                        end
-                        refresh()
-                    end,
-                }
+    local sort_options = {}
+    for _, mode in ipairs(SORT_ORDER) do
+        sort_options[#sort_options + 1] = { value = mode, label = SORT_LABELS[mode] }
+    end
+    items[#items + 1] = Config.makeRadioSubmenuItem{
+        text    = _lc("Sort"),
+        options = sort_options,
+        get     = function() return getSortMode(pfx) end,
+        set     = function(mode)
+            saveSortMode(pfx, mode)
+            -- Entering "Random" rolls a fresh order right away instead of
+            -- reusing whatever was last persisted.
+            if mode == "shuffle" then
+                local home = LibraryScan.resolveHomeDir()
+                if home then generateShuffleOrder(pfx, LibraryScan.getRaw(home)) end
             end
-            return sub
         end,
+        refresh = refresh,
     }
 
     -- One-off action, only meaningful (and shown as enabled) while "Random"

@@ -1696,64 +1696,172 @@ function M.makeCoverHoldModeItem(opts)
     }
 end
 
--- Generic N-way radio submenu: a row with a static label and the current
--- choice shown as its right-side value, opening a list of radio choices.
--- Extracted from the get/set/refresh shape already used above by
--- makeCoverHoldModeItem. Any settings-menu consumer with more than an on/off
--- toggle (a style/type/color picker) can reuse this instead of hand-rolling
--- its own sub_item_table_func.
+-- ---------------------------------------------------------------------------
+-- Radio choice lists
+-- ---------------------------------------------------------------------------
+-- A choice list is described once (options + get/set) and rendered either as
+-- a flat list of radio entries (appendRadioItems) or as a submenu row that
+-- shows the current choice on its right side (makeRadioSubmenuItem).
+--
+-- Option fields:
+--   value               any        stored value the option represents
+--   label               string     entry text
+--   help_text           string?    long-press help for the entry
+--   enabled_func        function?  disables the entry
+--   separator           bool?      separator below the entry
+--   selected            function?  (current) -> bool; replaces the default
+--                                  `current == value` check, for options that
+--                                  stand for a group of values
+--   sub_item_table_func function?  opens a nested list instead of storing
+--                                  `value`; the entry stays a radio, checked
+--                                  while the option is selected
+
+-- Static option list, or one built lazily by a function.
+local function _resolveOptions(options)
+    if type(options) == "function" then return options() end
+    return options
+end
+
+local function _isSelected(option, current)
+    if option.selected then return option.selected(current) end
+    return option.value == current
+end
+
+-- Appends one radio entry per option to `items` and returns `items`.
+-- opts:
+--   options     table|function  option list, or a function building it when
+--                               the entries are needed (required)
+--   get         function()      current value (required)
+--   set         function(value) (required)
+--   refresh     function?       called after set()
+--   empty_text  string?         disabled entry shown when there are no options
+function M.appendRadioItems(items, opts)
+    local get, set, refresh = opts.get, opts.set, opts.refresh
+    local options = _resolveOptions(opts.options)
+    if #options == 0 and opts.empty_text then
+        items[#items + 1] = { text = opts.empty_text, enabled = false }
+        return items
+    end
+    for _i, option in ipairs(options) do
+        local item = {
+            text         = option.label,
+            help_text    = option.help_text,
+            enabled_func = option.enabled_func,
+            separator    = option.separator,
+            radio        = true,
+            checked_func = function() return _isSelected(option, get()) end,
+        }
+        if option.sub_item_table_func then
+            item.sub_item_table_func = option.sub_item_table_func
+        else
+            item.keep_menu_open = true
+            item.callback = function()
+                set(option.value)
+                if refresh then refresh() end
+            end
+        end
+        items[#items + 1] = item
+    end
+    return items
+end
+
+-- A row with a static label and the current choice shown as its right-side
+-- value, opening the radio list. Any settings-menu consumer with more than an
+-- on/off toggle (a style/type/color picker) can reuse this instead of
+-- hand-rolling its own sub_item_table_func.
 --
 -- The label never embeds the current choice (no "Type: X"); the choice is
 -- exposed only through value_func / mandatory_func.
 --
--- opts:
+-- opts: the appendRadioItems fields, plus
 --   text          string    static row label (ignored if text_func given)
 --   text_func     function? () -> string, overrides `text`
 --   help_text     string?   long-press help for the row
---   options       { { value = any, label = string }, ... }  (required,
---                 ordered — this order is also the menu order)
---   get           function() -> current value (required)
---   set           function(value)  (required)
---   refresh       function?  called after set()
---   enabled_func  function?  disables the whole row (e.g. "Color" greyed out
---                 while the parent "Type" is "None")
+--   current_label function? () -> string, the text shown for the current
+--                           choice. Required when `options` is a function or
+--                           a nested option stands for several values, so the
+--                           option list is not rebuilt on every render.
+--   enabled_func  function? disables the whole row (e.g. "Color" greyed out
+--                           while the parent "Type" is "None")
 --   separator     bool?
--- Both the row's value_func and mandatory_func show the current option's
--- label, matching the convention already used for "Long Press" above and
--- for Sort/native KOReader radio rows in general.
+-- Both value_func and mandatory_func show the current choice, matching the
+-- convention used for "Long Press" above and for native radio rows.
 function M.makeRadioSubmenuItem(opts)
-    local get     = opts.get
-    local set     = opts.set
-    local refresh = opts.refresh
-    local function _labelFor(v)
-        for _, o in ipairs(opts.options) do
-            if o.value == v then return o.label end
+    local get = opts.get
+    local function currentLabel()
+        if opts.current_label then return opts.current_label() or "" end
+        local current = get()
+        for _i, option in ipairs(_resolveOptions(opts.options)) do
+            if _isSelected(option, current) then return option.label end
         end
         return ""
     end
     return {
         text_func      = opts.text_func or function() return opts.text end,
-        value_func     = function() return _labelFor(get()) end,
-        mandatory_func = function() return _labelFor(get()) end,
+        value_func     = currentLabel,
+        mandatory_func = currentLabel,
         help_text      = opts.help_text,
         enabled_func   = opts.enabled_func,
         separator      = opts.separator,
-        sub_item_table_func = function()
-            local items = {}
-            for _, o in ipairs(opts.options) do
-                items[#items + 1] = {
-                    text           = o.label,
-                    radio          = true,
-                    checked_func   = function() return get() == o.value end,
-                    keep_menu_open = true,
-                    callback       = function()
-                        set(o.value)
-                        if refresh then refresh() end
-                    end,
-                }
-            end
-            return items
-        end,
+        sub_item_table_func = function() return M.appendRadioItems({}, opts) end,
+    }
+end
+
+-- Returns `stored` when it is one of `values`, otherwise `default`.
+-- Guards against unset or corrupted persisted enum values.
+function M.resolveChoice(stored, values, default)
+    for _i, allowed in ipairs(values) do
+        if allowed == stored then return stored end
+    end
+    return default
+end
+
+-- Reads the persisted enum under `key` and validates it with resolveChoice.
+function M.readChoice(key, values, default)
+    return M.resolveChoice(SUISettings:readSetting(key), values, default)
+end
+
+-- Horizontal alignment ids; the default set is left / center / right.
+local ALIGN_VALUES  = { "left", "center", "right" }
+local ALIGN_DEFAULT = "center"
+
+-- Persisted alignment under `key`. `values` and `default` fall back to
+-- left / center / right and "center".
+function M.getAlignment(key, values, default)
+    return M.readChoice(key, values or ALIGN_VALUES, default or ALIGN_DEFAULT)
+end
+
+-- Alignment picker row built on makeRadioSubmenuItem.
+-- opts:
+--   key           string    full settings key (required)
+--   values        string[]? ordered ids among left, center, right, justify
+--                           (default: left, center, right)
+--   default       string?   id used while nothing valid is stored (default: center)
+--   text          string?   row label (default: "Alignment")
+--   enabled_func  function? disables the row
+--   separator     bool?
+--   refresh       function? called after a change
+--   _lc           function? translator
+function M.makeAlignmentItem(opts)
+    local _lc = opts._lc or _
+    local labels = {
+        left    = _lc("Left"),
+        center  = _lc("Center"),
+        right   = _lc("Right"),
+        justify = _lc("Justified"),
+    }
+    local options = {}
+    for _i, id in ipairs(opts.values or ALIGN_VALUES) do
+        options[#options + 1] = { value = id, label = labels[id] }
+    end
+    return M.makeRadioSubmenuItem{
+        text         = opts.text or _lc("Alignment"),
+        enabled_func = opts.enabled_func,
+        separator    = opts.separator,
+        options      = options,
+        get          = function() return M.getAlignment(opts.key, opts.values, opts.default) end,
+        set          = function(v) SUISettings:saveSetting(opts.key, v) end,
+        refresh      = opts.refresh,
     }
 end
 

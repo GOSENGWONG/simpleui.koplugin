@@ -48,24 +48,14 @@ local function _getDims(scale)
 end
 
 -- ---------------------------------------------------------------------------
--- Alignment setting helpers
+-- Alignment setting
 -- ---------------------------------------------------------------------------
-local ALIGN_VALUES = { "left", "center", "right" }
+local function alignKey(pfx, suffix)
+    return pfx .. suffix .. "_align"
+end
 
 local function getAlignment(pfx, suffix)
-    local v = SUISettings:readSetting(pfx .. suffix .. "_align")
-    for _, a in ipairs(ALIGN_VALUES) do if a == v then return v end end
-    return "center"  -- default
-end
-
-local function setAlignment(pfx, suffix, val)
-    SUISettings:saveSetting(pfx .. suffix .. "_align", val)
-end
-
-local function alignLabel(align)
-    if align == "left"  then return _("Left")  end
-    if align == "right" then return _("Right") end
-    return _("Center")
+    return Config.getAlignment(alignKey(pfx, suffix))
 end
 
 -- ---------------------------------------------------------------------------
@@ -472,29 +462,10 @@ function M.getMenuItems(ctx_menu)
             refresh()
         end,
     }
-    items[#items + 1] = {
-        text_func  = function() return _lc("Alignment") end,
-        value_func = function() return alignLabel(getAlignment(pfx, MOD_SUFFIX)) end,
-        sub_item_table = {
-            {
-                text           = _lc("Left"),
-                checked_func   = function() return getAlignment(pfx, MOD_SUFFIX) == "left" end,
-                keep_menu_open = true,
-                callback       = function() setAlignment(pfx, MOD_SUFFIX, "left");   refresh() end,
-            },
-            {
-                text           = _lc("Center"),
-                checked_func   = function() return getAlignment(pfx, MOD_SUFFIX) == "center" end,
-                keep_menu_open = true,
-                callback       = function() setAlignment(pfx, MOD_SUFFIX, "center"); refresh() end,
-            },
-            {
-                text           = _lc("Right"),
-                checked_func   = function() return getAlignment(pfx, MOD_SUFFIX) == "right" end,
-                keep_menu_open = true,
-                callback       = function() setAlignment(pfx, MOD_SUFFIX, "right");  refresh() end,
-            },
-        },
+    items[#items + 1] = Config.makeAlignmentItem{
+        key     = alignKey(pfx, MOD_SUFFIX),
+        refresh = refresh,
+        _lc     = _lc,
     }
 
     -- Partition into canonical sections (Items already first in `items`).

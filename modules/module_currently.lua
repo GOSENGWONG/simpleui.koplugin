@@ -90,6 +90,16 @@ local _BASE_SERIES_FS    = SUIStyle.FS_CAPTION    -- 12: series text (smaller th
 -- elements, so a taller fixed value costs no layout risk — just card height.
 local DESC_MAX_LINES = 8
 
+-- Description text alignment. "justify" stretches word spacing to fill each
+-- line and keeps the last line of every paragraph left-aligned.
+local DESC_ALIGN_KEY     = "currently_description_align"
+local DESC_ALIGN_VALUES  = { "left", "right", "justify" }
+local DESC_ALIGN_DEFAULT = "justify"
+
+local function resolveDescAlign(stored)
+    return Config.resolveChoice(stored, DESC_ALIGN_VALUES, DESC_ALIGN_DEFAULT)
+end
+
 -- Setting key for progress bar style: "simple" (default) or "with_pct"
 local BAR_STYLE_KEY = "currently_bar_style"
 
@@ -131,7 +141,7 @@ end
 local STATS_STYLE_KEY = "currently_stats_style"
 
 local function getStatsStyle(pfx)
-    return SUISettings:readSetting(pfx .. STATS_STYLE_KEY) or "default"
+    return SUISettings:readSetting(pfx .. STATS_STYLE_KEY) or "compact"
 end
 
 local COVER_GAP_KEY = "currently_cover_gap"
@@ -604,6 +614,7 @@ function M.build(w, ctx)
     }
     -- elem_order: use cached raw value from bundle; resolve lazily.
     local elem_order  = _resolveElemOrder(c and c.elem_order or SUISettings:readSetting(pfx .. ELEM_ORDER_KEY))
+    local desc_align  = resolveDescAlign(c and c.desc_align or SUISettings:readSetting(pfx .. DESC_ALIGN_KEY))
 
     -- Base cover size, as a percentage of the module's own width `w` — see
     -- _computeCoverDims. Used as-is by "default"; "dynamic" grows/shrinks
@@ -834,6 +845,8 @@ function M.build(w, ctx)
                 face      = face_desc,
                 bold      = FB.desc,
                 width     = tw,
+                alignment = desc_align == "right" and "right" or "left",
+                justified = desc_align == "justify",
                 height    = desc_tbw_line_h * desc_max_lines,
                 height_adjust = true,
                 height_overflow_show_ellipsis = true,
@@ -1457,23 +1470,6 @@ function M.getHeight(_ctx)
 end
 
 
--- Builds one radio-button item for a persisted string-valued setting, e.g.
--- one option of "Progress bar style" or "Stats layout". Used to avoid
--- repeating the same checked_func/callback shape for every option of every
--- such setting.
-local function _makeStyleRadioItem(text, key, value, get_current, refresh)
-    return {
-        text           = text,
-        radio          = true,
-        keep_menu_open = true,
-        checked_func   = function() return get_current() == value end,
-        callback       = function()
-            SUISettings:saveSetting(key, value)
-            refresh()
-        end,
-    }
-end
-
 -- Settings menu helpers (scale, text size, cover size).
 local function _makeScaleItem(ctx_menu)
     local pfx = ctx_menu.pfx
@@ -1528,24 +1524,20 @@ end
 local function _makeLayoutItem(ctx_menu)
     local pfx = ctx_menu.pfx
     local _lc = ctx_menu._
-    return {
-        text           = _lc("Layout"),
-        separator      = true,
-        sub_item_table = {
-            _makeStyleRadioItem(_lc("Default"), pfx .. LAYOUT_KEY, "default",
-                function() return getLayout(pfx) end, ctx_menu.refresh),
+    return Config.makeRadioSubmenuItem{
+        text      = _lc("Layout"),
+        separator = true,
+        options   = {
+            { value = "default", label = _lc("Default") },
             {
-                text           = _lc("Dynamic"),
-                radio          = true,
-                keep_menu_open = true,
-                checked_func   = function() return getLayout(pfx) == "dynamic" end,
-                callback       = function()
-                    SUISettings:saveSetting(pfx .. LAYOUT_KEY, "dynamic")
-                    ctx_menu.refresh()
-                end,
+                value     = "dynamic",
+                label     = _lc("Dynamic"),
                 help_text = _lc("Grows or shrinks the cover so its height always matches the text column, keeping the cover's proportions.\nThe spacing between cover and text stays as set above.\nThe Cover size setting still applies on top of this, and the cover never shrinks below its 100% size."),
             },
         },
+        get       = function() return getLayout(pfx) end,
+        set       = function(v) SUISettings:saveSetting(pfx .. LAYOUT_KEY, v) end,
+        refresh   = ctx_menu.refresh,
     }
 end
 
@@ -2028,23 +2020,25 @@ function M.getMenuItems(ctx_menu)
     local progress_stats_entry = {
             text_func      = function() return _lc("Progress and Stats") end,
             sub_item_table = {
-                {
-                    text = _lc("Progress bar style"),
-                    sub_item_table = {
-                        _makeStyleRadioItem(_lc("Simple"), pfx .. BAR_STYLE_KEY, "simple",
-                            function() return getBarStyle(pfx) end, refresh),
-                        _makeStyleRadioItem(_lc("With percentage"), pfx .. BAR_STYLE_KEY, "with_pct",
-                            function() return getBarStyle(pfx) end, refresh),
+                Config.makeRadioSubmenuItem{
+                    text    = _lc("Progress bar style"),
+                    options = {
+                        { value = "simple",   label = _lc("Simple") },
+                        { value = "with_pct", label = _lc("With percentage") },
                     },
+                    get     = function() return getBarStyle(pfx) end,
+                    set     = function(v) SUISettings:saveSetting(pfx .. BAR_STYLE_KEY, v) end,
+                    refresh = refresh,
                 },
-                {
-                    text = _lc("Stats layout"),
-                    sub_item_table = {
-                        _makeStyleRadioItem(_lc("Default"), pfx .. STATS_STYLE_KEY, "default",
-                            function() return getStatsStyle(pfx) end, refresh),
-                        _makeStyleRadioItem(_lc("Compact"), pfx .. STATS_STYLE_KEY, "compact",
-                            function() return getStatsStyle(pfx) end, refresh),
+                Config.makeRadioSubmenuItem{
+                    text    = _lc("Stats layout"),
+                    options = {
+                        { value = "default", label = _lc("Detailed") },
+                        { value = "compact", label = _lc("Compact") },
                     },
+                    get     = function() return getStatsStyle(pfx) end,
+                    set     = function(v) SUISettings:saveSetting(pfx .. STATS_STYLE_KEY, v) end,
+                    refresh = refresh,
                 },
                 {
                     text_func  = function() return _lc("Progress Badge") end,
@@ -2087,6 +2081,15 @@ function M.getMenuItems(ctx_menu)
     }
 
     local appearance_extra = {
+        Config.makeAlignmentItem{
+            key          = pfx .. DESC_ALIGN_KEY,
+            values       = DESC_ALIGN_VALUES,
+            default      = DESC_ALIGN_DEFAULT,
+            text         = _lc("Description Alignment"),
+            enabled_func = function() return _showElem(pfx, "description") end,
+            refresh      = refresh,
+            _lc          = _lc,
+        },
         Config.makeLabelToggleItem("currently", refresh, _lc),
     }
 

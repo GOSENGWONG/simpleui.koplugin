@@ -2442,17 +2442,6 @@ function SUIWindow.MenuTable(opts)
         local show_chevron = not is_disabled
                           and (item.sub_item_table or item.sub_item_table_func) ~= nil
 
-        -- Resolve sub-menu for right_value inference
-        local sub
-        if item.sub_item_table_func ~= nil or item.sub_item_table ~= nil then
-            if type(item.sub_item_table_func) == "function" then
-                local ok, s = pcall(item.sub_item_table_func)
-                if ok then sub = s end
-            else
-                sub = item.sub_item_table
-            end
-        end
-
         local right_value
         if type(item.value_func) == "function" then
             -- An explicit value_func always wins, regardless of whether the
@@ -2467,7 +2456,17 @@ function SUIWindow.MenuTable(opts)
             -- without radio=true.)
             local ok, v = pcall(item.value_func)
             if ok and v then right_value = tostring(v) end
-        elseif sub ~= nil then
+        elseif item.sub_item_table_func ~= nil or item.sub_item_table ~= nil then
+            -- Inferred from the sub-menu; built only here so rows with an
+            -- explicit value_func never evaluate their sub_item_table_func
+            -- while the list is rendered.
+            local sub
+            if type(item.sub_item_table_func) == "function" then
+                local ok, s = pcall(item.sub_item_table_func)
+                if ok then sub = s end
+            else
+                sub = item.sub_item_table
+            end
             if type(sub) == "table" then
                 for _, child in ipairs(sub) do
                     if child.radio == true

@@ -1564,10 +1564,11 @@ function ScreenWidget:_buildCtx()
                 scale       = Config.getModuleScale("currently", self._pfx),
                 thumb_scale = Config.getThumbScale("currently", self._pfx),
                 lbl_scale   = Config.getItemLabelScale("currently", self._pfx),
-                bar_style   = SUISettings:readSetting(self._pfx .. "currently_bar_style") or "with_pct",
-                stats_style = SUISettings:readSetting(self._pfx .. "currently_stats_style") or "default",
+                bar_style   = SUISettings:readSetting(self._pfx .. "currently_bar_style"),
+                stats_style = SUISettings:readSetting(self._pfx .. "currently_stats_style"),
                 layout      = SUISettings:readSetting(self._pfx .. "currently_layout") == "dynamic" and "dynamic" or "default",
                 elem_order  = SUISettings:readSetting(self._pfx .. "currently_elem_order"),
+                desc_align  = SUISettings:readSetting(self._pfx .. "currently_description_align"),
                 show = {
                     title    = SUISettings:nilOrTrue(self._pfx .. "currently_show_title"),
                     author   = SUISettings:nilOrTrue(self._pfx .. "currently_show_author"),

@@ -128,7 +128,6 @@ local SETTING_BATT_GAP  = "clock_batt_gap"
 local SETTING_ALIGN     = "clock_align"       -- pfx .. "clock_align"     (default "center")
 local SETTING_STYLE     = "clock_style"       -- pfx .. "clock_style"     ("digital"|"word"|"analogue")
 
-local ALIGN_VALUES = { "left", "center", "right" }
 local STYLE_VALUES = { "digital", "word", "analogue" }
 
 -- Fixed item keys, in the default top-to-bottom order.
@@ -140,30 +139,12 @@ local ITEM_VIS_KEY = {
     battery = SETTING_BATTERY,
 }
 
--- Reads a setting and validates it against a fixed list of allowed values,
--- falling back to `default` for unset or corrupted entries.
-local function _readEnum(pfx, key, values, default)
-    local v = SUISettings:readSetting(pfx .. key)
-    for _, allowed in ipairs(values) do if allowed == v then return v end end
-    return default
-end
-
 local function getAlignment(pfx)
-    return _readEnum(pfx, SETTING_ALIGN, ALIGN_VALUES, "center")
-end
-
-local function setAlignment(pfx, val)
-    SUISettings:saveSetting(pfx .. SETTING_ALIGN, val)
-end
-
-local function alignLabel(align, _lc)
-    if align == "left"  then return _lc("Left")  end
-    if align == "right" then return _lc("Right") end
-    return _lc("Center")
+    return Config.getAlignment(pfx .. SETTING_ALIGN)
 end
 
 local function getClockStyle(pfx)
-    return _readEnum(pfx, SETTING_STYLE, STYLE_VALUES, "digital")
+    return Config.readChoice(pfx .. SETTING_STYLE, STYLE_VALUES, "digital")
 end
 
 local function setClockStyle(pfx, val)
@@ -1200,33 +1181,11 @@ function M.getMenuItems(ctx_menu)
             },
         },
     }
-    appearance_extra[#appearance_extra + 1] = {
-        text_func  = function() return _lc("Alignment") end,
-        value_func = function() return alignLabel(getAlignment(pfx), _lc) end,
-        separator      = true,
-        sub_item_table = {
-            {
-                text           = _lc("Left"),
-                radio          = true,
-                checked_func   = function() return getAlignment(pfx) == "left" end,
-                keep_menu_open = true,
-                callback       = function() setAlignment(pfx, "left"); refresh() end,
-            },
-            {
-                text           = _lc("Center"),
-                radio          = true,
-                checked_func   = function() return getAlignment(pfx) == "center" end,
-                keep_menu_open = true,
-                callback       = function() setAlignment(pfx, "center"); refresh() end,
-            },
-            {
-                text           = _lc("Right"),
-                radio          = true,
-                checked_func   = function() return getAlignment(pfx) == "right" end,
-                keep_menu_open = true,
-                callback       = function() setAlignment(pfx, "right"); refresh() end,
-            },
-        },
+    appearance_extra[#appearance_extra + 1] = Config.makeAlignmentItem{
+        key       = pfx .. SETTING_ALIGN,
+        separator = true,
+        refresh   = refresh,
+        _lc       = _lc,
     }
 
     if #getVisibleItems(pfx) > 1 then

@@ -104,24 +104,10 @@ local SETTING_FIXED_H     = "simpleui_quote_fixed_height"
 local _FIXED_LINES = 3  -- number of quote-body lines when fixed height is active
 
 -- ---------------------------------------------------------------------------
--- Alignment setting helpers  (mirrors module_action_list)
+-- Alignment setting
 -- ---------------------------------------------------------------------------
-local _ALIGN_VALUES = { "left", "center", "right" }
-
 local function getAlignment(pfx)
-    local v = SUISettings:readSetting((pfx or "") .. SETTING_ALIGN)
-    for _, a in ipairs(_ALIGN_VALUES) do if a == v then return v end end
-    return "center"  -- default
-end
-
-local function setAlignment(pfx, val)
-    SUISettings:saveSetting((pfx or "") .. SETTING_ALIGN, val)
-end
-
-local function alignLabel(align)
-    if align == "left"  then return _("Left")  end
-    if align == "right" then return _("Right") end
-    return _("Center")
+    return Config.getAlignment((pfx or "") .. SETTING_ALIGN)
 end
 
 -- ---------------------------------------------------------------------------
@@ -1410,214 +1396,73 @@ local function _makeScaleItem(ctx_menu)
 end
 
 function M.getMenuItems(ctx_menu)
-
     local pfx     = ctx_menu.pfx
-
     local refresh = ctx_menu.refresh
-
     local _lc     = ctx_menu._
 
+    -- Persists the chosen source (and custom file, when given). The bundled
+    -- quote set needs no cache reset; every other source does.
+    local function saveSource(source, custom_file)
+        SUISettings:saveSetting(pfx .. SETTING_SOURCE, source)
+        if custom_file then
+            SUISettings:saveSetting(pfx .. SETTING_CUSTOM_FILE, custom_file)
+        end
+        if source ~= "quotes" then M.invalidateCache() end
+    end
 
+    -- File list for a source backed by a user-provided file; the folder is
+    -- scanned only when the sub-menu is opened.
+    local function makeCustomFileItems(source)
+        local items = Config.appendRadioItems({}, {
+            options    = function()
+                local options = {}
+                for _i, fname in ipairs(listCustomQuoteFiles()) do
+                    options[#options + 1] = { value = fname, label = fname }
+                end
+                return options
+            end,
+            empty_text = _lc("No .lua files found in sui_quotes/"),
+            get        = function()
+                return getSource(pfx) == source and getCustomFile(pfx) or nil
+            end,
+            set        = function(fname) saveSource(source, fname) end,
+            refresh    = refresh,
+        })
+        items[#items + 1] = {
+            text    = _lc("Place .lua files in the plugin's sui_quotes/ folder"),
+            enabled = false,
+        }
+        return items
+    end
 
     local rows = {
-
-        {
-
-            text           = _lc("Source"),
-
-            sub_item_table = {
-
+        Config.makeRadioSubmenuItem{
+            text    = _lc("Source"),
+            options = {
+                { value = "quotes",     label = _lc("Default Quotes") },
+                { value = "highlights", label = _lc("My Highlights") },
+                { value = "mixed",      label = _lc("Quotes + My Highlights") },
                 {
-
-                    text           = _lc("Default Quotes"),
-
-                    radio          = true,
-
-                    checked_func   = function() return getSource(pfx) == "quotes" end,
-
-                    keep_menu_open = true,
-
-                    callback       = function()
-
-                        SUISettings:saveSetting(pfx .. SETTING_SOURCE, "quotes")
-
-                        refresh()
-
-                    end,
-
+                    value               = "custom",
+                    label               = _lc("Custom File"),
+                    sub_item_table_func = function() return makeCustomFileItems("custom") end,
                 },
-
                 {
-
-                    text           = _lc("My Highlights"),
-
-                    radio          = true,
-
-                    checked_func   = function() return getSource(pfx) == "highlights" end,
-
-                    keep_menu_open = true,
-
-                    callback       = function()
-
-                        SUISettings:saveSetting(pfx .. SETTING_SOURCE, "highlights")
-
-                        M.invalidateCache()
-
-                        refresh()
-
-                    end,
-
+                    value               = "custom_mixed",
+                    label               = _lc("Custom File + My Highlights"),
+                    sub_item_table_func = function() return makeCustomFileItems("custom_mixed") end,
                 },
-
-                {
-
-                    text           = _lc("Quotes + My Highlights"),
-
-                    radio          = true,
-
-                    checked_func   = function() return getSource(pfx) == "mixed" end,
-
-                    keep_menu_open = true,
-
-                    callback       = function()
-
-                        SUISettings:saveSetting(pfx .. SETTING_SOURCE, "mixed")
-
-                        M.invalidateCache()
-
-                        refresh()
-
-                    end,
-
-                },
-
-                {
-
-                    text         = _lc("Custom File"),
-
-                    radio        = true,
-
-                    checked_func = function() return getSource(pfx) == "custom" end,
-
-                    -- Scan the filesystem only when the user opens this sub-menu.
-                    sub_item_table_func = function()
-                        local files    = listCustomQuoteFiles()
-                        local subitems = {}
-
-                        if #files == 0 then
-                            subitems[#subitems + 1] = {
-                                text    = _lc("No .lua files found in sui_quotes/"),
-                                enabled = false,
-                            }
-                        else
-                            for _, fname in ipairs(files) do
-                                local _fname = fname
-                                subitems[#subitems + 1] = {
-                                    text           = _fname,
-                                    radio          = true,
-                                    checked_func   = function()
-                                        return getSource(pfx) == "custom"
-                                               and getCustomFile(pfx) == _fname
-                                    end,
-                                    keep_menu_open = true,
-                                    callback       = function()
-                                        SUISettings:saveSetting(pfx .. SETTING_SOURCE,      "custom")
-                                        SUISettings:saveSetting(pfx .. SETTING_CUSTOM_FILE, _fname)
-                                        M.invalidateCache()
-                                        refresh()
-                                    end,
-                                }
-                            end
-                        end
-
-                        subitems[#subitems + 1] = {
-                            text    = _lc("Place .lua files in the plugin's sui_quotes/ folder"),
-                            enabled = false,
-                        }
-
-                        return subitems
-                    end,
-
-                },
-
-                {
-
-                    text         = _lc("Custom File + My Highlights"),
-
-                    radio        = true,
-
-                    checked_func = function() return getSource(pfx) == "custom_mixed" end,
-
-                    -- Scan the filesystem only when the user opens this sub-menu.
-                    sub_item_table_func = function()
-                        local files    = listCustomQuoteFiles()
-                        local subitems = {}
-
-                        if #files == 0 then
-                            subitems[#subitems + 1] = {
-                                text    = _lc("No .lua files found in sui_quotes/"),
-                                enabled = false,
-                            }
-                        else
-                            for _, fname in ipairs(files) do
-                                local _fname = fname
-                                subitems[#subitems + 1] = {
-                                    text           = _fname,
-                                    radio          = true,
-                                    checked_func   = function()
-                                        return getSource(pfx) == "custom_mixed"
-                                               and getCustomFile(pfx) == _fname
-                                    end,
-                                    keep_menu_open = true,
-                                    callback       = function()
-                                        SUISettings:saveSetting(pfx .. SETTING_SOURCE,      "custom_mixed")
-                                        SUISettings:saveSetting(pfx .. SETTING_CUSTOM_FILE, _fname)
-                                        M.invalidateCache()
-                                        refresh()
-                                    end,
-                                }
-                            end
-                        end
-
-                        subitems[#subitems + 1] = {
-                            text    = _lc("Place .lua files in the plugin's sui_quotes/ folder"),
-                            enabled = false,
-                        }
-
-                        return subitems
-                    end,
-
-                },
-
             },
-
+            get     = function() return getSource(pfx) end,
+            set     = saveSource,
+            refresh = refresh,
         },
-
         _makeScaleItem(ctx_menu),
 
-        {
-            text_func  = function() return _lc("Alignment") end,
-            value_func = function() return alignLabel(getAlignment(pfx)) end,
-            sub_item_table = {
-                {
-                    text           = _lc("Left"),
-                    checked_func   = function() return getAlignment(pfx) == "left" end,
-                    keep_menu_open = true,
-                    callback       = function() setAlignment(pfx, "left");   refresh() end,
-                },
-                {
-                    text           = _lc("Center"),
-                    checked_func   = function() return getAlignment(pfx) == "center" end,
-                    keep_menu_open = true,
-                    callback       = function() setAlignment(pfx, "center"); refresh() end,
-                },
-                {
-                    text           = _lc("Right"),
-                    checked_func   = function() return getAlignment(pfx) == "right" end,
-                    keep_menu_open = true,
-                    callback       = function() setAlignment(pfx, "right");  refresh() end,
-                },
-            },
+        Config.makeAlignmentItem{
+            key     = (pfx or "") .. SETTING_ALIGN,
+            refresh = refresh,
+            _lc     = _lc,
         },
 
         Config.makeTextSection({

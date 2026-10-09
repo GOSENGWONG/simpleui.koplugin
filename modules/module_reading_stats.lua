@@ -81,9 +81,7 @@ local function getType(pfx)
 end
 
 local function getAlign(pfx)
-    local v = SUISettings:readSetting(pfx .. SETTING_ALIGN)
-    if v == "left" or v == "right" or v == "center" then return v end
-    return "center"
+    return Config.getAlignment(pfx .. SETTING_ALIGN)
 end
 
 local function getCardStrength(pfx)
@@ -105,12 +103,6 @@ local function _getItems(pfx)
     local saved = SUISettings:readSetting((pfx or "simpleui_hs_") .. "reading_stats_items")
     if type(saved) ~= "table" or #saved == 0 then return { "total_books", "today_time", "streak" } end
     return saved
-end
-
-local function alignLabel(align)
-    if align == "left"  then return _("Left")  end
-    if align == "right" then return _("Right") end
-    return _("Center")
 end
 
 -- ---------------------------------------------------------------------------
@@ -856,40 +848,16 @@ function M.getMenuItems(ctx_menu)
             refresh     = refresh,
             _lc         = _lc,
         }),
-        {
-            text           = _lc("Style"),
-            sub_item_table = {
-                {
-                    text           = _lc("Cards"),
-                    radio          = true,
-                    keep_menu_open = true,
-                    checked_func   = function() return getType(pfx) == "cards" end,
-                    callback       = function()
-                        SUISettings:saveSetting(pfx .. SETTING_TYPE, "cards")
-                        refresh()
-                    end,
-                },
-                {
-                    text           = _lc("Flat"),
-                    radio          = true,
-                    keep_menu_open = true,
-                    checked_func   = function() return getType(pfx) == "flat" end,
-                    callback       = function()
-                        SUISettings:saveSetting(pfx .. SETTING_TYPE, "flat")
-                        refresh()
-                    end,
-                },
-                {
-                    text           = _lc("List"),
-                    radio          = true,
-                    keep_menu_open = true,
-                    checked_func   = function() return getType(pfx) == "list" end,
-                    callback       = function()
-                        SUISettings:saveSetting(pfx .. SETTING_TYPE, "list")
-                        refresh()
-                    end,
-                },
+        Config.makeRadioSubmenuItem{
+            text    = _lc("Style"),
+            options = {
+                { value = "cards", label = _lc("Cards") },
+                { value = "flat",  label = _lc("Flat") },
+                { value = "list",  label = _lc("List") },
             },
+            get     = function() return getType(pfx) end,
+            set     = function(v) SUISettings:saveSetting(pfx .. SETTING_TYPE, v) end,
+            refresh = refresh,
         },
         Config.makeBackdropStrengthItem({
             title         = _lc("Card Opacity"),
@@ -900,41 +868,10 @@ function M.getMenuItems(ctx_menu)
             default_value = 100,
             _lc           = _lc,
         }),
-        {
-            text_func  = function() return _lc("Alignment") end,
-            value_func = function() return alignLabel(getAlign(pfx)) end,
-            sub_item_table = {
-                {
-                    text           = _lc("Left"),
-                    radio          = true,
-                    keep_menu_open = true,
-                    checked_func   = function() return getAlign(pfx) == "left"   end,
-                    callback       = function()
-                        SUISettings:saveSetting(pfx .. SETTING_ALIGN, "left")
-                        refresh()
-                    end,
-                },
-                {
-                    text           = _lc("Center"),
-                    radio          = true,
-                    keep_menu_open = true,
-                    checked_func   = function() return getAlign(pfx) == "center" end,
-                    callback       = function()
-                        SUISettings:saveSetting(pfx .. SETTING_ALIGN, "center")
-                        refresh()
-                    end,
-                },
-                {
-                    text           = _lc("Right"),
-                    radio          = true,
-                    keep_menu_open = true,
-                    checked_func   = function() return getAlign(pfx) == "right"  end,
-                    callback       = function()
-                        SUISettings:saveSetting(pfx .. SETTING_ALIGN, "right")
-                        refresh()
-                    end,
-                },
-            },
+        Config.makeAlignmentItem{
+            key     = pfx .. SETTING_ALIGN,
+            refresh = refresh,
+            _lc     = _lc,
         },
     }
 
@@ -954,35 +891,15 @@ function M.getMenuItems(ctx_menu)
         }
     end
 
-    items[#items+1] = {
-        text_func      = function() return _lc("Streak Mode") end,
-        value_func     = function()
-            return StreakFreeze.isFreezeModeEnabled()
-                and _lc("Freezes")
-                or  _lc("Real streak only")
-        end,
-        sub_item_table = {
-            {
-                text           = _lc("Freezes"),
-                radio          = true,
-                keep_menu_open = true,
-                checked_func   = function() return StreakFreeze.getStreakMode() == "freezes" end,
-                callback       = function()
-                    StreakFreeze.setStreakMode("freezes")
-                    refresh()
-                end,
-            },
-            {
-                text           = _lc("Real streak only"),
-                radio          = true,
-                keep_menu_open = true,
-                checked_func   = function() return StreakFreeze.getStreakMode() == "real" end,
-                callback       = function()
-                    StreakFreeze.setStreakMode("real")
-                    refresh()
-                end,
-            },
+    items[#items+1] = Config.makeRadioSubmenuItem{
+        text    = _lc("Streak Mode"),
+        options = {
+            { value = "freezes", label = _lc("Freezes") },
+            { value = "real",    label = _lc("Real streak only") },
         },
+        get     = StreakFreeze.getStreakMode,
+        set     = StreakFreeze.setStreakMode,
+        refresh = refresh,
     }
 
     items[#items+1] = {

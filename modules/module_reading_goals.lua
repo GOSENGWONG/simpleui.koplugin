@@ -122,27 +122,10 @@ local RING_STYLE_KEY = "simpleui_reading_goals_ring_style"
 local RING_CONTENT_KEY   = "reading_goals_ring_content"
 local RING_ALIGN_KEY     = "reading_goals_ring_align"
 local RING_CONTENT_VALUES = { "inside", "outside" }
-local RING_ALIGN_VALUES   = { "left", "center", "right" }
 
--- Reads a setting and validates it against a fixed list of allowed values,
--- falling back to `default` for unset or corrupted entries.
-local function _readEnum(pfx, key, values, default)
-    local v = SUISettings:readSetting(pfx .. key)
-    for _, allowed in ipairs(values) do if allowed == v then return v end end
-    return default
-end
+local function getRingContent(pfx)   return Config.readChoice(pfx .. RING_CONTENT_KEY, RING_CONTENT_VALUES, "inside") end
 
-local function getRingContent(pfx)   return _readEnum(pfx, RING_CONTENT_KEY, RING_CONTENT_VALUES, "inside") end
-local function setRingContent(pfx, v) SUISettings:saveSetting(pfx .. RING_CONTENT_KEY, v) end
-
-local function getRingAlign(pfx)   return _readEnum(pfx, RING_ALIGN_KEY, RING_ALIGN_VALUES, "center") end
-local function setRingAlign(pfx, v) SUISettings:saveSetting(pfx .. RING_ALIGN_KEY, v) end
-
-local function _ringAlignLabel(align, _lc)
-    if align == "left"  then return _lc("Left")  end
-    if align == "right" then return _lc("Right") end
-    return _lc("Center")
-end
+local function getRingAlign(pfx)   return Config.getAlignment(pfx .. RING_ALIGN_KEY) end
 
 local function getLayout()
     local v = SUISettings:readSetting(LAYOUT_KEY)
@@ -1528,81 +1511,34 @@ function M.getMenuItems(ctx_menu)
         {
             text_func      = function() return _lc("Appearance") end,
             sub_item_table = {
-                { text = _lc("Layout"),
-                  sub_item_table = {
-                      { text         = _lc("Default"),
-                        radio        = true,
-                        checked_func = function() return getLayout() == "default" end,
-                        keep_menu_open = true,
-                        callback = function()
-                            SUISettings:saveSetting(LAYOUT_KEY, "default")
-                            refresh()
-                        end },
-                      { text         = _lc("Compact"),
-                        radio        = true,
-                        checked_func = function() return getLayout() == "compact" end,
-                        keep_menu_open = true,
-                        callback = function()
-                            SUISettings:saveSetting(LAYOUT_KEY, "compact")
-                            refresh()
-                        end },
-                      { text         = _lc("Rings"),
-                        radio        = true,
-                        checked_func = function() return getLayout() == "rings" end,
-                        keep_menu_open = true,
-                        callback = function()
-                            SUISettings:saveSetting(LAYOUT_KEY, "rings")
-                            refresh()
-                        end },
-                  },
-                },
-                {
-                    text_func    = function() return _lc("Ring Style") end,
-                    value_func   = function()
-                        return getRingContent(ctx_menu.pfx) == "outside"
-                            and _lc("Detail Below Ring") or _lc("Detail Inside Ring")
-                    end,
-                    enabled_func = function() return getLayout() == "rings" end,
-                    sub_item_table = {
-                        { text         = _lc("Detail Inside Ring"),
-                          radio        = true,
-                          checked_func = function() return getRingContent(ctx_menu.pfx) == "inside" end,
-                          keep_menu_open = true,
-                          callback = function()
-                              setRingContent(ctx_menu.pfx, "inside")
-                              refresh()
-                          end },
-                        { text         = _lc("Detail Below Ring"),
-                          radio        = true,
-                          checked_func = function() return getRingContent(ctx_menu.pfx) == "outside" end,
-                          keep_menu_open = true,
-                          callback = function()
-                              setRingContent(ctx_menu.pfx, "outside")
-                              refresh()
-                          end },
+                Config.makeRadioSubmenuItem{
+                    text    = _lc("Layout"),
+                    options = {
+                        { value = "default", label = _lc("Default") },
+                        { value = "compact", label = _lc("Compact") },
+                        { value = "rings",   label = _lc("Rings") },
                     },
+                    get     = getLayout,
+                    set     = function(v) SUISettings:saveSetting(LAYOUT_KEY, v) end,
+                    refresh = refresh,
                 },
-                {
-                    text_func    = function() return _lc("Ring Alignment") end,
-                    value_func   = function() return _ringAlignLabel(getRingAlign(ctx_menu.pfx), _lc) end,
+                Config.makeRadioSubmenuItem{
+                    text         = _lc("Ring Style"),
                     enabled_func = function() return getLayout() == "rings" end,
-                    sub_item_table = {
-                        { text         = _lc("Left"),
-                          radio        = true,
-                          checked_func = function() return getRingAlign(ctx_menu.pfx) == "left" end,
-                          keep_menu_open = true,
-                          callback = function() setRingAlign(ctx_menu.pfx, "left"); refresh() end },
-                        { text         = _lc("Center"),
-                          radio        = true,
-                          checked_func = function() return getRingAlign(ctx_menu.pfx) == "center" end,
-                          keep_menu_open = true,
-                          callback = function() setRingAlign(ctx_menu.pfx, "center"); refresh() end },
-                        { text         = _lc("Right"),
-                          radio        = true,
-                          checked_func = function() return getRingAlign(ctx_menu.pfx) == "right" end,
-                          keep_menu_open = true,
-                          callback = function() setRingAlign(ctx_menu.pfx, "right"); refresh() end },
+                    options      = {
+                        { value = "inside",  label = _lc("Detail Inside Ring") },
+                        { value = "outside", label = _lc("Detail Below Ring") },
                     },
+                    get          = function() return getRingContent(ctx_menu.pfx) end,
+                    set          = function(v) SUISettings:saveSetting(ctx_menu.pfx .. RING_CONTENT_KEY, v) end,
+                    refresh      = refresh,
+                },
+                Config.makeAlignmentItem{
+                    key          = ctx_menu.pfx .. RING_ALIGN_KEY,
+                    text         = _lc("Ring Alignment"),
+                    enabled_func = function() return getLayout() == "rings" end,
+                    refresh      = refresh,
+                    _lc          = _lc,
                 },
                 Config.makeLabelToggleItem("reading_goals", refresh, _lc),
                                             },

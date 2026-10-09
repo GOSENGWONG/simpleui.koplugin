@@ -27,6 +27,7 @@ local CenterContainer = require("ui/widget/container/centercontainer")
 local Font            = require("ui/font")
 local Geom            = require("ui/geometry")
 
+local Config      = require("infra/sui_config")
 local SUISettings = require("infra/sui_store")
 local SUIStyle    = require("features/sui_style")
 local UI          = require("infra/sui_core")
@@ -103,39 +104,27 @@ local function makeInstance(inst_id)
         local items = {}
 
         -- Choosing the target collection (single-select, radio). Implemented as
-        -- sub_item_table_func (not item_picker) because it works
-        -- identically in KOReader's native menu and in SUIWindow, without
-        -- depending on a nested navigation context (push/pop).
-        items[#items + 1] = {
-            text_func = function()
-                local name = getCollName(pfx)
-                return name and (_lc("Collection: ") .. name) or _lc("Collection: (none)")
-            end,
-            separator = true,
-            sub_item_table_func = function()
+        -- a submenu (not item_picker) because it works identically in
+        -- KOReader's native menu and in SUIWindow, without depending on a
+        -- nested navigation context (push/pop). The collection list is read
+        -- only when the submenu opens; the row value is the stored name.
+        items[#items + 1] = Config.makeRadioSubmenuItem{
+            text          = _lc("Collection"),
+            separator     = true,
+            options       = function()
                 local tbr_name = getTBRCollName()
                 local exclude  = tbr_name and { [tbr_name] = true } or nil
-                local all = GridRenderer.listAllCollectionNames(exclude)
-                local sub = {}
-                if #all == 0 then
-                    sub[#sub + 1] = { text = _lc("No collections found."), enabled = false }
-                    return sub
+                local options  = {}
+                for _i, name in ipairs(GridRenderer.listAllCollectionNames(exclude)) do
+                    options[#options + 1] = { value = name, label = name }
                 end
-                for _, name in ipairs(all) do
-                    local _n = name
-                    sub[#sub + 1] = {
-                        text           = _n,
-                        radio          = true,
-                        checked_func   = function() return getCollName(pfx) == _n end,
-                        keep_menu_open = true,
-                        callback       = function()
-                            setCollName(pfx, _n)
-                            refresh()
-                        end,
-                    }
-                end
-                return sub
+                return options
             end,
+            empty_text    = _lc("No collections found."),
+            current_label = function() return getCollName(pfx) end,
+            get           = function() return getCollName(pfx) end,
+            set           = function(name) setCollName(pfx, name) end,
+            refresh       = refresh,
         }
 
         -- Sort (rewrites the persisted order; manual Arrange remains
