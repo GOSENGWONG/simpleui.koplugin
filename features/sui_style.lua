@@ -332,16 +332,16 @@ end
 -- Book covers can cast a drop shadow down and to the right, switched on
 -- separately for each surface (scope). The shadow lives inside the cover's
 -- own slot: the cover is drawn coverShadowOffset() px smaller on each axis,
--- so layouts keep their size.
+-- so layouts keep their size. The shadow is on until a surface is switched off.
 
 M.SHADOW_LIBRARY = "library"   -- the Library grid
 M.SHADOW_MODULES = "modules"   -- the Home Screen modules
 
 local _COVER_SHADOW_KEY_PREFIX = "simpleui_style_cover_shadow_"
-local _COVER_SHADOW_BASE       = math.max(2, Screen:scaleBySize(4))
+local _COVER_SHADOW_BASE       = math.max(2, Screen:scaleBySize(7))
 
 function M.coverShadowEnabled(scope)
-    return SUISettings:isTrue(_COVER_SHADOW_KEY_PREFIX .. scope)
+    return SUISettings:nilOrTrue(_COVER_SHADOW_KEY_PREFIX .. scope)
 end
 
 function M.setCoverShadowEnabled(scope, on)

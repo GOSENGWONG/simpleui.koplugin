@@ -13,8 +13,8 @@
 --
 -- Cached state kept here: the rendered-ribbon Blitbuffer cache (rotating
 -- text pixel-by-pixel is expensive, keyed by dimensions+label+colors), the
--- label line-height memo, and a reusable 8-bit mask for progress-pentagon AA
--- paints. All are cleared via the public clear*Cache() functions, which
+-- label line-height memo, the shadow coverage masks, and a reusable 8-bit mask
+-- for progress-pentagon AA paints. All are cleared via the public clear*Cache() functions, which
 -- sui_foldercovers.lua calls from M.invalidateCache().
 --
 -- Public API
@@ -36,9 +36,11 @@
 --       -- Total px a cover gives up on the right and bottom for its pile
 --       -- (layer steps plus the front cover's shadow).
 --   CoverWidgets.buildPile(cover_w, cover_h, inset)
---       -- Three shaded layers peeking out behind a cover of cover_w × cover_h.
+--       -- Two shaded layers peeking out behind a cover of cover_w × cover_h.
 --   CoverWidgets.paintShadow(bb, x, y, w, h, offset)
---       -- Drop shadow around a w × h card at (x, y), cast down and to the right.
+--       -- Soft shadow around a w × h card at (x, y), cast down and to the right.
+--   CoverWidgets.buildShadow(card_w, card_h, offset)
+--       -- Widget wrapper around paintShadow (nil when `offset` is 0).
 --   CoverWidgets.backingInset(scope, hide_pile, scale)
 --       -- Px a cover gives up on the right and bottom for whatever is drawn
 --       -- behind it: the pile, or just the shadow when the pile is hidden.
@@ -59,6 +61,7 @@
 --   CoverWidgets.installWidget(item, widget)
 --   CoverWidgets.clearRibbonCache()
 --   CoverWidgets.clearLabelMetricsCache()
+--   CoverWidgets.clearShadowCache()
 --   CoverWidgets.clearPentagonMaskCache()
 
 local _  = require("infra/sui_i18n").translate
@@ -524,24 +527,25 @@ end
 -- ── Book pile ─────────────────────────────────────────────────────────────────
 
 -- The pile is a staircase of cards behind the front cover, each one offset
--- down-right by `step` and casting its own drop shadow in the same direction.
--- The shadow is `step` minus the outline, so outline and shadow strips tile
--- the staircase without gaps. Shadow and outline fade with depth, so the pile
--- recedes.
+-- down-right by `step`. The visible strip of each card is its body, shaded
+-- grey and outlined; the last card also casts the same soft shadow as a single
+-- cover (see paintShadow). The shadow is `step` minus the outline, so outline
+-- and shadow tile the staircase without gaps. Body and outline fade with
+-- depth, so the pile recedes.
 
--- Fade factors by depth. Depth 0 is the front cover's own shadow; depth 1 is
--- the layer touching it. A factor of 1 gives the full colour, 0 gives none.
--- The outline table sets the layer count.
-local _PILE_SHADOW_FADE = { [0] = 1.0, 0.58, 0.34, 0.20 }
-local _PILE_BORDER_FADE = { 0.80, 0.60, 0.44 }
+-- Fade factors by depth, where depth 1 is the layer touching the front cover.
+-- A factor of 1 gives the full colour, 0 gives none. The outline table sets the
+-- layer count.
+local _PILE_BODY_FADE   = { 1.0, 0.58 }
+local _PILE_BORDER_FADE = { 0.80, 0.44 }
 
 local _PILE_LAYERS = #_PILE_BORDER_FADE
 local _PILE_STEP   = Screen:scaleBySize(5)
 
--- Shadow blackness before fading. Night mode inverts the frame after painting,
--- so the night base is lower to keep the shadow dark on screen.
-local _PILE_SHADOW_BASE       = 0.5
-local _PILE_SHADOW_BASE_NIGHT = 0.15
+-- Body blackness before fading. Night mode inverts the frame after painting,
+-- so the night base is lower to keep the body dark on screen.
+local _PILE_BODY_BASE       = 0.5
+local _PILE_BODY_BASE_NIGHT = 0.15
 
 -- Interpolates two colours in painted space: t = 1 gives `a`, t = 0 gives `b`.
 local function blend8(a, b, t)
@@ -549,9 +553,9 @@ local function blend8(a, b, t)
     return Blitbuffer.Color8(math.floor(bv + (av - bv) * t + 0.5))
 end
 
-local function pileShadowColor(depth)
-    local base = Screen.night_mode and _PILE_SHADOW_BASE_NIGHT or _PILE_SHADOW_BASE
-    return Blitbuffer.gray(base * _PILE_SHADOW_FADE[depth])
+local function pileBodyColor(depth)
+    local base = Screen.night_mode and _PILE_BODY_BASE_NIGHT or _PILE_BODY_BASE
+    return Blitbuffer.gray(base * _PILE_BODY_FADE[depth])
 end
 
 -- The cover's own outline colour, faded towards the page colour.
@@ -572,21 +576,18 @@ function PileWidget:getSize()
     return Geom:new{ w = self.w, h = self.h }
 end
 
--- Cards are painted farthest first so nearer ones cover them, ending with the
--- front cover's shadow (depth 0); the front cover itself is added on top by
--- the caller. Each card is a shadow offset down-right, then its body, then its
--- outline. The body takes the shadow colour of the card in front, so it blends
--- into the strip that covers it.
+-- The last card's shadow is painted first, then the cards farthest first so
+-- nearer ones cover them. Each card is its body, then its outline; the front
+-- cover itself is added on top by the caller.
 function PileWidget:paintTo(bb, x, y)
-    local step, shadow = self.step, self.shadow
+    local step   = self.step
     local stroke = SUIStyle.BADGE_BORDER_SZ
-    for depth = _PILE_LAYERS, 0, -1 do
+    local last   = _PILE_LAYERS * step
+    CoverWidgets.paintShadow(bb, x + last, y + last, self.card_w, self.card_h, self.shadow)
+    for depth = _PILE_LAYERS, 1, -1 do
         local lx, ly = x + depth * step, y + depth * step
-        bb:paintRect(lx + shadow, ly + shadow, self.card_w, self.card_h, pileShadowColor(depth))
-        if depth > 0 then
-            bb:paintRect(lx, ly, self.card_w, self.card_h, pileShadowColor(depth - 1))
-            bb:paintBorder(lx, ly, self.card_w, self.card_h, stroke, pileBorderColor(depth))
-        end
+        bb:paintRect(lx, ly, self.card_w, self.card_h, pileBodyColor(depth))
+        bb:paintBorder(lx, ly, self.card_w, self.card_h, stroke, pileBorderColor(depth))
     end
 end
 
@@ -619,64 +620,64 @@ end
 
 -- ── Cover shadow ──────────────────────────────────────────────────────────────
 
--- How strongly the shadow shades what lies under it: the third lightest grey
--- of the pile's shadow layers (the lightest is the deepest layer).
-local _SHADOW_STRENGTH = _PILE_SHADOW_BASE * _PILE_SHADOW_FADE[_PILE_LAYERS - 2]
+-- A shadow is built from one-pixel bands that fade with their distance from
+-- the card, which approximates a blurred edge. The bands are coverage masks
+-- blended in black, which shades what is already painted instead of laying a
+-- fixed grey, so the shadow reads on any background.
+local _SHADOW_PEAK         = 0.22   -- shading of the band touching the card
+local _SHADOW_MIN_STRENGTH = 0.02   -- fainter bands are not visible: skipped
 
--- Paints the part of a drop shadow that shows around a w × h card at (x, y):
--- the card's rectangle shifted down-right by `offset`, minus the card itself.
--- The two strips never overlap. The shadow shades what is already painted
--- instead of laying a fixed grey, so it reads on any background. Night frames
--- are inverted after painting, so lightening is what darkens the shadow on
--- screen.
+-- Shading of the band `d` px away from the card (0 = touching it) in a shadow
+-- `reach` px deep: a smoothstep from the peak down to nothing.
+local function shadowBandStrength(d, reach)
+    local t = 1 - d / reach
+    return _SHADOW_PEAK * t * t * (3 - 2 * t)
+end
+
+-- Coverage masks of a shadow's right and bottom strips, memoised by card size
+-- and depth. The strips never overlap: right band `d` is the column `d` px
+-- past the card, bottom band `d` the row `d` px below it, and the corner
+-- belongs to whichever band is farther along its own axis.
+local _shadow_masks = {}
+
+function CoverWidgets.clearShadowCache()
+    for k, masks in pairs(_shadow_masks) do
+        masks.right:free()
+        masks.bottom:free()
+        _shadow_masks[k] = nil
+    end
+end
+
+local function buildShadowMasks(w, h, offset)
+    local right  = Blitbuffer.new(offset, h, Blitbuffer.TYPE_BB8)
+    local bottom = Blitbuffer.new(w, offset, Blitbuffer.TYPE_BB8)
+    right:fill(Blitbuffer.Color8(0))
+    bottom:fill(Blitbuffer.Color8(0))
+    for d = 0, offset - 1 do
+        local strength = shadowBandStrength(d, offset)
+        if strength < _SHADOW_MIN_STRENGTH then break end
+        local coverage = Blitbuffer.Color8(math.floor(strength * 255 + 0.5))
+        right:paintRect(d, 0, 1, h - offset + d, coverage)
+        bottom:paintRect(0, d, w - offset + d + 1, 1, coverage)
+    end
+    return { right = right, bottom = bottom }
+end
+
+-- Paints the part of a soft shadow that shows around a w × h card at (x, y),
+-- `offset` px deep. The shadow is the card's rectangle shifted down-right by
+-- `offset`, minus the card itself. Night frames are inverted after painting,
+-- so blending towards white is what darkens the shadow on screen.
 function CoverWidgets.paintShadow(bb, x, y, w, h, offset)
     if offset <= 0 then return end
-    local shade = Screen.night_mode and bb.lightenRect or bb.darkenRect
-    shade(bb, x + w,      y + offset, offset,     h,      _SHADOW_STRENGTH)
-    shade(bb, x + offset, y + h,      w - offset, offset, _SHADOW_STRENGTH)
-end
-
--- Parts of rect `r` that lie outside rect `c`, as a list of rects.
-local function subtractRect(r, c)
-    local rx2, ry2, cx2, cy2 = r.x + r.w, r.y + r.h, c.x + c.w, c.y + c.h
-    if c.x >= rx2 or cx2 <= r.x or c.y >= ry2 or cy2 <= r.y then return { r } end
-    local pieces = {}
-    local mid_y1, mid_y2 = math.max(r.y, c.y), math.min(ry2, cy2)
-    if c.y > r.y then pieces[#pieces + 1] = { x = r.x, y = r.y, w = r.w, h = c.y - r.y } end
-    if cy2 < ry2 then pieces[#pieces + 1] = { x = r.x, y = cy2, w = r.w, h = ry2 - cy2 } end
-    if c.x > r.x then pieces[#pieces + 1] = { x = r.x, y = mid_y1, w = c.x - r.x, h = mid_y2 - mid_y1 } end
-    if cx2 < rx2 then pieces[#pieces + 1] = { x = cx2, y = mid_y1, w = rx2 - cx2, h = mid_y2 - mid_y1 } end
-    return pieces
-end
-
--- Paints the drop shadows of several cards (rects relative to (x, y)) as one
--- shape: shading accumulates, so a pixel under two shadows is shaded once.
-function CoverWidgets.paintShadows(bb, x, y, cards, offset)
-    if offset <= 0 then return end
-    local shade = Screen.night_mode and bb.lightenRect or bb.darkenRect
-    local painted = {}
-    for _, c in ipairs(cards) do
-        local strips = {
-            { x = c.x + c.w,      y = c.y + offset, w = offset,       h = c.h },
-            { x = c.x + offset,   y = c.y + c.h,    w = c.w - offset, h = offset },
-        }
-        for _, strip in ipairs(strips) do
-            local pieces = { strip }
-            for _, done in ipairs(painted) do
-                local rest = {}
-                for _, piece in ipairs(pieces) do
-                    for _, part in ipairs(subtractRect(piece, done)) do rest[#rest + 1] = part end
-                end
-                pieces = rest
-            end
-            for _, p in ipairs(pieces) do
-                if p.w > 0 and p.h > 0 then
-                    shade(bb, x + p.x, y + p.y, p.w, p.h, _SHADOW_STRENGTH)
-                end
-            end
-            painted[#painted + 1] = strip
-        end
+    local key   = (w * 4096 + h) * 64 + offset
+    local masks = _shadow_masks[key]
+    if not masks then
+        masks = buildShadowMasks(w, h, offset)
+        _shadow_masks[key] = masks
     end
+    local color = Screen.night_mode and Blitbuffer.COLOR_WHITE or Blitbuffer.COLOR_BLACK
+    bb:colorblitFromRGB32(masks.right,  x + w,      y + offset, 0, 0, offset, h,      color)
+    bb:colorblitFromRGB32(masks.bottom, x + offset, y + h,      0, 0, w,      offset, color)
 end
 
 local ShadowWidget = {}
@@ -696,28 +697,16 @@ function ShadowWidget:handleEvent()
     return false
 end
 
-local ShadowLayerWidget = {}
-ShadowLayerWidget.__index = ShadowLayerWidget
-
-function ShadowLayerWidget:getSize()
-    return Geom:new{ w = self.w, h = self.h }
-end
-
-function ShadowLayerWidget:paintTo(bb, x, y)
-    CoverWidgets.paintShadows(bb, x, y, self.cards, self.offset)
-end
-
--- See ProgressBadgeWidget:handleEvent() above for why this is required —
--- same crash, same fix, same reasoning.
-function ShadowLayerWidget:handleEvent()
-    return false
-end
-
--- Widget of w × h casting the shadows of `cards` (rects relative to its
--- top-left corner) as one shape; nil when `offset` is 0.
-function CoverWidgets.buildShadowLayer(w, h, cards, offset)
+-- Widget casting the shadow of a card_w × card_h card, `offset` px deep; nil
+-- when `offset` is 0. The card sits at the widget's top-left corner and the
+-- shadow falls down-right.
+function CoverWidgets.buildShadow(card_w, card_h, offset)
     if offset <= 0 then return nil end
-    return setmetatable({ w = w, h = h, cards = cards, offset = offset }, ShadowLayerWidget)
+    return setmetatable({
+        w = card_w + offset, h = card_h + offset,
+        card_w = card_w,     card_h = card_h,
+        offset = offset,
+    }, ShadowWidget)
 end
 
 -- Px a cover gives up on its right and bottom edges for what sits behind it:
@@ -733,12 +722,7 @@ end
 -- caller draws the cover at its top-left corner.
 function CoverWidgets.buildBacking(cover_w, cover_h, inset, hide_pile)
     if not hide_pile then return CoverWidgets.buildPile(cover_w, cover_h, inset) end
-    if inset <= 0 then return nil end
-    return setmetatable({
-        w = cover_w + inset, h = cover_h + inset,
-        card_w = cover_w,    card_h = cover_h,
-        offset = inset,
-    }, ShadowWidget)
+    return CoverWidgets.buildShadow(cover_w, cover_h, inset)
 end
 
 -- ── Folder-name label overlay ─────────────────────────────────────────────────

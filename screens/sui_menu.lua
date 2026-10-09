@@ -203,6 +203,117 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         }
     end
 
+    -- Helper: applies a full layout refresh after transparency / wallpaper-visibility changes.
+    -- Pass `{ keep_wallpaper = true }` when the wallpaper image is unchanged.
+    local function _applyFullLayoutRefresh(opts)
+        plugin:_rewrapAllWidgets()
+        local Patches = package.loaded["infra/sui_patches"]
+        if Patches and Patches.injectWallpaperIntoFullscreenWidget then
+            local core_ok, core = pcall(require, "infra/sui_core")
+            local stack = core_ok and core.getWindowStack and core.getWindowStack()
+            if stack then
+                for _, entry in ipairs(stack) do
+                    if entry.widget and entry.widget._navbar_injected then
+                        pcall(Patches.injectWallpaperIntoFullscreenWidget, entry.widget)
+                    end
+                end
+            end
+        end
+        local HS = package.loaded["screens/sui_homescreen"]
+        if HS and HS.rebuildLayout then
+            HS.rebuildLayout(opts)
+        end
+        local FM = package.loaded["apps/filemanager/filemanager"]
+        if FM and FM.instance then
+            FM.instance._navbar_inner = nil
+            pcall(function() FM.instance:setupLayout() end)
+            UIManager:setDirty(FM.instance, "ui")
+        end
+    end
+
+    -- Background Opacity entry shared by the Wallpaper settings and each bar's
+    -- own settings. Every caller reads and writes the same stored strength
+    -- through the wallpaper module, so a change in one place shows in the
+    -- others. Available only while a wallpaper is active.
+    local function makeBackdropEntry(opts, ctx_menu)
+        local SUIWallpaper  = require("features/sui_wallpaper")
+        local extra_enabled = opts.enabled_func
+        opts.enabled_func = function()
+            return SUIWallpaper.isWallpaperActive() and (not extra_enabled or extra_enabled())
+        end
+        -- Refreshes the UI once after a change and updates the open menu so
+        -- the new value shows immediately; the wallpaper image is untouched.
+        opts.refresh = function(touchmenu)
+            _applyFullLayoutRefresh({ keep_wallpaper = true })
+            if ctx_menu and ctx_menu.refresh then
+                ctx_menu.refresh()
+            elseif touchmenu and touchmenu.updateItems then
+                touchmenu:updateItems()
+            elseif ctx_menu and ctx_menu.updateItems then
+                ctx_menu:updateItems()
+            end
+        end
+        return Config.makeBackdropStrengthItem(opts)
+    end
+
+    -- Strength accessors of each bar, keyed by the bar they belong to.
+    local BAR_BACKDROP_SPECS = {
+        statusbar = function(WP)
+            return {
+                get           = WP.getStatusbarBackdropStrength,
+                set           = WP.setStatusbarBackdropStrength,
+                default_value = WP.BACKDROP_DEFAULT.statusbar,
+            }
+        end,
+        navbar = function(WP)
+            return {
+                get           = WP.getNavbarBackdropStrength,
+                set           = WP.setNavbarBackdropStrength,
+                default_value = WP.BACKDROP_DEFAULT.navbar,
+                enabled_func  = function() return Bottombar.getBarStyle() ~= "bare" end,
+                value_func    = function()
+                    if Bottombar.getBarStyle() == "bare" then return "—" end
+                    return WP.formatBackdropStrength(WP.getNavbarBackdropStrength())
+                end,
+            }
+        end,
+        titlebar = function(WP)
+            return {
+                info          = _("0% transparent, 100% solid. Applies across the full width of the title bar."),
+                get           = WP.getTitlebarBackdropStrength,
+                set           = WP.setTitlebarBackdropStrength,
+                default_value = WP.BACKDROP_DEFAULT.titlebar,
+                enabled_func  = function() return require("screens/sui_titlebar").isEnabled() end,
+            }
+        end,
+        pagination = function(WP)
+            return {
+                info          = _("0% transparent, 100% solid. Applies to the native page bar in Library, History, Collections and similar screens."),
+                get           = WP.getPaginationBackdropStrength,
+                set           = WP.setPaginationBackdropStrength,
+                default_value = WP.BACKDROP_DEFAULT.pagination,
+                enabled_func  = function() return SUISettings:nilOrTrue("simpleui_bar_pagination_visible") end,
+            }
+        end,
+    }
+
+    -- Appends `item` to `items` only while a wallpaper is active: opacity
+    -- controls have no effect without one, so they are left out of the menu.
+    local function appendWhenWallpaperActive(items, item)
+        if require("features/sui_wallpaper").isWallpaperActive() then
+            items[#items + 1] = item
+        end
+        return items
+    end
+
+    -- Opacity entry for one bar ("statusbar", "navbar", "titlebar" or
+    -- "pagination"), titled "Background Opacity" unless `title` is given.
+    local function makeBarBackdropItem(kind, ctx_menu, title)
+        local spec = BAR_BACKDROP_SPECS[kind](require("features/sui_wallpaper"))
+        spec.title = title or _("Background Opacity")
+        return makeBackdropEntry(spec, ctx_menu)
+    end
+
     local function makeTypeMenu()
         return {
             modeItem(_("Icons") .. " + " .. _("Text"), "both"),
@@ -397,7 +508,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
     -- Pagination bar menu builder
     -- -----------------------------------------------------------------------
 
-    local function makePaginationBarMenu()
+    local function makePaginationBarMenu(ctx_menu)
         -- ── helpers ──────────────────────────────────────────────────────────
         -- "Geral" state is encoded in two existing keys:
         --   Predefinido : pagination_visible=true,  navpager=false
@@ -619,6 +730,8 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 keep_menu_open = true,
             }
         end
+
+        appendWhenWallpaperActive(items, makeBarBackdropItem("pagination", ctx_menu))
 
         return items
     end
@@ -1126,6 +1239,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 appearance_extra[#appearance_extra + 1] = row
             end
         end
+        appendWhenWallpaperActive(appearance_extra, makeBarBackdropItem("statusbar", ctx_menu))
         return Config.buildModuleMenu({
             master     = master,
             items      = item_rows,
@@ -1467,6 +1581,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 appearance_extra[#appearance_extra + 1] = row
             end
         end
+        appendWhenWallpaperActive(appearance_extra, makeBarBackdropItem("navbar", ctx_menu))
         return Config.buildModuleMenu({
             master     = master,
             items      = items,
@@ -2060,7 +2175,10 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         return Config.buildModuleMenu({
             master     = master,
             items      = items,
-            appearance = { size = size, extra = { style_row } },
+            appearance = {
+                size  = size,
+                extra = appendWhenWallpaperActive({ style_row }, makeBarBackdropItem("titlebar", ctx_menu)),
+            },
         }, ctx_menu)
     end
 
@@ -2436,59 +2554,11 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         }
     end
 
-    -- Helper: applies a full layout refresh after transparency / wallpaper-visibility changes.
-    -- Pass `{ keep_wallpaper = true }` when the wallpaper image is unchanged.
-    local function _applyFullLayoutRefresh(opts)
-        plugin:_rewrapAllWidgets()
-        local Patches = package.loaded["infra/sui_patches"]
-        if Patches and Patches.injectWallpaperIntoFullscreenWidget then
-            local core_ok, core = pcall(require, "infra/sui_core")
-            local stack = core_ok and core.getWindowStack and core.getWindowStack()
-            if stack then
-                for _, entry in ipairs(stack) do
-                    if entry.widget and entry.widget._navbar_injected then
-                        pcall(Patches.injectWallpaperIntoFullscreenWidget, entry.widget)
-                    end
-                end
-            end
-        end
-        local HS = package.loaded["screens/sui_homescreen"]
-        if HS and HS.rebuildLayout then
-            HS.rebuildLayout(opts)
-        end
-        local FM = package.loaded["apps/filemanager/filemanager"]
-        if FM and FM.instance then
-            FM.instance._navbar_inner = nil
-            pcall(function() FM.instance:setupLayout() end)
-            UIManager:setDirty(FM.instance, "ui")
-        end
-    end
-
     local function makeWallpaperMenuItems(ctx_menu)
         local SUIWallpaper = require("features/sui_wallpaper")
 
-        -- Refreshes the UI once after a strength change and updates the menu
-        -- so the new value shows immediately; the wallpaper image itself is
-        -- untouched.
-        local function refreshStrength(touchmenu)
-            _applyFullLayoutRefresh({ keep_wallpaper = true })
-            if ctx_menu and ctx_menu.refresh then
-                ctx_menu.refresh()
-            elseif touchmenu and touchmenu.updateItems then
-                touchmenu:updateItems()
-            elseif ctx_menu and ctx_menu.updateItems then
-                ctx_menu:updateItems()
-            end
-        end
-
-        -- Strength entry available only while a wallpaper is active.
         local function strengthItem(opts)
-            local extra_enabled = opts.enabled_func
-            opts.enabled_func = function()
-                return SUIWallpaper.isWallpaperActive() and (not extra_enabled or extra_enabled())
-            end
-            opts.refresh = refreshStrength
-            return Config.makeBackdropStrengthItem(opts)
+            return makeBackdropEntry(opts, ctx_menu)
         end
 
         -- Wallpaper tint entry (0–99 %, no tint by default).
@@ -2601,39 +2671,10 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 get   = SUIWallpaper.styleGetWallpaperDarken,
                 set   = SUIWallpaper.styleSetWallpaperDarken,
             }),
-            strengthItem({
-                title         = _("Status Bar Opacity"),
-                get           = SUIWallpaper.getStatusbarBackdropStrength,
-                set           = SUIWallpaper.setStatusbarBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.statusbar,
-            }),
-            strengthItem({
-                title         = _("Title Bar Opacity"),
-                info          = _("0% transparent, 100% solid. Applies across the full width of the title bar."),
-                get           = SUIWallpaper.getTitlebarBackdropStrength,
-                set           = SUIWallpaper.setTitlebarBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.titlebar,
-                enabled_func  = function() return require("screens/sui_titlebar").isEnabled() end,
-            }),
-            strengthItem({
-                title         = _("Pagination Bar Opacity"),
-                info          = _("0% transparent, 100% solid. Applies to the native page bar in Library, History, Collections and similar screens."),
-                get           = SUIWallpaper.getPaginationBackdropStrength,
-                set           = SUIWallpaper.setPaginationBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.pagination,
-                enabled_func  = function() return SUISettings:nilOrTrue("simpleui_bar_pagination_visible") end,
-            }),
-            strengthItem({
-                title         = _("Navigation Bar Opacity"),
-                get           = SUIWallpaper.getNavbarBackdropStrength,
-                set           = SUIWallpaper.setNavbarBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.navbar,
-                enabled_func  = function() return Bottombar.getBarStyle() ~= "bare" end,
-                value_func    = function()
-                    if Bottombar.getBarStyle() == "bare" then return "—" end
-                    return SUIWallpaper.formatBackdropStrength(SUIWallpaper.getNavbarBackdropStrength())
-                end,
-            }),
+            makeBarBackdropItem("statusbar",  ctx_menu, _("Status Bar Opacity")),
+            makeBarBackdropItem("titlebar",   ctx_menu, _("Title Bar Opacity")),
+            makeBarBackdropItem("pagination", ctx_menu, _("Pagination Bar Opacity")),
+            makeBarBackdropItem("navbar",     ctx_menu, _("Navigation Bar Opacity")),
         }
     end
     plugin.makeWallpaperMenuItems = makeWallpaperMenuItems
@@ -3042,6 +3083,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
     local function makeLibraryMenuItems(ctx_menu)
         local ok_fc, FC = pcall(require, "features/library/sui_foldercovers")
         if not ok_fc or not FC then return {} end
+        local SUIWallpaper = require("features/sui_wallpaper")
         return {
             -- ── Enable Library Custom Covers ────────────────────────────
             {
@@ -3658,7 +3700,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                             -- ── Title and Author Below Covers ─────────────────────────────────
                             {
                                 text         = _("Title and Author Below Covers"),
-                                sub_item_table = {
+                                sub_item_table_func = function() return appendWhenWallpaperActive({
                                     {
                                         text           = _("Off"),
                                         radio          = true,
@@ -3727,9 +3769,52 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                             })
                                         end,
                                     },
-                                },
+                                }, Config.makeBackdropStrengthItem({
+                                    title         = _("Background Opacity"),
+                                    get           = SUIWallpaper.getCoverStripBackdropStrength,
+                                    set           = SUIWallpaper.setCoverStripBackdropStrength,
+                                    default_value = SUIWallpaper.BACKDROP_DEFAULT.cover_strip,
+                                    enabled_func  = function()
+                                        return SUIWallpaper.styleGetWallpaperShowInFM()
+                                            and (FC.getShowTitleStrip() or FC.getShowAuthorStrip())
+                                    end,
+                                    refresh       = function(touchmenu)
+                                        _refreshFC()
+                                        if ctx_menu and ctx_menu.refresh then
+                                            ctx_menu.refresh()
+                                        elseif touchmenu and touchmenu.updateItems then
+                                            touchmenu:updateItems()
+                                        end
+                                    end,
+                                })) end,
                             },
                         },
+                    },
+                    -- ── Cover Shadow ───────────────────────────────────────────
+                    {
+                        text = _("Cover Shadow"),
+                        sub_item_table_func = function()
+                            local SUIStyle = require("features/sui_style")
+                            -- One checkbox per surface; `refresh` redraws that surface.
+                            local function scopeItem(label, scope, refresh)
+                                return {
+                                    text           = label,
+                                    checked_func   = function() return SUIStyle.coverShadowEnabled(scope) end,
+                                    keep_menu_open = true,
+                                    callback       = function()
+                                        SUIStyle.setCoverShadowEnabled(scope, not SUIStyle.coverShadowEnabled(scope))
+                                        refresh()
+                                    end,
+                                }
+                            end
+                            return {
+                                scopeItem(_("Library"), SUIStyle.SHADOW_LIBRARY, function()
+                                    FC.invalidateCache()
+                                    _refreshFC()
+                                end),
+                                scopeItem(_("Modules"), SUIStyle.SHADOW_MODULES, _applyFullLayoutRefresh),
+                            }
+                        end,
                     },
                     -- ── Uniformize Covers (2:3) ────────────────────────────────
                     {
@@ -4536,33 +4621,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     },
                 }, -- end Icons sub_item_table
             },   -- end Icons submenu
-            -- ── Cover Shadow ──────────────────────────────────────────────
-            {
-                text = _("Cover Shadow"),
-                sub_item_table_func = function()
-                    local SUIStyle = require("features/sui_style")
-                    -- One checkbox per surface; `refresh` redraws that surface.
-                    local function scopeItem(label, scope, refresh)
-                        return {
-                            text           = label,
-                            checked_func   = function() return SUIStyle.coverShadowEnabled(scope) end,
-                            keep_menu_open = true,
-                            callback       = function()
-                                SUIStyle.setCoverShadowEnabled(scope, not SUIStyle.coverShadowEnabled(scope))
-                                refresh()
-                            end,
-                        }
-                    end
-                    return {
-                        scopeItem(_("Library"), SUIStyle.SHADOW_LIBRARY, function()
-                            local ok_fc, FC = pcall(require, "features/library/sui_foldercovers")
-                            if ok_fc and FC then FC.invalidateCache() end
-                            _refreshFC()
-                        end),
-                        scopeItem(_("Modules"), SUIStyle.SHADOW_MODULES, _applyFullLayoutRefresh),
-                    }
-                end,
-            },
             -- ── UI Font ───────────────────────────────────────────────────
             {
                 text = _("UI Font"),

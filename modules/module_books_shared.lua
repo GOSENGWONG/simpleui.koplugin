@@ -212,9 +212,8 @@ end
 -- layout computed from it — keeps its size.
 --
 -- Builders take a trailing `layered` flag. When set, the card is built without
--- its shadow and the caller paints SH.buildCoverShadowLayer() on a layer behind
--- every neighbouring cover.
--- ---------------------------------------------------------------------------
+-- its shadow and the caller places SH.buildOverlapShadow() right beneath it, so
+-- the shadow falls on the covers it overlaps.
 
 -- buildShadow(w, h) → shadow widget for a single cover slot of w × h, or nil
 -- while the cover shadow is disabled. Place it at the slot's top-left corner.
@@ -223,16 +222,13 @@ local function buildShadow(w, h)
     return getCoverWidgets().buildBacking(w - inset, h - inset, inset, true)
 end
 
--- buildCoverShadowLayer(w, h, slots) → one widget of w × h casting the shadows of
--- every cover slot ({x, y, w, h} rects relative to its top-left corner) as a
--- single shape, or nil while the cover shadow is disabled.
-function SH.buildCoverShadowLayer(w, h, slots)
-    local inset = SUIStyle.coverShadowOffset(SUIStyle.SHADOW_MODULES)
-    local cards = {}
-    for i, s in ipairs(slots) do
-        cards[i] = { x = s.x, y = s.y, w = s.w - inset, h = s.h - inset }
-    end
-    return getCoverWidgets().buildShadowLayer(w, h, cards, inset)
+-- buildOverlapShadow(x, y, w, h) → shadow widget for the cover slot of w × h at
+-- (x, y), or nil while the cover shadow is disabled. The widget carries its own
+-- overlap_offset.
+function SH.buildOverlapShadow(x, y, w, h)
+    local shadow = buildShadow(w, h)
+    if shadow then shadow.overlap_offset = { x, y } end
+    return shadow
 end
 
 -- withShadow(w, h, layered, build, ...) → widget of size w × h, or nil when

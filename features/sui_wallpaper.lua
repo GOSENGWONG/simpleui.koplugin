@@ -26,7 +26,8 @@
 --     talk to this module directly; they just read ctx.has_wallpaper,
 --     which the homescreen engine computes from this module.
 --   * features/library/sui_foldercovers.lua — checks styleGetWallpaperShowInFM
---     / styleGetBgWidget directly to decide whether to mask its title strip.
+--     / styleGetBgWidget directly to decide whether to paint its title strip
+--     over the wallpaper, and reads the strip's backdrop strength.
 --   * screens/sui_menu.lua — builds the "Wallpaper" TouchMenu / MenuTable
 --     entries, consumed both from the native KOReader menu and from the
 --     SUIWindow-based Settings window (screens/sui_settings_window.lua).
@@ -472,14 +473,15 @@ end
 -- ---------------------------------------------------------------------------
 local _BACKDROP_MIN, _BACKDROP_MAX = 0, 100
 
--- Bars keep the solid look of a plain UI; cards and buttons start solid;
--- every other surface starts transparent over the wallpaper.
+-- Bars keep the solid look of a plain UI; cards, buttons and the cover strip
+-- start solid; modules start transparent over the wallpaper.
 M.BACKDROP_DEFAULT = {
     statusbar       = 100,
     navbar          = 100,
-    pagination      = 0,
-    titlebar        = 0,
+    pagination      = 100,
+    titlebar        = 100,
     module          = 0,
+    cover_strip     = 100,
     card            = 100,
     button          = 100,
 }
@@ -489,6 +491,7 @@ local KEY_NAVBAR          = "simpleui_navbar_backdrop"
 local KEY_PAGINATION      = "simpleui_pagination_backdrop"
 local KEY_TITLEBAR        = "simpleui_titlebar_backdrop"
 local KEY_MODULE          = "simpleui_module_backdrop"
+local KEY_COVER_STRIP     = "simpleui_cover_strip_backdrop"
 
 -- Rounds and clamps n to 0–100; nil when n is not a number.
 local function _clampBackdrop(n)
@@ -581,10 +584,22 @@ function M.setTitlebarBackdropStrength(n)
     M.saveBackdropStrength(KEY_TITLEBAR, n)
 end
 
--- Module backdrop strength.
+-- Backdrop behind the title/author strip below Library covers. Without a
+-- wallpaper the strip keeps its native solid look.
+function M.getCoverStripBackdropStrength()
+    if not M.isWallpaperActive() then return _BACKDROP_MAX end
+    return M.readBackdropStrength(KEY_COVER_STRIP, M.BACKDROP_DEFAULT.cover_strip)
+end
+
+function M.setCoverStripBackdropStrength(n)
+    M.saveBackdropStrength(KEY_COVER_STRIP, n)
+end
+
+-- Module backdrop strength; without a wallpaper there is no backdrop to paint.
 -- With (pfx, id): per-module override, migrating legacy solid_bg once.
 -- With no args: global default.
 function M.getModuleBackdropStrength(pfx, id)
+    if not M.isWallpaperActive() then return _BACKDROP_MIN end
     if type(pfx) ~= "string" or not id then
         return M.readBackdropStrength(KEY_MODULE, M.BACKDROP_DEFAULT.module)
     end

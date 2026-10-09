@@ -819,20 +819,18 @@ function M.build(w, ctx)
     -- Tappable carousel container
     local group_h  = center_h + TOP_CLEAR
     local overlap  = OverlapGroup:new{ dimen = Geom:new{ w = inner_w, h = group_h } }
-    -- One shadow layer behind every cover: no shadow lands on a neighbouring
-    -- cover, and overlapping shadows are shaded once.
-    local slot_rects = {}
-    for i, slot in ipairs(cover_slots) do
-        slot_rects[i] = { x = slot.overlap_offset[1], y = slot.overlap_offset[2], w = slot.w, h = slot.h }
-    end
-    overlap[#overlap + 1] = SH.buildCoverShadowLayer(inner_w, group_h, slot_rects)
-    -- Annotate each cover_slot with its container+index inside the OverlapGroup.
-    local covers_start = #overlap
+    -- Each cover is preceded by its own shadow, so it falls on the covers
+    -- behind it along the edge where they touch. Each cover_slot records its
+    -- container+index inside the OverlapGroup.
     for i, item in ipairs(items) do
-        overlap[covers_start + i] = item
-        cover_slots[i].container  = overlap
-        cover_slots[i].idx        = covers_start + i
+        local slot   = cover_slots[i]
+        local shadow = SH.buildOverlapShadow(slot.overlap_offset[1], slot.overlap_offset[2], slot.w, slot.h)
+        if shadow then overlap[#overlap + 1] = shadow end
+        overlap[#overlap + 1] = item
+        slot.container = overlap
+        slot.idx       = #overlap
     end
+
     local tappable = InputContainer:new{
         dimen    = Geom:new{ w = inner_w, h = group_h },
         [1]      = overlap,

@@ -194,13 +194,14 @@ function M.wrap(content, chrome, col_w, scale)
     return withOuter(box)
 end
 
--- Frame + Background only (no full-width option).
+-- Frame + Background only (no full-width option). Background Opacity is
+-- listed only while a wallpaper is active, since it has no effect otherwise.
 -- Returns an empty list for modules that skip module-wide chrome.
 function M.makeAppearanceItems(pfx, id, refresh, _lc)
     _lc = _lc or _
     if M.skipsModuleChrome(id) then return {} end
     local Config = require("infra/sui_config")
-    return {
+    local items = {
         {
             text = _lc("Frame"),
             checked_func = function() return M.resolve(pfx, id).show_frame end,
@@ -211,15 +212,18 @@ function M.makeAppearanceItems(pfx, id, refresh, _lc)
                 if refresh then refresh() end
             end,
         },
-        Config.makeBackdropStrengthItem({
+    }
+    if SUIWallpaper.isWallpaperActive() then
+        items[#items + 1] = Config.makeBackdropStrengthItem({
             title         = _lc("Background Opacity"),
             get           = function() return M.resolve(pfx, id).strength end,
             set           = function(v) M.setStrength(pfx, id, v) end,
             refresh       = function() if refresh then refresh() end end,
             default_value = SUIWallpaper.BACKDROP_DEFAULT.module,
             _lc           = _lc,
-        }),
-    }
+        })
+    end
+    return items
 end
 
 -- Merge chrome into an existing Appearance submenu, or append one.
@@ -260,7 +264,7 @@ function M.mergeAppearanceIntoItems(items, pfx, id, refresh, _lc)
             end
             local merged = {}
             if not has_frame then merged[#merged + 1] = chrome_items[1] end
-            if not has_bg then merged[#merged + 1] = chrome_items[2] end
+            if chrome_items[2] and not has_bg then merged[#merged + 1] = chrome_items[2] end
             for _, it in ipairs(sub) do
                 local label = it.text
                 if type(it.text_func) == "function" then
