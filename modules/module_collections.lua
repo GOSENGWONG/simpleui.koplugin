@@ -35,7 +35,7 @@
 -- the library's Folder Cover Type "Auto" option (see
 -- _resolveCoverStyleForCount below and sui_foldercovers.lua's _resolveStyle).
 --
--- The book pile behind the cover (CoverWidgets.buildPile) is a separate
+-- The book stack behind the cover (CoverWidgets.backingInset) is a separate
 -- toggle ("Hide Book Stack", see getHidePile) independent of Cover Style —
 -- applies the same way to Single and 4-Cover Grid, mirroring the library's
 -- own decoupling of Folder Cover Type from Hide Folder Book Stack. This is
@@ -53,7 +53,6 @@ local UIManager       = require("ui/uimanager")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local ImageWidget     = require("ui/widget/imagewidget")
 local InputContainer  = require("ui/widget/container/inputcontainer")
-local LineWidget      = require("ui/widget/linewidget")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
 local OverlapGroup    = require("ui/widget/overlapgroup")
 local Size            = require("ui/size")
@@ -90,7 +89,6 @@ local MOD_GAP = UI.MOD_GAP
 -- a framing decision tied to that specific shape and can't share an entry
 -- with the stretch-only group.
 local _BASE_COLL_ASPECT = 3 / 2
-local _BASE_ACCENT_H     = Screen:scaleBySize(4)
 local _BASE_LABEL_LINE_H = Screen:scaleBySize(14)
 local _BASE_LABEL_GAP    = Screen:scaleBySize(4)   -- gap between cover and label
 local _BASE_BADGE_SZ       = Screen:scaleBySize(16)
@@ -114,15 +112,16 @@ local MAX_ITEMS = 5  -- default_cols for the grid (Featured Collection uses the 
 -- GridRenderer.computeAutoFitCell). The book pile (see
 -- CoverWidgets.buildPile) is independent of Cover Style (Single/Quad/Auto) —
 -- same decoupling as the library's "Hide Folder Book Stack" toggle, which
--- applies to both its Single and 4-Cover Grid folder covers. When shown,
--- the cover/grid gives up `pile` px on its right and bottom for the layers
--- behind it; when hidden, `pile` is only the room the cover shadow takes
--- (0 while the shadow is off).
--- coll_w + pile == cw always — the cell always occupies exactly the width
--- the engine reserved, only "pile" (0 or the layers' total inset) changes
+-- applies to both its Single and 4-Cover Grid folder covers. `backing`
+-- ({ left, right, bottom }, see CoverWidgets.backingInset) is the room the
+-- cover/grid gives up for what is drawn behind it: the pile below and to the
+-- right, the classic spine to the left, or only the cover shadow when the
+-- stack is hidden (0 while the shadow is off).
+-- coll_w + backing.left + backing.right == cw always — the cell always
+-- occupies exactly the width the engine reserved, only the backing changes
 -- how much of it the cover/grid takes.
 --
--- Because pile does not depend on Cover Style, coll_w/coll_h/coll_cell_h
+-- Because the backing does not depend on Cover Style, coll_w/coll_h/coll_cell_h
 -- are identical for Single and Quad given the same hide_pile setting —
 -- this is what lets Auto mode mix styles per collection without any
 -- per-style height reconciliation (see collectionsCellHeight).
@@ -138,7 +137,6 @@ local function getDims(scale, thumb_scale, lbl_scale, cw, hide_pile, badge_scale
     badge_scale = badge_scale or 1.0
     -- Combined scale for cover-related dimensions only.
     local cs = scale * thumb_scale
-    local accent_h     = math.max(1, math.floor(_BASE_ACCENT_H     * cs))
     -- badge_scale is independent of `cs` (this module's own Badge Size
     -- setting — see getBadgeScale above), multiplied in on top so the count
     -- badge can be resized without touching the cover/thumbnail scale.
@@ -151,9 +149,9 @@ local function getDims(scale, thumb_scale, lbl_scale, cw, hide_pile, badge_scale
     local coll_lbl_fs  = math.max(6, math.floor(_BASE_COLL_LBL_FS * scale * lbl_scale))
     local label_h      = math.max(1, math.floor(1.3 * coll_lbl_fs + 0.5))
 
-    local pile   = CoverWidgets.backingInset(SUIStyle.SHADOW_MODULES, hide_pile, cs)
-    local border = SUIStyle.BADGE_BORDER_SZ
-    local coll_w = math.max(1, cw - pile)
+    local backing = CoverWidgets.backingInset(SUIStyle.SHADOW_MODULES, hide_pile, cs)
+    local border  = SUIStyle.BADGE_BORDER_SZ
+    local coll_w  = math.max(1, cw - backing.left - backing.right)
     local coll_h = math.max(1, math.floor(coll_w * _BASE_COLL_ASPECT))
     -- coll_w × coll_h is the cover's outer size, border included; the image
     -- (or grid) inside it is smaller by the border on each side.
@@ -172,17 +170,15 @@ local function getDims(scale, thumb_scale, lbl_scale, cw, hide_pile, badge_scale
         img_w        = img_w,
         img_h        = img_h,
         border       = border,
-        accent_h     = accent_h,
         label_h      = label_h,
         label_gap    = label_gap,
         badge_sz       = badge_sz,
         badge_margin   = badge_margin,
         badge_margin_t = badge_margin_t,
-        pile         = pile,
-        hide_pile    = hide_pile,
-        cell_w       = coll_w + pile,   -- == cw, always
-        cell_h       = coll_h + accent_h + pile,
-        coll_cell_h  = coll_h + accent_h + pile + label_gap + label_h,
+        backing      = backing,
+        cell_w       = coll_w + backing.left + backing.right,   -- == cw, always
+        cell_h       = coll_h + backing.bottom,
+        coll_cell_h  = coll_h + backing.bottom + label_gap + label_h,
         ph_cover_fs  = math.max(7, math.floor(_BASE_PH_COVER_FS * cs)),
         coll_lbl_fs  = coll_lbl_fs,
         badge_fs     = math.floor(badge_sz * (_BASE_BADGE_FS / _BASE_BADGE_SZ)),
@@ -634,23 +630,18 @@ local function getSingleBookCover(filepath, w, h)
 end
 
 -- ---------------------------------------------------------------------------
--- Cover card + book pile + count badge — shared between Single and Quad.
--- `content` is the cover/grid widget (outer size coll_w × coll_h), without accent or
--- badge. The accent bar joins it to form the front card; the pile sits
--- behind that card and the badge floats over it. Returns the final widget
+-- Cover card + book stack + count badge — shared between Single and Quad.
+-- `content` is the cover/grid widget (outer size coll_w × coll_h), without
+-- badge. The stack sits behind it and the badge floats over it. Both sit
+-- `d.backing.left` px into the cell. Returns the final widget
 -- (cell_w × cell_h) ready to carry only the label underneath.
 -- ---------------------------------------------------------------------------
-local function wrapAccentAndBadge(content, count, d, accent_color)
-    local accent = LineWidget:new{
-        background = accent_color or SUIStyle.COLOR.text_primary,
-        dimen      = Geom:new{ w = d.coll_w, h = d.accent_h },
-    }
-    local card_h = d.coll_h + d.accent_h
-
+local function wrapBackingAndBadge(content, count, d)
     local group = OverlapGroup:new{ dimen = Geom:new{ w = d.cell_w, h = d.cell_h } }
-    local backing = CoverWidgets.buildBacking(d.coll_w, card_h, d.pile, d.hide_pile)
-    if backing then group[#group + 1] = backing end
-    group[#group + 1] = VerticalGroup:new{ align = "left", content, accent }
+    local behind = CoverWidgets.buildBacking(d.coll_w, d.coll_h, d.backing)
+    if behind then group[#group + 1] = behind end
+    content.overlap_offset = { d.backing.left, 0 }
+    group[#group + 1] = content
 
     if getBadgeHidden() then return group end
 
@@ -683,9 +674,9 @@ local function wrapAccentAndBadge(content, count, d, accent_color)
         badge_inner,
     }
     badge.overlap_offset = {
-        d.coll_w - d.badge_sz - d.badge_margin,
+        d.backing.left + d.coll_w - d.badge_sz - d.badge_margin,
         getBadgePosition() == "bottom"
-            and (card_h - d.badge_sz - d.badge_margin_t)
+            and (d.coll_h - d.badge_sz - d.badge_margin_t)
             or  d.badge_margin_t,
     }
     group[#group + 1] = badge
@@ -693,9 +684,9 @@ local function wrapAccentAndBadge(content, count, d, accent_color)
 end
 
 -- ---------------------------------------------------------------------------
--- Cover cell — Single (one cover, optional pile — see wrapAccentAndBadge)
+-- Cover cell — Single (one cover, optional stack — see wrapBackingAndBadge)
 -- ---------------------------------------------------------------------------
-local function buildSingleCell(files, cover_override, coll_name, count, d, accent_color)
+local function buildSingleCell(files, cover_override, coll_name, count, d)
     local front_fp = cover_override
     if front_fp and lfs.attributes(front_fp, "mode") ~= "file" then front_fp = nil end
     if not front_fp and #files > 0 then front_fp = files[1] end
@@ -729,7 +720,7 @@ local function buildSingleCell(files, cover_override, coll_name, count, d, accen
     -- Single-slot container: updateCovers swaps the loaded cover in at idx 1.
     local content = HorizontalGroup:new{ align = "top", cover }
 
-    local widget = wrapAccentAndBadge(content, count, d, accent_color)
+    local widget = wrapBackingAndBadge(content, count, d)
 
     -- cover_slots for updateCovers. Only registered if there is a real fp
     -- to reload.
@@ -745,9 +736,9 @@ end
 
 -- ---------------------------------------------------------------------------
 -- Cover cell — Quad (2×2 grid with up to 4 covers, optional pile — see
--- wrapAccentAndBadge)
+-- wrapBackingAndBadge)
 -- ---------------------------------------------------------------------------
-local function buildQuadCell(files, count, d, accent_color)
+local function buildQuadCell(files, count, d)
     local half_w, half_h, half_w2, half_h2 = CoverWidgets.computeQuadCellSizes(d.img_w, d.img_h)
     local sizes = { { half_w, half_h }, { half_w2, half_h }, { half_w, half_h2 }, { half_w2, half_h2 } }
 
@@ -762,7 +753,7 @@ local function buildQuadCell(files, count, d, accent_color)
 
     local grid, cells = CoverWidgets.buildQuadGrid(img_list, d.img_w, d.img_h, d.border)
 
-    local widget = wrapAccentAndBadge(grid, count, d, accent_color)
+    local widget = wrapBackingAndBadge(grid, count, d)
 
     -- cover_slots: only for quadrants that FAILED to load immediately
     -- (fp present but Config.getCroppedCoverBB returned nil — extraction still
@@ -905,7 +896,7 @@ local function collectionsCellHeight(cw, pfx)
 end
 
 -- ---------------------------------------------------------------------------
--- renderCell(coll_name, cw, cell_h, ctx) — complete cell (cover+accent+
+-- renderCell(coll_name, cw, cell_h, ctx) — complete cell (cover+stack+
 -- badge+label+tap), passed to GridRenderer via spec.renderCell.
 -- ---------------------------------------------------------------------------
 local function buildCollectionCell(coll_name, cw, cell_h, ctx)
@@ -928,13 +919,12 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
     local d     = getDims(scale, thumb_scale, lbl_scale, cw, getHidePile(), getBadgeScale())
 
     local CLR_TEXT_SUB_EFF = CLR_TEXT_SUB
-    local CLR_ACCENT_EFF   = SUIStyle.COLOR.text_primary
 
     local cover_widget, cover_slots
     if style == "quad" then
-        cover_widget, cover_slots = buildQuadCell(files, count, d, CLR_ACCENT_EFF)
+        cover_widget, cover_slots = buildQuadCell(files, count, d)
     else
-        cover_widget, cover_slots = buildSingleCell(files, overrides[coll_name], coll_name, count, d, CLR_ACCENT_EFF)
+        cover_widget, cover_slots = buildSingleCell(files, overrides[coll_name], coll_name, count, d)
     end
 
     local display_name = coll_name
@@ -956,11 +946,12 @@ local function buildCollectionCell(coll_name, cw, cell_h, ctx)
         alignment              = "center",
     }
 
-    -- Centered under the front card, not under cell_w, which also
-    -- includes the pile: a trailing span of the pile's width offsets it.
+    -- Centered under the front card, not under cell_w, which also includes
+    -- the backing: spans of its width on either side offset it.
     local label_aligned = HorizontalGroup:new{
+        HorizontalSpan:new{ width = d.backing.left },
         label_w,
-        HorizontalSpan:new{ width = d.pile },
+        HorizontalSpan:new{ width = d.backing.right },
     }
 
     local cell_vg = VerticalGroup:new{

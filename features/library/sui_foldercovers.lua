@@ -1165,7 +1165,6 @@ function M.install()
             label_pos   = M.getLabelPosition(),
             label_color = M.getLabelColor(),
             label_scale = M.getLabelScale(),
-            hide_pile   = M.getHidePile(),
             badge = {
                 hidden   = M.getBadgeHidden(),
                 scale    = M.getBadgeScale(),
@@ -1468,8 +1467,8 @@ function M.install()
                     end
                 end
                 if #covers > 0 then
-                    local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
-                    local widget = CoverWidgets.buildQuadCover(self, covers, border, pile, max_img_w, max_img_h, display)
+                    local border, backing, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
+                    local widget = CoverWidgets.buildQuadCover(self, covers, border, backing, max_img_w, max_img_h, display)
                     if widget then
                         CoverWidgets.installWidget(self, widget)
                         return
@@ -1520,8 +1519,8 @@ function M.install()
 
             local covers = CoverFinder.collectCovers(self.menu, dir_path, 4, BookInfoManager, M.getRecursiveCover())
             if #covers > 0 then
-                local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
-                local widget = CoverWidgets.buildQuadCover(self, covers, border, pile, max_img_w, max_img_h, display)
+                local border, backing, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
+                local widget = CoverWidgets.buildQuadCover(self, covers, border, backing, max_img_w, max_img_h, display)
                 if widget then
                     CoverWidgets.installWidget(self, widget)
                     return
@@ -1600,7 +1599,7 @@ function M.install()
         -- receives a nil table.
         display = display or _readDisplay()
         self._foldercover_processed = true
-        local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
+        local border, backing, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
 
         local img_options = {}
         if img.file then img_options.file  = img.file end
@@ -1628,14 +1627,14 @@ function M.install()
         local image   = ImageWidget:new(img_options)
         local size    = image:getSize()
         local content = FrameContainer:new{ padding = 0, bordersize = border, image }
-        CoverWidgets.installWidget(self, CoverWidgets.assembleCoverWidget(self, content, size, border, pile, display))
+        CoverWidgets.installWidget(self, CoverWidgets.assembleCoverWidget(self, content, size, border, backing, display))
     end
 
     -- Placeholder cover for bookless folders (subfolders only or empty).
     function MosaicMenuItem:_setEmptyFolderCover(display)
         display = display or _readDisplay()
         self._foldercover_processed = true
-        local border, pile, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
+        local border, backing, max_img_w, max_img_h = CoverWidgets.computeCellGeometry(self, M.getHidePile())
 
         local ratio = 2 / 3
         local img_w, img_h
@@ -1713,7 +1712,7 @@ function M.install()
 
         local size    = Geom:new{ w = img_w, h = img_h }
         local content = FrameContainer:new{ padding = 0, bordersize = border, bg_canvas }
-        CoverWidgets.installWidget(self, CoverWidgets.assembleCoverWidget(self, content, size, border, pile, display))
+        CoverWidgets.installWidget(self, CoverWidgets.assembleCoverWidget(self, content, size, border, backing, display))
     end
 
     -- onFocus: apply the pre-computed underline color (no settings read in the hot path).

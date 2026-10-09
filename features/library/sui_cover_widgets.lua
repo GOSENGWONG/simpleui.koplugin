@@ -1,11 +1,11 @@
 -- sui_cover_widgets.lua — Simple UI
 -- Pure rendering code for folder/book cover decoration: the progress
 -- pentagon, the "New" corner ribbon, rounded-rectangle badges (pages,
--- series index, "New"), the book pile, the folder-name label overlay,
--- the book-count circle badge, and 2×2 quad-cover assembly.
+-- series index, "New"), the book pile and classic spine, the folder-name
+-- label overlay, the book-count circle badge, and 2×2 quad-cover assembly.
 --
--- Nothing here touches FileChooser/MosaicMenuItem, and the only setting read
--- are the cover-shadow flags (through SUIStyle.coverShadowOffset) — every other
+-- Nothing here touches FileChooser/MosaicMenuItem, and the only settings read
+-- are the cover-shadow flags and the stack style (through SUIStyle) — every other
 -- value arrives as a parameter. sui_foldercovers.lua reads its settings once
 -- per update()/paintTo() cycle and passes them in. This means every function
 -- below can be exercised and reasoned about in isolation from the settings
@@ -41,22 +41,25 @@
 --       -- Soft shadow around a w × h card at (x, y), cast down and to the right.
 --   CoverWidgets.buildShadow(card_w, card_h, offset)
 --       -- Widget wrapper around paintShadow (nil when `offset` is 0).
---   CoverWidgets.backingInset(scope, hide_pile, scale)
---       -- Px a cover gives up on the right and bottom for whatever is drawn
---       -- behind it: the pile, or just the shadow when the pile is hidden.
---   CoverWidgets.buildBacking(cover_w, cover_h, inset, hide_pile)
+--   CoverWidgets.buildSpine(cover_h, inset)
+--       -- Classic spine: two vertical edge lines left of a cover.
+--   CoverWidgets.backingInset(scope, hide_stack, scale)
+--       -- { kind, left, right, bottom }: what is drawn behind a cover and the
+--       -- px it takes. The pile or the classic spine, per the stack style
+--       -- setting, or just the shadow when the stack is hidden.
+--   CoverWidgets.buildBacking(cover_w, cover_h, inset)
 --       -- The widget for that backing (nil when there is nothing to draw).
 --   CoverWidgets.buildFolderNameWidget(item, available_w, font_size, fgcolor, bgcolor)
 --   CoverWidgets.buildLabel(item, size, border, display)
 --       -- display: { label_mode, show_name, label_style, label_pos, label_color, label_scale }
 --   CoverWidgets.buildBadge(mandatory, cover_dimen, cv_scale, cell_dimen, opts)
 --       -- opts: { hidden, scale, dark, position }  ("bottom" | anything else = top)
---   CoverWidgets.computeCellGeometry(item, hide_pile)
---   CoverWidgets.assembleCoverWidget(item, content_widget, size, border, pile, display)
+--   CoverWidgets.computeCellGeometry(item, hide_stack)
+--   CoverWidgets.assembleCoverWidget(item, content_widget, size, border, backing, display)
 --   CoverWidgets.buildQuadGrid(img_list, w, h, border)
 --       -- Pure 2×2 cover collage, no pile/label/badge/assembly — reusable
 --       -- outside the library's mosaic context (e.g. module_collections.lua).
---   CoverWidgets.buildQuadCover(item, img_list, border, pile, max_img_w, max_img_h, display)
+--   CoverWidgets.buildQuadCover(item, img_list, border, backing, max_img_w, max_img_h, display)
 --       -- Wraps buildQuadGrid with assembleCoverWidget (mosaic's pile/label/badge).
 --   CoverWidgets.installWidget(item, widget)
 --   CoverWidgets.clearRibbonCache()
@@ -618,6 +621,58 @@ function CoverWidgets.buildPile(cover_w, cover_h, inset)
     }, PileWidget)
 end
 
+-- ── Classic spine ─────────────────────────────────────────────────────────────
+
+-- Two vertical edge lines to the left of the cover, the outer one shorter.
+-- Line heights are fractions of the cover's, outermost first, centred on it.
+local _SPINE_LINE_H  = { 0.94, 0.97 }
+local _SPINE_THICK   = Screen:scaleBySize(3)
+local _SPINE_GAP     = Screen:scaleBySize(1)
+
+local SpineWidget = {}
+SpineWidget.__index = SpineWidget
+
+function SpineWidget:getSize()
+    return Geom:new{ w = self.w, h = self.h }
+end
+
+function SpineWidget:paintTo(bb, x, y)
+    local color = SUIStyle.COLOR.gray
+    local step  = self.thick + self.gap
+    for i, frac in ipairs(_SPINE_LINE_H) do
+        local line_h = math.floor(self.h * frac)
+        bb:paintRect(x + (i - 1) * step, y + math.floor((self.h - line_h) / 2),
+            self.thick, line_h, color)
+    end
+end
+
+-- See ProgressBadgeWidget:handleEvent() above for why this is required —
+-- same crash, same fix, same reasoning.
+function SpineWidget:handleEvent()
+    return false
+end
+
+-- Backing descriptor of the classic spine: it takes room on the left only.
+-- `scale` follows the cover's own scale (1 when omitted).
+local function spineInset(scale)
+    scale = scale or 1
+    local thick = math.max(1, math.floor(_SPINE_THICK * scale))
+    local gap   = math.max(1, math.floor(_SPINE_GAP   * scale))
+    return {
+        kind = "spine", left = 2 * (thick + gap), right = 0, bottom = 0,
+        thick = thick, gap = gap,
+    }
+end
+
+-- Spine widget for a cover `cover_h` tall; `inset` is a spine descriptor.
+-- The cover is drawn to the right of the widget.
+function CoverWidgets.buildSpine(cover_h, inset)
+    return setmetatable({
+        w = inset.left, h = cover_h,
+        thick = inset.thick, gap = inset.gap,
+    }, SpineWidget)
+end
+
 -- ── Cover shadow ──────────────────────────────────────────────────────────────
 
 -- A shadow is built from one-pixel bands that fade with their distance from
@@ -709,20 +764,30 @@ function CoverWidgets.buildShadow(card_w, card_h, offset)
     }, ShadowWidget)
 end
 
--- Px a cover gives up on its right and bottom edges for what sits behind it:
--- the pile, or only the shadow of `scope` when the pile is hidden. `scale`
--- follows the cover's own scale (1 when omitted).
-function CoverWidgets.backingInset(scope, hide_pile, scale)
-    if hide_pile then return SUIStyle.coverShadowOffset(scope, scale) end
-    return CoverWidgets.pileInset(scale)
+-- What sits behind a cover and the room it takes, as
+-- { kind, left, right, bottom } in px: the stack in the configured style, or
+-- only the shadow of `scope` when the stack is hidden. The classic spine
+-- replaces the shadow, so it is drawn alone. `scale` follows the cover's own
+-- scale (1 when omitted).
+function CoverWidgets.backingInset(scope, hide_stack, scale)
+    if hide_stack then
+        local shadow = SUIStyle.coverShadowOffset(scope, scale)
+        return { kind = "shadow", left = 0, right = shadow, bottom = shadow }
+    end
+    if SUIStyle.getFolderStackStyle() == SUIStyle.FOLDER_STACK_CLASSIC then
+        return spineInset(scale)
+    end
+    local pile = CoverWidgets.pileInset(scale)
+    return { kind = "pile", left = 0, right = pile, bottom = pile }
 end
 
 -- Widget drawn behind a cover of cover_w × cover_h; `inset` comes from
--- backingInset(). The widget is (cover_w + inset) × (cover_h + inset) and the
--- caller draws the cover at its top-left corner.
-function CoverWidgets.buildBacking(cover_w, cover_h, inset, hide_pile)
-    if not hide_pile then return CoverWidgets.buildPile(cover_w, cover_h, inset) end
-    return CoverWidgets.buildShadow(cover_w, cover_h, inset)
+-- backingInset(). The widget starts at the top-left corner of the group the
+-- cover is drawn in, `inset.left` px to the left of the cover.
+function CoverWidgets.buildBacking(cover_w, cover_h, inset)
+    if inset.kind == "spine" then return CoverWidgets.buildSpine(cover_h, inset) end
+    if inset.kind == "pile"  then return CoverWidgets.buildPile(cover_w, cover_h, inset.bottom) end
+    return CoverWidgets.buildShadow(cover_w, cover_h, inset.bottom)
 end
 
 -- ── Folder-name label overlay ─────────────────────────────────────────────────
@@ -839,8 +904,8 @@ end
 -- `cell_dimen` is the full mosaic cell (used for sizing); when absent,
 -- cover_dimen is used instead (produces a smaller badge).
 -- `opts`: { hidden, scale, dark, position }  (position: "bottom" | top-default)
--- The badge is anchored to the top-left of its parent group, where the cover
--- sits, so a pile extending right and below the cover does not move it.
+-- The badge is anchored to the top-left of its parent group and sized to the
+-- cover alone; assembleCoverWidget offsets it past a backing on the left.
 function CoverWidgets.buildBadge(mandatory, cover_dimen, cv_scale, cell_dimen, opts)
     opts = opts or {}
     if opts.hidden then return nil end
@@ -913,43 +978,62 @@ end
 -- ── Shared geometry helper ────────────────────────────────────────────────────
 
 -- Computes the four values every cover-building function needs: the cover's
--- border, the backing inset (the pile, or just the shadow when the pile is
--- hidden; 0 when there is neither) and the largest cover that still leaves
--- room for both. self.height is already reduced by _STRIP_H in
+-- border, the backing inset (see backingInset; zero-sized when there is
+-- neither a stack nor a shadow) and the largest cover that still leaves room
+-- for both. self.height is already reduced by _STRIP_H in
 -- sui_foldercovers.lua's update() wrapper before this is called, so it must
 -- NOT be subtracted again.
-function CoverWidgets.computeCellGeometry(item, hide_pile)
-    local border = SUIStyle.BADGE_BORDER_SZ
-    local pile   = CoverWidgets.backingInset(SUIStyle.SHADOW_LIBRARY, hide_pile)
-    return border, pile,
-        item.width  - pile - border * 2,
-        item.height - pile - border * 2
+function CoverWidgets.computeCellGeometry(item, hide_stack)
+    local border  = SUIStyle.BADGE_BORDER_SZ
+    local backing = CoverWidgets.backingInset(SUIStyle.SHADOW_LIBRARY, hide_stack)
+    return border, backing,
+        item.width  - backing.left - backing.right - border * 2,
+        item.height - backing.bottom - border * 2
 end
 
 -- ── Cover assembly helper ─────────────────────────────────────────────────────
 
--- Wraps any pre-built content_widget with the backing (pile or shadow), overlays the folder-name
--- label and item-count badge, and centres the whole in the mosaic cell.
+-- Places `widget` at `x` inside an OverlapGroup, keeping its vertical offset.
+local function shiftRight(widget, x)
+    local offset = widget.overlap_offset
+    widget.overlap_offset = { x, offset and offset[2] or 0 }
+end
+
+-- Wraps any pre-built content_widget with the backing (pile, spine or shadow),
+-- overlays the folder-name label and item-count badge, and centres the whole
+-- in the mosaic cell. The cover, label and badge sit `backing.left` px into
+-- the group; a left-hand backing hangs out of the cover, which stays centred
+-- as long as the cell has room for both.
 -- cv_scale is derived from cover_h here so callers don't have to compute it.
 -- Must be defined before buildQuadCover, which calls it.
-function CoverWidgets.assembleCoverWidget(item, content_widget, size, border, pile, display)
+function CoverWidgets.assembleCoverWidget(item, content_widget, size, border, backing, display)
     local cover_dimen = Geom:new{ w = size.w + border * 2, h = size.h + border * 2 }
-    local group_dimen = Geom:new{ w = cover_dimen.w + pile, h = cover_dimen.h + pile }
+    local group_dimen = Geom:new{
+        w = cover_dimen.w + backing.left + backing.right,
+        h = cover_dimen.h + backing.bottom,
+    }
     local cell_dimen  = Geom:new{ w = item.width, h = item.height }
     local cv_scale    = math.max(0.1, math.floor((cover_dimen.h / _BASE_COVER_H) * 10) / 10)
 
     local overlap = OverlapGroup:new{ dimen = group_dimen }
-    local backing = CoverWidgets.buildBacking(cover_dimen.w, cover_dimen.h, pile, display.hide_pile)
-    if backing then overlap[#overlap + 1] = backing end
+    local behind  = CoverWidgets.buildBacking(cover_dimen.w, cover_dimen.h, backing)
+    if behind then overlap[#overlap + 1] = behind end
+    shiftRight(content_widget, backing.left)
     overlap[#overlap + 1] = content_widget
 
     local label = CoverWidgets.buildLabel(item, size, border, display)
-    if label then overlap[#overlap + 1] = label end
+    if label then
+        shiftRight(label, backing.left)
+        overlap[#overlap + 1] = label
+    end
     local badge = CoverWidgets.buildBadge(item.mandatory, cover_dimen, cv_scale, cell_dimen, display.badge)
-    if badge then overlap[#overlap + 1] = badge end
+    if badge then
+        shiftRight(badge, backing.left)
+        overlap[#overlap + 1] = badge
+    end
 
     overlap.overlap_offset = {
-        math.floor((item.width  - group_dimen.w) / 2),
+        math.max(0, math.floor((item.width - group_dimen.w) / 2) - math.floor(backing.left / 2)),
         math.floor((item.height - group_dimen.h) / 2),
     }
     return OverlapGroup:new{ dimen = cell_dimen, overlap }
@@ -1051,7 +1135,7 @@ end
 -- Returns the OverlapGroup widget for the 2×2 grid assembled into a mosaic
 -- cell (pile + folder-name label + item-count badge), or nil when no covers
 -- are available. Defined after assembleCoverWidget (which it calls).
-function CoverWidgets.buildQuadCover(item, img_list, border, pile, max_img_w, max_img_h, display)
+function CoverWidgets.buildQuadCover(item, img_list, border, backing, max_img_w, max_img_h, display)
     local ratio = 2 / 3
     local img_w, img_h
     if max_img_w / max_img_h > ratio then
@@ -1063,7 +1147,7 @@ function CoverWidgets.buildQuadCover(item, img_list, border, pile, max_img_w, ma
     local grid = CoverWidgets.buildQuadGrid(img_list, img_w, img_h, border)
 
     local size = Geom:new{ w = img_w, h = img_h }
-    return CoverWidgets.assembleCoverWidget(item, grid, size, border, pile, display)
+    return CoverWidgets.assembleCoverWidget(item, grid, size, border, backing, display)
 end
 
 return CoverWidgets

@@ -213,7 +213,7 @@ end
 -- while the cover shadow is disabled. Place it at the slot's top-left corner.
 local function buildShadow(w, h)
     local inset = SUIStyle.coverShadowOffset(SUIStyle.SHADOW_MODULES)
-    return getCoverWidgets().buildBacking(w - inset, h - inset, inset, true)
+    return getCoverWidgets().buildShadow(w - inset, h - inset, inset)
 end
 
 -- buildOverlapShadow(x, y, w, h) → shadow widget for the cover slot of w × h at

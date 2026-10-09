@@ -356,6 +356,30 @@ function M.coverShadowOffset(scope, scale)
 end
 
 -- ---------------------------------------------------------------------------
+-- Folder book stack style
+-- ---------------------------------------------------------------------------
+-- What is drawn behind folder and collection covers when the stack is shown:
+-- "default" is a pile of cards peeking out below and to the right of the
+-- cover, "classic" is a pair of vertical edge lines to its left. One setting
+-- drives every surface that draws such covers.
+
+M.FOLDER_STACK_DEFAULT = "default"
+M.FOLDER_STACK_CLASSIC = "classic"
+
+local _FOLDER_STACK_STYLE_KEY = "simpleui_style_folder_stack"
+
+function M.getFolderStackStyle()
+    if SUISettings:readSetting(_FOLDER_STACK_STYLE_KEY) == M.FOLDER_STACK_CLASSIC then
+        return M.FOLDER_STACK_CLASSIC
+    end
+    return M.FOLDER_STACK_DEFAULT
+end
+
+function M.setFolderStackStyle(style)
+    SUISettings:saveSetting(_FOLDER_STACK_STYLE_KEY, style)
+end
+
+-- ---------------------------------------------------------------------------
 -- Icon path guard
 -- ---------------------------------------------------------------------------
 -- SUPPORTED_ICON_EXTS: formats that imagewidget.lua can actually load.

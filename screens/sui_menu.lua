@@ -3807,13 +3807,45 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         callback       = function() FC.setHideUnderline(not FC.getHideUnderline()); _refreshFC() end,
                     },
                     {
-                        text           = _("Hide Folder Book Stack"),
-                        checked_func   = function() return FC.getHidePile() end,
-                        keep_menu_open = true,
-                        callback       = function()
-                            FC.setHidePile(not FC.getHidePile())
-                            FC.invalidateCache()
-                            _refreshFC()
+                        text = _("Folder Book Stack"),
+                        sub_item_table_func = function()
+                            local SUIStyle = require("features/sui_style")
+                            -- The style also shapes the Collections module, so
+                            -- redraw the home screen along with the library.
+                            local function styleItem(label, style)
+                                return {
+                                    text           = label,
+                                    radio          = true,
+                                    checked_func   = function() return SUIStyle.getFolderStackStyle() == style end,
+                                    keep_menu_open = true,
+                                    callback       = function()
+                                        SUIStyle.setFolderStackStyle(style)
+                                        FC.invalidateCache()
+                                        _refreshFC()
+                                        _applyFullLayoutRefresh()
+                                    end,
+                                }
+                            end
+                            return {
+                                {
+                                    text           = _("Hide"),
+                                    checked_func   = function() return FC.getHidePile() end,
+                                    keep_menu_open = true,
+                                    callback       = function()
+                                        FC.setHidePile(not FC.getHidePile())
+                                        FC.invalidateCache()
+                                        _refreshFC()
+                                    end,
+                                },
+                                {
+                                    text         = _("Style"),
+                                    enabled_func = function() return not FC.getHidePile() end,
+                                    sub_item_table = {
+                                        styleItem(_("Default"), SUIStyle.FOLDER_STACK_DEFAULT),
+                                        styleItem(_("Classic"), SUIStyle.FOLDER_STACK_CLASSIC),
+                                    },
+                                },
+                            }
                         end,
                     },
                     {
