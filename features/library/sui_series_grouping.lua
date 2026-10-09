@@ -43,6 +43,7 @@ local CoverOverrides = require("features/library/sui_cover_overrides")
 local GroupActions   = require("features/library/sui_group_actions")
 local FolderCovers   = require("features/library/sui_foldercovers")
 local FilterState    = require("features/library/sui_filter_state")
+local MetadataSource = require("features/library/sui_metadata_source")
 
 local SeriesGrouping = {}
 
@@ -115,6 +116,22 @@ end
 -- item; singletons are left as individual book entries.
 -- ---------------------------------------------------------------------------
 
+-- Series properties of a book. Folders are read in one query each and kept
+-- in `folder_cache` (folder -> properties by filename | false) for the
+-- duration of one item-table pass.
+local function seriesPropsOf(BookInfoManager, folder_cache, item)
+    if item.doc_props then return item.doc_props end
+    local dir, filename = item.path:match("^(.*/)([^/]+)$")
+    if not dir then return BookInfoManager:getDocProps(item.path) end
+    local folder = folder_cache[dir]
+    if folder == nil then
+        folder = MetadataSource.getFolderSeries(BookInfoManager, dir) or false
+        folder_cache[dir] = folder
+    end
+    if not folder then return BookInfoManager:getDocProps(item.path) end
+    return folder[filename]
+end
+
 local function sgProcessItemTable(item_table, file_chooser)
     if not FolderCovers.getSeriesGrouping()   then return end
     if not file_chooser or not item_table     then return end
@@ -135,6 +152,7 @@ local function sgProcessItemTable(item_table, file_chooser)
     local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
     if not ok_bim or not BookInfoManager then return end
 
+    local folder_cache    = {}
     local series_map      = {}
     local processed       = {}
     local book_count      = 0
@@ -153,7 +171,7 @@ local function sgProcessItemTable(item_table, file_chooser)
             local handled = false
             if (item.is_file or item.file) and item.path then
                 book_count = book_count + 1
-                local doc_props = item.doc_props or BookInfoManager:getDocProps(item.path)
+                local doc_props = seriesPropsOf(BookInfoManager, folder_cache, item)
                 local sname, suffix_index = FilterState.parseSeries(doc_props and doc_props.series)
                 if sname then
                     local skey = FilterState.seriesKey(sname)
@@ -282,6 +300,7 @@ local function sgOpenGroup(file_chooser, group_item)
         parent_page = file_chooser.page or 1,
     }
     items._sg_is_series_view = true
+    items._sg_series_name    = group_item.text
     items._sg_parent_path    = file_chooser.path
     file_chooser:switchItemTable(nil, items, nil, nil, group_item.text)
     local ok_p, Patches = pcall(require, "infra/sui_patches")

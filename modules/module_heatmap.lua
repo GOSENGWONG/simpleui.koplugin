@@ -214,9 +214,9 @@ M.default_on  = false
 -- Right-aligned indicator of the selected Type on the section label row —
 -- the weeks count in Calendar mode, or "Time of day" in that mode — so the
 -- card's title row reflects which grid it's currently showing, and at what
--- range. Rendered via sui_screen_engine.lua's sectionLabel right_text slot,
--- the same one the page indicator uses, so it shares its font/color/right
--- alignment.
+-- range. Rendered in the section label's right-hand slot (see
+-- engines/sui_section_label.lua), the same one the page indicator uses, so it
+-- shares its font/color/right alignment.
 function M.label_right_func(ctx)
     local pfx  = (ctx and ctx.pfx) or "simpleui_hs_"
     local mode = getMode(pfx)
@@ -226,7 +226,6 @@ function M.label_right_func(ctx)
 end
 
 function M.build(w, ctx)
-    Config.applyLabelToggle(M, _("Reading Heatmap"))
     local L = computeLayout(w, ctx)
 
     local grid_widget
@@ -280,7 +279,7 @@ end
 
 function M.getHeight(ctx)
     -- Match chrome contentWidth: full column minus label-aligned outer margins.
-    local col_w = (ctx and (ctx.col_w or ctx.inner_w)) or (Screen:getWidth() - UI.SIDE_PAD * 2)
+    local col_w = (ctx and (ctx.col_w or ctx.inner_w)) or UI.getInnerW()
     local content_w = math.max(1, col_w - UI.PAD * 2)
     local L = computeLayout(content_w, ctx)
     return L.body_h
@@ -357,7 +356,7 @@ local function _makeAppearanceItem(ctx_menu)
     return {
         text_func      = function() return _lc("Appearance") end,
         sub_item_table = {
-            Config.makeLabelToggleItem("heatmap", _("Reading Heatmap"), ctx_menu.refresh, _lc),
+            Config.makeLabelToggleItem("heatmap", ctx_menu.refresh, _lc),
             {
                 text           = _lc("Show legend"),
                 checked_func   = function() return getShowLegend(pfx) end,

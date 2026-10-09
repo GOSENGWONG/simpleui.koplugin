@@ -71,6 +71,7 @@ local Screen          = Device.screen
 --   label       display name shown in the picker menu
 --   group       "sui_titlebar" | "bm_icons"
 --   default_ko  KOReader built-in name (used only as documentation / preview)
+--   default_icon  optional icon reference (e.g. "nerd:EA48") used while no override is stored
 -- ---------------------------------------------------------------------------
 
 local M = {}
@@ -81,19 +82,20 @@ M.SLOTS = {
         id        = "sui_menu",
         label     = function() return _("Menu Button") end,
         group     = "sui_titlebar",
-        default_ko = "appbar.menu",
+        default_ko = "icons/more-options.svg",
     },
     {
         id        = "sui_search",
         label     = function() return _("Search Button") end,
         group     = "sui_titlebar",
         default_ko = "appbar.search",
+        default_icon = "nerd:EA48",
     },
     {
         id        = "sui_back",
         label     = function() return _("Back Button") end,
         group     = "sui_titlebar",
-        default_ko = "chevron.left",   -- matches the ICON_UP used at runtime
+        default_ko = "icons/back.svg",   -- matches the default back icon used at runtime
     },
     -- ── Browse Meta titlebar icons ───────────────────────────────────────
     -- These override the four icons used by the Browse button in the FM
@@ -291,6 +293,13 @@ function M.getIcon(id)
     return (type(v) == "string" and v ~= "") and v or nil
 end
 
+--- Returns the icon in effect for `id`: the stored override, else the slot's
+--- `default_icon`, else nil (the button keeps its built-in icon).
+function M.getEffectiveIcon(id)
+    local slot = _SLOT_BY_ID[id]
+    return M.getIcon(id) or (slot and slot.default_icon)
+end
+
 --- Saves `path` as the icon for `id`.  Pass nil to reset to default.
 function M.setIcon(id, path)
     if type(path) == "string" and path ~= "" then
@@ -315,6 +324,35 @@ end
 
 function M.setKeepIconColorsInNight(on)
     SUISettings:set(_ICON_NIGHT_COLORS_KEY, on and true or false)
+end
+
+-- ---------------------------------------------------------------------------
+-- Cover shadow
+-- ---------------------------------------------------------------------------
+-- Book covers can cast a drop shadow down and to the right, switched on
+-- separately for each surface (scope). The shadow lives inside the cover's
+-- own slot: the cover is drawn coverShadowOffset() px smaller on each axis,
+-- so layouts keep their size. The shadow is on until a surface is switched off.
+
+M.SHADOW_LIBRARY = "library"   -- the Library grid
+M.SHADOW_MODULES = "modules"   -- the Home Screen modules
+
+local _COVER_SHADOW_KEY_PREFIX = "simpleui_style_cover_shadow_"
+local _COVER_SHADOW_BASE       = math.max(2, Screen:scaleBySize(7))
+
+function M.coverShadowEnabled(scope)
+    return SUISettings:nilOrTrue(_COVER_SHADOW_KEY_PREFIX .. scope)
+end
+
+function M.setCoverShadowEnabled(scope, on)
+    SUISettings:set(_COVER_SHADOW_KEY_PREFIX .. scope, on and true or false)
+end
+
+-- Shadow depth in px for a cover of `scope` drawn at `scale` (1 when
+-- omitted); 0 while the shadow is disabled for that scope.
+function M.coverShadowOffset(scope, scale)
+    if not M.coverShadowEnabled(scope) then return 0 end
+    return math.max(2, math.floor(_COVER_SHADOW_BASE * (scale or 1)))
 end
 
 -- ---------------------------------------------------------------------------
@@ -468,11 +506,11 @@ local function _syncButtonRenderSlot(btn, w_key, new_w)
     end
 end
 
---- Replaces image.file on a live button widget with the stored override for
---- `id`.  Does nothing when no override is set or the button has no image.
---- Returns true when an override was applied.
+--- Replaces image.file on a live button widget with the icon in effect for
+--- `id` (stored override or slot default).  Does nothing when neither is set
+--- or the button has no image.  Returns true when an icon was applied.
 function M.applyIconToBtn(id, btn)
-    local raw = M.getIcon(id)
+    local raw = M.getEffectiveIcon(id)
     if not raw then return false end
     if not btn then return false end
     local path = M.safeIconPath(raw, nil, id)
@@ -1233,7 +1271,7 @@ function M.sui_build_system_icons(plugin, ctx_menu, ctx)
                     local path = M.getIcon(slot.id)
                     local label = type(slot.label) == "function" and slot.label() or slot.label
                     
-                    local effective_path = path
+                    local effective_path = path or slot.default_icon
                     local ko_native = nil
                     if not effective_path then
                         if slot.default_ko and slot.default_ko:match("%.svg$") then

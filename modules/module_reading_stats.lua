@@ -58,7 +58,7 @@ local RS_N_COLS    = 7  -- max columns — not a dimension, no scaling needed
 -- single-column Homescreen at 100% scale showing the default 3 stat items.
 -- ---------------------------------------------------------------------------
 local _REF_RS_N        = 3  -- default item count (see _getItems' fallback below)
-local _REF_RS_AVAIL_W  = (Screen:getWidth() - UI.SIDE_PAD * 2) - PAD * 2
+local _REF_RS_AVAIL_W  = UI.getInnerW() - PAD * 2
 local _REF_RS_CARD_W   = math.floor((_REF_RS_AVAIL_W - _BASE_RS_GAP * (_REF_RS_N - 1)) / _REF_RS_N)
 local _RS_VAL_FS_PCT   = _BASE_RS_VAL_FS / _REF_RS_CARD_W
 local _RS_LBL_FS_PCT   = _BASE_RS_LBL_FS / _REF_RS_CARD_W

@@ -110,6 +110,8 @@ local function _buildTapContainer(content, w, h, action_id, spec, default_event)
     return tappable
 end
 
+QARenderer.buildTapContainer = _buildTapContainer
+
 -- ===========================================================================
 -- Layer 1 — shared primitives
 -- ===========================================================================

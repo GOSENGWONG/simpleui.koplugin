@@ -9,6 +9,7 @@ local logger    = require("logger")
 local _         = require("infra/sui_i18n").translate
 
 local Config    = require("infra/sui_config")
+local Size      = require("ui/size")
 local UI        = require("infra/sui_core")
 local Bottombar = require("screens/sui_bottombar")
 local SUISettings = require("infra/sui_store")
@@ -111,6 +112,83 @@ local _navpager_rebuild_pending = false
 -- captured `plugin` upvalue directly. This mirrors the existing
 -- UIManager._simpleui_close_plugin pattern used by patchUIManagerClose.
 local _live_plugin = nil
+
+-- ---------------------------------------------------------------------------
+-- Shared hooks
+--
+-- KOReader creates one plugin instance per host UI (file manager, reader) and
+-- recreates them on every book open and close. Every instance runs installAll
+-- and later teardownAll, in an order the plugin does not control. A hook that
+-- wraps a class function must therefore be safe against both repeated installs
+-- and out-of-order teardowns.
+--
+-- Rules for any patch of a class or module function:
+--   1. Install through _acquireHooks: it returns nil when the hooks already
+--      exist, so a function is never wrapped twice.
+--   2. Register each wrapper (_addHook, or _trackHooks for an assignment made
+--      in place) so it can be removed.
+--   3. Release through _releaseHooks in teardownAll. Hooks are removed only
+--      when the last instance using them is gone.
+--   4. Keep hook state on the patched class, never on the plugin instance or
+--      in a module local: instances and modules are recreated, classes are not.
+--   5. Resolve the current plugin through _live_plugin inside wrappers; the
+--      instance captured at install time may be stale.
+--   6. Release hooks in the reverse order they were installed: a wrapper is
+--      restored only while it is still the outermost one.
+--   7. Wrappers must be idempotent per call and must restore any temporary
+--      field they change, even on error.
+--
+-- A patch that skips these rules stacks one wrapper per instance, and its
+-- effect grows with every book opened.
+-- ---------------------------------------------------------------------------
+
+-- Registers `owner` as a user of the hooks stored on `target` under
+-- `state_key`. Returns a new state ({ users, hooks }) when the caller must
+-- install the hooks, nil when they are already installed.
+local function _acquireHooks(target, state_key, owner)
+    local state = rawget(target, state_key)
+    if state then
+        state.users[owner] = true
+        return nil
+    end
+    state = { users = { [owner] = true }, hooks = {} }
+    target[state_key] = state
+    return state
+end
+
+-- Replaces target[key] with `wrapped` and records it in `state` for removal.
+-- Returns the replaced function.
+local function _addHook(state, target, key, wrapped)
+    local orig = rawget(target, key)
+    state.hooks[#state.hooks + 1] = { target = target, key = key, orig = orig, wrapped = wrapped }
+    target[key] = wrapped
+    return orig
+end
+
+-- Records hooks that were already assigned: each entry is { target, key, orig }
+-- and the function currently stored at target[key] is taken as the wrapper.
+local function _trackHooks(state, entries)
+    for _, e in ipairs(entries) do
+        state.hooks[#state.hooks + 1] = {
+            target = e[1], key = e[2], orig = e[3], wrapped = rawget(e[1], e[2]),
+        }
+    end
+end
+
+-- Unregisters `owner` and removes the hooks once no user is left. Returns
+-- true when they were removed.
+local function _releaseHooks(target, state_key, owner)
+    local state = rawget(target, state_key)
+    if not state then return false end
+    state.users[owner] = nil
+    if next(state.users) then return false end
+    for i = #state.hooks, 1, -1 do
+        local h = state.hooks[i]
+        if rawget(h.target, h.key) == h.wrapped then h.target[h.key] = h.orig end
+    end
+    target[state_key] = nil
+    return true
+end
 
 -- Ensure the goal-tap callback is initialised. Called before any HS.show()
 -- that may need it. Idempotent: addToMainMenu is a no-op once
@@ -245,6 +323,8 @@ end
 -- onPathChanged, onSetRotationMode, and the D-pad navbar keyboard focus system.
 -- ---------------------------------------------------------------------------
 
+local FM_LAYOUT_STATE = "_simpleui_fm_layout"
+
 function M.patchFileManagerClass(plugin)
     local FileManager      = require("apps/filemanager/filemanager")
 
@@ -267,18 +347,14 @@ function M.patchFileManagerClass(plugin)
     -- wrapper_B has already cleared backgrounds, producing a fresh outer
     -- FrameContainer with COLOR_WHITE that nobody clears → wallpaper disappears.
     --
-    -- The guard flag lives on the FileManager class table so it survives FM instance
-    -- recreation.  teardownAll clears it so a full disable→enable cycle reinstalls
+    -- The hook state lives on the FileManager class table so it survives FM instance
+    -- recreation.  teardownAll releases it so a full disable→enable cycle reinstalls
     -- the wrapper cleanly.
-    local setup_already_patched = FileManager._simpleui_setup_patched
+    local layout_state = _acquireHooks(FileManager, FM_LAYOUT_STATE, plugin)
+    local setup_already_patched = layout_state == nil
     -- orig_setupLayout is declared here (outer scope) so the setupLayout closure
     -- below can capture it even though both are inside the guard block.
-    local orig_setupLayout
-    if not setup_already_patched then
-        FileManager._simpleui_setup_patched = true
-        orig_setupLayout      = FileManager.setupLayout
-        plugin._orig_fm_setup = orig_setupLayout
-    end
+    local orig_setupLayout = layout_state and FileManager.setupLayout
 
     -- Navbar touch zones must be processed before FileChooser scroll children.
     UI.applyGesturePriorityHandleEvent(FileManager)
@@ -289,10 +365,8 @@ function M.patchFileManagerClass(plugin)
     -- with a handler that returns true to consume the event after the page turn.
     -- North/south swipes are intentionally not consumed so FileManagerMenu's
     -- zones can catch them and open the top menu.
-    local orig_initGesListener        = FileManager.initGesListener
-    plugin._orig_initGesListener      = orig_initGesListener
-    FileManager._simpleui_ges_patched = false
-    FileManager.initGesListener = function(fm_self)
+    local orig_initGesListener = FileManager.initGesListener
+    local function initGesListener(fm_self)
         orig_initGesListener(fm_self)
         fm_self:registerTouchZones({
             {
@@ -309,6 +383,7 @@ function M.patchFileManagerClass(plugin)
             },
         })
     end
+    if layout_state then _addHook(layout_state, FileManager, "initGesListener", initGesListener) end
 
     -- ---------------------------------------------------------------------
     -- Home Button → Homescreen (class-level, patched once per session).
@@ -355,11 +430,6 @@ function M.patchFileManagerClass(plugin)
         -- not following actual navigation (e.g. staying lit on "Homescreen"
         -- after tapping into the Library).
         local plugin = _live_plugin or plugin
-        -- Calculate total navbar height (bottom bar + optional top bar).
-        local topbar_on = SUISettings:nilOrTrue("simpleui_topbar_enabled")
-        fm_self._navbar_height = Bottombar.TOTAL_H()
-            + (topbar_on and require("screens/sui_topbar").TOTAL_TOP_H() or 0)
-
         -- Reset the "first show" guard so onShow reinitialises on the next open.
         fm_self._navbar_already_shown = nil
 
@@ -532,7 +602,9 @@ function M.patchFileManagerClass(plugin)
             end
         end
 
-        orig_setupLayout(fm_self)
+        -- The title bar is built inside setupLayout and sizes the file chooser, so
+        -- its style metrics have to apply during the build.
+        Titlebar().runWithStyleMetrics(orig_setupLayout, fm_self)
 
         -- cur_w/cur_h computed here (rather than immediately before the guard
         -- block below, where they used to live) so the diagnostic log below
@@ -700,7 +772,6 @@ function M.patchFileManagerClass(plugin)
         --     fm_self._navbar_inner = nil
         -- end
         local inner_widget = fm_self[1]
-        local inner_widget = fm_self[1]
         fm_self._navbar_inner      = inner_widget
         fm_self._navbar_layout_w    = cur_w
         fm_self._navbar_layout_h    = cur_h
@@ -799,6 +870,7 @@ function M.patchFileManagerClass(plugin)
             -- Note: we intentionally do NOT require the "homescreen" tab to be
             -- present in the navbar. "Start with Home Screen" is a launch
             -- behaviour, independent of whether the user has kept the tab.
+            logger.info("simpleui[diag]: first FM setupLayout start_with_hs=", isStartWithHS())
             if isStartWithHS() then
                 plugin.active_action      = "homescreen"
                 fm_self._hs_autoopen_pending = true
@@ -919,8 +991,8 @@ function M.patchFileManagerClass(plugin)
             end
             plugin:_updateFMHomeIcon()
 
-            -- Mark the library as visited so the homescreen can invalidate its
-            -- cover cache if CoverBrowser has replaced native-size bitmaps.
+            -- Marks the file browser as visited since the last homescreen
+            -- close (consumed by ScreenWidget:onCloseWidget).
             local HS = liveHS()
             if HS then HS._library_was_visited = true end
         end
@@ -1048,6 +1120,7 @@ function M.patchFileManagerClass(plugin)
             end
         end
     end
+    _trackHooks(layout_state, { { FileManager, "setupLayout", orig_setupLayout } })
     end -- if not setup_already_patched
 end
 
@@ -1146,9 +1219,7 @@ function M.patchBookList(plugin)
     BookList.new = function(class, attrs, ...)
         attrs = attrs or {}
         if not attrs.height and not attrs._navbar_height_reduced then
-            attrs.height                 = UI.getContentHeight()
-            attrs.y                      = UI.getContentTop()
-            attrs._navbar_height_reduced = true
+            UI.fitToContentArea(attrs)
         end
         return orig_bl_new(class, attrs, ...)
     end
@@ -1184,10 +1255,8 @@ function M.patchCollections(plugin)
                 and attrs.covers_fullscreen and attrs.is_borderless
                 and attrs.is_popout == false
                 and not attrs.height and not attrs._navbar_height_reduced then
-            attrs.height                 = UI.getContentHeight()
-            attrs.y                      = UI.getContentTop()
-            attrs._navbar_height_reduced = true
-            attrs.name                   = attrs.name or "coll_list"
+            UI.fitToContentArea(attrs)
+            attrs.name = attrs.name or "coll_list"
         end
         return orig_menu_new(class, attrs, ...)
     end
@@ -1411,9 +1480,7 @@ function M.patchFullscreenWidgets(plugin)
         SortWidget.new = function(class, attrs, ...)
             attrs = attrs or {}
             if attrs.covers_fullscreen and not attrs._navbar_height_reduced then
-                attrs.height                 = UI.getContentHeight()
-                attrs.y                      = UI.getContentTop()
-                attrs._navbar_height_reduced = true
+                UI.fitToContentArea(attrs)
             end
             -- Temporarily wrap TitleBar.new to inject horizontal padding, then
             -- restore it immediately after SortWidget is built.
@@ -1422,7 +1489,7 @@ function M.patchFullscreenWidgets(plugin)
                 orig_tb_new = TitleBar.new
                 TitleBar.new = function(tb_class, tb_attrs, ...)
                     tb_attrs = tb_attrs or {}
-                    tb_attrs.title_h_padding = Screen:scaleBySize(24)
+                    tb_attrs.title_h_padding = UI.SIDE_M()
                     return orig_tb_new(tb_class, tb_attrs, ...)
                 end
             end
@@ -1457,9 +1524,7 @@ function M.patchFullscreenWidgets(plugin)
         PathChooser.new = function(class, attrs, ...)
             attrs = attrs or {}
             if attrs.covers_fullscreen and not attrs._navbar_height_reduced then
-                attrs.height                 = UI.getContentHeight()
-                attrs.y                      = UI.getContentTop()
-                attrs._navbar_height_reduced = true
+                UI.fitToContentArea(attrs)
             end
             return orig_pc_new(class, attrs, ...)
         end
@@ -2656,18 +2721,190 @@ function M.patchUIManagerClose(plugin)
 end
 
 -- ---------------------------------------------------------------------------
+-- Library pages — side margin
+-- Every display mode lays its items out over the full menu width. The hooks
+-- below inset the item area so its first and last items sit on the side
+-- margin shared with every other full-width surface.
+-- ---------------------------------------------------------------------------
+
+-- Menus of the library pages: file browser, history and collections.
+local LIBRARY_PAGE_NAMES = {
+    filemanager = true, history = true, collections = true, coll_list = true,
+}
+
+-- Distance between the side margin and the margin a display mode already
+-- applies at the item area edge. Zero outside the library pages.
+local function _sideInset(menu, native_margin)
+    if not (LIBRARY_PAGE_NAMES[menu.name] and menu.covers_fullscreen) then return 0 end
+    return math.max(0, UI.SIDE_M() - native_margin)
+end
+
+-- Menu fields that carry the full menu width. Display modes read them to size
+-- items and row separators, which must all share one width.
+local MENU_WIDTH_FIELDS = { "width", "screen_w" }
+
+-- Calls fn(menu, ...) with the menu width reduced by `inset` on both sides.
+local function _withInsetWidth(menu, inset, fn, ...)
+    if inset == 0 then return fn(menu, ...) end
+    local inner = menu.inner_dimen
+    inner.w = inner.w - 2 * inset
+    local saved = {}
+    for _, field in ipairs(MENU_WIDTH_FIELDS) do
+        saved[field] = menu[field]
+        if saved[field] then menu[field] = saved[field] - 2 * inset end
+    end
+    local ok, result = pcall(fn, menu, ...)
+    inner.w = inner.w + 2 * inset
+    for _, field in ipairs(MENU_WIDTH_FIELDS) do
+        if saved[field] then menu[field] = saved[field] end
+    end
+    if not ok then error(result, 0) end
+    return result
+end
+
+-- Shifts the item area right by `inset`, wrapping it on first use.
+local function _setBodyInset(menu, inset)
+    local body = menu._sui_inset_body
+    if not body then
+        if inset == 0 then return end
+        local HorizontalGroup = require("ui/widget/horizontalgroup")
+        local HorizontalSpan  = require("ui/widget/horizontalspan")
+        body = HorizontalGroup:new{
+            align = "top",
+            HorizontalSpan:new{ width = inset },
+            menu.item_group,
+        }
+        for i, child in ipairs(menu.content_group) do
+            if child == menu.item_group then
+                menu.content_group[i] = body
+                break
+            end
+        end
+        menu._sui_inset_body = body
+    end
+    body[1].width = inset
+    body:resetLayout()
+end
+
+-- Calls the class-level _recalculateDimen of the menu's current display mode,
+-- bypassing any instance override.
+local function _callClassRecalculate(menu, ...)
+    local instance_fn = rawget(menu, "_recalculateDimen")
+    menu._recalculateDimen = nil
+    local ok, err = pcall(menu._recalculateDimen, menu, ...)
+    menu._recalculateDimen = instance_fn
+    if not ok then error(err, 0) end
+end
+
+-- Classic list mode: the menu builds its own rows over the full menu width.
+-- Each row is narrowed by the inset and its content is moved in by the side
+-- margin through items_padding.
+local function _applyClassicInset(menu)
+    local side  = UI.SIDE_M()
+    local inset = math.max(0, side - Size.padding.fullscreen)
+    menu._sui_side_inset = 0
+    _setBodyInset(menu, 0)
+    menu.items_padding = side
+    menu.item_dimen.w  = menu.inner_dimen.w - 2 * inset
+end
+
+-- Instance-level _recalculateDimen of the library page menus. The display mode
+-- of a menu can change while it is open and rebinds the class-level function,
+-- so the classic inset is decided here on every layout pass. Mosaic and list
+-- modes are handled by the display mode hooks below.
+local function _libraryRecalculate(menu, ...)
+    _callClassRecalculate(menu, ...)
+    if menu._updateItemsBuildUI == nil and menu.item_dimen then
+        _applyClassicInset(menu)
+    end
+end
+
+-- Display modes whose layout is inset, with the margin each one already
+-- applies at the item area edge.
+local SIDE_MARGIN_MODES = {
+    { module = "mosaicmenu", native_margin = function(menu) return menu.item_margin end },
+    { module = "listmenu",   native_margin = function() return 0 end },
+}
+
+local SIDE_MARGIN_STATE = "_simpleui_side_margin"
+
+-- Installs the side margin hooks on `DisplayMode` unless already present.
+local function _installSideMargin(DisplayMode, native_margin, owner)
+    local state = _acquireHooks(DisplayMode, SIDE_MARGIN_STATE, owner)
+    if not state then return end
+
+    local FileChooser      = require("ui/widget/filechooser")
+    local orig_recalculate = DisplayMode._recalculateDimen
+    local orig_build       = DisplayMode._updateItemsBuildUI
+
+    -- native_margin(menu) is read after the mode has run _recalculateDimen.
+    local function recalculate(menu, ...)
+        orig_recalculate(menu, ...)
+        local inset = _sideInset(menu, native_margin(menu))
+        menu._sui_side_inset = inset
+        if inset > 0 then _withInsetWidth(menu, inset, orig_recalculate, ...) end
+    end
+
+    local function build(menu, ...)
+        local inset  = menu._sui_side_inset or 0
+        local result = _withInsetWidth(menu, inset, orig_build, ...)
+        _setBodyInset(menu, inset)
+        return result
+    end
+
+    -- The item builder holding the item class upvalue stays reachable here.
+    DisplayMode._simpleui_native_build = orig_build
+
+    for key, wrapped in pairs({
+        _recalculateDimen   = recalculate,
+        _updateItemsBuildUI = build,
+    }) do
+        local orig = _addHook(state, DisplayMode, key, wrapped)
+        -- The file browser binds display mode functions on its own class when
+        -- a mode is set up, so that binding is replaced as well.
+        if rawget(FileChooser, key) == orig then
+            _addHook(state, FileChooser, key, wrapped)
+        end
+    end
+end
+
+local function _uninstallSideMargin(DisplayMode, owner)
+    if _releaseHooks(DisplayMode, SIDE_MARGIN_STATE, owner) then
+        DisplayMode._simpleui_native_build = nil
+    end
+end
+
+function M.patchCoverMenuSideMargin(plugin)
+    for _, mode in ipairs(SIDE_MARGIN_MODES) do
+        local ok, DisplayMode = pcall(require, mode.module)
+        if ok and DisplayMode then
+            _installSideMargin(DisplayMode, mode.native_margin, plugin)
+        end
+    end
+end
+
+function M.unpatchCoverMenuSideMargin(plugin)
+    for _, mode in ipairs(SIDE_MARGIN_MODES) do
+        local DisplayMode = package.loaded[mode.module]
+        if DisplayMode then _uninstallSideMargin(DisplayMode, plugin) end
+    end
+end
+
+-- ---------------------------------------------------------------------------
 -- Menu.init patch — pagination bar visibility
 -- Removes the pagination bar from fullscreen FM-style menus when
 -- "navbar_pagination_visible" is off, and fixes horizontal swipe propagation.
 -- ---------------------------------------------------------------------------
 
+local MENU_INIT_STATE = "_simpleui_menu_init"
+
 function M.patchMenuInitForPagination(plugin)
     local Menu = require("ui/widget/menu")
-    local TARGET_NAMES = {
-        filemanager = true, history = true, collections = true, coll_list = true,
-    }
-    local orig_menu_init  = Menu.init
-    plugin._orig_menu_init = orig_menu_init
+    -- Sub pages of the library.
+    local SUB_PAGE_NAMES = { history = true, collections = true, coll_list = true }
+    local state = _acquireHooks(Menu, MENU_INIT_STATE, plugin)
+    if not state then return end
+    local orig_menu_init = Menu.init
 
     Menu.init = function(menu_self, ...)
         -- Centralised keyboard-shortcut indicator suppression.
@@ -2682,7 +2919,17 @@ function M.patchMenuInitForPagination(plugin)
             menu_self.is_enable_shortcut = false
         end
 
-        orig_menu_init(menu_self, ...)
+        if LIBRARY_PAGE_NAMES[menu_self.name] and menu_self.covers_fullscreen then
+            menu_self._recalculateDimen = _libraryRecalculate
+        end
+
+        -- The title bar is built inside init and sizes the item area, so the
+        -- tabs style metrics have to apply during the build.
+        if SUB_PAGE_NAMES[menu_self.name] and menu_self.covers_fullscreen then
+            Titlebar().runWithStyleMetrics(orig_menu_init, menu_self, ...)
+        else
+            orig_menu_init(menu_self, ...)
+        end
 
         -- Apply icon overrides for collections/history/FM menus.
         pcall(function()
@@ -2702,7 +2949,7 @@ function M.patchMenuInitForPagination(plugin)
         -- Fix: Menu:onSwipe does not return true, so horizontal swipes propagate
         -- to FM's filemanager_swipe zone and advance two pages. Wrap onSwipe to
         -- consume the event after it is handled.
-        local is_target = TARGET_NAMES[menu_self.name]
+        local is_target = LIBRARY_PAGE_NAMES[menu_self.name]
             or (menu_self.covers_fullscreen and menu_self.is_borderless and menu_self.title_bar_fm_style)
         if is_target then
             local orig_onSwipe = menu_self.onSwipe
@@ -2727,12 +2974,12 @@ function M.patchMenuInitForPagination(plugin)
         -- liveFM() ~= nil restricts the fallback to menus actually created
         -- while FM is the active screen (e.g. Collections' property/folder
         -- sub-lists, which have no explicit name), matching the same intent
-        -- as TARGET_NAMES without re-exposing the Reader-side leak.
+        -- as LIBRARY_PAGE_NAMES without re-exposing the Reader-side leak.
         local is_fm_style_overlay = menu_self.covers_fullscreen
                                  and menu_self.is_borderless
                                  and menu_self.title_bar_fm_style
                                  and liveFM() ~= nil
-        if not TARGET_NAMES[menu_self.name] and not is_fm_style_overlay then
+        if not LIBRARY_PAGE_NAMES[menu_self.name] and not is_fm_style_overlay then
             return
         end
 
@@ -2759,6 +3006,7 @@ function M.patchMenuInitForPagination(plugin)
         -- Override _recalculateDimen to suppress pagination widget updates.
         -- page_return_arrow and page_info are no longer layout children here,
         -- so nil them out during the call to prevent KOReader sizing them.
+        local layout_recalculate = rawget(menu_self, "_recalculateDimen") or _callClassRecalculate
         menu_self._recalculateDimen = function(self_inner, no_recalculate_dimen)
             local saved_arrow = self_inner.page_return_arrow
             local saved_text  = self_inner.page_info_text
@@ -2766,12 +3014,7 @@ function M.patchMenuInitForPagination(plugin)
             self_inner.page_return_arrow = nil
             self_inner.page_info_text    = nil
             self_inner.page_info         = nil
-            local instance_fn = self_inner._recalculateDimen
-            self_inner._recalculateDimen = nil
-            local ok, err = pcall(function()
-                self_inner:_recalculateDimen(no_recalculate_dimen)
-            end)
-            self_inner._recalculateDimen = instance_fn
+            local ok, err = pcall(layout_recalculate, self_inner, no_recalculate_dimen)
             self_inner.page_return_arrow = saved_arrow
             self_inner.page_info_text    = saved_text
             self_inner.page_info         = saved_info
@@ -2779,6 +3022,8 @@ function M.patchMenuInitForPagination(plugin)
         end
         menu_self:_recalculateDimen()
     end
+
+    _trackHooks(state, { { Menu, "init", orig_menu_init } })
 end
 
 -- ---------------------------------------------------------------------------
@@ -2787,6 +3032,8 @@ end
 -- turn or directory change. Updates are coalesced per event-loop tick.
 -- ---------------------------------------------------------------------------
 
+local NAVPAGER_STATE = "_simpleui_navpager"
+
 function M.patchMenuForNavpager(plugin)
     -- Keep the shared live-plugin pointer fresh regardless of call order
     -- relative to patchFileManagerClass (installAll already calls this after
@@ -2794,8 +3041,8 @@ function M.patchMenuForNavpager(plugin)
     _live_plugin = plugin
 
     local Menu = require("ui/widget/menu")
-    if Menu._simpleui_navpager_patched then return end
-    Menu._simpleui_navpager_patched = true
+    local state = _acquireHooks(Menu, NAVPAGER_STATE, plugin)
+    if not state then return end
 
     -- Resolved once as upvalues; used in the hot paths below.
     local ffiUtil   = require("ffi/util")
@@ -2863,10 +3110,9 @@ function M.patchMenuForNavpager(plugin)
     end
 
     -- Hook Menu.updatePageInfo to keep the subtitle and navpager arrows in sync.
-    local orig_updatePageInfo          = Menu.updatePageInfo
-    plugin._orig_menu_update_page_info = orig_updatePageInfo
+    local orig_updatePageInfo = Menu.updatePageInfo
 
-    Menu.updatePageInfo = function(menu_self, select_number)
+    local function updatePageInfo(menu_self, select_number)
         orig_updatePageInfo(menu_self, select_number)
 
         -- Fix: when the plugin has shrunk a fullscreen menu to getContentHeight(),
@@ -2906,7 +3152,7 @@ function M.patchMenuForNavpager(plugin)
         UIManager:scheduleIn(0, function()
             _navpager_rebuild_pending = false
             if not SUISettings:isTrue("simpleui_bar_navpager_enabled") then return end
-            -- Resolve the live plugin instance: Menu._simpleui_navpager_patched
+            -- Resolve the live plugin instance: the shared navpager hook state
             -- guards this whole patch to a single installation per session, so
             -- the `plugin` upvalue captured above can go stale once the FM is
             -- recreated (reader return, rotation, suspend/resume). Falling back
@@ -2935,6 +3181,7 @@ function M.patchMenuForNavpager(plugin)
             UIManager:setDirty(target, "ui")
         end)
     end
+    _addHook(state, Menu, "updatePageInfo", updatePageInfo)
 
     -- Hook FileManager.updateTitleBarPath to update the subtitle and the
     -- back-button visibility on every directory navigation.
@@ -2951,10 +3198,9 @@ function M.patchMenuForNavpager(plugin)
         return p
     end
 
-    local orig_updateTitleBarPath          = FileManager.updateTitleBarPath
-    plugin._orig_fm_updateTitleBarPath     = orig_updateTitleBarPath
+    local orig_updateTitleBarPath = FileManager.updateTitleBarPath
 
-    FileManager.updateTitleBarPath = function(fm_self, path, force_home)
+    local function updateTitleBarPath(fm_self, path, force_home)
         local fc_path    = fm_self.file_chooser and fm_self.file_chooser.path or nil
         local home_dir   = _norm(G_reader_settings:readSetting("home_dir"))
         local clean_path = _norm(path or fc_path)
@@ -3013,6 +3259,7 @@ function M.patchMenuForNavpager(plugin)
             _setSubtitleUnified(tb3, _fm_path_base, pg, pg_num)
         end
     end
+    _addHook(state, FileManager, "updateTitleBarPath", updateTitleBarPath)
 end
 
 -- ---------------------------------------------------------------------------
@@ -4473,12 +4720,14 @@ local function _injectWallpaperIntoWidget(widget)
     end
 end
 
+local WALLPAPER_STATE = "_simpleui_wallpaper"
+
 function M.patchWallpaperFM(plugin)
     local FileManager = require("apps/filemanager/filemanager")
 
-    -- Guard: only install once per session.
-    if FileManager._simpleui_wallpaper_fm_patched then return end
-    FileManager._simpleui_wallpaper_fm_patched = true
+    local state = _acquireHooks(FileManager, WALLPAPER_STATE, plugin)
+    if not state then return end
+    local installed = {}   -- { target, key, orig } of every hook set below
 
     -- -----------------------------------------------------------------------
     -- Core approach: wrap paintTo on the FileManager CLASS, not on transient
@@ -4510,7 +4759,8 @@ function M.patchWallpaperFM(plugin)
     local orig_fm_paintTo = FileManager.paintTo  -- nil: inherits WidgetContainer:paintTo
     local base_wc_paintTo                        -- resolved lazily on first call
 
-    plugin._simpleui_orig_fm_paintTo = orig_fm_paintTo  -- may be nil; stored for teardown
+    -- Recorded raw: nil when the class inherits WidgetContainer:paintTo.
+    installed[#installed + 1] = { FileManager, "paintTo", rawget(FileManager, "paintTo") }
 
     FileManager.paintTo = function(fm_self, bb, x, y)
         -- Only intercept the FileManager instance (not subclasses / other callers).
@@ -4534,7 +4784,7 @@ function M.patchWallpaperFM(plugin)
     -- backgrounds in the newly-built widget chain so nothing paints a white
     -- rectangle on top of the wallpaper that was already drawn by paintTo.
     local base_setupLayout = FileManager.setupLayout
-    plugin._orig_fm_wallpaper_setup = base_setupLayout
+    installed[#installed + 1] = { FileManager, "setupLayout", base_setupLayout }
 
     FileManager.setupLayout = function(fm_self)
         base_setupLayout(fm_self)
@@ -4574,9 +4824,9 @@ function M.patchWallpaperFM(plugin)
     -- We guard against double-patching by saving our own orig ref.
     -- -----------------------------------------------------------------------
     local ok_btn, Button = pcall(require, "ui/widget/button")
-    if ok_btn and Button and not plugin._orig_wp_button_paintTo then
+    if ok_btn and Button then
         local orig_btn_pt = Button.paintTo
-        plugin._orig_wp_button_paintTo = orig_btn_pt
+        installed[#installed + 1] = { Button, "paintTo", orig_btn_pt }
 
         Button.paintTo = function(btn_self, bb, x, y)
             -- Only intercept when: wallpaper active, no explicit button colour,
@@ -4621,9 +4871,9 @@ function M.patchWallpaperFM(plugin)
     -- explicit configurations set by the widgets themselves.
     -- -----------------------------------------------------------------------
     local ok_iw, IconWidget = pcall(require, "ui/widget/iconwidget")
-    if ok_iw and IconWidget and not plugin._orig_wp_iconwidget_init then
+    if ok_iw and IconWidget then
         local orig_iw_init = IconWidget.init
-        plugin._orig_wp_iconwidget_init = orig_iw_init
+        installed[#installed + 1] = { IconWidget, "init", orig_iw_init }
         -- Expose the unwrapped init so that the icon-registration upvalue scan in
         -- sui_menu.lua and sui_quicksettings_bar.lua can find ICONS_PATH / ICONS_DIRS
         -- even after this patch replaces IconWidget.init.  Without this, rawget(iw,"init")
@@ -4685,9 +4935,9 @@ end
     -- current (may already be wrapped by patchMenuInitForPagination).
     -- -----------------------------------------------------------------------
     local ok_menu, Menu = pcall(require, "ui/widget/menu")
-    if ok_menu and Menu and not plugin._orig_wp_menu_init then
+    if ok_menu and Menu then
         local orig_menu_init = Menu.init
-        plugin._orig_wp_menu_init = orig_menu_init
+        installed[#installed + 1] = { Menu, "init", orig_menu_init }
 
         Menu.init = function(menu_self, ...)
             orig_menu_init(menu_self, ...)
@@ -4737,10 +4987,10 @@ end
     -- bb:paintRect call that draws the white line.
     -- -----------------------------------------------------------------------
     local ok_uc, UnderlineContainer = pcall(require, "ui/widget/container/underlinecontainer")
-    if ok_uc and UnderlineContainer and not plugin._orig_wp_uc_paintTo then
+    if ok_uc and UnderlineContainer then
         local Blitbuffer = require("ffi/blitbuffer")
         local orig_uc_pt = UnderlineContainer.paintTo
-        plugin._orig_wp_uc_paintTo = orig_uc_pt
+        installed[#installed + 1] = { UnderlineContainer, "paintTo", orig_uc_pt }
 
         UnderlineContainer.paintTo = function(uc_self, bb, x, y)
             if _wallpaperEnabledFM() and uc_self.color == SUIStyle.COLOR.surface then
@@ -4780,10 +5030,10 @@ end
     -- the default white background — custom bgcolors are respected).
     -- -----------------------------------------------------------------------
     local ok_tbw, TextBoxWidget = pcall(require, "ui/widget/textboxwidget")
-    if ok_tbw and TextBoxWidget and not plugin._orig_wp_tbw_paintTo then
+    if ok_tbw and TextBoxWidget then
         local Blitbuffer = require("ffi/blitbuffer")
         local orig_tbw_pt = TextBoxWidget.paintTo
-        plugin._orig_wp_tbw_paintTo = orig_tbw_pt
+        installed[#installed + 1] = { TextBoxWidget, "paintTo", orig_tbw_pt }
 
         TextBoxWidget.paintTo = function(tbw_self, bb, x, y)
             if not (_wallpaperEnabledFM()
@@ -4807,7 +5057,7 @@ end
         end
 
         local orig_tbw_free = TextBoxWidget.free
-        plugin._orig_wp_tbw_free = orig_tbw_free
+        installed[#installed + 1] = { TextBoxWidget, "free", orig_tbw_free }
         TextBoxWidget.free = function(tbw_self, full)
             if tbw_self._sui_tmp_bb and full ~= false then
                 tbw_self._sui_tmp_bb:free(); tbw_self._sui_tmp_bb = nil
@@ -4826,10 +5076,10 @@ end
     -- are drawn over the existing wallpaper.
     -- -----------------------------------------------------------------------
     local ok_pw, ProgressWidget = pcall(require, "ui/widget/progresswidget")
-    if ok_pw and ProgressWidget and not plugin._orig_wp_pw_paintTo then
+    if ok_pw and ProgressWidget then
         local Blitbuffer = require("ffi/blitbuffer")
         local orig_pw_pt = ProgressWidget.paintTo
-        plugin._orig_wp_pw_paintTo = orig_pw_pt
+        installed[#installed + 1] = { ProgressWidget, "paintTo", orig_pw_pt }
 
         ProgressWidget.paintTo = function(pw_self, bb, x, y)
             if _wallpaperEnabledFM()
@@ -4843,6 +5093,8 @@ end
             end
         end
     end
+
+    _trackHooks(state, installed)
 end
 
 -- ---------------------------------------------------------------------------
@@ -5072,6 +5324,7 @@ function M.installAll(plugin)
     M.patchReaderShowCoroutine(plugin)
     M.patchUIManagerClose(plugin)
     M.patchMenuInitForPagination(plugin)
+    M.patchCoverMenuSideMargin(plugin)
     M.patchMenuForNavpager(plugin)
     M.patchBookInfoNavigation(plugin)
     M.patchStatusButtons(plugin)
@@ -5144,6 +5397,14 @@ function M.installAll(plugin)
 end
 
 function M.teardownAll(plugin)
+    -- The wallpaper hooks were installed last and sit on top of the others, so
+    -- they are released first.
+    local FM_wp = package.loaded["apps/filemanager/filemanager"]
+    if FM_wp and _releaseHooks(FM_wp, WALLPAPER_STATE, plugin) then
+        local IW_wp = package.loaded["ui/widget/iconwidget"]
+        if IW_wp then IW_wp._simpleui_orig_init_for_scan = nil end
+    end
+
     -- Cover Transition holds no monkey-patch of its own (it is only ever
     -- invoked from hooks owned by other patches in this file), but it can
     -- have a widget on screen or a pending auto-close timer at teardown time.
@@ -5196,38 +5457,18 @@ function M.teardownAll(plugin)
             Menu.new              = plugin._orig_menu_new
             plugin._orig_menu_new = nil
         end
-        if plugin._orig_menu_init then
-            Menu.init              = plugin._orig_menu_init
-            plugin._orig_menu_init = nil
-        end
-        if plugin._orig_menu_update_page_info then
-            Menu.updatePageInfo                = plugin._orig_menu_update_page_info
-            plugin._orig_menu_update_page_info = nil
-        end
-        Menu._simpleui_navpager_patched = nil
+        _releaseHooks(Menu, MENU_INIT_STATE, plugin)
+        _releaseHooks(Menu, NAVPAGER_STATE, plugin)
     end
+
+    M.unpatchCoverMenuSideMargin(plugin)
 
     local FileManager = package.loaded["apps/filemanager/filemanager"]
     if FileManager then
-        if plugin._orig_fm_updateTitleBarPath then
-            FileManager.updateTitleBarPath         = plugin._orig_fm_updateTitleBarPath
-            plugin._orig_fm_updateTitleBarPath     = nil
-        end
-        if FileManager._simpleui_gesture_priority_applied then
+        if _releaseHooks(FileManager, FM_LAYOUT_STATE, plugin)
+                and FileManager._simpleui_gesture_priority_applied then
             UI.unapplyGesturePriorityHandleEvent(FileManager)
         end
-        if plugin._orig_initGesListener then
-            FileManager.initGesListener       = plugin._orig_initGesListener
-            plugin._orig_initGesListener      = nil
-            FileManager._simpleui_ges_patched = nil
-        end
-        if plugin._orig_fm_setup then
-            FileManager.setupLayout = plugin._orig_fm_setup
-            plugin._orig_fm_setup   = nil
-        end
-        -- Clear the setupLayout guard so patchFileManagerClass reinstalls the
-        -- wrapper cleanly on the next installAll (e.g. after disable→enable).
-        FileManager._simpleui_setup_patched = nil
     end
 
     local FMColl = package.loaded["apps/filemanager/filemanagercollection"]
@@ -5372,74 +5613,6 @@ function M.teardownAll(plugin)
     if BM then
         pcall(BM.uninstall)
         pcall(BM.reset)
-    end
-
-    -- Restore wallpaper FM patch.
-    -- Do NOT restore _orig_fm_wallpaper_setup: patchFileManagerClass's teardown
-    -- above has already restored FileManager.setupLayout to the KOReader native
-    -- version (plugin._orig_fm_setup).  The wallpaper wrapper saved
-    -- base_setupLayout = the patchFileManagerClass version at install time; putting
-    -- that stale pointer back now would leave an extra, unreachable wrapper in the
-    -- chain on the next FM instance.
-    -- Instead, just discard the saved pointer and clear the guard flag so that the
-    -- next installAll (triggered when the new FM instance calls plugin:init()) can
-    -- reinstall the wallpaper wrapper on top of the freshly reinstalled
-    -- patchFileManagerClass wrapper.
-    local FM_wp = package.loaded["apps/filemanager/filemanager"]
-    if FM_wp then
-        -- Restore FileManager.paintTo (our wallpaper hook lives here).
-        -- _simpleui_orig_fm_paintTo is nil when FM had no own paintTo
-        -- (inherited WidgetContainer:paintTo) — setting to nil restores that.
-        FM_wp.paintTo                        = plugin._simpleui_orig_fm_paintTo
-        plugin._simpleui_orig_fm_paintTo     = nil
-        plugin._orig_fm_wallpaper_setup      = nil
-        FM_wp._simpleui_wallpaper_fm_patched = nil   -- allow reinstall on next init
-    end
-
-    -- Restore wallpaper Button:paintTo patch.
-    local Button_wp = package.loaded["ui/widget/button"]
-    if Button_wp and plugin._orig_wp_button_paintTo then
-        Button_wp.paintTo              = plugin._orig_wp_button_paintTo
-        plugin._orig_wp_button_paintTo = nil
-    end
-
-    -- Restore wallpaper IconWidget:init patch.
-    local IW_wp = package.loaded["ui/widget/iconwidget"]
-    if IW_wp and plugin._orig_wp_iconwidget_init then
-        IW_wp.init                      = plugin._orig_wp_iconwidget_init
-        plugin._orig_wp_iconwidget_init = nil
-    end
-
-    -- Restore wallpaper Menu.init patch.
-    local Menu_wp = package.loaded["ui/widget/menu"]
-    if Menu_wp and plugin._orig_wp_menu_init then
-        Menu_wp.init              = plugin._orig_wp_menu_init
-        plugin._orig_wp_menu_init = nil
-    end
-
-    -- Restore wallpaper UnderlineContainer:paintTo patch.
-    local UC_wp = package.loaded["ui/widget/container/underlinecontainer"]
-    if UC_wp and plugin._orig_wp_uc_paintTo then
-        UC_wp.paintTo              = plugin._orig_wp_uc_paintTo
-        plugin._orig_wp_uc_paintTo = nil
-    end
-
-    -- Restore wallpaper TextBoxWidget:paintTo patch.
-    local TBW_wp = package.loaded["ui/widget/textboxwidget"]
-    if TBW_wp and plugin._orig_wp_tbw_paintTo then
-        TBW_wp.paintTo              = plugin._orig_wp_tbw_paintTo
-        plugin._orig_wp_tbw_paintTo = nil
-    end
-    if TBW_wp and plugin._orig_wp_tbw_free then
-        TBW_wp.free                 = plugin._orig_wp_tbw_free
-        plugin._orig_wp_tbw_free    = nil
-    end
-
-    -- Restore wallpaper ProgressWidget:paintTo patch.
-    local PW_wp = package.loaded["ui/widget/progresswidget"]
-    if PW_wp and plugin._orig_wp_pw_paintTo then
-        PW_wp.paintTo              = plugin._orig_wp_pw_paintTo
-        plugin._orig_wp_pw_paintTo = nil
     end
 end
 

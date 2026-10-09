@@ -35,7 +35,6 @@
 local Blitbuffer      = require("ffi/blitbuffer")
 local BD              = require("ui/bidi")
 local T               = require("ffi/util").template
-local Button          = require("ui/widget/button")
 local Font            = require("ui/font")
 local FrameContainer  = require("ui/widget/container/framecontainer")
 local Geom            = require("ui/geometry")
@@ -52,8 +51,9 @@ local VerticalGroup   = require("ui/widget/verticalgroup")
 local VerticalSpan    = require("ui/widget/verticalspan")
 local _ = require("infra/sui_i18n").translate
 
-local Bottombar   = require("screens/sui_bottombar")
 local Config      = require("infra/sui_config")
+local SectionLabel = require("engines/sui_section_label")
+local PageState    = SectionLabel.PageState
 local UI          = require("infra/sui_core")
 local SUISettings = require("infra/sui_store")
 local SUIStyle    = require("features/sui_style")
@@ -457,6 +457,10 @@ function GridRenderer.applyBadges(cover_widget, bd, fp, cw, ch, badges_cfg, pfx,
     -- _BG_CORNER_BADGE_BASE_BOOST's doc comment. Not applied to the New
     -- Book ribbon, which keeps using the plain `badge_scale` below.
     local corner_badge_scale = badge_scale * _BG_CORNER_BADGE_BASE_BOOST
+    local overlap = OverlapGroup:new{ dimen = Geom:new{ w = cw, h = ch }, cover_widget }
+    -- Badges sit on the card, not on the room its shadow takes.
+    local inset = SUIStyle.coverShadowOffset(SUIStyle.SHADOW_MODULES)
+    cw, ch = cw - inset, ch - inset
     local cell_min     = math.min(cw, ch)
     local margin       = math.max(1, math.floor(cell_min * 0.04))
     -- Lateral (left/right) inset — wider than the vertical `margin` so
@@ -465,7 +469,6 @@ function GridRenderer.applyBadges(cover_widget, bd, fp, cw, ch, badges_cfg, pfx,
     -- Series/New's top) except Progress, which goes flush (0) at the top.
     local edge_margin  = math.max(1, math.floor(cell_min * 0.08))
     local badges_added = false
-    local overlap = OverlapGroup:new{ dimen = Geom:new{ w = cw, h = ch }, cover_widget }
 
     -- Pages badge (bottom-left) — hidden for finished books, same rule as
     -- the Library grid (a finished book doesn't need its page count).
@@ -578,72 +581,6 @@ function GridRenderer.turnPage(page, npages, delta)
     return new_page
 end
 
--- Icon size for the page-nav chevrons, in the same base-pixel convention as
--- the rest of this file (scaled via Screen:scaleBySize at use time).
-local _NAV_ICON_SIZE = 16
-
--- ---------------------------------------------------------------------------
--- buildPageNavButtons(page, npages, row_h, turnPageFn) → prev, next
---
--- Ready-to-insert chevron pair for a paginated row/grid's header, next to
--- the "page/npages" text. Returns nil, nil when there's nothing to page
--- through (npages <= 1), so the caller shows no controls at all rather
--- than a pair of permanently-disabled chevrons.
---
--- Built on KOReader's native Button (same building block as the
--- bottombar's chevron footer, see buildChevronFooter in
--- sui_screen_engine.lua). bordersize = 0 keeps it borderless;
--- padding_top/padding_bottom pad the small 16px icon up to a finger-sized
--- tap zone without growing the row's own height. Bottombar.patchDimmedIcon
--- gives the disabled edge the same dimmed look as the footer chevrons.
---
--- turnPageFn(delta) is called on tap; it owns clamping (via turnPage
--- above), persisting the new page, and repainting — this function only
--- decides whether each chevron is enabled for the CURRENT page/npages.
---
--- has_wallpaper (optional): when true, the chevrons are built inside
--- Bottombar.withWallpaperAlphaIcons so their icons are alpha-blended from
--- birth (see that function's doc comment for why it must happen at
--- construction time, not after), and Bottombar.patchWallpaperIcon makes
--- their button frame paint transparently too — together, the chevrons
--- paint over the Homescreen wallpaper instead of showing their default
--- opaque background.
--- ---------------------------------------------------------------------------
-function GridRenderer.buildPageNavButtons(page, npages, row_h, turnPageFn, has_wallpaper)
-    if npages <= 1 then return nil, nil end
-    local icon_size = Screen:scaleBySize(_NAV_ICON_SIZE)
-    local v_pad = math.max(0, math.floor((row_h - icon_size) / 2))
-    local function make(icon, enabled, delta)
-        local btn = Button:new{
-            icon            = icon,
-            icon_width      = icon_size,
-            icon_height     = icon_size,
-            bordersize      = 0,
-            margin          = 0,
-            padding_top     = v_pad,
-            padding_bottom  = v_pad,
-            padding_left    = 0,
-            padding_right   = 0,
-            enabled         = enabled,
-            callback        = function() turnPageFn(delta) end,
-        }
-        Bottombar.patchDimmedIcon(btn)
-        if has_wallpaper then Bottombar.patchWallpaperIcon(btn) end
-        return btn
-    end
-    local prev_btn, next_btn
-    if has_wallpaper then
-        Bottombar.withWallpaperAlphaIcons(function()
-            prev_btn, next_btn = make("chevron.left",  page > 1,      -1),
-                                  make("chevron.right", page < npages,  1)
-        end)
-    else
-        prev_btn, next_btn = make("chevron.left",  page > 1,      -1),
-                              make("chevron.right", page < npages,  1)
-    end
-    return prev_btn, next_btn
-end
-
 -- ---------------------------------------------------------------------------
 -- build(w, ctx, opts) → widget | nil
 --
@@ -701,11 +638,10 @@ local function _resolveCurrentPage(fps, ctx, id, max_items, want_paged, persist)
     local npages = 1
     local page   = 1
     if want_paged and #fps > max_items then
-        local page_key = "_row_page_" .. id
         npages = math.ceil(#fps / max_items)
-        page   = ctx[page_key] or 1
+        page   = PageState.get(ctx, id)
         if page < 1 or page > npages then page = 1 end
-        if persist then ctx[page_key] = page end
+        if persist then PageState.setPage(ctx, id, page) end
     end
     local page_start = (page - 1) * max_items + 1
     local page_fps = {}
@@ -731,15 +667,14 @@ function GridRenderer.build(w, ctx, opts)
         fps = _filterFileList(opts.getFileList() or {}, opts, ctx)
         ctx[cache_key] = fps
     end
-    local npages_key = "_row_npages_" .. id
     if #fps == 0 then
-        ctx[npages_key] = 1
+        PageState.setCount(ctx, id, 1)
         return nil
     end
 
     local page, npages, page_fps = _resolveCurrentPage(fps, ctx, id, max_items, opts.paged, true)
     local paged = opts.paged and #fps > max_items
-    ctx[npages_key] = npages
+    PageState.setCount(ctx, id, npages)
 
     local _clr_blk        = SUIStyle.COLOR.text_primary
     local _clr_sub        = CLR_TEXT_SUB
@@ -885,9 +820,10 @@ function GridRenderer.build(w, ctx, opts)
                     },
                 },
             }
+            local inset = SUIStyle.coverShadowOffset(SUIStyle.SHADOW_MODULES)
             badge.overlap_offset = {
-                math.floor((cw - badge_d) / 2),
-                ch - badge_r,
+                math.floor((cw - inset - badge_d) / 2),
+                ch - inset - badge_r,
             }
             cover_widget = OverlapGroup:new{
                 dimen = Geom:new{ w = cw, h = ch + badge_r },
@@ -1194,7 +1130,7 @@ end
 -- itself, exactly like build()'s own cold-cache path, and only once
 -- everything else checks out writes the result back into ctx[cache_key].
 --
--- Also keeps ctx[npages_key] current even on the true-returning path: the
+-- Also keeps the page count in PageState current even on the true-returning path: the
 -- displayed page's own slice can stay identical while the total item count
 -- crosses a page boundary elsewhere in the list, so npages must be
 -- refreshed independently of the identity check below. The caller is
@@ -1255,14 +1191,13 @@ function GridRenderer.updateStats(widget, ctx, opts)
     -- it's a plain fact derived from the current file count — so it's
     -- written back into ctx unconditionally below, same as build() already
     -- does at its own call site, keeping the section-label's "x/y"
-    -- indicator and chevrons (sui_screen_engine.lua's pageIndicatorFor/
-    -- pageNavFor, both reading ctx) accurate even when this fast path
-    -- succeeds instead of falling back to a full build().
+    -- indicator and chevrons (derived from PageState) accurate even when
+    -- this fast path succeeds instead of falling back to a full build().
     local grid_rows = opts.grid_rows or 1
     local grid_cols = opts.grid_cols or opts.max_items or 5
     local max_items = grid_rows * grid_cols
     local _, npages, page_fps = _resolveCurrentPage(fps, ctx, id, max_items, opts.paged, false)
-    ctx["_row_npages_" .. id] = npages
+    PageState.setCount(ctx, id, npages)
 
     -- Identity check: same files, same order, same count as what this
     -- widget was actually built with. Any difference means the row's
@@ -1323,7 +1258,7 @@ function GridRenderer.getHeight(_ctx, opts)
     local grid_rows = opts.grid_rows or 1
     local grid_cols = opts.grid_cols or opts.max_items or 5
     local w = (_ctx and (_ctx.col_w or _ctx.inner_w))
-              or (Screen:getWidth() - UI.SIDE_PAD * 2)
+              or UI.getInnerW()
     -- Frame border / solid background — computed up front so inner_w below
     -- mirrors build()'s own corrected value exactly (see build()'s comment
     -- on why the border must be reserved here too, not just the padding).
@@ -1378,7 +1313,7 @@ function GridRenderer.getHeight(_ctx, opts)
     -- outside the padding — see computeBox's doc comment), so no separate
     -- border_sz*2 addition is needed here.
     h = h + box.inset_v
-    return Config.getScaledLabelH() + h
+    return SectionLabel.height(id, lf) + h
 end
 
 -- ---------------------------------------------------------------------------
@@ -1626,9 +1561,7 @@ end
 -- ---------------------------------------------------------------------------
 -- clearRowCaches(ctx) — invalidates every row module's cached file list
 -- (ctx[cache_key], populated lazily on a row module's first build() call
--- within a given ctx and never invalidated again for that ctx's lifetime),
--- plus the section-label header cache (page/npages indicator + chevrons)
--- that any paginated row module keeps in sync with that same file list.
+-- within a given ctx and never invalidated again for that ctx's lifetime).
 --
 -- Needed because a "kept-alive" ctx (sui_screen_engine.lua's
 -- _refreshImmediate with keep_cache=true, used after book-hold-dialog
@@ -1640,33 +1573,11 @@ end
 -- (a ReadCollection/settings lookup, not the I/O keep_cache protects), so
 -- clearing them on every refresh — even a "kept-alive" one — is cheap
 -- insurance.
---
--- The label-cache invalidation lives here (rather than at each call site)
--- because it is the SAME underlying condition every clearRowCaches() caller
--- already has: a paginated row's file list is changing, which can shift
--- its page/npages. sui_screen_engine.lua's sectionLabel() memoizes each
--- row's header (text + chevrons) by "mod_id|page|npages", not by the
--- ScreenWidget instance the chevrons' tap handler closes over — so if the
--- recomputed page/npages happens to match a combination already cached
--- under a since-replaced instance (rotation, tab switch, a Custom Screen
--- reopen, ...), the row would keep showing a header wired to a dead
--- closure: no error, the chevrons would just silently do nothing.
--- Invalidating unconditionally here, alongside the file-list clear that
--- already has to happen at the same moment, means every current and future
--- clearRowCaches() caller is covered automatically, instead of relying on
--- each one to separately remember to also invalidate the label cache.
--- engines/sui_screen_engine.lua is required lazily (pcall, same pattern
--- that file already uses in the other direction for sui_book_grid.lua) to
--- avoid a load-order dependency between the two engines.
 -- ---------------------------------------------------------------------------
 function GridRenderer.clearRowCaches(ctx)
     if not ctx then return end
     for key in pairs(GridRenderer._known_row_cache_keys) do
         ctx[key] = nil
-    end
-    local ok_se, ScreenEngine = pcall(require, "engines/sui_screen_engine")
-    if ok_se and ScreenEngine and ScreenEngine.invalidateLabelCache then
-        ScreenEngine.invalidateLabelCache()
     end
 end
 
@@ -1810,9 +1721,12 @@ function GridRenderer.makeModule(spec)
         return nil, nil
     end
 
+    -- Label text may depend on the module instance (spec.label_fn).
+    function M.getLabel(ctx)
+        return SectionLabel.makeDescriptor(id, spec.label_fn and spec.label_fn(ctx.pfx) or spec.label, ctx)
+    end
+
     function M.build(w, ctx)
-        local lbl = spec.label_fn and spec.label_fn(ctx.pfx) or spec.label
-        if lbl then Config.applyLabelToggle(M, lbl) end
         row_opts.getFileList = function() return spec.getFileList(ctx) end
         row_opts.grid_rows, row_opts.grid_cols = _gridDims(ctx.pfx)
         -- Read at build time (not once in makeModule) so a change made in
@@ -1943,7 +1857,7 @@ function GridRenderer.makeModule(spec)
         local appearance_extra = {}
         local lbl = spec.label_fn and spec.label_fn(pfx) or spec.label
         if lbl then
-            appearance_extra[#appearance_extra + 1] = Config.makeLabelToggleItem(id, lbl, refresh, _lc)
+            appearance_extra[#appearance_extra + 1] = Config.makeLabelToggleItem(id, refresh, _lc)
         end
 
         local behaviour_rows = {

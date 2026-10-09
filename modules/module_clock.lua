@@ -82,7 +82,7 @@ local _CLOCK_FRAC_BENTO = 1.0
 local _CLOCK_FACE_FULL  = 75   -- digital face size at full-row 35% span, scale 1
 local _CLOCK_SIZE_MIN   = 10
 
-local _REF_FULL_INNER_W = Screen:getWidth() - UI.SIDE_PAD * 2 - PAD * 2
+local _REF_FULL_INNER_W = UI.getInnerW() - PAD * 2
 local _REF_FULL_SPAN    = _REF_FULL_INNER_W * _CLOCK_FRAC_FULL
 
 -- Ratios relative to digital face size.
@@ -237,22 +237,7 @@ end
 -- Manual arrangement order of the three fixed items. Unknown or missing
 -- keys are appended in DEFAULT_ORDER so the list always covers every item.
 local function getItemOrder(pfx)
-    local raw = SUISettings:readSetting(pfx .. SETTING_ORDER)
-    local known = { clock = true, date = true, battery = true }
-    local order = {}
-    local seen  = {}
-    if type(raw) == "table" then
-        for _, k in ipairs(raw) do
-            if known[k] and not seen[k] then
-                order[#order + 1] = k
-                seen[k] = true
-            end
-        end
-    end
-    for _, k in ipairs(DEFAULT_ORDER) do
-        if not seen[k] then order[#order + 1] = k end
-    end
-    return order
+    return Config.mergeOrder(SUISettings:readSetting(pfx .. SETTING_ORDER), DEFAULT_ORDER)
 end
 
 local function saveItemOrder(pfx, order)
@@ -859,8 +844,7 @@ local function _tick()
 
     if body and idx and body[idx] and screen._navbar_container then
         local sw      = Screen:getWidth()
-        local SIDE_PAD = require("infra/sui_core").SIDE_M()
-        local inner_w  = screen._clock_inner_w or (sw - SIDE_PAD * 2)
+        local inner_w = screen._clock_inner_w or UI.getInnerW(sw)
 
         -- Pass the screen's landscape factor through explicitly so the
         -- surgical swap matches the size _updatePage would have built.
@@ -995,7 +979,7 @@ function M.getHeight(ctx)
     local clock_elem = styles.clock.scale or 1
     local date_elem  = styles.date.scale or 1
     local batt_elem  = styles.battery.scale or 1
-    local w_estimate = ctx.col_w or ctx.inner_w or (Screen:getWidth() - UI.SIDE_PAD * 2)
+    local w_estimate = ctx.col_w or ctx.inner_w or UI.getInnerW()
     local inner_w_estimate = w_estimate - PAD * 2
 
     -- Same scale basis as build(): module scale * landscape factor.

@@ -28,6 +28,7 @@ local Size            = require("ui/size")
 
 -- Internal dependencies
 local Config       = require("infra/sui_config")
+local SectionLabel = require("engines/sui_section_label")
 local UI           = require("infra/sui_core")
 local SUISettings  = require("infra/sui_store")
 local SUIStyle     = require("features/sui_style")
@@ -237,8 +238,9 @@ local function fetchBookStats(md5, shared_conn, ctx, force)
         -- ps_agg accumulates per-page totals; the outer SELECT aggregates them.
         -- sum(page_dur) replaces a correlated subquery that caused a second
         -- full scan of page_stat on every call.
-        -- Relies on idx_simpleui_book_md5 / idx_simpleui_pagestat_book indexes
-        -- created by openStatsDB() for O(log n) lookup instead of full-table scan.
+        -- Relies on idx_simpleui_book_md5 (created by openStatsDB()) for the
+        -- md5 lookup and on page_stat_data's (id_book, page, start_time) index
+        -- for the per-book scan.
         local row = conn:exec(string.format([[
             WITH b AS (
                 %s
@@ -555,7 +557,6 @@ end
 -- Builds the module widget: cover on the left, text column on the right.
 -- Elements in the text column are rendered in user-configured order.
 function M.build(w, ctx)
-    Config.applyLabelToggle(M, _("Currently Reading"))
     if not ctx.current_fp then
         return _emptyPlaceholder(w, M.getHeight(ctx), ctx.has_wallpaper)
     end
@@ -1296,7 +1297,7 @@ end
 -- under-allocating space and causing overlap with the module below.
 function M.getHeight(_ctx)
     local SH = getSH()
-    if not SH then return Config.getScaledLabelH() end
+    if not SH then return SectionLabel.height(M.id, _ctx and _ctx.landscape_factor) end
     local pfx = _ctx and _ctx.pfx
     -- Use pre-read settings bundle from ctx when available (normal HS path).
     -- c.scale/c.thumb_scale/c.lbl_scale (from ctx.cfg) are RAW; apply
@@ -1319,7 +1320,7 @@ function M.getHeight(_ctx)
     -- contract, M.getHeight(ctx)), so it estimates it the same way
     -- module_clock/module_coverdeck/module_quick_actions already do.
     local w_estimate = (_ctx and (_ctx.col_w or _ctx.inner_w))
-                        or (Screen:getWidth() - UI.SIDE_PAD * 2)
+                        or UI.getInnerW()
     local _cover_ratio = SH.getDims(1.0, 1.0).COVER_H / SH.getDims(1.0, 1.0).COVER_W
     local cover_w, cover_h = _computeCoverDims(w_estimate, raw_thumb_scale * raw_scale, _cover_ratio)
     local D = { COVER_W = cover_w, COVER_H = cover_h }
@@ -1452,7 +1453,7 @@ function M.getHeight(_ctx)
             content_h = content_h + SUIStyle.BORDER_SZ * 2
         end
     end
-    return Config.getScaledLabelH() + content_h
+    return SectionLabel.height(M.id, lf) + content_h
 end
 
 
@@ -2086,7 +2087,7 @@ function M.getMenuItems(ctx_menu)
     }
 
     local appearance_extra = {
-        Config.makeLabelToggleItem("currently", _("Currently Reading"), refresh, _lc),
+        Config.makeLabelToggleItem("currently", refresh, _lc),
     }
 
     return Config.buildModuleMenu({

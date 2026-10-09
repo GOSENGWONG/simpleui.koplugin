@@ -83,9 +83,10 @@ local EXCLUDED_EXACT = {
     ["simpleui_last_backup"]              = true,
     ["simpleui_backup_scope"]             = true,
     ["simpleui_last_restore"]             = true,
+    ["simpleui_library_defaults_applied"] = true,
 }
 
-for _i = 2, 8 do
+for _i = 2, 9 do
     EXCLUDED_EXACT["simpleui_settings_migrated_v" .. _i] = true
 end
 
@@ -198,7 +199,7 @@ local CLASSIFY_RULES = {
       prefixes = {
           "simpleui_bar_", "simpleui_topbar_", "simpleui_tb_", "simpleui_qs_bar_",
           "simpleui_titlebar", "simpleui_statusbar_transparent", "simpleui_bars_transparent",
-          "simpleui_statusbar_backdrop", "simpleui_navbar_backdrop", "simpleui_pagination_backdrop", "simpleui_titlebar_button_backdrop", "simpleui_module_backdrop",
+          "simpleui_statusbar_backdrop", "simpleui_navbar_backdrop", "simpleui_pagination_backdrop", "simpleui_titlebar_backdrop", "simpleui_module_backdrop",
           "simpleui_menu_tap", "simpleui_menu_swipe",
           "navbar_",
       },

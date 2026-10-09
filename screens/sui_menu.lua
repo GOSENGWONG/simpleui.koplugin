@@ -203,6 +203,117 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         }
     end
 
+    -- Helper: applies a full layout refresh after transparency / wallpaper-visibility changes.
+    -- Pass `{ keep_wallpaper = true }` when the wallpaper image is unchanged.
+    local function _applyFullLayoutRefresh(opts)
+        plugin:_rewrapAllWidgets()
+        local Patches = package.loaded["infra/sui_patches"]
+        if Patches and Patches.injectWallpaperIntoFullscreenWidget then
+            local core_ok, core = pcall(require, "infra/sui_core")
+            local stack = core_ok and core.getWindowStack and core.getWindowStack()
+            if stack then
+                for _, entry in ipairs(stack) do
+                    if entry.widget and entry.widget._navbar_injected then
+                        pcall(Patches.injectWallpaperIntoFullscreenWidget, entry.widget)
+                    end
+                end
+            end
+        end
+        local HS = package.loaded["screens/sui_homescreen"]
+        if HS and HS.rebuildLayout then
+            HS.rebuildLayout(opts)
+        end
+        local FM = package.loaded["apps/filemanager/filemanager"]
+        if FM and FM.instance then
+            FM.instance._navbar_inner = nil
+            pcall(function() FM.instance:setupLayout() end)
+            UIManager:setDirty(FM.instance, "ui")
+        end
+    end
+
+    -- Background Opacity entry shared by the Wallpaper settings and each bar's
+    -- own settings. Every caller reads and writes the same stored strength
+    -- through the wallpaper module, so a change in one place shows in the
+    -- others. Available only while a wallpaper is active.
+    local function makeBackdropEntry(opts, ctx_menu)
+        local SUIWallpaper  = require("features/sui_wallpaper")
+        local extra_enabled = opts.enabled_func
+        opts.enabled_func = function()
+            return SUIWallpaper.isWallpaperActive() and (not extra_enabled or extra_enabled())
+        end
+        -- Refreshes the UI once after a change and updates the open menu so
+        -- the new value shows immediately; the wallpaper image is untouched.
+        opts.refresh = function(touchmenu)
+            _applyFullLayoutRefresh({ keep_wallpaper = true })
+            if ctx_menu and ctx_menu.refresh then
+                ctx_menu.refresh()
+            elseif touchmenu and touchmenu.updateItems then
+                touchmenu:updateItems()
+            elseif ctx_menu and ctx_menu.updateItems then
+                ctx_menu:updateItems()
+            end
+        end
+        return Config.makeBackdropStrengthItem(opts)
+    end
+
+    -- Strength accessors of each bar, keyed by the bar they belong to.
+    local BAR_BACKDROP_SPECS = {
+        statusbar = function(WP)
+            return {
+                get           = WP.getStatusbarBackdropStrength,
+                set           = WP.setStatusbarBackdropStrength,
+                default_value = WP.BACKDROP_DEFAULT.statusbar,
+            }
+        end,
+        navbar = function(WP)
+            return {
+                get           = WP.getNavbarBackdropStrength,
+                set           = WP.setNavbarBackdropStrength,
+                default_value = WP.BACKDROP_DEFAULT.navbar,
+                enabled_func  = function() return Bottombar.getBarStyle() ~= "bare" end,
+                value_func    = function()
+                    if Bottombar.getBarStyle() == "bare" then return "—" end
+                    return WP.formatBackdropStrength(WP.getNavbarBackdropStrength())
+                end,
+            }
+        end,
+        titlebar = function(WP)
+            return {
+                info          = _("0% transparent, 100% solid. Applies across the full width of the title bar."),
+                get           = WP.getTitlebarBackdropStrength,
+                set           = WP.setTitlebarBackdropStrength,
+                default_value = WP.BACKDROP_DEFAULT.titlebar,
+                enabled_func  = function() return require("screens/sui_titlebar").isEnabled() end,
+            }
+        end,
+        pagination = function(WP)
+            return {
+                info          = _("0% transparent, 100% solid. Applies to the native page bar in Library, History, Collections and similar screens."),
+                get           = WP.getPaginationBackdropStrength,
+                set           = WP.setPaginationBackdropStrength,
+                default_value = WP.BACKDROP_DEFAULT.pagination,
+                enabled_func  = function() return SUISettings:nilOrTrue("simpleui_bar_pagination_visible") end,
+            }
+        end,
+    }
+
+    -- Appends `item` to `items` only while a wallpaper is active: opacity
+    -- controls have no effect without one, so they are left out of the menu.
+    local function appendWhenWallpaperActive(items, item)
+        if require("features/sui_wallpaper").isWallpaperActive() then
+            items[#items + 1] = item
+        end
+        return items
+    end
+
+    -- Opacity entry for one bar ("statusbar", "navbar", "titlebar" or
+    -- "pagination"), titled "Background Opacity" unless `title` is given.
+    local function makeBarBackdropItem(kind, ctx_menu, title)
+        local spec = BAR_BACKDROP_SPECS[kind](require("features/sui_wallpaper"))
+        spec.title = title or _("Background Opacity")
+        return makeBackdropEntry(spec, ctx_menu)
+    end
+
     local function makeTypeMenu()
         return {
             modeItem(_("Icons") .. " + " .. _("Text"), "both"),
@@ -397,7 +508,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
     -- Pagination bar menu builder
     -- -----------------------------------------------------------------------
 
-    local function makePaginationBarMenu()
+    local function makePaginationBarMenu(ctx_menu)
         -- ── helpers ──────────────────────────────────────────────────────────
         -- "Geral" state is encoded in two existing keys:
         --   Predefinido : pagination_visible=true,  navpager=false
@@ -450,7 +561,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         end
 
         -- ── menu ─────────────────────────────────────────────────────────────
-        return {
+        local items = {
                 -- ── Subfolder: General ────────────────────────────────────────────
             {
                 text           = _("Mode"),
@@ -598,10 +709,15 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     },
                 },
             },
-                -- ── Number of pages in the title bar ──────────────────────────────
-            {
+        }
+
+        -- ── Number of pages in the title bar ─────────────────────────────────
+        -- The page count lives in the title bar subtitle, which only the classic
+        -- style has.
+        local Titlebar = require("screens/sui_titlebar")
+        if Titlebar.getStyle() == Titlebar.STYLE_CLASSIC then
+            items[#items + 1] = {
                 text         = _("Show Page Count in Title Bar"),
-                separator    = true,
                 checked_func = function()
                     return SUISettings:isTrue("simpleui_bar_pagination_show_subtitle")
                 end,
@@ -612,8 +728,12 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     plugin:_scheduleRebuild()
                 end,
                 keep_menu_open = true,
-            },
-        }
+            }
+        end
+
+        appendWhenWallpaperActive(items, makeBarBackdropItem("pagination", ctx_menu))
+
+        return items
     end
 
     -- -----------------------------------------------------------------------
@@ -1119,6 +1239,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 appearance_extra[#appearance_extra + 1] = row
             end
         end
+        appendWhenWallpaperActive(appearance_extra, makeBarBackdropItem("statusbar", ctx_menu))
         return Config.buildModuleMenu({
             master     = master,
             items      = item_rows,
@@ -1460,6 +1581,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 appearance_extra[#appearance_extra + 1] = row
             end
         end
+        appendWhenWallpaperActive(appearance_extra, makeBarBackdropItem("navbar", ctx_menu))
         return Config.buildModuleMenu({
             master     = master,
             items      = items,
@@ -1495,7 +1617,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         if fm then UIManager:setDirty(fm[1], "ui") end
     end
 
-    -- Builds a visibility toggle list for one context ("fm" or "inj").
+    -- Builds a visibility toggle list for one context ("fm" or "sub").
     local function makeTitleBarItemsForCtx(ctx)
         local Titlebar = require("screens/sui_titlebar")
         local items = {}
@@ -1829,21 +1951,167 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         return items
     end
 
+    -- Tabs style: one list for the browse tabs and the search button. The eye
+    -- shows or hides an entry; the arrows reorder it.
+    local function makeTitleBarTabsItems(ctx_menu)
+        local Titlebar = require("screens/sui_titlebar")
+        local title    = _("Tabs and Search")
+
+        local function isEnabled() return Titlebar.isEnabled() end
+
+        -- Toggles an entry unless it is the last visible one. Returns whether it changed.
+        local function toggleEntry(id)
+            local visible = Titlebar.isItemVisible(id)
+            if visible then
+                local others = 0
+                for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                    if e.visible and e.id ~= id then others = others + 1 end
+                end
+                if others == 0 then
+                    UI.Notify.toast(_("At least one item must stay visible."), 2)
+                    return false
+                end
+            end
+            Titlebar.setItemVisible(id, not visible)
+            _reapplyAllTitlebars()
+            return true
+        end
+
+        local function saveOrder(sort_items)
+            local order = {}
+            for _i, it in ipairs(sort_items) do order[#order + 1] = it.orig_item end
+            Titlebar.setTabsOrder(order)
+            _reapplyAllTitlebars()
+        end
+
+        local function summary()
+            local names = {}
+            for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                if e.visible then names[#names + 1] = e.label end
+            end
+            return #names > 0 and table.concat(names, "  ·  ") or _("No items selected.")
+        end
+
+        local function arrangeItems(ctx)
+            local items = {}
+            for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                local id   = e.id
+                local item = { text = e.label, orig_item = id }
+                local function sync()
+                    local visible = Titlebar.isItemVisible(id)
+                    item.dim_row     = not visible or nil
+                    item.toggle_icon = visible and "show" or "hide"
+                end
+                item.on_toggle = function()
+                    if toggleEntry(id) then
+                        sync()
+                        ctx.repaint()
+                    end
+                end
+                sync()
+                items[#items + 1] = item
+            end
+            return items
+        end
+
+        local items = {
+            {
+                text           = title,
+                enabled_func   = isEnabled,
+                keep_menu_open = true,
+                callback       = function()
+                    local sort_items = {}
+                    for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                        sort_items[#sort_items + 1] = { text = e.label, orig_item = e.id }
+                    end
+                    local SortWidget = ctx_menu.SortWidget or require("ui/widget/sortwidget")
+                    UIManager:show(SortWidget:new{
+                        title             = title,
+                        item_table        = sort_items,
+                        covers_fullscreen = true,
+                        callback          = function() saveOrder(sort_items) end,
+                    })
+                end,
+                sui_build = ctx_menu.is_sui and function(ctx, _item)
+                    local SUIWindow = require("engines/sui_window")
+                    return SUIWindow.ListRow{
+                        title        = title,
+                        subtitle     = summary,
+                        inner_w      = ctx.inner_w,
+                        show_chevron = true,
+                        on_tap       = function()
+                            ctx.push("arrange", {
+                                title     = title,
+                                items     = arrangeItems(ctx),
+                                on_change = saveOrder,
+                            })
+                        end,
+                    }
+                end or nil,
+            },
+        }
+
+        -- Classic menu: visibility checklist (the SUI list has the eye toggle).
+        if not ctx_menu.is_sui then
+            for _i, e in ipairs(Titlebar.getTabsEntries()) do
+                local id = e.id
+                items[#items + 1] = {
+                    text           = e.label,
+                    checked_func   = function() return Titlebar.isItemVisible(id) end,
+                    enabled_func   = isEnabled,
+                    keep_menu_open = true,
+                    callback       = function() toggleEntry(id) end,
+                }
+            end
+        end
+        return items
+    end
+
     local function makeTitleBarMenu(ctx_menu)
         local Config = require("infra/sui_config")
-        local function sizeItem(label, key)
+        local function titlebar() return require("screens/sui_titlebar") end
+
+        -- Radio row bound to a getter/setter pair of the title-bar module.
+        local function radioItem(label, key, get, set, on_change)
             return {
                 text         = label,
                 radio        = true,
                 keep_menu_open = true,
-                checked_func = function() return require("screens/sui_titlebar").getSizeKey() == key end,
+                checked_func = function() return get() == key end,
                 callback     = function()
-                    require("screens/sui_titlebar").setSizeKey(key)
-                    _reapplyAllTitlebars()
+                    if get() == key then return end
+                    set(key)
+                    on_change()
                 end,
             }
         end
-        local flat = {
+        local function sizeItem(label, key)
+            return radioItem(label, key,
+                function() return titlebar().getSizeKey() end,
+                function(v) titlebar().setSizeKey(v) end,
+                _reapplyAllTitlebars)
+        end
+
+        -- Offers a restart; changes that alter the Library layout need a rebuild.
+        local function askRestart(text)
+            SUISettings:flush()
+            UIManager:show(ConfirmBox():new{
+                text        = text,
+                ok_text     = _("Restart"),
+                cancel_text = _("Later"),
+                ok_callback = function() UIManager:restartKOReader() end,
+            })
+        end
+        local function styleItem(label, key)
+            return radioItem(label, key,
+                function() return titlebar().getStyle() end,
+                function(v) titlebar().setStyle(v) end,
+                function() askRestart(_("The title bar style will change after restart.\n\nRestart now?")) end)
+        end
+        local function isEnabled() return titlebar().isEnabled() end
+
+        -- The enable toggle is the first row and stays on top as the master row.
+        local master = {
             {
                 text_func    = function()
                     return _("Enable Title Bar")
@@ -1854,80 +2122,62 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     local Titlebar = require("screens/sui_titlebar")
                     local on = Titlebar.isEnabled()
                     Titlebar.setEnabled(not on)
-                    SUISettings:flush()
-                    UIManager:show(ConfirmBox():new{
-                        text = string.format(
-                            _("Title Bar will be %s after restart.\n\nRestart now?"),
-                            on and _("disabled") or _("enabled")
-                        ),
-                        ok_text     = _("Restart"),
-                        cancel_text = _("Later"),
-                        ok_callback = function()
-                            UIManager:restartKOReader()
-                        end,
-                    })
+                    askRestart(string.format(
+                        _("Title Bar will be %s after restart.\n\nRestart now?"),
+                        on and _("disabled") or _("enabled")
+                    ))
                 end,
-            },
-            {
-                text         = _("Library Buttons"),
-                enabled_func = function() return require("screens/sui_titlebar").isEnabled() end,
-                sub_item_table_func = function() return makeTitleBarFMMenu(ctx_menu) end,
-                sui_build = makeTitleBarSUIBuild(ctx_menu, _("Library Buttons"), "fm", require("screens/sui_titlebar").getFMConfig, require("screens/sui_titlebar").saveFMConfig),
-            },
-            {
-                text         = _("Sub-page Buttons"),
-                enabled_func = function() return require("screens/sui_titlebar").isEnabled() end,
-                sub_item_table_func = function() return makeTitleBarSubMenu(ctx_menu) end,
-                sui_build = makeTitleBarSUIBuild(ctx_menu, _("Sub-page Buttons"), "sub", require("screens/sui_titlebar").getSubConfig, require("screens/sui_titlebar").saveSubConfig),
-            },
-            {
-                text      = _("Appearance"):upper(),
-                is_divider= true,
-                sui_build = function(ctx)
-                    return require("engines/sui_window").SectionLabel{ text = _("Appearance"):upper(), inner_w = ctx.inner_w }
-                end,
-                dim       = true,
-                enabled_func = function() return false end,
-                keep_menu_open = true,
-                callback  = function() end,
-            },
-            {
-                text      = _("Button Size"),
-                enabled_func = function() return require("screens/sui_titlebar").isEnabled() end,
-                sub_item_table = {
-                    sizeItem(_("Compact"), "compact"),
-                    sizeItem(_("Default"), "default"),
-                    sizeItem(_("Large"),   "large"),
-                },
             },
         }
-        -- The enable toggle is the first row and stays on top as the master row.
-        local master = { flat[1] }
-        local item_rows, size_rows, appearance_extra = {}, {}, {}
-        for i = 2, #flat do
-            local row = flat[i]
-            local label = row.text
-            if type(label) ~= "string" and row.text_func then
-                local ok, v = pcall(row.text_func)
-                if ok then label = v end
-            end
-            label = label or ""
-            if label == _("Library Buttons") or label == _("Sub-page Buttons") then
-                item_rows[#item_rows + 1] = row
-            elseif label == _("Button Size") then
-                size_rows[#size_rows + 1] = row
-            elseif row.dim or (type(label) == "string" and label:upper() == label and #label > 0) then
-                -- Section labels (e.g. APPEARANCE) are dropped; hierarchy provides structure.
-            else
-                appearance_extra[#appearance_extra + 1] = row
-            end
+        local style_row = {
+            text      = _("Style"),
+            enabled_func = isEnabled,
+            sub_item_table = {
+                styleItem(_("Classic"), "classic"),
+                styleItem(_("Tabs"),    "tabs"),
+            },
+        }
+
+        -- The classic style offers the full item and size customization; the
+        -- tabs style the arrangement of its tabs and search button.
+        local items, size
+        if titlebar().getStyle() == titlebar().STYLE_TABS then
+            items = makeTitleBarTabsItems(ctx_menu)
+        else
+            local Titlebar = require("screens/sui_titlebar")
+            items = {
+                {
+                    text         = _("Library Buttons"),
+                    enabled_func = isEnabled,
+                    sub_item_table_func = function() return makeTitleBarFMMenu(ctx_menu) end,
+                    sui_build = makeTitleBarSUIBuild(ctx_menu, _("Library Buttons"), "fm", Titlebar.getFMConfig, Titlebar.saveFMConfig),
+                },
+                {
+                    text         = _("Sub-page Buttons"),
+                    enabled_func = isEnabled,
+                    sub_item_table_func = function() return makeTitleBarSubMenu(ctx_menu) end,
+                    sui_build = makeTitleBarSUIBuild(ctx_menu, _("Sub-page Buttons"), "sub", Titlebar.getSubConfig, Titlebar.saveSubConfig),
+                },
+            }
+            size = {
+                {
+                    text      = _("Button Size"),
+                    enabled_func = isEnabled,
+                    sub_item_table = {
+                        sizeItem(_("Compact"), "compact"),
+                        sizeItem(_("Default"), "default"),
+                        sizeItem(_("Large"),   "large"),
+                    },
+                },
+            }
         end
+
         return Config.buildModuleMenu({
             master     = master,
-            items      = item_rows,
+            items      = items,
             appearance = {
-                size  = #size_rows > 0 and size_rows or nil,
-                extra = #appearance_extra > 0 and appearance_extra or nil,
+                size  = size,
+                extra = appendWhenWallpaperActive({ style_row }, makeBarBackdropItem("titlebar", ctx_menu)),
             },
         }, ctx_menu)
     end
@@ -2304,59 +2554,11 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         }
     end
 
-    -- Helper: applies a full layout refresh after transparency / wallpaper-visibility changes.
-    -- Pass `{ keep_wallpaper = true }` when the wallpaper image is unchanged.
-    local function _applyFullLayoutRefresh(opts)
-        plugin:_rewrapAllWidgets()
-        local Patches = package.loaded["infra/sui_patches"]
-        if Patches and Patches.injectWallpaperIntoFullscreenWidget then
-            local core_ok, core = pcall(require, "infra/sui_core")
-            local stack = core_ok and core.getWindowStack and core.getWindowStack()
-            if stack then
-                for _, entry in ipairs(stack) do
-                    if entry.widget and entry.widget._navbar_injected then
-                        pcall(Patches.injectWallpaperIntoFullscreenWidget, entry.widget)
-                    end
-                end
-            end
-        end
-        local HS = package.loaded["screens/sui_homescreen"]
-        if HS and HS.rebuildLayout then
-            HS.rebuildLayout(opts)
-        end
-        local FM = package.loaded["apps/filemanager/filemanager"]
-        if FM and FM.instance then
-            FM.instance._navbar_inner = nil
-            pcall(function() FM.instance:setupLayout() end)
-            UIManager:setDirty(FM.instance, "ui")
-        end
-    end
-
     local function makeWallpaperMenuItems(ctx_menu)
         local SUIWallpaper = require("features/sui_wallpaper")
 
-        -- Refreshes the UI once after a strength change and updates the menu
-        -- so the new value shows immediately; the wallpaper image itself is
-        -- untouched.
-        local function refreshStrength(touchmenu)
-            _applyFullLayoutRefresh({ keep_wallpaper = true })
-            if ctx_menu and ctx_menu.refresh then
-                ctx_menu.refresh()
-            elseif touchmenu and touchmenu.updateItems then
-                touchmenu:updateItems()
-            elseif ctx_menu and ctx_menu.updateItems then
-                ctx_menu:updateItems()
-            end
-        end
-
-        -- Strength entry available only while a wallpaper is active.
         local function strengthItem(opts)
-            local extra_enabled = opts.enabled_func
-            opts.enabled_func = function()
-                return SUIWallpaper.isWallpaperActive() and (not extra_enabled or extra_enabled())
-            end
-            opts.refresh = refreshStrength
-            return Config.makeBackdropStrengthItem(opts)
+            return makeBackdropEntry(opts, ctx_menu)
         end
 
         -- Wallpaper tint entry (0–99 %, no tint by default).
@@ -2469,38 +2671,10 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 get   = SUIWallpaper.styleGetWallpaperDarken,
                 set   = SUIWallpaper.styleSetWallpaperDarken,
             }),
-            strengthItem({
-                title         = _("Status Bar Opacity"),
-                get           = SUIWallpaper.getStatusbarBackdropStrength,
-                set           = SUIWallpaper.setStatusbarBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.statusbar,
-            }),
-            strengthItem({
-                title         = _("Title Bar Button Opacity"),
-                info          = _("0% transparent, 100% solid. Rounded background behind title bar buttons (back, search, menu, …)."),
-                get           = SUIWallpaper.getTitlebarButtonBackdropStrength,
-                set           = SUIWallpaper.setTitlebarButtonBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.titlebar_button,
-            }),
-            strengthItem({
-                title         = _("Pagination Bar Opacity"),
-                info          = _("0% transparent, 100% solid. Applies to the native page bar in Library, History, Collections and similar screens."),
-                get           = SUIWallpaper.getPaginationBackdropStrength,
-                set           = SUIWallpaper.setPaginationBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.pagination,
-                enabled_func  = function() return SUISettings:nilOrTrue("simpleui_bar_pagination_visible") end,
-            }),
-            strengthItem({
-                title         = _("Navigation Bar Opacity"),
-                get           = SUIWallpaper.getNavbarBackdropStrength,
-                set           = SUIWallpaper.setNavbarBackdropStrength,
-                default_value = SUIWallpaper.BACKDROP_DEFAULT.navbar,
-                enabled_func  = function() return Bottombar.getBarStyle() ~= "bare" end,
-                value_func    = function()
-                    if Bottombar.getBarStyle() == "bare" then return "—" end
-                    return SUIWallpaper.formatBackdropStrength(SUIWallpaper.getNavbarBackdropStrength())
-                end,
-            }),
+            makeBarBackdropItem("statusbar",  ctx_menu, _("Status Bar Opacity")),
+            makeBarBackdropItem("titlebar",   ctx_menu, _("Title Bar Opacity")),
+            makeBarBackdropItem("pagination", ctx_menu, _("Pagination Bar Opacity")),
+            makeBarBackdropItem("navbar",     ctx_menu, _("Navigation Bar Opacity")),
         }
     end
     plugin.makeWallpaperMenuItems = makeWallpaperMenuItems
@@ -2604,8 +2778,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                 default_value = Config.SCALE_DEF,
                                 callback = function(spin)
                                     Config.setModuleScale(spin.value)
-                                    local HS = package.loaded["screens/sui_homescreen"]
-                                    if HS and HS.invalidateLabelCache then HS.invalidateLabelCache() end
                                     _applyFullLayoutRefresh()
                                     if ctx and ctx.refresh then ctx.refresh() end
                                 end,
@@ -2636,8 +2808,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                 default_value = Config.SCALE_DEF,
                                 callback = function(spin)
                                     Config.setLabelScale(spin.value)
-                                    local HS = package.loaded["screens/sui_homescreen"]
-                                    if HS and HS.invalidateLabelCache then HS.invalidateLabelCache() end
                                     _applyFullLayoutRefresh()
                                     if ctx and ctx.refresh then ctx.refresh() end
                                 end,
@@ -2654,8 +2824,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                 ok_text = _("Reset"),
                                 ok_callback = function()
                                     Config.resetAllScales(ctx.pfx, ctx.pfx_qa)
-                                    local HS = package.loaded["screens/sui_homescreen"]
-                                    if HS and HS.invalidateLabelCache then HS.invalidateLabelCache() end
                                     local FC = package.loaded["features/library/sui_foldercovers"]
                                     if FC and FC.invalidateCache then FC.invalidateCache() end
                                     _applyFullLayoutRefresh()
@@ -2901,19 +3069,21 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
 
     plugin.makeBarsMenuItems = makeBarsMenuItems
 
+    -- Refreshes the library mosaic view immediately after a setting change.
+    local function _refreshFC()
+        local FM = package.loaded["apps/filemanager/filemanager"]
+        local fm = FM and FM.instance
+        if fm and fm.file_chooser then
+            fm._navbar_suppress_path_change = true
+            fm.file_chooser:refreshPath()
+            fm._navbar_suppress_path_change = nil
+        end
+    end
+
     local function makeLibraryMenuItems(ctx_menu)
         local ok_fc, FC = pcall(require, "features/library/sui_foldercovers")
         if not ok_fc or not FC then return {} end
-        -- Refresh the mosaic view immediately after any setting change.
-        local function _refreshFC()
-            local FM = package.loaded["apps/filemanager/filemanager"]
-            local fm = FM and FM.instance
-            if fm and fm.file_chooser then
-                fm._navbar_suppress_path_change = true
-                fm.file_chooser:refreshPath()
-                fm._navbar_suppress_path_change = nil
-            end
-        end
+        local SUIWallpaper = require("features/sui_wallpaper")
         return {
             -- ── Enable Library Custom Covers ────────────────────────────
             {
@@ -3530,7 +3700,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                             -- ── Title and Author Below Covers ─────────────────────────────────
                             {
                                 text         = _("Title and Author Below Covers"),
-                                sub_item_table = {
+                                sub_item_table_func = function() return appendWhenWallpaperActive({
                                     {
                                         text           = _("Off"),
                                         radio          = true,
@@ -3599,9 +3769,52 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                                             })
                                         end,
                                     },
-                                },
+                                }, Config.makeBackdropStrengthItem({
+                                    title         = _("Background Opacity"),
+                                    get           = SUIWallpaper.getCoverStripBackdropStrength,
+                                    set           = SUIWallpaper.setCoverStripBackdropStrength,
+                                    default_value = SUIWallpaper.BACKDROP_DEFAULT.cover_strip,
+                                    enabled_func  = function()
+                                        return SUIWallpaper.styleGetWallpaperShowInFM()
+                                            and (FC.getShowTitleStrip() or FC.getShowAuthorStrip())
+                                    end,
+                                    refresh       = function(touchmenu)
+                                        _refreshFC()
+                                        if ctx_menu and ctx_menu.refresh then
+                                            ctx_menu.refresh()
+                                        elseif touchmenu and touchmenu.updateItems then
+                                            touchmenu:updateItems()
+                                        end
+                                    end,
+                                })) end,
                             },
                         },
+                    },
+                    -- ── Cover Shadow ───────────────────────────────────────────
+                    {
+                        text = _("Cover Shadow"),
+                        sub_item_table_func = function()
+                            local SUIStyle = require("features/sui_style")
+                            -- One checkbox per surface; `refresh` redraws that surface.
+                            local function scopeItem(label, scope, refresh)
+                                return {
+                                    text           = label,
+                                    checked_func   = function() return SUIStyle.coverShadowEnabled(scope) end,
+                                    keep_menu_open = true,
+                                    callback       = function()
+                                        SUIStyle.setCoverShadowEnabled(scope, not SUIStyle.coverShadowEnabled(scope))
+                                        refresh()
+                                    end,
+                                }
+                            end
+                            return {
+                                scopeItem(_("Library"), SUIStyle.SHADOW_LIBRARY, function()
+                                    FC.invalidateCache()
+                                    _refreshFC()
+                                end),
+                                scopeItem(_("Modules"), SUIStyle.SHADOW_MODULES, _applyFullLayoutRefresh),
+                            }
+                        end,
                     },
                     -- ── Uniformize Covers (2:3) ────────────────────────────────
                     {
@@ -3620,11 +3833,11 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         callback       = function() FC.setHideUnderline(not FC.getHideUnderline()); _refreshFC() end,
                     },
                     {
-                        text           = _("Hide Folder Book Spine"),
-                        checked_func   = function() return FC.getHideSpine() end,
+                        text           = _("Hide Folder Book Stack"),
+                        checked_func   = function() return FC.getHidePile() end,
                         keep_menu_open = true,
                         callback       = function()
-                            FC.setHideSpine(not FC.getHideSpine())
+                            FC.setHidePile(not FC.getHidePile())
                             FC.invalidateCache()
                             _refreshFC()
                         end,
@@ -3701,8 +3914,8 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         table.insert(items, tmp.filemanager_display_mode)
                     end
 
-                    -- 2. "Mosaic and detailed list settings" filtered:
-                    --    only the first 3 items (grid/list spinners).
+                    -- 2. "Mosaic and detailed list settings" filtered to the
+                    --    first 3 entries (grid/list size dialogs).
                     --    CoverBrowser inserts at pos 4+ of the stub.
                     local mosaic_item
                     for i, child in ipairs(tmp.filebrowser_settings.sub_item_table) do
@@ -3712,24 +3925,34 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         end
                     end
 
-                    if mosaic_item and type(mosaic_item.sub_item_table) == "table" then
-                        -- The first 3 entries are always:
-                        --   [1] Items per page in portrait mosaic mode  (DoubleSpinWidget)
-                        --   [2] Items per page in landscape mosaic mode (DoubleSpinWidget, separator=true)
-                        --   [3] Items per page in portrait list mode    (SpinWidget)
-                        -- We clone [2] without the separator so as not to break the visuals.
+                    local fc = fm.file_chooser
+                    if mosaic_item and fc and type(mosaic_item.sub_item_table) == "table" then
+                        -- Entries keep their native dialogs. Each row gets a
+                        -- static label and shows the current size as its value
+                        -- (see the row title/value convention in
+                        -- engines/sui_window.lua). Defaults mirror the native ones.
+                        local size_rows = {
+                            { label = _("Portrait mosaic mode"),
+                              value = function()
+                                  return T(_("%1 × %2"), fc.nb_cols_portrait or 3, fc.nb_rows_portrait or 3)
+                              end },
+                            { label = _("Landscape mosaic mode"),
+                              value = function()
+                                  return T(_("%1 × %2"), fc.nb_cols_landscape or 4, fc.nb_rows_landscape or 2)
+                              end },
+                            { label = _("Portrait list mode"),
+                              value = function() return tostring(fc.files_per_page or 10) end },
+                        }
                         local filtered = {}
-                        for i = 1, 3 do
+                        for i, row in ipairs(size_rows) do
                             local entry = mosaic_item.sub_item_table[i]
                             if not entry then break end
-                            if i == 2 then
-                                local clean = {}
-                                for k, v in pairs(entry) do clean[k] = v end
-                                clean.separator = nil
-                                table.insert(filtered, clean)
-                            else
-                                table.insert(filtered, entry)
-                            end
+                            entry.text           = row.label
+                            entry.text_func      = nil
+                            entry.value_func     = row.value
+                            entry.mandatory_func = row.value
+                            entry.separator      = nil
+                            filtered[#filtered + 1] = entry
                         end
                         table.insert(items, {
                             text           = mosaic_item.text,
