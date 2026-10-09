@@ -3790,32 +3790,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                             },
                         },
                     },
-                    -- ── Cover Shadow ───────────────────────────────────────────
-                    {
-                        text = _("Cover Shadow"),
-                        sub_item_table_func = function()
-                            local SUIStyle = require("features/sui_style")
-                            -- One checkbox per surface; `refresh` redraws that surface.
-                            local function scopeItem(label, scope, refresh)
-                                return {
-                                    text           = label,
-                                    checked_func   = function() return SUIStyle.coverShadowEnabled(scope) end,
-                                    keep_menu_open = true,
-                                    callback       = function()
-                                        SUIStyle.setCoverShadowEnabled(scope, not SUIStyle.coverShadowEnabled(scope))
-                                        refresh()
-                                    end,
-                                }
-                            end
-                            return {
-                                scopeItem(_("Library"), SUIStyle.SHADOW_LIBRARY, function()
-                                    FC.invalidateCache()
-                                    _refreshFC()
-                                end),
-                                scopeItem(_("Modules"), SUIStyle.SHADOW_MODULES, _applyFullLayoutRefresh),
-                            }
-                        end,
-                    },
                     -- ── Uniformize Covers (2:3) ────────────────────────────────
                     {
                         text           = _("Uniformize Covers (2:3)"),
@@ -4621,6 +4595,33 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                     },
                 }, -- end Icons sub_item_table
             },   -- end Icons submenu
+            -- ── Cover Shadow ──────────────────────────────────────────────
+            {
+                text = _("Cover Shadow"),
+                sub_item_table_func = function()
+                    local SUIStyle = require("features/sui_style")
+                    -- One checkbox per surface; `refresh` redraws that surface.
+                    local function scopeItem(label, scope, refresh)
+                        return {
+                            text           = label,
+                            checked_func   = function() return SUIStyle.coverShadowEnabled(scope) end,
+                            keep_menu_open = true,
+                            callback       = function()
+                                SUIStyle.setCoverShadowEnabled(scope, not SUIStyle.coverShadowEnabled(scope))
+                                refresh()
+                            end,
+                        }
+                    end
+                    return {
+                        scopeItem(_("Library"), SUIStyle.SHADOW_LIBRARY, function()
+                            local ok_fc, FC = pcall(require, "features/library/sui_foldercovers")
+                            if ok_fc and FC then FC.invalidateCache() end
+                            _refreshFC()
+                        end),
+                        scopeItem(_("Modules"), SUIStyle.SHADOW_MODULES, _applyFullLayoutRefresh),
+                    }
+                end,
+            },
             -- ── UI Font ───────────────────────────────────────────────────
             {
                 text = _("UI Font"),

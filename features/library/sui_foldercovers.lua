@@ -1014,6 +1014,60 @@ local function _installStripPatch(MosaicMenuItem, BookInfoManager, _STRIP_H,
     end -- FileManager_strip.setupLayout
 end
 
+-- ── Native no-cover widget ───────────────────────────────────────────────
+-- Grid items build their no-cover widget from a class local to the native
+-- mosaic menu. Swapping that upvalue renders the shared generated cover
+-- (engines/sui_cover_placeholder.lua) instead. Independent of the folder
+-- cover toggle.
+
+local _placeholder_class
+
+-- Adapter exposing the constructor contract of the native class.
+local function _placeholderClass()
+    if _placeholder_class then return _placeholder_class end
+    local Placeholder = require("engines/sui_cover_placeholder")
+    local util        = require("util")
+    _placeholder_class = {
+        new = function(_, opts)
+            local w, h  = Placeholder.fitSize(opts.width, opts.height)
+            local title = opts.title or (opts.filename and (util.splitFileNameSuffix(opts.filename)))
+            local cover = Placeholder.build(w, h, title, opts.authors or nil)
+            cover.dim = opts.file_deleted
+            return cover
+        end,
+    }
+    return _placeholder_class
+end
+
+-- The unwrapped native update: the upvalue lives on the original function,
+-- not on the folder-cover wrapper.
+local function _nativeUpdate(MosaicMenuItem)
+    return MosaicMenuItem._simpleui_fc_orig_update or MosaicMenuItem.update
+end
+
+function M.installPlaceholder()
+    local MosaicMenuItem, userpatch = _getMosaicMenuItemAndPatch()
+    if not MosaicMenuItem or MosaicMenuItem._simpleui_placeholder_n then return end
+
+    local update = _nativeUpdate(MosaicMenuItem)
+    local native, idx = userpatch.getUpValue(update, "FakeCover")
+    if not native then return end
+
+    debug.setupvalue(update, idx, _placeholderClass())
+    MosaicMenuItem._simpleui_placeholder_n    = idx
+    MosaicMenuItem._simpleui_placeholder_orig = native
+end
+
+function M.uninstallPlaceholder()
+    local MosaicMenuItem = _getMosaicMenuItemAndPatch()
+    if not (MosaicMenuItem and MosaicMenuItem._simpleui_placeholder_n) then return end
+
+    debug.setupvalue(_nativeUpdate(MosaicMenuItem),
+        MosaicMenuItem._simpleui_placeholder_n, MosaicMenuItem._simpleui_placeholder_orig)
+    MosaicMenuItem._simpleui_placeholder_n    = nil
+    MosaicMenuItem._simpleui_placeholder_orig = nil
+end
+
 function M.install()
     local MosaicMenuItem, userpatch = _getMosaicMenuItemAndPatch()
     if not MosaicMenuItem then return end

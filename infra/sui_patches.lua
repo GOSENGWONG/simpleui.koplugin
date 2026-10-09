@@ -5353,6 +5353,8 @@ function M.installAll(plugin)
     if ok_fc and FC and FC.isEnabled() then
         pcall(FC.install)
     end
+    -- Generated cover for books without one — independent of the toggle above.
+    if ok_fc and FC then pcall(FC.installPlaceholder) end
     -- Series grouping (books grouped inline inside a real folder) is a
     -- separate module from folder covers now — installed unconditionally;
     -- it checks FC.getSeriesGrouping() internally before doing anything.
@@ -5605,6 +5607,7 @@ function M.teardownAll(plugin)
 
     local FC = package.loaded["features/library/sui_foldercovers"]
     if FC then pcall(FC.uninstall) end
+    if FC then pcall(FC.uninstallPlaceholder) end
 
     local SG = package.loaded["features/library/sui_series_grouping"]
     if SG then pcall(SG.uninstall) end

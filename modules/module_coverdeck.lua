@@ -774,7 +774,7 @@ function M.build(w, ctx)
     end
     local function buildCroppedCover(fp, cw, ch, align)
         local bd    = SH.getBookData(fp, ctx.prefetched and ctx.prefetched[fp])
-        local cover = SH.getCroppedBookCover(fp, cw, ch, align, true) or SH.coverPlaceholder(bd.title, bd.authors, cw, ch, true)
+        local cover = SH.getCroppedBookCover(fp, cw, ch, align, true) or SH.coverPlaceholder(bd.title, bd.authors, cw, ch, true, align)
         -- Right-hand peeks show the cover's right edge — where the progress
         -- badge sits — so paint it there too when enabled (optional setting).
         -- Left peeks crop the left edge (badge would be off-canvas).
