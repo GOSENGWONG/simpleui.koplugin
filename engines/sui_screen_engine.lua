@@ -1422,7 +1422,7 @@ end
 function ScreenWidget:_setPage(page)
     self._current_page = page
     self.page          = page
-    self:_refresh(true)
+    self:_refresh(true, nil, nil, true)
 end
 
 -- Turns to the previous or next page (or spread) without wrapping.
@@ -2751,6 +2751,7 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
     -- to trigger a full pixel refresh cycle (avoids ghosting on cover bitmaps
     -- and wallpaper images).
     self.dithered = (page_has_covers or ctx.has_wallpaper) or nil
+    self._page_has_covers = page_has_covers
 
     -- In landscape, footer and navpager reflect spread count rather than raw pages.
     local footer_page, footer_total
@@ -3072,7 +3073,13 @@ end
 -- ---------------------------------------------------------------------------
 -- _refresh — debounced rebuild. Page turns call _updatePage directly.
 -- ---------------------------------------------------------------------------
-function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
+-- True when the file browser's "flash on cover images" option is enabled.
+local function _flashCoverImages()
+    local ok, bim = pcall(require, "bookinfomanager")
+    return ok and bim:getSetting("flash_ui_cover_images") and true or false
+end
+
+function ScreenWidget:_refresh(keep_cache, books_only, stats_only, page_turn)
     local defer_async = false
     if not keep_cache and self._body and self._ctx_cache then
         defer_async = true
@@ -3081,7 +3088,8 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only)
 
     if keep_cache and self._body then
         self:_updatePage(true)
-        UIManager:setDirty(self, "ui")
+        local flash = page_turn and self._page_has_covers and _flashCoverImages()
+        UIManager:setDirty(self, flash and "flashui" or "ui")
 
         if defer_async then self:_scheduleDataRefresh(stats_only) end
         return

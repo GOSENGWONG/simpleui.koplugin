@@ -3220,6 +3220,20 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                         })
                     end
 
+                    -- 3. Flash on cover images: shared with the Home Screen page turns.
+                    local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
+                    if ok_bim then
+                        table.insert(items, {
+                            text         = _("Flash when displaying covers"),
+                            checked_func = function()
+                                return BookInfoManager:getSetting("flash_ui_cover_images")
+                            end,
+                            callback     = function()
+                                BookInfoManager:toggleSetting("flash_ui_cover_images")
+                            end,
+                        })
+                    end
+
                     return items
                 end,
             },
