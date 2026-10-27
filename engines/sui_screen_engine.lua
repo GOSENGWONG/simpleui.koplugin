@@ -638,10 +638,8 @@ local ScreenWidget = InputContainer:extend{
 -- Returns true when another widget (e.g. a modal dialog) sits on top of the
 -- UIManager stack, so gesture handlers can fall through correctly.
 local function _hasModalOnTop(screen_widget)
-    local stack = UIManager._window_stack
-    if not stack or #stack == 0 then return false end
-    local top = stack[#stack]
-    return top and top.widget ~= screen_widget
+    local top = UI.getTopWindow()
+    return top ~= nil and top.widget ~= screen_widget
 end
 
 -- ---------------------------------------------------------------------------

@@ -521,10 +521,6 @@ function SUIWindow:show()
         }
         local win = self
         function self._wrapper:onTapOutside(_, ges)
-            local stack = UIManager._window_stack
-            if stack and #stack > 0 and stack[#stack].widget ~= self then
-                return false
-            end
             if mf.dimen and not ges.pos:intersectWith(mf.dimen) then
                 win:dismiss()
                 return true

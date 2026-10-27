@@ -2242,8 +2242,8 @@ local function _closedScreenExposesWidget(widget)
 end
 
 local function _refreshExposedWidget()
-    local stack = UI.getWindowStack()
-    local top = stack[#stack] and stack[#stack].widget
+    local top = UI.getTopWindow()
+    top = top and top.widget
     if top and top ~= liveFM() and top.covers_fullscreen and not _isReader(top) then
         UIManager:setDirty(top, "ui")
     end
@@ -2382,8 +2382,8 @@ end
 -- A foreign fullscreen widget can leave its pixels on a panel that the
 -- non-flashing refresh of the reopened screen does not clear: flash it once.
 local function _clearExposedGhosting()
-    local stack = UI.getWindowStack()
-    local top = stack[#stack] and stack[#stack].widget
+    local top = UI.getTopWindow()
+    top = top and top.widget
     if top and top.name == "homescreen" then
         UIManager:setDirty(nil, "flashui")
     end

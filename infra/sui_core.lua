@@ -590,6 +590,14 @@ function M.getWindowStack()
     return UIManager._window_stack
 end
 
+-- Topmost window entry that is not a toast, or nil.
+function M.getTopWindow()
+    local stack = M.getWindowStack()
+    for i = #stack, 1, -1 do
+        if not stack[i].widget.toast then return stack[i] end
+    end
+end
+
 -- ---------------------------------------------------------------------------
 -- Shared settings menu (#4)
 -- Eliminates the near-identical showSettingsMenu closures in bottombar.lua and
