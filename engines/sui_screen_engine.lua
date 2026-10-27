@@ -2748,8 +2748,9 @@ function ScreenWidget:_updatePage(keep_cache, books_only, stats_only)
     end
 
     -- Dithering hint for e-ink: UIManager checks widget.dithered on setDirty
-    -- to trigger a full pixel refresh cycle (avoids ghosting on cover bitmaps).
-    self.dithered = page_has_covers or nil
+    -- to trigger a full pixel refresh cycle (avoids ghosting on cover bitmaps
+    -- and wallpaper images).
+    self.dithered = (page_has_covers or ctx.has_wallpaper) or nil
 
     -- In landscape, footer and navpager reflect spread count rather than raw pages.
     local footer_page, footer_total
