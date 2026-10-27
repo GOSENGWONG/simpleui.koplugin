@@ -707,7 +707,8 @@ local function _installPatches()
             if VirtualPath.isVirtual(path) then
                 local collate = fc:getCollate()
                 local dirs, fls = _getVirtualList(fc, path, collate)
-                return fc:genItemTable(dirs, fls, path)
+                -- Virtual listings never hit the filesystem, so they count as readable.
+                return fc:genItemTable(dirs, fls, path), true
             end
             return orig(fc, path)
         end
