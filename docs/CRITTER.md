@@ -20,7 +20,7 @@ The bubble has a fixed size, so the critter and the decorations never move. You 
 
 ## Bundled critters
 
-Suey (the default, a cat), Chonk (a cat with heart-shaped sunglasses and a tiara), Tulu (a tiny winged tentacle-faced sea monster), Frankie (a stitched-together patchwork monster), Vlad (a pale, pointy-eared little vampire in a red-lined cape), Sholmes (a deerstalker-wearing detective in a long brown coat) and Argos (a loyal floppy-eared dog with a red collar). Each has twelve moods: `neutral`, `happy`, `party`, `sleepy`, `cheer`, `love`, `sad`, `surprised`, `curious`, `grumpy`, `shy`, `playful`.
+Suey (the default, a cat), Chonk (a cat with heart-shaped sunglasses and a tiara), Tulu (a tiny winged tentacle-faced sea monster), Frankie (a stitched-together patchwork monster), Vlad (a pale, pointy-eared little vampire in a red-lined cape), Sholmes (a deerstalker-wearing detective in a long brown coat), Argos (a loyal floppy-eared dog with a red collar) and Hazel (a messy-haired little witch in a crooked pointed hat and a gingham dress). Each has twelve moods: `neutral`, `happy`, `party`, `sleepy`, `cheer`, `love`, `sad`, `surprised`, `curious`, `grumpy`, `shy`, `playful`.
 
 ## Custom critters and decorations
 
