@@ -2604,28 +2604,44 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                 end,
             },
         }
+        local interaction_items = {
+            {
+                text           = _("Settings on Long Tap"),
+                help_text      = _("When enabled, long-pressing a module on the home screen opens its settings menu.\nDisable this to prevent settings from appearing on long tap."),
+                checked_func   = function()
+                    return SUISettings:nilOrTrue("simpleui_hs_settings_on_hold")
+                end,
+                keep_menu_open = true,
+                callback       = function()
+                    local on = SUISettings:nilOrTrue("simpleui_hs_settings_on_hold")
+                    SUISettings:saveSetting("simpleui_hs_settings_on_hold", not on)
+                    refreshHomescreen()
+                end,
+            },
+        }
+
+        -- Shares CoverBrowser's "Flash when displaying covers" setting; shown
+        -- only when CoverBrowser is available.
+        local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
+        if ok_bim then
+            table.insert(interaction_items, {
+                text           = _("Flash when displaying covers"),
+                help_text      = _("Use a flashing refresh when turning to or from a page with book covers, to reduce ghosting. Shared with the file browser setting of the same name."),
+                checked_func   = function()
+                    return BookInfoManager:getSetting("flash_ui_cover_images")
+                end,
+                keep_menu_open = true,
+                callback       = function()
+                    BookInfoManager:toggleSetting("flash_ui_cover_images")
+                end,
+            })
+        end
+
         local items = {
             { text = _("Start & Wake"), sub_item_table = start_items },
             { text = _("Books"),        sub_item_table = book_items },
             { text = _("Layout"),       sub_item_table = layout_items },
-            {
-                text = _("Interaction"),
-                sub_item_table = {
-                    {
-                        text           = _("Settings on Long Tap"),
-                        help_text      = _("When enabled, long-pressing a module on the home screen opens its settings menu.\nDisable this to prevent settings from appearing on long tap."),
-                        checked_func   = function()
-                            return SUISettings:nilOrTrue("simpleui_hs_settings_on_hold")
-                        end,
-                        keep_menu_open = true,
-                        callback       = function()
-                            local on = SUISettings:nilOrTrue("simpleui_hs_settings_on_hold")
-                            SUISettings:saveSetting("simpleui_hs_settings_on_hold", not on)
-                            refreshHomescreen()
-                        end,
-                    },
-                },
-            },
+            { text = _("Interaction"),  sub_item_table = interaction_items },
         }
 
         -- Shown only when the device maps a key to KOReader's "Home" name
@@ -3217,20 +3233,6 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
                             text           = mosaic_item.text,
                             separator      = mosaic_item.separator,
                             sub_item_table = filtered,
-                        })
-                    end
-
-                    -- 3. Flash on cover images: shared with the Home Screen page turns.
-                    local ok_bim, BookInfoManager = pcall(require, "bookinfomanager")
-                    if ok_bim then
-                        table.insert(items, {
-                            text         = _("Flash when displaying covers"),
-                            checked_func = function()
-                                return BookInfoManager:getSetting("flash_ui_cover_images")
-                            end,
-                            callback     = function()
-                                BookInfoManager:toggleSetting("flash_ui_cover_images")
-                            end,
                         })
                     end
 

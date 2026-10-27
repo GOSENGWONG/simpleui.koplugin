@@ -3087,8 +3087,9 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only, page_turn)
     end
 
     if keep_cache and self._body then
+        local had_covers = self._page_has_covers
         self:_updatePage(true)
-        local flash = page_turn and self._page_has_covers and _flashCoverImages()
+        local flash = page_turn and (had_covers or self._page_has_covers) and _flashCoverImages()
         UIManager:setDirty(self, flash and "flashui" or "ui")
 
         if defer_async then self:_scheduleDataRefresh(stats_only) end
