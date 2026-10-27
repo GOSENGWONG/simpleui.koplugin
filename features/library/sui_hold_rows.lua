@@ -184,6 +184,9 @@ local function closeAfterAction(row, close)
     end
 end
 
+-- Columns of the actions grid; wider registered rows are split to fit.
+local GRID_COLUMNS = 2
+
 --- Appends the rows registered through FileManager:addFileDialogButtons.
 --- Each row function receives (path, is_file, book_props, close_callback).
 function M.appendRegisteredRows(ctx, rows, is_file, book_props)
@@ -193,7 +196,9 @@ function M.appendRegisteredRows(ctx, rows, is_file, book_props)
         local ok, built = pcall(row.func, ctx.path, is_file, book_props, close)
         if ok and built ~= nil then
             if not (navigates or ctx.file_chooser) then closeAfterAction(built, close) end
-            M.appendRow(rows, built)
+            for first = 1, #built, GRID_COLUMNS do
+                M.appendRow(rows, { (table.unpack or unpack)(built, first, first + GRID_COLUMNS - 1) })
+            end
         end
     end
 end
