@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: simpleui\n"
-"POT-Creation-Date: 2026-10-28 23:22+0000\n"
+"POT-Creation-Date: 2026-10-28 23:52+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -253,7 +253,7 @@ msgstr ""
 msgid "A MARATHON! You're unstoppable!"
 msgstr ""
 
-#: modules/critter/dialog.lua:523
+#: modules/critter/dialog.lua:534
 msgid "A bit behind."
 msgstr ""
 
@@ -277,7 +277,7 @@ msgstr ""
 msgid "A brief, brilliant visit to another world!"
 msgstr ""
 
-#: modules/critter/dialog.lua:340
+#: modules/critter/dialog.lua:351
 #: modules/critter/voice_phrases.lua:101
 msgid "A chapter helps."
 msgstr ""
@@ -290,11 +290,11 @@ msgstr ""
 msgid "A charger would be lovely."
 msgstr ""
 
-#: modules/critter/dialog.lua:225
+#: modules/critter/dialog.lua:236
 msgid "A cosy one."
 msgstr ""
 
-#: modules/critter/dialog.lua:231
+#: modules/critter/dialog.lua:242
 msgid "A cosy one. Mostly naps."
 msgstr ""
 
@@ -308,6 +308,18 @@ msgstr ""
 
 #: modules/critter/voice_lines.lua:79
 msgid "A deep dive. I felt at home."
+msgstr ""
+
+#: modules/critter/game_lines.lua:34
+msgid "A draw! We think alike."
+msgstr ""
+
+#: modules/critter/game_lines.lua:32
+msgid "A draw."
+msgstr ""
+
+#: modules/critter/game_lines.lua:33
+msgid "A draw. Boring."
 msgstr ""
 
 #: modules/critter/voice_lines.lua:211
@@ -330,11 +342,11 @@ msgstr ""
 msgid "A fresh month, a fresh stack."
 msgstr ""
 
-#: modules/critter/dialog.lua:682
+#: modules/critter/dialog.lua:716
 msgid "A friendly eye."
 msgstr ""
 
-#: modules/critter/dialog.lua:612
+#: modules/critter/dialog.lua:623
 msgid "A gentle pat"
 msgstr ""
 
@@ -358,7 +370,7 @@ msgstr ""
 msgid "A little reading. Good enough."
 msgstr ""
 
-#: modules/critter/dialog.lua:141
+#: modules/critter/dialog.lua:152
 msgid "A little. Thanks for asking."
 msgstr ""
 
@@ -370,7 +382,7 @@ msgstr ""
 msgid "A long session. Elementary."
 msgstr ""
 
-#: modules/critter/dialog.lua:221
+#: modules/critter/dialog.lua:232
 msgid "A map! A sword! A tiny backpack!"
 msgstr ""
 
@@ -382,7 +394,7 @@ msgstr ""
 msgid "A month. I kept busy. Mostly sulking."
 msgstr ""
 
-#: modules/critter/dialog.lua:235
+#: modules/critter/dialog.lua:246
 msgid "A mystery."
 msgstr ""
 
@@ -426,7 +438,7 @@ msgstr ""
 msgid "A proper stretch."
 msgstr ""
 
-#: modules/critter/dialog.lua:294
+#: modules/critter/dialog.lua:305
 msgid "A purist. I knew I liked you."
 msgstr ""
 
@@ -488,7 +500,7 @@ msgstr ""
 msgid "A streak. How eternal."
 msgstr ""
 
-#: modules/critter/dialog.lua:242
+#: modules/critter/dialog.lua:253
 msgid "A very short one."
 msgstr ""
 
@@ -693,7 +705,7 @@ msgstr ""
 #: modules/module_action_list.lua:354
 #: modules/module_action_list.lua:354
 #: modules/module_quick_actions.lua:598
-#: modules/module_quote.lua:1485
+#: modules/module_quote.lua:1499
 msgid "Alignment"
 msgstr ""
 
@@ -725,7 +737,7 @@ msgstr ""
 msgid "All time"
 msgstr ""
 
-#: modules/critter/dialog.lua:161
+#: modules/critter/dialog.lua:172
 #: modules/critter/voice_lines.lua:131
 msgid "Almost."
 msgstr ""
@@ -734,11 +746,11 @@ msgstr ""
 msgid "Always"
 msgstr ""
 
-#: modules/critter/dialog.lua:314
+#: modules/critter/dialog.lua:325
 msgid "Always."
 msgstr ""
 
-#: modules/critter/dialog.lua:216
+#: modules/critter/dialog.lua:227
 msgid "An adventure."
 msgstr ""
 
@@ -754,7 +766,7 @@ msgstr ""
 msgid "An epic voyage! The sagas will remember it!"
 msgstr ""
 
-#: modules/critter/dialog.lua:183
+#: modules/critter/dialog.lua:194
 msgid "An old bus ticket."
 msgstr ""
 
@@ -787,7 +799,8 @@ msgstr ""
 msgid "Another lap around the sun."
 msgstr ""
 
-#: modules/critter/dialog.lua:802
+#: modules/critter/dialog.lua:838
+#: modules/critter/game_lines.lua:133
 msgid "Another one"
 msgstr ""
 
@@ -795,11 +808,15 @@ msgstr ""
 msgid "Another one for the done pile."
 msgstr ""
 
+#: modules/critter/game_lines.lua:132
+msgid "Another round"
+msgstr ""
+
 #: modules/critter/reaction_lines.lua:229
 msgid "Another year. The pile is still there."
 msgstr ""
 
-#: modules/critter/dialog.lua:255
+#: modules/critter/dialog.lua:266
 msgid "Anywhere I can."
 msgstr ""
 
@@ -905,7 +922,7 @@ msgstr ""
 msgid "As always."
 msgstr ""
 
-#: modules/critter/dialog.lua:246
+#: modules/critter/dialog.lua:257
 msgid "Ask anyone my size."
 msgstr ""
 
@@ -930,8 +947,8 @@ msgstr ""
 #: modules/module_coverdeck.lua:1618
 #: modules/module_currently.lua:269
 #: modules/module_currently.lua:1374
-#: modules/module_quote.lua:1447
-#: modules/module_quote.lua:1468
+#: modules/module_quote.lua:1461
+#: modules/module_quote.lua:1482
 #: screens/sui_quicksettings_bar.lua:221
 msgid "Author"
 msgstr ""
@@ -1096,7 +1113,7 @@ msgstr ""
 msgid "Battery low. Elementary."
 msgstr ""
 
-#: modules/critter/dialog.lua:288
+#: modules/critter/dialog.lua:299
 msgid "Be honest: do you read the last page first?"
 msgstr ""
 
@@ -1111,7 +1128,7 @@ msgstr ""
 msgid "Below Cover"
 msgstr ""
 
-#: modules/critter/dialog.lua:619
+#: modules/critter/dialog.lua:630
 msgid "Best part of my day."
 msgstr ""
 
@@ -1136,11 +1153,11 @@ msgstr ""
 msgid "Bold italic"
 msgstr ""
 
-#: modules/critter/dialog.lua:684
+#: modules/critter/dialog.lua:718
 msgid "Bold. Let's see."
 msgstr ""
 
-#: modules/critter/dialog.lua:317
+#: modules/critter/dialog.lua:328
 msgid "Bold. You like to know who makes it."
 msgstr ""
 
@@ -1221,7 +1238,7 @@ msgstr ""
 msgid "Books abandoned"
 msgstr ""
 
-#: modules/critter/dialog.lua:351
+#: modules/critter/dialog.lua:362
 msgid "Books are good at that."
 msgstr ""
 
@@ -1229,7 +1246,7 @@ msgstr ""
 msgid "Books are tiny adventures."
 msgstr ""
 
-#: modules/critter/dialog.lua:164
+#: modules/critter/dialog.lua:175
 msgid "Books don't have feelings."
 msgstr ""
 
@@ -1379,7 +1396,7 @@ msgstr ""
 msgid "Calendar"
 msgstr ""
 
-#: modules/critter/dialog.lua:101
+#: modules/critter/dialog.lua:112
 msgid "Can I stay up while you read tonight?"
 msgstr ""
 
@@ -1387,7 +1404,7 @@ msgstr ""
 msgid "Can we do it again?"
 msgstr ""
 
-#: modules/critter/dialog.lua:558
+#: modules/critter/dialog.lua:569
 msgid "Can't say. Spoilers."
 msgstr ""
 
@@ -1411,7 +1428,7 @@ msgstr ""
 #: features/sui_style.lua:1294
 #: infra/sui_updater.lua:500
 #: infra/sui_updater.lua:517
-#: modules/module_quote.lua:1304
+#: modules/module_quote.lua:1318
 #: screens/sui_menu.lua:3855
 #: screens/sui_menu.lua:3875
 #: screens/sui_menu.lua:3916
@@ -1425,7 +1442,7 @@ msgstr ""
 msgid "Cards"
 msgstr ""
 
-#: modules/critter/dialog.lua:281
+#: modules/critter/dialog.lua:292
 msgid "Careful. Books fall on faces."
 msgstr ""
 
@@ -1436,7 +1453,7 @@ msgstr ""
 msgid "Center"
 msgstr ""
 
-#: modules/critter/dialog.lua:678
+#: modules/critter/dialog.lua:712
 msgid "Challenge accepted"
 msgstr ""
 
@@ -1484,7 +1501,7 @@ msgstr ""
 msgid "Change against last week"
 msgstr ""
 
-#: modules/critter/dialog.lua:320
+#: modules/critter/dialog.lua:331
 msgid "Chaos. I respect it."
 msgstr ""
 
@@ -1614,6 +1631,10 @@ msgstr ""
 msgid "Close the curtains. Read."
 msgstr ""
 
+#: modules/critter/game_lines.lua:60
+msgid "Close! It was %s."
+msgstr ""
+
 #: screens/sui_menu.lua:2385
 msgid "Closing Book Notice"
 msgstr ""
@@ -1732,11 +1753,23 @@ msgstr ""
 msgid "Corner Badge"
 msgstr ""
 
-#: modules/critter/dialog.lua:389
+#: modules/critter/game_lines.lua:53
+msgid "Correct!"
+msgstr ""
+
+#: modules/critter/game_lines.lua:55
+msgid "Correct! You know your books."
+msgstr ""
+
+#: modules/critter/dialog.lua:400
 msgid "Correct. Don't get smug."
 msgstr ""
 
-#: modules/critter/dialog.lua:386
+#: modules/critter/game_lines.lua:54
+msgid "Correct. Don't let it go to your head."
+msgstr ""
+
+#: modules/critter/dialog.lua:397
 msgid "Correct. You get a gold star."
 msgstr ""
 
@@ -1744,7 +1777,7 @@ msgstr ""
 msgid "Cosy, crackling, wonderful."
 msgstr ""
 
-#: modules/critter/dialog.lua:347
+#: modules/critter/dialog.lua:358
 msgid "Could be better."
 msgstr ""
 
@@ -1900,11 +1933,11 @@ msgstr ""
 msgid "Custom Actions"
 msgstr ""
 
-#: modules/module_quote.lua:1423
+#: modules/module_quote.lua:1437
 msgid "Custom File"
 msgstr ""
 
-#: modules/module_quote.lua:1428
+#: modules/module_quote.lua:1442
 msgid "Custom File + My Highlights"
 msgstr ""
 
@@ -2023,20 +2056,20 @@ msgstr ""
 msgid "Dawn tide. Good morning."
 msgstr ""
 
-#: modules/critter/dialog.lua:435
-#: modules/critter/dialog.lua:437
+#: modules/critter/dialog.lua:446
+#: modules/critter/dialog.lua:448
 msgid "Day %d, here we come!"
 msgstr ""
 
-#: modules/critter/dialog.lua:475
+#: modules/critter/dialog.lua:486
 msgid "Day one with you. My favourite."
 msgstr ""
 
-#: modules/critter/dialog.lua:474
+#: modules/critter/dialog.lua:485
 msgid "Day one. Again. Fine."
 msgstr ""
 
-#: modules/critter/dialog.lua:471
+#: modules/critter/dialog.lua:482
 msgid "Day one. My favourite kind."
 msgstr ""
 
@@ -2061,7 +2094,7 @@ msgstr ""
 msgid "Days without you. Dreadful."
 msgstr ""
 
-#: modules/critter/dialog.lua:681
+#: modules/critter/dialog.lua:715
 msgid "Deal. I'll keep an eye on it."
 msgstr ""
 
@@ -2109,7 +2142,7 @@ msgstr ""
 msgid "Default (System)"
 msgstr ""
 
-#: modules/module_quote.lua:1418
+#: modules/module_quote.lua:1432
 msgid "Default Quotes"
 msgstr ""
 
@@ -2245,11 +2278,11 @@ msgstr ""
 msgid "Do not disturb."
 msgstr ""
 
-#: modules/critter/dialog.lua:135
+#: modules/critter/dialog.lua:146
 msgid "Do you get lonely?"
 msgstr ""
 
-#: modules/critter/dialog.lua:132
+#: modules/critter/dialog.lua:143
 msgid "Do you think books get lonely?"
 msgstr ""
 
@@ -2261,7 +2294,7 @@ msgstr ""
 msgid "Don't break the spell."
 msgstr ""
 
-#: modules/critter/dialog.lua:630
+#: modules/critter/dialog.lua:641
 msgid "Don't ever stop."
 msgstr ""
 
@@ -2273,7 +2306,7 @@ msgstr ""
 msgid "Don't let it fray."
 msgstr ""
 
-#: modules/critter/dialog.lua:494
+#: modules/critter/dialog.lua:505
 msgid "Don't remind me."
 msgstr ""
 
@@ -2293,7 +2326,7 @@ msgstr ""
 msgid "Done and dusted."
 msgstr ""
 
-#: modules/critter/dialog.lua:201
+#: modules/critter/dialog.lua:212
 msgid "Done. It was holding someone's place."
 msgstr ""
 
@@ -2437,6 +2470,10 @@ msgstr ""
 msgid "Energy flows! I am reborn!"
 msgstr ""
 
+#: modules/critter/game_lines.lua:134
+msgid "Enough for now"
+msgstr ""
+
 #: features/sui_accent_picker.lua:54
 msgid "Enter a color like #2F6FDB."
 msgstr ""
@@ -2523,15 +2560,15 @@ msgstr ""
 msgid "Evening. Time to be fabulous."
 msgstr ""
 
-#: modules/critter/dialog.lua:110
+#: modules/critter/dialog.lua:121
 msgid "Eventually."
 msgstr ""
 
-#: modules/critter/dialog.lua:67
+#: modules/critter/dialog.lua:69
 msgid "Every book opened! Look at you!"
 msgstr ""
 
-#: modules/critter/dialog.lua:383
+#: modules/critter/dialog.lua:394
 msgid "Every day is a reading day."
 msgstr ""
 
@@ -2543,15 +2580,15 @@ msgstr ""
 msgid "Every page counts."
 msgstr ""
 
-#: modules/critter/dialog.lua:305
+#: modules/critter/dialog.lua:316
 msgid "Every time."
 msgstr ""
 
-#: modules/critter/dialog.lua:109
+#: modules/critter/dialog.lua:120
 msgid "Everything is about books."
 msgstr ""
 
-#: modules/critter/dialog.lua:472
+#: modules/critter/dialog.lua:483
 msgid "Everything starts here."
 msgstr ""
 
@@ -2642,11 +2679,11 @@ msgstr ""
 msgid "Fades the wallpaper towards white to improve text readability."
 msgstr ""
 
-#: modules/critter/dialog.lua:490
+#: modules/critter/dialog.lua:501
 msgid "Fair. Even streaks get tired."
 msgstr ""
 
-#: modules/critter/dialog.lua:561
+#: modules/critter/dialog.lua:572
 msgid "Fair. I'll find out myself one day."
 msgstr ""
 
@@ -2746,11 +2783,23 @@ msgstr ""
 msgid "Fine. A decent session. Don't let it go to your head."
 msgstr ""
 
-#: modules/critter/dialog.lua:125
+#: modules/critter/dialog.lua:136
 msgid "Fine. It'll keep."
 msgstr ""
 
-#: modules/critter/dialog.lua:77
+#: modules/critter/dialog.lua:90
+msgid "Fine. More room for me."
+msgstr ""
+
+#: modules/critter/game_lines.lua:80
+msgid "Fine. That one can stay."
+msgstr ""
+
+#: modules/critter/game_lines.lua:66
+msgid "Fine. That's enough for me too."
+msgstr ""
+
+#: modules/critter/dialog.lua:79
 msgid "Fine. The books can wait. So can I."
 msgstr ""
 
@@ -2776,8 +2825,8 @@ msgstr ""
 msgid "Five"
 msgstr ""
 
-#: modules/module_quote.lua:1454
-#: modules/module_quote.lua:1485
+#: modules/module_quote.lua:1468
+#: modules/module_quote.lua:1499
 msgid "Fixed Height"
 msgstr ""
 
@@ -2868,7 +2917,7 @@ msgstr ""
 msgid "Font"
 msgstr ""
 
-#: modules/module_quote.lua:1483
+#: modules/module_quote.lua:1497
 msgid "Fonts"
 msgstr ""
 
@@ -2876,7 +2925,7 @@ msgstr ""
 msgid "Fonts, icon assignments, icon presets"
 msgstr ""
 
-#: modules/critter/dialog.lua:497
+#: modules/critter/dialog.lua:508
 msgid "Forgotten. What streak?"
 msgstr ""
 
@@ -2960,7 +3009,7 @@ msgstr ""
 msgid "General — %d settings"
 msgstr ""
 
-#: modules/critter/dialog.lua:590
+#: modules/critter/dialog.lua:601
 msgid "Gently."
 msgstr ""
 
@@ -2993,7 +3042,7 @@ msgstr ""
 msgid "Go to Settings > Home Screen to edit your layout whenever you want."
 msgstr ""
 
-#: modules/critter/dialog.lua:708
+#: modules/critter/dialog.lua:742
 msgid "Go! I'll be here, counting."
 msgstr ""
 
@@ -3007,7 +3056,7 @@ msgstr ""
 msgid "Goals & Streaks"
 msgstr ""
 
-#: modules/critter/dialog.lua:534
+#: modules/critter/dialog.lua:545
 msgid "Goals are like that."
 msgstr ""
 
@@ -3037,6 +3086,10 @@ msgstr ""
 
 #: modules/critter/voice_phrases.lua:170
 msgid "Good friend!"
+msgstr ""
+
+#: modules/critter/game_lines.lua:65
+msgid "Good game. Same time tomorrow?"
 msgstr ""
 
 #: modules/critter/phrases.lua:89
@@ -3079,19 +3132,19 @@ msgstr ""
 msgid "Good tickle. Keep going."
 msgstr ""
 
-#: modules/critter/dialog.lua:652
+#: modules/critter/dialog.lua:663
 msgid "Good. I like the quiet."
 msgstr ""
 
-#: modules/critter/dialog.lua:438
+#: modules/critter/dialog.lua:449
 msgid "Good. I'd hate to start over."
 msgstr ""
 
-#: modules/critter/dialog.lua:339
+#: modules/critter/dialog.lua:350
 msgid "Good. Let's keep it that way."
 msgstr ""
 
-#: modules/critter/dialog.lua:296
+#: modules/critter/dialog.lua:307
 msgid "Good. Some rules matter."
 msgstr ""
 
@@ -3107,7 +3160,7 @@ msgstr ""
 msgid "Great going, %s!"
 msgstr ""
 
-#: modules/critter/dialog.lua:152
+#: modules/critter/dialog.lua:163
 msgid "Great. Now I'll worry all night."
 msgstr ""
 
@@ -3153,6 +3206,10 @@ msgstr ""
 msgid "Grows or shrinks the cover so its height always matches the text column, keeping the cover's proportions.\nThe spacing between cover and text stays as set above.\nThe Cover size setting still applies on top of this, and the cover never shrinks below its 100% size."
 msgstr ""
 
+#: modules/critter/game_lines.lua:95
+msgid "Guess the author"
+msgstr ""
+
 #: modules/critter/reaction_lines.lua:272
 msgid "HAPPY ANNIVERSARY! I love us!"
 msgstr ""
@@ -3161,7 +3218,7 @@ msgstr ""
 msgid "HAPPY NEW YEAR! Let's read everything!"
 msgstr ""
 
-#: modules/critter/dialog.lua:643
+#: modules/critter/dialog.lua:654
 msgid "Ha! You'll pay for this!"
 msgstr ""
 
@@ -3213,7 +3270,15 @@ msgstr ""
 msgid "He wanted a sequel."
 msgstr ""
 
-#: modules/critter/dialog.lua:638
+#: modules/critter/game_lines.lua:108
+msgid "Heads"
+msgstr ""
+
+#: modules/critter/game_lines.lua:94
+msgid "Heads or tails"
+msgstr ""
+
+#: modules/critter/dialog.lua:649
 msgid "Hehe! Stop! Don't stop!"
 msgstr ""
 
@@ -3241,7 +3306,7 @@ msgstr ""
 msgid "Hex Color"
 msgstr ""
 
-#: modules/critter/dialog.lua:641
+#: modules/critter/dialog.lua:652
 msgid "Hey! I was resting."
 msgstr ""
 
@@ -3311,8 +3376,12 @@ msgstr ""
 msgid "History not available."
 msgstr ""
 
-#: modules/critter/dialog.lua:618
+#: modules/critter/dialog.lua:629
 msgid "Hm. Fine. That's enough."
+msgstr ""
+
+#: modules/critter/game_lines.lua:79
+msgid "Hm. I've read worse."
 msgstr ""
 
 #: features/sui_quickactions.lua:706
@@ -3390,11 +3459,11 @@ msgstr ""
 msgid "How many weeks of history to include, and (in Calendar view) how many weeks the grid shows — this count is unaffected by Scale, which only resizes the cells. In Time of day view, this only changes how much history feeds the shading — the grid itself always has one column per hour."
 msgstr ""
 
-#: modules/critter/dialog.lua:331
+#: modules/critter/dialog.lua:342
 msgid "How was your day?"
 msgstr ""
 
-#: modules/critter/dialog.lua:330
+#: modules/critter/dialog.lua:341
 msgid "How's the afternoon going?"
 msgstr ""
 
@@ -3406,11 +3475,11 @@ msgstr ""
 msgid "I approve of habits."
 msgstr ""
 
-#: modules/critter/dialog.lua:139
+#: modules/critter/dialog.lua:150
 msgid "I can hear the pages."
 msgstr ""
 
-#: modules/critter/dialog.lua:527
+#: modules/critter/dialog.lua:538
 msgid "I checked the rules."
 msgstr ""
 
@@ -3430,19 +3499,19 @@ msgstr ""
 msgid "I felt a ripple of joy."
 msgstr ""
 
-#: modules/critter/dialog.lua:530
+#: modules/critter/dialog.lua:541
 msgid "I forgot I had one."
 msgstr ""
 
-#: modules/critter/dialog.lua:177
+#: modules/critter/dialog.lua:188
 msgid "I found something between the pages."
 msgstr ""
 
-#: modules/critter/dialog.lua:342
+#: modules/critter/dialog.lua:353
 msgid "I had a feeling it would be."
 msgstr ""
 
-#: modules/critter/dialog.lua:239
+#: modules/critter/dialog.lua:250
 msgid "I have a suspect."
 msgstr ""
 
@@ -3454,15 +3523,15 @@ msgstr ""
 msgid "I kept your place."
 msgstr ""
 
-#: modules/critter/dialog.lua:513
+#: modules/critter/dialog.lua:524
 msgid "I knew it. I've seen the shelf."
 msgstr ""
 
-#: modules/critter/dialog.lua:297
+#: modules/critter/dialog.lua:308
 msgid "I knew it. The good kind of reader."
 msgstr ""
 
-#: modules/critter/dialog.lua:686
+#: modules/critter/dialog.lua:720
 msgid "I knew you'd say yes."
 msgstr ""
 
@@ -3470,8 +3539,12 @@ msgstr ""
 msgid "I looked fabulous watching."
 msgstr ""
 
-#: modules/critter/dialog.lua:432
+#: modules/critter/dialog.lua:443
 msgid "I love counting."
+msgstr ""
+
+#: modules/critter/game_lines.lua:67
+msgid "I love playing with you."
 msgstr ""
 
 #: modules/critter/voice_lines.lua:236
@@ -3482,7 +3555,7 @@ msgstr ""
 msgid "I missed you, %s!"
 msgstr ""
 
-#: modules/critter/dialog.lua:491
+#: modules/critter/dialog.lua:502
 msgid "I nap all the time."
 msgstr ""
 
@@ -3500,7 +3573,7 @@ msgstr ""
 msgid "I observe everything."
 msgstr ""
 
-#: modules/critter/dialog.lua:116
+#: modules/critter/dialog.lua:127
 msgid "I only have small ones."
 msgstr ""
 
@@ -3512,7 +3585,7 @@ msgstr ""
 msgid "I saved you a spot."
 msgstr ""
 
-#: modules/critter/dialog.lua:282
+#: modules/critter/dialog.lua:293
 msgid "I speak from experience."
 msgstr ""
 
@@ -3532,7 +3605,7 @@ msgstr ""
 msgid "I supervised. Very hard."
 msgstr ""
 
-#: modules/critter/dialog.lua:148
+#: modules/critter/dialog.lua:159
 msgid "I visit them at night."
 msgstr ""
 
@@ -3542,6 +3615,10 @@ msgstr ""
 
 #: modules/critter/voice_lines.lua:164
 msgid "I waited. Good dog."
+msgstr ""
+
+#: modules/critter/game_lines.lua:88
+msgid "I want to frame that one."
 msgstr ""
 
 #: modules/critter/voice_lines.lua:230
@@ -3556,7 +3633,19 @@ msgstr ""
 msgid "I watched the door all week."
 msgstr ""
 
-#: modules/critter/dialog.lua:318
+#: modules/critter/game_lines.lua:29
+msgid "I win! Want to try again?"
+msgstr ""
+
+#: modules/critter/game_lines.lua:27
+msgid "I win."
+msgstr ""
+
+#: modules/critter/game_lines.lua:28
+msgid "I win. Obviously."
+msgstr ""
+
+#: modules/critter/dialog.lua:329
 msgid "I won't tell anyone."
 msgstr ""
 
@@ -3564,11 +3653,11 @@ msgstr ""
 msgid "I'd give it a pat."
 msgstr ""
 
-#: modules/critter/dialog.lua:99
+#: modules/critter/dialog.lua:110
 msgid "I'd hate to keep them waiting."
 msgstr ""
 
-#: modules/critter/dialog.lua:365
+#: modules/critter/dialog.lua:376
 msgid "I'd rather not talk."
 msgstr ""
 
@@ -3580,7 +3669,7 @@ msgstr ""
 msgid "I'll allow a short nap."
 msgstr ""
 
-#: modules/critter/dialog.lua:480
+#: modules/critter/dialog.lua:491
 msgid "I'll be back soon."
 msgstr ""
 
@@ -3588,7 +3677,7 @@ msgstr ""
 msgid "I'll flash a fang for you."
 msgstr ""
 
-#: modules/critter/dialog.lua:191
+#: modules/critter/dialog.lua:202
 msgid "I'll give it back. Warm."
 msgstr ""
 
@@ -3596,24 +3685,32 @@ msgstr ""
 msgid "I'll just rest my eyes."
 msgstr ""
 
-#: modules/critter/dialog.lua:483
+#: modules/critter/game_lines.lua:73
+msgid "I'll keep that one on the shelf."
+msgstr ""
+
+#: modules/critter/dialog.lua:494
 msgid "I'll keep your place."
 msgstr ""
 
-#: modules/critter/dialog.lua:397
+#: modules/critter/dialog.lua:408
 msgid "I'll look."
 msgstr ""
 
-#: modules/critter/dialog.lua:616
+#: modules/critter/dialog.lua:627
 msgid "I'll pretend I didn't need it."
 msgstr ""
 
-#: modules/critter/dialog.lua:589
+#: modules/critter/dialog.lua:600
 msgid "I'll remind you."
 msgstr ""
 
 #: modules/critter/voice_lines.lua:197
 msgid "I'll stir in a little luck."
+msgstr ""
+
+#: modules/critter/game_lines.lua:75
+msgid "I'll think about that all night."
 msgstr ""
 
 #: modules/critter/voice_phrases.lua:131
@@ -3624,7 +3721,11 @@ msgstr ""
 msgid "I'm at %d%%."
 msgstr ""
 
-#: modules/critter/dialog.lua:484
+#: modules/critter/game_lines.lua:98
+msgid "I'm flipping. Call it."
+msgstr ""
+
+#: modules/critter/dialog.lua:495
 msgid "I'm good at that."
 msgstr ""
 
@@ -3641,7 +3742,7 @@ msgstr ""
 msgid "I'm not crying. It's dust."
 msgstr ""
 
-#: modules/critter/dialog.lua:387
+#: modules/critter/dialog.lua:398
 msgid "I'm out of stars. Imagine one."
 msgstr ""
 
@@ -3649,7 +3750,7 @@ msgstr ""
 msgid "I'm ready!"
 msgstr ""
 
-#: modules/critter/dialog.lua:404
+#: modules/critter/dialog.lua:415
 msgid "I'm the one who counts."
 msgstr ""
 
@@ -3665,7 +3766,7 @@ msgstr ""
 msgid "I've been waiting all year."
 msgstr ""
 
-#: modules/critter/dialog.lua:160
+#: modules/critter/dialog.lua:171
 msgid "I've noticed. Not a speck of dust."
 msgstr ""
 
@@ -3714,11 +3815,11 @@ msgstr ""
 msgid "Icons, fonts and appearance"
 msgstr ""
 
-#: modules/critter/dialog.lua:400
+#: modules/critter/dialog.lua:411
 msgid "If I find the time."
 msgstr ""
 
-#: modules/critter/dialog.lua:213
+#: modules/critter/dialog.lua:224
 msgid "If I were in a book, what kind would it be?"
 msgstr ""
 
@@ -3735,7 +3836,7 @@ msgstr ""
 msgid "Import preset"
 msgstr ""
 
-#: modules/critter/dialog.lua:64
+#: modules/critter/dialog.lua:66
 msgid "Impressive. And a bit worrying."
 msgstr ""
 
@@ -3743,11 +3844,11 @@ msgstr ""
 msgid "In a good way."
 msgstr ""
 
-#: modules/critter/dialog.lua:278
+#: modules/critter/dialog.lua:289
 msgid "In bed."
 msgstr ""
 
-#: modules/critter/dialog.lua:447
+#: modules/critter/dialog.lua:458
 msgid "In big letters."
 msgstr ""
 
@@ -3817,23 +3918,27 @@ msgstr ""
 msgid "Invert in Night Mode"
 msgstr ""
 
-#: modules/critter/dialog.lua:106
+#: modules/critter/dialog.lua:117
 msgid "Is it about books?"
 msgstr ""
 
-#: modules/critter/dialog.lua:533
+#: modules/critter/dialog.lua:544
 msgid "It didn't forget you."
 msgstr ""
 
-#: modules/critter/dialog.lua:487
+#: modules/critter/dialog.lua:498
 msgid "It needed a rest."
+msgstr ""
+
+#: modules/critter/game_lines.lua:58
+msgid "It was %s."
 msgstr ""
 
 #: modules/critter/reaction_lines.lua:99
 msgid "It will be sung about."
 msgstr ""
 
-#: modules/critter/dialog.lua:379
+#: modules/critter/dialog.lua:390
 msgid "It's %s. Any reading planned?"
 msgstr ""
 
@@ -3841,7 +3946,7 @@ msgstr ""
 msgid "It's %s. I barely noticed."
 msgstr ""
 
-#: modules/critter/dialog.lua:377
+#: modules/critter/dialog.lua:388
 msgid "It's %s. Reading day, surely?"
 msgstr ""
 
@@ -3873,7 +3978,7 @@ msgstr ""
 msgid "It's called reading."
 msgstr ""
 
-#: modules/critter/dialog.lua:609
+#: modules/critter/dialog.lua:620
 msgid "It's quiet on the shelf. Pat me?"
 msgstr ""
 
@@ -4026,7 +4131,7 @@ msgstr ""
 msgid "Later"
 msgstr ""
 
-#: modules/critter/dialog.lua:586
+#: modules/critter/dialog.lua:597
 msgid "Later tonight."
 msgstr ""
 
@@ -4056,7 +4161,7 @@ msgstr ""
 msgid "Layout, wallpaper, presets and behaviour"
 msgstr ""
 
-#: modules/critter/dialog.lua:198
+#: modules/critter/dialog.lua:209
 msgid "Leave it where it is."
 msgstr ""
 
@@ -4070,7 +4175,7 @@ msgstr ""
 msgid "Left"
 msgstr ""
 
-#: modules/critter/dialog.lua:629
+#: modules/critter/dialog.lua:640
 msgid "Left. No, not that left."
 msgstr ""
 
@@ -4079,20 +4184,24 @@ msgstr ""
 msgid "Less"
 msgstr ""
 
-#: modules/critter/dialog.lua:710
+#: modules/critter/dialog.lua:744
 msgid "Less talking. More reading."
 msgstr ""
 
-#: modules/critter/dialog.lua:647
+#: modules/critter/dialog.lua:658
 msgid "Let it be"
 msgstr ""
 
-#: modules/critter/dialog.lua:428
+#: modules/critter/dialog.lua:439
 msgid "Let's keep it going."
 msgstr ""
 
 #: modules/critter/reaction_lines.lua:241
 msgid "Let's make it a good chapter."
+msgstr ""
+
+#: modules/critter/dialog.lua:689
+msgid "Let's play"
 msgstr ""
 
 #: modules/critter/phrases.lua:315
@@ -4104,7 +4213,7 @@ msgstr ""
 msgid "Let's see what %s brings."
 msgstr ""
 
-#: modules/critter/dialog.lua:468
+#: modules/critter/dialog.lua:479
 msgid "Let's start again today."
 msgstr ""
 
@@ -4214,7 +4323,7 @@ msgstr ""
 msgid "Longest session, 90 days"
 msgstr ""
 
-#: modules/critter/dialog.lua:117
+#: modules/critter/dialog.lua:128
 msgid "Look at me."
 msgstr ""
 
@@ -4279,11 +4388,15 @@ msgstr ""
 msgid "LuaSettings module unavailable"
 msgstr ""
 
-#: modules/critter/dialog.lua:553
+#: modules/critter/game_lines.lua:41
+msgid "Lucky guess."
+msgstr ""
+
+#: modules/critter/dialog.lua:564
 msgid "Lucky. I stayed here. On the shelf."
 msgstr ""
 
-#: modules/critter/dialog.lua:550
+#: modules/critter/dialog.lua:561
 msgid "Lucky. I've never left this shelf."
 msgstr ""
 
@@ -4342,7 +4455,7 @@ msgstr ""
 msgid "May your year be full of good books."
 msgstr ""
 
-#: modules/critter/dialog.lua:690
+#: modules/critter/dialog.lua:724
 msgid "Maybe later"
 msgstr ""
 
@@ -4375,7 +4488,7 @@ msgstr ""
 msgid "Mindful Reading"
 msgstr ""
 
-#: modules/critter/dialog.lua:157
+#: modules/critter/dialog.lua:168
 msgid "Mine are well looked after."
 msgstr ""
 
@@ -4493,7 +4606,7 @@ msgstr ""
 msgid "Morning"
 msgstr ""
 
-#: modules/critter/dialog.lua:329
+#: modules/critter/dialog.lua:340
 msgid "Morning! How did you sleep?"
 msgstr ""
 
@@ -4539,7 +4652,7 @@ msgstr ""
 msgid "Moved to row %1 to keep its width"
 msgstr ""
 
-#: modules/module_quote.lua:1419
+#: modules/module_quote.lua:1433
 msgid "My Highlights"
 msgstr ""
 
@@ -4638,11 +4751,11 @@ msgstr ""
 msgid "Never"
 msgstr ""
 
-#: modules/critter/dialog.lua:291
+#: modules/critter/dialog.lua:302
 msgid "Never!"
 msgstr ""
 
-#: modules/critter/dialog.lua:207
+#: modules/critter/dialog.lua:218
 msgid "Never. Things in books are clues."
 msgstr ""
 
@@ -4758,7 +4871,7 @@ msgstr ""
 msgid "No"
 msgstr ""
 
-#: modules/module_quote.lua:1400
+#: modules/module_quote.lua:1414
 msgid "No .lua files found in sui_quotes/"
 msgstr ""
 
@@ -4971,7 +5084,7 @@ msgstr ""
 msgid "No presets found."
 msgstr ""
 
-#: modules/critter/dialog.lua:443
+#: modules/critter/dialog.lua:454
 msgid "No pressure? Really?"
 msgstr ""
 
@@ -4983,7 +5096,7 @@ msgstr ""
 msgid "No reading on the same days last week"
 msgstr ""
 
-#: modules/critter/dialog.lua:574
+#: modules/critter/dialog.lua:585
 msgid "No reading yet today. Shall we fix that?"
 msgstr ""
 
@@ -4995,7 +5108,7 @@ msgstr ""
 msgid "No results for: %1"
 msgstr ""
 
-#: modules/critter/dialog.lua:78
+#: modules/critter/dialog.lua:80
 msgid "No rush. The shelf isn't going anywhere."
 msgstr ""
 
@@ -5052,7 +5165,7 @@ msgstr ""
 msgid "None"
 msgstr ""
 
-#: modules/critter/dialog.lua:446
+#: modules/critter/dialog.lua:457
 msgid "None at all. I'm just writing it on the wall."
 msgstr ""
 
@@ -5072,11 +5185,11 @@ msgstr ""
 msgid "Not all nights need be long."
 msgstr ""
 
-#: modules/critter/dialog.lua:58
+#: modules/critter/dialog.lua:60
 msgid "Not now"
 msgstr ""
 
-#: modules/critter/dialog.lua:120
+#: modules/critter/dialog.lua:131
 msgid "Not now."
 msgstr ""
 
@@ -5084,7 +5197,7 @@ msgstr ""
 msgid "Not one seam showing."
 msgstr ""
 
-#: modules/critter/dialog.lua:66
+#: modules/critter/dialog.lua:68
 msgid "Not one unopened book. Show-off."
 msgstr ""
 
@@ -5095,16 +5208,24 @@ msgstr ""
 msgid "Not set"
 msgstr ""
 
+#: modules/critter/game_lines.lua:45
+msgid "Not this time."
+msgstr ""
+
+#: modules/critter/game_lines.lua:47
+msgid "Not this time. Again?"
+msgstr ""
+
 #: modules/critter/reaction_lines.lua:178
 msgid "Not to be dramatic, but find a charger."
 msgstr ""
 
-#: modules/critter/dialog.lua:411
-#: modules/critter/dialog.lua:593
+#: modules/critter/dialog.lua:422
+#: modules/critter/dialog.lua:604
 msgid "Not today."
 msgstr ""
 
-#: modules/critter/dialog.lua:138
+#: modules/critter/dialog.lua:149
 msgid "Not when you're reading."
 msgstr ""
 
@@ -5117,7 +5238,7 @@ msgstr ""
 msgid "Nothing selected to import."
 msgstr ""
 
-#: modules/critter/dialog.lua:362
+#: modules/critter/dialog.lua:373
 msgid "Nothing with maps."
 msgstr ""
 
@@ -5133,7 +5254,7 @@ msgstr ""
 msgid "November"
 msgstr ""
 
-#: modules/critter/dialog.lua:564
+#: modules/critter/dialog.lua:575
 msgid "Nowhere exciting yet."
 msgstr ""
 
@@ -5169,11 +5290,11 @@ msgstr ""
 msgid "October"
 msgstr ""
 
-#: modules/critter/dialog.lua:95
+#: modules/critter/dialog.lua:106
 msgid "Of course."
 msgstr ""
 
-#: modules/critter/dialog.lua:696
+#: modules/critter/dialog.lua:730
 msgid "Of course. No pressure."
 msgstr ""
 
@@ -5202,6 +5323,10 @@ msgstr ""
 msgid "Oh"
 msgstr ""
 
+#: modules/critter/game_lines.lua:83
+msgid "Oh, I like that one."
+msgstr ""
+
 #: modules/critter/voice_lines.lua:229
 msgid "Oh, NOW you remember me."
 msgstr ""
@@ -5210,11 +5335,11 @@ msgstr ""
 msgid "Oh, you remember me."
 msgstr ""
 
-#: modules/critter/dialog.lua:190
+#: modules/critter/dialog.lua:201
 msgid "Oh. I was using it as a blanket."
 msgstr ""
 
-#: modules/critter/dialog.lua:615
+#: modules/critter/dialog.lua:626
 msgid "Oh. That's nice."
 msgstr ""
 
@@ -5222,19 +5347,23 @@ msgstr ""
 msgid "Oh. You're back."
 msgstr ""
 
-#: modules/critter/dialog.lua:650
+#: modules/critter/dialog.lua:88
+msgid "Okay. Another time."
+msgstr ""
+
+#: modules/critter/dialog.lua:661
 msgid "Okay. I'll be here."
 msgstr ""
 
-#: modules/critter/dialog.lua:368
+#: modules/critter/dialog.lua:379
 msgid "Okay. I'll just sit here."
 msgstr ""
 
-#: modules/critter/dialog.lua:639
+#: modules/critter/dialog.lua:650
 msgid "Okay. Stop."
 msgstr ""
 
-#: modules/critter/dialog.lua:75
+#: modules/critter/dialog.lua:77
 msgid "Okay. They'll wait."
 msgstr ""
 
@@ -5251,7 +5380,7 @@ msgstr ""
 msgid "On"
 msgstr ""
 
-#: modules/critter/dialog.lua:705
+#: modules/critter/dialog.lua:739
 msgid "On it!"
 msgstr ""
 
@@ -5259,19 +5388,19 @@ msgstr ""
 msgid "On side covers too"
 msgstr ""
 
-#: modules/critter/dialog.lua:264
+#: modules/critter/dialog.lua:275
 msgid "On the go."
 msgstr ""
 
-#: modules/critter/dialog.lua:271
+#: modules/critter/dialog.lua:282
 msgid "On the sofa."
 msgstr ""
 
-#: modules/critter/dialog.lua:516
+#: modules/critter/dialog.lua:527
 msgid "On track! I'm telling the whole shelf."
 msgstr ""
 
-#: modules/critter/dialog.lua:515
+#: modules/critter/dialog.lua:526
 msgid "On track. Quietly proud of you."
 msgstr ""
 
@@ -5299,15 +5428,15 @@ msgstr ""
 msgid "One page at a time."
 msgstr ""
 
-#: modules/critter/dialog.lua:718
+#: modules/critter/dialog.lua:752
 msgid "One page at a time. They all count."
 msgstr ""
 
-#: modules/critter/dialog.lua:113
+#: modules/critter/dialog.lua:124
 msgid "Only a small one."
 msgstr ""
 
-#: modules/critter/dialog.lua:301
+#: modules/critter/dialog.lua:312
 msgid "Only when I'm nervous."
 msgstr ""
 
@@ -5323,7 +5452,7 @@ msgstr ""
 #: features/library/sui_library_search.lua:57
 #: features/library/sui_library_search.lua:130
 #: features/sui_quickactions.lua:3249
-#: modules/module_quote.lua:1303
+#: modules/module_quote.lua:1317
 #: screens/sui_stats_windows.lua:622
 msgid "Open"
 msgstr ""
@@ -5344,7 +5473,7 @@ msgstr ""
 msgid "Open in browser"
 msgstr ""
 
-#: modules/critter/dialog.lua:801
+#: modules/critter/dialog.lua:837
 msgid "Open it"
 msgstr ""
 
@@ -5359,7 +5488,7 @@ msgstr ""
 #: engines/sui_screen_engine.lua:590
 #: features/library/sui_library_search.lua:56
 #: features/sui_quickactions.lua:3248
-#: modules/module_quote.lua:1302
+#: modules/module_quote.lua:1316
 #: screens/sui_stats_windows.lua:620
 msgid "Open this file?"
 msgstr ""
@@ -5552,6 +5681,10 @@ msgstr ""
 msgid "Pagination: Previous Page"
 msgstr ""
 
+#: modules/critter/game_lines.lua:106
+msgid "Paper"
+msgstr ""
+
 #: features/sui_quickactions.lua:2453
 msgid "Path chooser not available."
 msgstr ""
@@ -5577,12 +5710,12 @@ msgstr ""
 msgid "Perfect for reading."
 msgstr ""
 
-#: modules/critter/dialog.lua:229
-#: modules/critter/dialog.lua:627
+#: modules/critter/dialog.lua:240
+#: modules/critter/dialog.lua:638
 msgid "Perfect."
 msgstr ""
 
-#: modules/critter/dialog.lua:396
+#: modules/critter/dialog.lua:407
 msgid "Perfect. I won't look."
 msgstr ""
 
@@ -5602,7 +5735,7 @@ msgstr ""
 msgid "Pixel"
 msgstr ""
 
-#: modules/module_quote.lua:1408
+#: modules/module_quote.lua:1422
 msgid "Place .lua files in the plugin's sui_quotes/ folder"
 msgstr ""
 
@@ -5768,7 +5901,7 @@ msgstr ""
 msgid "Press and hold any element on the screen (like modules or bars) to quickly customize its settings."
 msgstr ""
 
-#: modules/critter/dialog.lua:336
+#: modules/critter/dialog.lua:347
 msgid "Pretty good."
 msgstr ""
 
@@ -5840,11 +5973,11 @@ msgstr ""
 msgid "Proud in every patch."
 msgstr ""
 
-#: modules/critter/dialog.lua:89
+#: modules/critter/dialog.lua:100
 msgid "Psst, %s. Can I ask you something?"
 msgstr ""
 
-#: modules/critter/dialog.lua:91
+#: modules/critter/dialog.lua:102
 msgid "Psst. Can I ask you something?"
 msgstr ""
 
@@ -5852,7 +5985,7 @@ msgstr ""
 msgid "Psst. The battery is low."
 msgstr ""
 
-#: modules/critter/dialog.lua:258
+#: modules/critter/dialog.lua:269
 msgid "Queues, buses, kitchens. I've seen you."
 msgstr ""
 
@@ -5908,7 +6041,7 @@ msgstr ""
 msgid "Quick, a recharge charm!"
 msgstr ""
 
-#: modules/critter/dialog.lua:369
+#: modules/critter/dialog.lua:380
 msgid "Quietly."
 msgstr ""
 
@@ -5920,8 +6053,8 @@ msgstr ""
 msgid "Quitting…"
 msgstr ""
 
-#: modules/module_quote.lua:1447
-#: modules/module_quote.lua:1468
+#: modules/module_quote.lua:1461
+#: modules/module_quote.lua:1482
 msgid "Quote"
 msgstr ""
 
@@ -5935,7 +6068,7 @@ msgstr ""
 msgid "Quote pool files from sui_quotes/"
 msgstr ""
 
-#: modules/module_quote.lua:1420
+#: modules/module_quote.lua:1434
 msgid "Quotes + My Highlights"
 msgstr ""
 
@@ -6037,7 +6170,7 @@ msgstr ""
 msgid "Reading Stats"
 msgstr ""
 
-#: modules/critter/dialog.lua:267
+#: modules/critter/dialog.lua:278
 msgid "Reading and travelling at once."
 msgstr ""
 
@@ -6274,11 +6407,11 @@ msgstr ""
 msgid "Right"
 msgstr ""
 
-#: modules/critter/dialog.lua:510
+#: modules/critter/dialog.lua:521
 msgid "Right on track."
 msgstr ""
 
-#: modules/critter/dialog.lua:626
+#: modules/critter/dialog.lua:637
 msgid "Right there. A little to the left."
 msgstr ""
 
@@ -6300,6 +6433,18 @@ msgstr ""
 
 #: modules/critter/phrases.lua:93
 msgid "Rise and read!"
+msgstr ""
+
+#: modules/critter/game_lines.lua:105
+msgid "Rock"
+msgstr ""
+
+#: modules/critter/game_lines.lua:93
+msgid "Rock, paper, scissors"
+msgstr ""
+
+#: modules/critter/game_lines.lua:97
+msgid "Rock, paper, scissors. Go."
 msgstr ""
 
 #: modules/module_quick_actions.lua:583
@@ -6351,7 +6496,7 @@ msgstr ""
 msgid "Same time tomorrow?"
 msgstr ""
 
-#: modules/critter/dialog.lua:304
+#: modules/critter/dialog.lua:315
 msgid "Same. I check that the dog survives."
 msgstr ""
 
@@ -6395,11 +6540,11 @@ msgstr ""
 msgid "Save preset"
 msgstr ""
 
-#: modules/critter/dialog.lua:123
+#: modules/critter/dialog.lua:134
 msgid "Saving it for later, then."
 msgstr ""
 
-#: modules/critter/talk.lua:117
+#: modules/critter/talk.lua:238
 msgid "Say something else…"
 msgstr ""
 
@@ -6419,9 +6564,9 @@ msgstr ""
 #: modules/module_heatmap.lua:326
 #: modules/module_quick_actions.lua:543
 #: modules/module_quick_actions.lua:545
-#: modules/module_quote.lua:1356
-#: modules/module_quote.lua:1360
-#: modules/module_quote.lua:1481
+#: modules/module_quote.lua:1370
+#: modules/module_quote.lua:1374
+#: modules/module_quote.lua:1495
 #: modules/module_reading_goals.lua:1130
 #: modules/module_reading_goals.lua:1132
 #: modules/reading_stats/module_reading_stats.lua:1593
@@ -6477,7 +6622,7 @@ msgstr ""
 #: modules/module_clock.lua:1068
 #: modules/module_currently.lua:1253
 #: modules/module_quick_actions.lua:546
-#: modules/module_quote.lua:1362
+#: modules/module_quote.lua:1376
 #: modules/module_reading_goals.lua:1133
 #: modules/reading_stats/module_reading_stats.lua:1596
 msgid "Scale for this module.\n100% is the default size."
@@ -6499,7 +6644,11 @@ msgstr ""
 msgid "Scan Subfolders for Covers"
 msgstr ""
 
-#: modules/critter/dialog.lua:623
+#: modules/critter/game_lines.lua:107
+msgid "Scissors"
+msgstr ""
+
+#: modules/critter/dialog.lua:634
 msgid "Scratch its head"
 msgstr ""
 
@@ -6670,6 +6819,10 @@ msgstr ""
 msgid "Shall I pick a harder one tomorrow?"
 msgstr ""
 
+#: modules/critter/dialog.lua:696
+msgid "Shall I read you something?"
+msgstr ""
+
 #: modules/critter/reaction_lines.lua:371
 msgid "Shall we pick up where we left off?"
 msgstr ""
@@ -6678,7 +6831,7 @@ msgstr ""
 msgid "Share of the row this module occupies.\n100% = full width. A module that does not fit in the row goes under one of the same width."
 msgstr ""
 
-#: modules/critter/dialog.lua:170
+#: modules/critter/dialog.lua:181
 msgid "Shh. They can hear you."
 msgstr ""
 
@@ -6686,8 +6839,12 @@ msgstr ""
 msgid "Short and sweet."
 msgstr ""
 
-#: modules/critter/dialog.lua:245
+#: modules/critter/dialog.lua:256
 msgid "Short books are the best ones."
+msgstr ""
+
+#: modules/critter/game_lines.lua:76
+msgid "Short. Good. My kind of sentence."
 msgstr ""
 
 #: modules/moduleregistry.lua:243
@@ -6856,7 +7013,7 @@ msgstr ""
 msgid "Single Cover"
 msgstr ""
 
-#: modules/critter/dialog.lua:275
+#: modules/critter/dialog.lua:286
 msgid "Sitting came later."
 msgstr ""
 
@@ -6907,8 +7064,8 @@ msgstr ""
 #: modules/module_coverdeck.lua:1619
 #: modules/module_currently.lua:1379
 #: modules/module_quick_actions.lua:558
-#: modules/module_quote.lua:1448
-#: modules/module_quote.lua:1469
+#: modules/module_quote.lua:1462
+#: modules/module_quote.lua:1483
 #: modules/module_reading_goals.lua:1151
 #: modules/reading_stats/module_reading_stats.lua:1612
 msgid "Size of this text.\n100% is the default size."
@@ -6939,7 +7096,7 @@ msgstr ""
 msgid "Small"
 msgstr ""
 
-#: modules/critter/dialog.lua:219
+#: modules/critter/dialog.lua:230
 msgid "Small critter, tall shelf, very long ladder."
 msgstr ""
 
@@ -6955,7 +7112,7 @@ msgstr ""
 msgid "Snack time!"
 msgstr ""
 
-#: modules/critter/dialog.lua:415
+#: modules/critter/dialog.lua:426
 msgid "So am I. Mostly."
 msgstr ""
 
@@ -6968,7 +7125,7 @@ msgstr ""
 msgid "So, how did it end?"
 msgstr ""
 
-#: modules/critter/dialog.lua:274
+#: modules/critter/dialog.lua:285
 msgid "Sofas were invented for books."
 msgstr ""
 
@@ -6976,27 +7133,31 @@ msgstr ""
 msgid "Solid"
 msgstr ""
 
-#: modules/critter/dialog.lua:567
+#: modules/critter/dialog.lua:578
 msgid "Some chapters are corridors."
 msgstr ""
 
-#: modules/critter/dialog.lua:149
+#: modules/critter/dialog.lua:160
 msgid "Someone has to."
 msgstr ""
 
-#: modules/critter/dialog.lua:308
+#: modules/critter/game_lines.lua:74
+msgid "Someone wrote that on purpose."
+msgstr ""
+
+#: modules/critter/dialog.lua:319
 msgid "Sometimes."
 msgstr ""
 
-#: modules/critter/dialog.lua:547
+#: modules/critter/dialog.lua:558
 msgid "Somewhere far away."
 msgstr ""
 
-#: modules/critter/dialog.lua:459
+#: modules/critter/dialog.lua:470
 msgid "Sorry. Counting is how I show I care."
 msgstr ""
 
-#: modules/critter/dialog.lua:602
+#: modules/critter/dialog.lua:613
 msgid "Sorry. I just like it when you read."
 msgstr ""
 
@@ -7007,7 +7168,7 @@ msgid "Sort"
 msgstr ""
 
 #: modules/module_coverdeck.lua:1537
-#: modules/module_quote.lua:1416
+#: modules/module_quote.lua:1430
 msgid "Source"
 msgstr ""
 
@@ -7140,7 +7301,7 @@ msgstr ""
 msgid "Still awake?"
 msgstr ""
 
-#: modules/critter/dialog.lua:332
+#: modules/critter/dialog.lua:343
 msgid "Still up? How was your day?"
 msgstr ""
 
@@ -7148,11 +7309,11 @@ msgstr ""
 msgid "Stitches tight."
 msgstr ""
 
-#: modules/critter/dialog.lua:456
+#: modules/critter/dialog.lua:467
 msgid "Stop counting."
 msgstr ""
 
-#: modules/critter/dialog.lua:599
+#: modules/critter/dialog.lua:610
 msgid "Stop nagging."
 msgstr ""
 
@@ -7210,7 +7371,7 @@ msgstr ""
 msgid "Sub-page Buttons"
 msgstr ""
 
-#: modules/critter/dialog.lua:695
+#: modules/critter/dialog.lua:729
 msgid "Suit yourself."
 msgstr ""
 
@@ -7344,6 +7505,10 @@ msgstr ""
 msgid "Tags"
 msgstr ""
 
+#: modules/critter/game_lines.lua:109
+msgid "Tails"
+msgstr ""
+
 #: modules/critter/reaction_lines.lua:63
 #: modules/critter/reaction_lines.lua:85
 msgid "Take a bow. I'll hold the applause."
@@ -7357,7 +7522,7 @@ msgstr ""
 msgid "Tap \"Create Screen\" below to add one."
 msgstr ""
 
-#: modules/critter/dialog.lua:228
+#: modules/critter/dialog.lua:239
 msgid "Tea, a blanket and nothing bad happening."
 msgstr ""
 
@@ -7365,7 +7530,7 @@ msgstr ""
 msgid "Tell me about %s. No spoilers. Okay, spoilers."
 msgstr ""
 
-#: modules/critter/dialog.lua:551
+#: modules/critter/dialog.lua:562
 msgid "Tell me about it sometime."
 msgstr ""
 
@@ -7373,7 +7538,7 @@ msgstr ""
 msgid "Tell me everything. Slowly."
 msgstr ""
 
-#: modules/critter/dialog.lua:167
+#: modules/critter/dialog.lua:178
 msgid "Tell that to the ending of that one book."
 msgstr ""
 
@@ -7381,11 +7546,11 @@ msgstr ""
 msgid "Ten"
 msgstr ""
 
-#: modules/critter/dialog.lua:406
+#: modules/critter/dialog.lua:417
 msgid "Ten minutes count. Even sleepy ones."
 msgstr ""
 
-#: modules/critter/dialog.lua:403
+#: modules/critter/dialog.lua:414
 msgid "Ten minutes count. I checked."
 msgstr ""
 
@@ -7395,7 +7560,7 @@ msgstr ""
 
 #: engines/sui_book_grid.lua:2003
 #: infra/sui_config.lua:1132
-#: modules/module_quote.lua:1483
+#: modules/module_quote.lua:1497
 #: modules/module_tab_grid.lua:667
 #: modules/module_tab_grid.lua:932
 #: screens/sui_menu.lua:242
@@ -7414,8 +7579,16 @@ msgstr ""
 msgid "Thank you. Obviously."
 msgstr ""
 
+#: modules/critter/game_lines.lua:147
+msgid "Thanks"
+msgstr ""
+
 #: modules/critter/phrases.lua:311
 msgid "That makes me happy."
+msgstr ""
+
+#: modules/critter/game_lines.lua:84
+msgid "That one made my day a little bigger."
 msgstr ""
 
 #: modules/critter/reaction_lines.lua:95
@@ -7434,11 +7607,15 @@ msgstr ""
 msgid "That's a lot of reading. Iconic."
 msgstr ""
 
-#: modules/critter/dialog.lua:414
+#: modules/critter/dialog.lua:425
 msgid "That's allowed. Books are patient."
 msgstr ""
 
-#: modules/critter/dialog.lua:596
+#: modules/critter/game_lines.lua:87
+msgid "That's beautiful. Read it again?"
+msgstr ""
+
+#: modules/critter/dialog.lua:607
 msgid "That's fine. Rest days count too."
 msgstr ""
 
@@ -7446,7 +7623,7 @@ msgstr ""
 msgid "That's how libraries get built."
 msgstr ""
 
-#: modules/critter/dialog.lua:260
+#: modules/critter/dialog.lua:271
 msgid "That's my favourite kind of reader."
 msgstr ""
 
@@ -7454,7 +7631,7 @@ msgstr ""
 msgid "That's the best kind of promise."
 msgstr ""
 
-#: modules/critter/dialog.lua:431
+#: modules/critter/dialog.lua:442
 msgid "That's the spirit. I'll keep count."
 msgstr ""
 
@@ -7494,7 +7671,7 @@ msgstr ""
 msgid "The calendar flipped a page."
 msgstr ""
 
-#: modules/critter/dialog.lua:238
+#: modules/critter/dialog.lua:249
 msgid "The case of the missing bookmark."
 msgstr ""
 
@@ -7543,7 +7720,7 @@ msgstr ""
 msgid "The navigation bar is already available on this screen."
 msgstr ""
 
-#: modules/critter/dialog.lua:693
+#: modules/critter/dialog.lua:727
 msgid "The offer stands until midnight."
 msgstr ""
 
@@ -7563,7 +7740,7 @@ msgstr ""
 msgid "The start date is after the finish date."
 msgstr ""
 
-#: modules/critter/dialog.lua:465
+#: modules/critter/dialog.lua:476
 msgid "The streak took a little break."
 msgstr ""
 
@@ -7575,7 +7752,7 @@ msgstr ""
 msgid "The title bar style will change after restart.\n\nRestart now?"
 msgstr ""
 
-#: modules/critter/dialog.lua:145
+#: modules/critter/dialog.lua:156
 msgid "The unread ones, maybe."
 msgstr ""
 
@@ -7599,35 +7776,35 @@ msgstr ""
 msgid "The «To Be Read» collection cannot be renamed."
 msgstr ""
 
-#: modules/critter/dialog.lua:350
+#: modules/critter/dialog.lua:361
 msgid "Then let's end it with a good chapter."
 msgstr ""
 
-#: modules/critter/dialog.lua:151
+#: modules/critter/dialog.lua:162
 msgid "Then let's pick one to visit."
 msgstr ""
 
-#: modules/critter/dialog.lua:361
+#: modules/critter/dialog.lua:372
 msgid "Then read something easy."
 msgstr ""
 
-#: modules/critter/dialog.lua:721
+#: modules/critter/dialog.lua:755
 msgid "Then slowly. Very slowly."
 msgstr ""
 
-#: modules/critter/dialog.lua:453
+#: modules/critter/dialog.lua:464
 msgid "Then we start again. I'll still be here."
 msgstr ""
 
-#: modules/critter/dialog.lua:353
+#: modules/critter/dialog.lua:364
 msgid "Then you get the comfiest book tonight."
 msgstr ""
 
-#: modules/critter/dialog.lua:526
+#: modules/critter/dialog.lua:537
 msgid "There's still time. Short books count."
 msgstr ""
 
-#: modules/critter/dialog.lua:568
+#: modules/critter/dialog.lua:579
 msgid "They lead somewhere."
 msgstr ""
 
@@ -7643,7 +7820,7 @@ msgstr ""
 msgid "This backup contains no settings or files."
 msgstr ""
 
-#: modules/critter/dialog.lua:184
+#: modules/critter/dialog.lua:195
 msgid "This book has been places."
 msgstr ""
 
@@ -7692,7 +7869,7 @@ msgstr ""
 msgid "Three"
 msgstr ""
 
-#: modules/critter/dialog.lua:204
+#: modules/critter/dialog.lua:215
 msgid "Throw it away."
 msgstr ""
 
@@ -7704,7 +7881,7 @@ msgstr ""
 msgid "Thursday"
 msgstr ""
 
-#: modules/critter/dialog.lua:635
+#: modules/critter/dialog.lua:646
 msgid "Tickle it"
 msgstr ""
 
@@ -7750,7 +7927,7 @@ msgstr ""
 msgid "Tiny Critter"
 msgstr ""
 
-#: modules/critter/dialog.lua:358
+#: modules/critter/dialog.lua:369
 msgid "Tiring."
 msgstr ""
 
@@ -7879,7 +8056,7 @@ msgstr ""
 msgid "Total: %d settings, %d files (%s)"
 msgstr ""
 
-#: modules/critter/dialog.lua:715
+#: modules/critter/dialog.lua:749
 msgid "Tough one…"
 msgstr ""
 
@@ -7887,11 +8064,11 @@ msgstr ""
 msgid "Transparent"
 msgstr ""
 
-#: modules/critter/dialog.lua:797
+#: modules/critter/dialog.lua:833
 msgid "Try “%s”, by %s."
 msgstr ""
 
-#: modules/critter/dialog.lua:798
+#: modules/critter/dialog.lua:834
 msgid "Try “%s”."
 msgstr ""
 
@@ -7911,7 +8088,7 @@ msgstr ""
 msgid "Twenty"
 msgstr ""
 
-#: modules/critter/dialog.lua:268
+#: modules/critter/dialog.lua:279
 msgid "Twice the places."
 msgstr ""
 
@@ -8054,8 +8231,12 @@ msgstr ""
 msgid "Wallpaper settings and image files"
 msgstr ""
 
-#: modules/critter/dialog.lua:661
+#: modules/critter/dialog.lua:672
 msgid "Want me to pick your next book?"
+msgstr ""
+
+#: modules/critter/dialog.lua:686
+msgid "Want to play something?"
 msgstr ""
 
 #: modules/critter/voice_lines.lua:46
@@ -8078,7 +8259,7 @@ msgstr ""
 msgid "Warn when modules on a page exceed the available screen height."
 msgstr ""
 
-#: modules/critter/dialog.lua:187
+#: modules/critter/dialog.lua:198
 msgid "Was it my bookmark?"
 msgstr ""
 
@@ -8149,8 +8330,12 @@ msgstr ""
 msgid "What did I miss?"
 msgstr ""
 
-#: modules/critter/dialog.lua:450
+#: modules/critter/dialog.lua:461
 msgid "What if I miss a day?"
+msgstr ""
+
+#: modules/critter/game_lines.lua:92
+msgid "What shall we play?"
 msgstr ""
 
 #: modules/critter/reaction_lines.lua:227
@@ -8161,11 +8346,11 @@ msgstr ""
 msgid "What shall we read today?"
 msgstr ""
 
-#: modules/critter/dialog.lua:520
+#: modules/critter/dialog.lua:531
 msgid "What should I read next?"
 msgstr ""
 
-#: modules/critter/dialog.lua:180
+#: modules/critter/dialog.lua:191
 msgid "What was it?"
 msgstr ""
 
@@ -8205,7 +8390,7 @@ msgstr ""
 msgid "When waking the device from sleep/suspend, always return to the Home Screen — even if a book was open when it went to sleep."
 msgstr ""
 
-#: modules/critter/dialog.lua:98
+#: modules/critter/dialog.lua:109
 msgid "When you close a book, do the characters wait?"
 msgstr ""
 
@@ -8213,11 +8398,11 @@ msgstr ""
 msgid "When you read"
 msgstr ""
 
-#: modules/critter/dialog.lua:79
+#: modules/critter/dialog.lua:81
 msgid "Whenever you're ready."
 msgstr ""
 
-#: modules/critter/dialog.lua:252
+#: modules/critter/dialog.lua:263
 msgid "Where do you like to read the most?"
 msgstr ""
 
@@ -8228,6 +8413,10 @@ msgstr ""
 #: infra/sui_config.lua:1514
 #: modules/module_tab_grid.lua:646
 msgid "White"
+msgstr ""
+
+#: modules/critter/game_lines.lua:101
+msgid "Who said “%s”?"
 msgstr ""
 
 #: modules/critter/voice_phrases.lua:35
@@ -8277,7 +8466,7 @@ msgstr ""
 msgid "With percentage"
 msgstr ""
 
-#: modules/critter/dialog.lua:580
+#: modules/critter/dialog.lua:591
 msgid "Wonderful. I'll hold the lamp."
 msgstr ""
 
@@ -8292,6 +8481,14 @@ msgstr ""
 
 #: modules/critter/voice_lines.lua:119
 msgid "Worthy of the long night."
+msgstr ""
+
+#: modules/critter/game_lines.lua:59
+msgid "Wrong. It was %s."
+msgstr ""
+
+#: modules/critter/game_lines.lua:46
+msgid "Wrong. Next."
 msgstr ""
 
 #: modules/critter/voice_lines.lua:166
@@ -8315,27 +8512,31 @@ msgstr ""
 msgid "Yes"
 msgstr ""
 
-#: modules/critter/dialog.lua:582
+#: modules/critter/dialog.lua:593
 msgid "Yes! Lamp on. Pages ready."
 msgstr ""
 
-#: modules/critter/dialog.lua:685
+#: modules/critter/dialog.lua:719
 msgid "Yes! You've got this!"
 msgstr ""
 
-#: modules/critter/dialog.lua:393
+#: modules/critter/dialog.lua:404
 msgid "Yes, a few chapters."
 msgstr ""
 
-#: modules/critter/dialog.lua:664
+#: modules/critter/dialog.lua:675
 msgid "Yes, pick one"
 msgstr ""
 
-#: modules/critter/dialog.lua:577
+#: modules/critter/dialog.lua:699
+msgid "Yes, please"
+msgstr ""
+
+#: modules/critter/dialog.lua:588
 msgid "Yes, right now."
 msgstr ""
 
-#: modules/critter/dialog.lua:193
+#: modules/critter/dialog.lua:204
 msgid "Yes. I'll sleep on the cover, then."
 msgstr ""
 
@@ -8347,11 +8548,19 @@ msgstr ""
 msgid "You already read yesterday — there's nothing to freeze."
 msgstr ""
 
+#: modules/critter/game_lines.lua:42
+msgid "You called it! Of course you did."
+msgstr ""
+
+#: modules/critter/game_lines.lua:40
+msgid "You called it."
+msgstr ""
+
 #: modules/critter/reaction_lines.lua:356
 msgid "You came back."
 msgstr ""
 
-#: modules/critter/dialog.lua:720
+#: modules/critter/dialog.lua:754
 msgid "You can do it. One page at a time."
 msgstr ""
 
@@ -8379,7 +8588,7 @@ msgstr ""
 msgid "You know how I feel about that."
 msgstr ""
 
-#: modules/critter/dialog.lua:168
+#: modules/critter/dialog.lua:179
 msgid "You know which one."
 msgstr ""
 
@@ -8439,6 +8648,18 @@ msgstr ""
 msgid "You were away. I noticed."
 msgstr ""
 
+#: modules/critter/game_lines.lua:24
+msgid "You win! You're too good."
+msgstr ""
+
+#: modules/critter/game_lines.lua:23
+msgid "You win. Hmph."
+msgstr ""
+
+#: modules/critter/game_lines.lua:22
+msgid "You win. This time."
+msgstr ""
+
 #: modules/critter/phrases.lua:201
 msgid "You're %d%% into %s."
 msgstr ""
@@ -8479,15 +8700,15 @@ msgstr ""
 msgid "You're on a roll!"
 msgstr ""
 
-#: modules/critter/dialog.lua:711
+#: modules/critter/dialog.lua:745
 msgid "You're unstoppable today."
 msgstr ""
 
-#: modules/critter/dialog.lua:63
+#: modules/critter/dialog.lua:65
 msgid "You've opened every book you own."
 msgstr ""
 
-#: modules/critter/dialog.lua:68
+#: modules/critter/dialog.lua:70
 msgid "You've opened them all. I'm so proud."
 msgstr ""
 
@@ -8512,7 +8733,7 @@ msgstr ""
 msgid "Your name"
 msgstr ""
 
-#: modules/critter/dialog.lua:311
+#: modules/critter/dialog.lua:322
 msgid "Your secret is safe with the shelf."
 msgstr ""
 
@@ -8818,7 +9039,7 @@ msgstr ""
 msgid "vs the same days last week"
 msgstr ""
 
-#: modules/critter/dialog.lua:642
+#: modules/critter/dialog.lua:653
 msgid "…Do it again."
 msgstr ""
 
@@ -8870,7 +9091,7 @@ msgid_plural "%d books read"
 msgstr[0] ""
 msgstr[1] ""
 
-#: modules/critter/dialog.lua:505
+#: modules/critter/dialog.lua:516
 msgid "%d book this year. How's the goal looking?"
 msgid_plural "%d books this year. How's the goal looking?"
 msgstr[0] ""
@@ -8987,7 +9208,7 @@ msgid_plural "%d of %d pages so far."
 msgstr[0] ""
 msgstr[1] ""
 
-#: modules/critter/dialog.lua:542
+#: modules/critter/dialog.lua:553
 msgid "%d page today. Where did it take you?"
 msgid_plural "%d pages today. Where did they take you?"
 msgstr[0] ""
@@ -9071,7 +9292,7 @@ msgid_plural "Milestone: %d days!"
 msgstr[0] ""
 msgstr[1] ""
 
-#: modules/critter/dialog.lua:423
+#: modules/critter/dialog.lua:434
 msgid "Our streak is at %d day. No pressure."
 msgid_plural "Our streak is at %d days. No pressure."
 msgstr[0] ""

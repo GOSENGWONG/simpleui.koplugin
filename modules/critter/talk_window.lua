@@ -15,7 +15,7 @@
 --   TalkWindow.open{
 --       opener       = "Line of the critter", -- nil leaves the module's bubble as it is
 --       options      = { { text = "...", on_pick = function() end }, ... },
---       other        = { text = "...", on_pick = function() end },  -- last row
+--       other        = { text = "...", on_pick = function() end },  -- last row, optional
 --       anchor       = Geom,                  -- rectangle of the module's bubble
 --       side         = "left" | "right",      -- where the critter stands
 --       critter_rect = Geom,                  -- rectangle of the critter

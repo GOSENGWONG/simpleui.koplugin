@@ -1148,6 +1148,20 @@ M.getCountLabel = nil
 
 
 
+-- Every quote of the files in sui_quotes/, as { q, a?, b? } entries.
+function M.customQuotes()
+    local all = {}
+    for _i, name in ipairs(listCustomQuoteFiles()) do
+        local ok, data = pcall(dofile, customDir() .. "/" .. name)
+        for _j, entry in ipairs(ok and type(data) == "table" and data or {}) do
+            if type(entry) == "table" and type(entry.q) == "string" and entry.q ~= "" then
+                all[#all + 1] = entry
+            end
+        end
+    end
+    return all
+end
+
 function M.invalidateCache()
 
     _hl_pool = nil

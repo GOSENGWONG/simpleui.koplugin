@@ -9,6 +9,8 @@
 --   accept  true when the answer accepts the challenge on offer (talk.lua)
 --   recommend  true when the answer asks for a book suggestion (talk.lua); its
 --           reply is then what the critter says when it finds none
+--   play    true when the answer starts a game (talk.lua); it has no reply
+--   quote   true when the answer asks for a quote (talk.lua); it has no reply
 --   reply   { mood, text(f), sub?(f), by_tier? }: what the critter says back,
 --           shown as a phrase of the bubble. `by_tier[tier]` replaces the
 --           fields it sets for a critter in that mood tier (`sub = false`
@@ -77,6 +79,15 @@ local LATER_REPLY = {
         grumpy  = { mood = "grumpy", text = function() return _("Fine. The books can wait. So can I.") end },
         happy   = { mood = "cheer",  text = function() return _("No rush. The shelf isn't going anywhere.") end },
         radiant = { mood = "love",   text = function() return _("Whenever you're ready.") end },
+    },
+}
+
+-- What the critter says when the user turns a game or a quote down.
+local NOT_NOW_REPLY = {
+    mood = "shy",
+    text = function() return _("Okay. Another time.") end,
+    by_tier = {
+        grumpy = { mood = "grumpy", text = function() return _("Fine. More room for me.") end },
     },
 }
 
@@ -668,6 +679,29 @@ Dialog.EXCHANGES = {
             reply = LATER_REPLY },
       } },
 
+    -- Games and quotes: "Let's play" opens the choice of games and "Yes, please"
+    -- reads a quote (talk.lua).
+    { id = "play",
+      when   = function() return true end,
+      opener = function() return _("Want to play something?") end,
+      options = {
+          { id = "yes", delta = 1, play = true,
+            text = function() return _("Let's play") end },
+          { id = "later", delta = 0,
+            text  = notNow,
+            reply = NOT_NOW_REPLY },
+      } },
+    { id = "read_quote",
+      when   = function() return true end,
+      opener = function() return _("Shall I read you something?") end,
+      options = {
+          { id = "yes", delta = 1, quote = true,
+            text = function() return _("Yes, please") end },
+          { id = "later", delta = 0,
+            text  = notNow,
+            reply = NOT_NOW_REPLY },
+      } },
+
     -- Challenges (challenge.lua): the opener is the offer or the progress, ready
     -- as text in `f.challenge`. Accepting an offer is handled by talk.lua.
     { id = "challenge_offer",
@@ -755,7 +789,7 @@ end
 
 --- An exchange for the facts `f` and the mood tier `tier`, or nil when none
 --- fits. Returns { id, opener, options } with 2 or 3 options dealt at random
---- ({ id, text, delta, recommend, accept, reply = function(tier) -> { text, sub, mood } }), all
+--- ({ id, text, delta, recommend, play, quote, accept, reply = function(tier) -> { text, sub, mood } }), all
 --- texts written for `f`. Exchanges are dealt from a deck, so none comes
 --- round before the others have been seen.
 function Dialog.pick(f, tier)
@@ -781,6 +815,8 @@ function Dialog.pick(f, tier)
             text  = option.text(f),
             delta = option.delta,
             recommend = option.recommend,
+            play  = option.play,
+            quote = option.quote,
             accept = option.accept,
             reply = function(reply_tier) return renderReply(option.reply, f, reply_tier) end,
         }
