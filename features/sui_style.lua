@@ -1899,6 +1899,7 @@ M.ICON = {
     library     = "\u{F405}",  -- book
     style       = "\u{EAD7}",  -- paint palette
     quick_actions = "\u{EDD3}", -- lightning bolt (outline)
+    critter     = "\u{EAE8}",  -- paw
 
     -- Collections
     collection_add = "\u{EA33}", -- library with plus

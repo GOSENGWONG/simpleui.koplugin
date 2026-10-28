@@ -148,12 +148,18 @@ end
 -- for the duration of the call — genItemTableFromPath reads it off the
 -- class, and this runs synchronously with nothing else able to observe the
 -- momentary change (Lua has no concurrency here).
+-- The entries carry no `mandatory` text: building it costs a size string and a
+-- collections lookup per file, and covers never read it.
 local _EMPTY_FILTER = {}
+local function noMandatory() end
 function CoverFinder.entriesWithNoFilter(menu, dir_path)
     local saved = FileChooser.show_filter
     FileChooser.show_filter = _EMPTY_FILTER
+    local own_mandatory = rawget(menu, "getMenuItemMandatory")
     menu._dummy = true
+    menu.getMenuItemMandatory = noMandatory
     local ok, entries = pcall(menu.genItemTableFromPath, menu, dir_path)
+    menu.getMenuItemMandatory = own_mandatory
     menu._dummy = false
     FileChooser.show_filter = saved
     if not ok then error(entries, 0) end

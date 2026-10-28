@@ -14,6 +14,7 @@
 -- transparent rows at the bottom of an image are not part of the widget.
 
 local Blitbuffer  = require("ffi/blitbuffer")
+local ffi         = require("ffi")
 local Device      = require("device")
 local Geom        = require("ui/geometry")
 local RenderImage = require("ui/renderimage")
@@ -71,11 +72,21 @@ end
 -- image stands on the bottom of its box.
 local function transparentFoot(bb)
     local bb_type = bb:getType()
-    if bb_type ~= Blitbuffer.TYPE_BB8A and bb_type ~= Blitbuffer.TYPE_BBRGB32 then return 0 end
+    -- Bytes per pixel and offset of the alpha byte in it.
+    local step, alpha_at
+    if bb_type == Blitbuffer.TYPE_BB8A then
+        step, alpha_at = 2, 1
+    elseif bb_type == Blitbuffer.TYPE_BBRGB32 then
+        step, alpha_at = 4, 3
+    else
+        return 0
+    end
     local w, h = bb:getWidth(), bb:getHeight()
+    local data, stride = ffi.cast("uint8_t *", bb.data), bb.stride
     for py = h - 1, 0, -1 do
+        local row = data + py * stride + alpha_at
         for px = 0, w - 1 do
-            if bb:getPixel(px, py):getColorRGB32().alpha > 0 then return h - 1 - py end
+            if row[px * step] > 0 then return h - 1 - py end
         end
     end
     return h
@@ -89,8 +100,14 @@ local function buildEntry(path, max_w, max_h, max_pixel)
         logger.warn("simpleui: critter: cannot decode " .. path)
         return { w = 0, h = 0, foot = 0 }
     end
+    local foot_ok, foot = pcall(transparentFoot, bb)
+    if not foot_ok then
+        bb:free()
+        logger.warn("simpleui: critter: cannot read " .. path)
+        return { w = 0, h = 0, foot = 0 }
+    end
     return {
-        bb = bb, w = bb:getWidth(), h = bb:getHeight(), foot = transparentFoot(bb),
+        bb = bb, w = bb:getWidth(), h = bb:getHeight(), foot = foot,
         straight = straight == true, pixel = pixel,
     }
 end

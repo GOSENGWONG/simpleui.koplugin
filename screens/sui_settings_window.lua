@@ -19,6 +19,7 @@
 --   bars_settings           — Bars section
 --   library_settings        — Library section
 --   style_settings          — Style section (icons, fonts and appearance)
+--   critter_settings        — Tiny Critter section
 --   quick_actions_settings — Quick Actions section
 --   about_settings         — About section
 --   pages                  — Layout editor (page list)
@@ -183,6 +184,14 @@ local function buildScreens(st)
                 inner_w      = iw,
                 show_chevron = true,
                 on_tap       = function() ctx.push("style_settings") end,
+            },
+            SUI.ListRow{
+                title        = _("Tiny Critter"),
+                left_icon    = "critter",
+                subtitle     = _("Your companion and what it says"),
+                inner_w      = iw,
+                show_chevron = true,
+                on_tap       = function() ctx.push("critter_settings") end,
             },
             SUI.ListRow{
                 title        = _("Quick Actions"),
@@ -855,6 +864,11 @@ local function buildScreens(st)
         return buildPluginMenuScreen(ctx, plugin and plugin.makeStyleMenuItems)
     end
 
+    local function buildCritterSettings(ctx)
+        local plugin = getPlugin()
+        return buildPluginMenuScreen(ctx, plugin and plugin.makeCritterMenuItems)
+    end
+
     local function buildAboutSettings(ctx)
         local plugin   = getPlugin()
         return buildPluginMenuScreen(ctx, plugin and plugin.makeAboutMenuItems)
@@ -868,6 +882,7 @@ local function buildScreens(st)
         bars_settings          = buildBarsSettings,
         library_settings       = buildLibrarySettings,
         style_settings         = buildStyleSettings,
+        critter_settings       = buildCritterSettings,
         about_settings         = buildAboutSettings,
         pages                  = buildPages,
         page_edit              = buildPageEdit,
@@ -896,6 +911,7 @@ local function makeScreenTitles(st)
         bars_settings          = _("Bars"),
         library_settings       = _("Library"),
         style_settings         = _("Style"),
+        critter_settings       = _("Tiny Critter"),
         about_settings         = _("About"),
         pages = function()
             return st.screen_id == "hs" and _("Layout Editor")

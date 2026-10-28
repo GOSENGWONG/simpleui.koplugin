@@ -31,7 +31,7 @@
 --   - `delta` runs from -2 to +3: +2/+3 warm or engaged, +1 playful, 0 neutral,
 --     -1 a brush-off. A declined answer costs mood but gets a gracious reply.
 --   - Lines stay short (about 42 characters, 32 for `sub`) and free of puns that
---     only work in English. Translations follow the pt-PT rules in CLAUDE.md.
+--     only work in English.
 
 local Deck = require("infra/sui_deck")
 local _    = require("infra/sui_i18n").translate
@@ -600,6 +600,57 @@ Dialog.EXCHANGES = {
             reply = {
                 mood = "shy",
                 text = function() return _("Sorry. I just like it when you read.") end,
+            } },
+      } },
+
+    -- Affection: the answers are pats, and the reply shows the critter's reaction.
+    { id = "pet",
+      when   = function() return true end,
+      opener = function() return _("It's quiet on the shelf. Pat me?") end,
+      options = {
+          { id = "pat", delta = 2,
+            text  = function() return _("A gentle pat") end,
+            reply = {
+                mood = "love",
+                text = function() return _("Oh. That's nice.") end,
+                sub  = function() return _("I'll pretend I didn't need it.") end,
+                by_tier = {
+                    grumpy  = { mood = "grumpy", text = function() return _("Hm. Fine. That's enough.") end, sub = false },
+                    radiant = { mood = "love",   text = function() return _("Best part of my day.") end, sub = false },
+                },
+            } },
+          { id = "scratch", delta = 2,
+            text  = function() return _("Scratch its head") end,
+            reply = {
+                mood = "shy",
+                text = function() return _("Right there. A little to the left.") end,
+                sub  = function() return _("Perfect.") end,
+                by_tier = {
+                    grumpy  = { mood = "grumpy", text = function() return _("Left. No, not that left.") end, sub = false },
+                    radiant = { mood = "love",   text = function() return _("Don't ever stop.") end, sub = false },
+                },
+            } },
+          { id = "tickle", delta = 1,
+            when  = function(_f, tier) return tier ~= "grumpy" end,
+            text  = function() return _("Tickle it") end,
+            reply = {
+                mood = "playful",
+                text = function() return _("Hehe! Stop! Don't stop!") end,
+                sub  = function() return _("Okay. Stop.") end,
+                by_tier = {
+                    meh   = { mood = "surprised", text = function() return _("Hey! I was resting.") end,
+                              sub = function() return _("…Do it again.") end },
+                    happy = { mood = "party", text = function() return _("Ha! You'll pay for this!") end, sub = false },
+                },
+            } },
+          { id = "leave", delta = 0,
+            text  = function() return _("Let it be") end,
+            reply = {
+                mood = "shy",
+                text = function() return _("Okay. I'll be here.") end,
+                by_tier = {
+                    grumpy = { mood = "grumpy", text = function() return _("Good. I like the quiet.") end },
+                },
             } },
       } },
 

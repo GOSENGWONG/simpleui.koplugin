@@ -24,6 +24,7 @@
 
 local Mood        = require("modules/critter/mood")
 local SUISettings = require("infra/sui_store")
+local State       = require("modules/critter/state")
 
 local Reactions = {}
 
@@ -46,13 +47,7 @@ local MAX_SESSION_SECS = 6 * 3600 -- longer is the device asleep, not reading
 local KEY = "simpleui_critter_reactions"
 
 local function copy(state, changes)
-    local new = {
-        pending = state.pending, first_seen = state.first_seen, last_seen = state.last_seen,
-        last_month = state.last_month, last_year = state.last_year,
-        book_day_year = state.book_day_year, anniversary_years = state.anniversary_years,
-        armed = state.armed, was_charging = state.was_charging,
-    }
-    for k, v in pairs(changes) do new[k] = v end
+    local new = State.copy(state, changes)
     if new.pending == false then new.pending = nil end   -- `pending = false` clears it
     return new
 end
@@ -147,19 +142,25 @@ function Reactions.visited(state, today, now)
         changes.last_month = month_key
     end
 
+    -- A special date is recorded only when nothing of its priority or higher waits;
+    -- its flag below is set then, so a date that has to wait comes up again.
+    local function special_free()
+        return not s.pending or Reactions.PRIORITY[s.pending.kind] < Reactions.PRIORITY.special_date
+    end
+
     -- Whole years since the first visit, counted on the day of the year.
     local first_year = tonumber(state.first_seen:sub(1, 4))
     local before = today:sub(6) < state.first_seen:sub(6)
     local years = year - first_year - (before and 1 or 0)
-    if years >= 1 and years > (state.anniversary_years or 0) then
+    if years >= 1 and years > (state.anniversary_years or 0) and special_free() then
         s = Reactions.recorded(s, "special_date", { which = "anniversary", years = years }, now)
         changes.anniversary_years = years
     end
-    if today:sub(6) == Reactions.BOOK_DAY and state.book_day_year ~= year then
+    if today:sub(6) == Reactions.BOOK_DAY and state.book_day_year ~= year and special_free() then
         s = Reactions.recorded(s, "special_date", { which = "book_day" }, now)
         changes.book_day_year = year
     end
-    if year > (state.last_year or year) then
+    if year > (state.last_year or year) and special_free() then
         s = Reactions.recorded(s, "special_date", { which = "new_year" }, now)
         changes.last_year = year
     end
@@ -230,10 +231,7 @@ local function same(a, b)
     local pa, pb = a.pending, b.pending
     if (pa == nil) ~= (pb == nil) then return false end
     if pa and (pa.kind ~= pb.kind or pa.at ~= pb.at) then return false end
-    return a.first_seen == b.first_seen and a.last_seen == b.last_seen
-        and a.last_month == b.last_month and a.last_year == b.last_year
-        and a.book_day_year == b.book_day_year and a.anniversary_years == b.anniversary_years
-        and a.armed == b.armed and a.was_charging == b.was_charging
+    return State.same(a, b, { pending = true })
 end
 
 -- Runs `rule(state)` on the stored state, keeps the result when it changed and
@@ -258,6 +256,12 @@ end
 --- Notes the state of the device (see Reactions.visitedDevice).
 function Reactions.observeDevice(capacity, charging)
     apply(function(state) return Reactions.visitedDevice(state, capacity, charging, os.time()) end)
+end
+
+--- The reaction that waits ({ kind, data }) without forgetting it; nil when none.
+function Reactions.peek()
+    local _state, reaction = Reactions.taken(Reactions.read(), os.time())
+    return reaction
 end
 
 --- The reaction that waits ({ kind, data }), which is then forgotten; nil when none.

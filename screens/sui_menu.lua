@@ -3359,6 +3359,11 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
         }
     end
 
+    -- Settings > Tiny Critter: the critter and its behaviour, the same on every screen.
+    plugin.makeCritterMenuItems = function(ctx_menu)
+        return require("modules/critter/menu").getItems(ctx_menu, refreshHomescreen)
+    end
+
     plugin.makeStyleMenuItems = function(ctx_menu)
         -- Name of the UI font in use, or "Default".
         local function uiFontValue()
@@ -4304,6 +4309,10 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
             {
                 text = _("Style"),
                 sub_item_table_func = function() return plugin.makeStyleMenuItems(nil) end,
+            },
+            {
+                text = _("Tiny Critter"),
+                sub_item_table_func = function() return plugin.makeCritterMenuItems(nil) end,
             },
             -- ── Quick Actions ────────────────────────────────────────────────
             -- Global custom quick actions (not homescreen-specific).

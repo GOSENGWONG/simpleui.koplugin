@@ -21,6 +21,7 @@
 
 local Mood        = require("modules/critter/mood")
 local SUISettings = require("infra/sui_store")
+local State       = require("modules/critter/state")
 local _           = require("infra/sui_i18n").translate
 local N_          = require("infra/sui_i18n").ngettext
 
@@ -37,15 +38,7 @@ local MAX_GOAL_MINS  = 60
 
 local KINDS = { minutes = true, pages = true, streak = true, before = true }
 
-local function copy(state, changes)
-    local new = {
-        day = state.day, kind = state.kind, target = state.target, hour = state.hour,
-        base_secs = state.base_secs, base_pages = state.base_pages, at = state.at,
-        started_at = state.started_at, done = state.done, credited = state.credited,
-    }
-    for k, v in pairs(changes) do new[k] = v end
-    return new
-end
+local copy = State.copy
 
 local function number(value)
     return type(value) == "number" and value == value and value or nil

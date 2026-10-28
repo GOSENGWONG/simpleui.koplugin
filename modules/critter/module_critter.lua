@@ -12,7 +12,7 @@
 -- reading session, a return after days away, a new month or year, a special
 -- date, a low battery, the charger plugged in. The reaction waits for the next
 -- time the Home Screen shows the critter and takes the place of the phrase once.
--- A row of the module's menu turns this off.
+-- A setting of the Tiny Critter menu turns this off.
 -- The critter has a mood, shared by every screen, that rises when the user
 -- reads and talks to it and falls after days without reading; it shapes what
 -- the critter says in the conversation.
@@ -30,8 +30,13 @@
 -- first, and the bubble only shrinks to make room for them down to a share of
 -- the row.
 --
--- The user may tell the critter their name (one setting for every screen); some
--- phrases then use it.
+-- The critter, its bubble style, the topics and the reactions are the same on every
+-- screen (settings.lua, set in Settings > Tiny Critter, menu.lua), and so is the
+-- name the user may tell it; some phrases use it.
+--
+-- Every critter shows the same phrase and mood, on every screen: the one picked
+-- last is kept in this file and the critters already on screen follow it when it
+-- changes (a conversation, another phrase, fresh statistics).
 --
 -- The module has a fixed height. The phrase is kept while the facts it was
 -- picked for stay the same, so rebuilding the screen (rotation, a menu, a page
@@ -47,8 +52,16 @@
 --   dialog.lua   catalogue of conversation exchanges and the rules that pick one
 --   reactions.lua       what happened and waits to be commented on
 --   reaction_lines.lua  what the critter says about it
+--   settings.lua  settings shared by every screen
+--   menu.lua     the Tiny Critter menu of the settings
 --   talk.lua     conversation: what is asked, what a choice does
 --   talk_window.lua  window that shows the conversation
+--   challenge.lua  daily reading challenges the critter proposes and checks
+--   book.lua     the book read last, for the phrases
+--   recommend.lua  unopened book the critter suggests
+--   state.lua    copy and comparison of the stored state tables
+--   voice_phrases.lua, voice_lines.lua  phrases and reaction lines of single critters
+--   panel_row.lua  the critter row of the Quick Settings panel
 
 local Device          = require("device")
 local Geom            = require("ui/geometry")
@@ -63,12 +76,8 @@ local TopContainer    = require("ui/widget/container/topcontainer")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
-local T               = require("ffi/util").template
-local util            = require("util")
-local lfs             = require("libs/libkoreader-lfs")
 local i18n            = require("infra/sui_i18n")
 local _               = i18n.translate
-local N_              = i18n.ngettext
 
 local Config      = require("infra/sui_config")
 local DateNames   = require("infra/sui_datenames")
@@ -78,50 +87,34 @@ local Challenge   = require("modules/critter/challenge")
 local Goals       = require("infra/sui_goals")
 local SUISettings = require("infra/sui_store")
 local UI          = require("infra/sui_core")
-local Arrange     = require("features/sui_arrange")
 local Chrome      = require("features/sui_module_chrome")
 local SUIStyle    = require("features/sui_style")
 local Assets      = require("modules/critter/assets")
+local Book        = require("modules/critter/book")
 local Bubble      = require("modules/critter/bubble")
 local Mood        = require("modules/critter/mood")
 local Phrases     = require("modules/critter/phrases")
 local ReactionLines = require("modules/critter/reaction_lines")
 local Reactions   = require("modules/critter/reactions")
 local Sprite      = require("modules/critter/sprite")
+local CritterSettings = require("modules/critter/settings")
 local Talk        = require("modules/critter/talk")
 
 local Screen = Device.screen
 
--- Settings, under the screen prefix.
-local KEY_PICK   = "critter_pick"      -- id of the chosen critter
+-- Settings, under the screen prefix. Which critter it is, its bubble style and
+-- how it behaves are the same on every screen: see settings.lua.
 local KEY_SIDE   = "critter_side"      -- "left" | "right"
 local KEY_ALIGN  = "critter_align"     -- "left" | "center" | "right"
-local KEY_STYLE  = "critter_bubble_style"   -- "pixel" | "smooth"
-local KEY_SOURCE = "critter_source"    -- "builtin" | "both" | "custom"
-local KEY_CAT    = "critter_cat_"      -- .. category id; false = category off
-local KEY_REACT  = "critter_reactions"  -- false = the critter does not react to events
-local KEY_DECOR  = "critter_decor_"    -- .. side; ids of the decorations of that side, left to right
 
--- Longest streak already celebrated and the name the user told the critter, shared by every screen.
+-- Longest streak already celebrated, shared by every screen.
 local BEST_STREAK_KEY = "simpleui_critter_best_streak"
 local BEST_DAY_KEY    = "simpleui_critter_best_streak_day"
-local USER_NAME_KEY   = "simpleui_critter_user_name"
 local CELEBRATED_KEY  = "simpleui_critter_celebrated"   -- token of the last achievement shown
-
-local MAX_NAME_CHARS = 20
 
 local SIDES   = { "left", "right" }
 local ALIGNS  = { "left", "center", "right" }
 local DEFAULT_ALIGN = "center"
-
--- Decorations a side of the group holds at most, and what each side holds
--- until the user arranges it.
-local DECOR_PER_SIDE = 2
-local DEFAULT_DECOR  = { left = { "bookcase", "lamp" }, right = {} }
-local STYLES = { "pixel", "smooth" }
-local DEFAULT_STYLE = "pixel"
-local SOURCES = { "builtin", "both", "custom" }
-local DEFAULT_SOURCE = "both"
 
 -- A streak is a record from this length on, and a milestone at these lengths.
 local MIN_RECORD_STREAK = 3
@@ -145,8 +138,8 @@ local TEXT_ELEMS = { "message", "detail" }
 -- The main line is bold until the user picks another variant.
 Config.declareTextVariants("critter", { message = "bold" })
 -- The pixel bubble speaks in the pixel font until another one is picked.
-local function pixelFamily(pfx)
-    return Config.readChoice(pfx .. KEY_STYLE, STYLES, DEFAULT_STYLE) == "pixel" and SUIFonts.PIXEL_FAMILY or nil
+local function pixelFamily()
+    return CritterSettings.bubbleStyle() == "pixel" and SUIFonts.PIXEL_FAMILY or nil
 end
 Config.declareTextFamilies("critter", { message = pixelFamily, detail = pixelFamily })
 
@@ -154,53 +147,34 @@ Config.declareTextFamilies("critter", { message = pixelFamily, detail = pixelFam
 -- Settings
 -- ---------------------------------------------------------------------------
 
-local function enabledCategories(pfx)
+local function enabledCategories()
     local set = {}
     for _i, cat in ipairs(Phrases.CATEGORIES) do
-        set[cat.id] = SUISettings:nilOrTrue(pfx .. KEY_CAT .. cat.id)
+        set[cat.id] = CritterSettings.categoryOn(cat.id)
     end
     return set
 end
 
 -- Options for Phrases.pick, and a signature that changes with them.
-local function phraseOptions(pfx)
-    local source  = Config.readChoice(pfx .. KEY_SOURCE, SOURCES, DEFAULT_SOURCE)
-    local enabled = enabledCategories(pfx)
+local function phraseOptions()
+    local source  = CritterSettings.source()
+    local enabled = enabledCategories()
     local parts = { source }
+    local custom
     if source ~= "builtin" then
-        parts[#parts + 1] = tostring(lfs.attributes(Assets.phrasesFile(), "modification"))
+        local mtime
+        custom, mtime = Phrases.loadCustom(Assets.phrasesFile())
+        parts[#parts + 1] = tostring(mtime)
     end
     for _i, cat in ipairs(Phrases.CATEGORIES) do
         parts[#parts + 1] = enabled[cat.id] and "1" or "0"
     end
-    return {
-        enabled = enabled,
-        builtin = source ~= "custom",
-        custom  = source ~= "builtin" and Phrases.loadCustom(Assets.phrasesFile()) or nil,
-    }, table.concat(parts)
-end
-
--- Ids of the decorations of `side`, left to right: the ones the user arranged,
--- the default ones until then.
-local function decorIds(pfx, side)
-    local ids = SUISettings:get(pfx .. KEY_DECOR .. side)
-    return type(ids) == "table" and ids or { unpack(DEFAULT_DECOR[side]) }
+    return { enabled = enabled, builtin = source ~= "custom", custom = custom }, table.concat(parts)
 end
 
 -- ---------------------------------------------------------------------------
 -- Facts and phrase choice
 -- ---------------------------------------------------------------------------
-
--- Name the user gave the critter, nil when there is none.
-local function userName()
-    local name = SUISettings:get(USER_NAME_KEY)
-    return type(name) == "string" and name ~= "" and name or nil
-end
-
--- Whether the critter reacts to events on the screen with prefix `pfx`.
-local function reactionsOn(pfx)
-    return SUISettings:nilOrTrue(pfx .. KEY_REACT)
-end
 
 -- Checks the accepted challenge against fresh statistics; the first time it is
 -- met the mood rises and the critter reacts on the next visit.
@@ -218,11 +192,11 @@ end
 -- Lets the critter notice the day and, with `with_device` and reactions on, the
 -- state of the device: its battery and charger, which may be read from the hardware, so this
 -- is left for after the first paint.
-local function observeReactions(pfx, with_device)
+local function observeReactions(with_device)
     -- The day is noted even when reactions are off, so that turning them on
     -- does not read the days off as an absence.
     Reactions.observe(os.date("%Y-%m-%d"))
-    if not (with_device and reactionsOn(pfx)) then return end
+    if not (with_device and CritterSettings.reactionsOn()) then return end
     local ok, capacity, charging = pcall(function()
         local powerd = Device:getPowerDevice()
         return powerd:getCapacity(), powerd:isCharging()
@@ -251,6 +225,12 @@ local function trackStreakRecord(streak, longest)
     return streak == longest and streak >= MIN_RECORD_STREAK and SUISettings:get(BEST_DAY_KEY) == today
 end
 
+-- Id of the critter chosen.
+local function critterId()
+    local critter = Assets.get(CritterSettings.pick())
+    return critter and critter.id
+end
+
 -- Facts about the moment, as phrases.lua describes them.
 local function collectFacts(ctx)
     local stats = ctx.stats or {}
@@ -274,7 +254,9 @@ local function collectFacts(ctx)
         stats_fresh      = not ctx.stats_stale,
         goal             = Goals.get("annual"),
         daily_goal_secs  = Goals.get("daily"),
-        user_name        = userName(),
+        user_name        = CritterSettings.userName(),
+        book             = Book.current(os.time()),
+        critter_id       = critterId(),
     }
     -- Challenges stand on fresh statistics: their base and progress come from them.
     if not ctx.stats_stale then
@@ -293,7 +275,9 @@ local function factsKey(facts, signature)
         secs > 0 and "1" or "0",
         facts.goal, books >= facts.goal and "1" or "0",
         facts.daily_goal_secs, secs >= facts.daily_goal_secs and "1" or "0",
-        tostring(facts.user_name),
+        tostring(facts.user_name), tostring(facts.critter_id),
+        facts.book and facts.book.title or "", facts.book and facts.book.percent or "",
+        facts.book and facts.book.days or "",
     }, "|")
 end
 
@@ -307,9 +291,22 @@ local function celebrationDue(facts)
     return token
 end
 
--- screen prefix -> { key, signature, phrase, at, cold, sticky }; a sticky phrase (a
--- reaction or a reply of the conversation) stays until REROLL_SECS, whatever the facts do
-local _picks = {}
+-- { key, signature, phrase, at, cold, sticky } of the phrase every critter shows,
+-- whatever the screen; a sticky phrase (a reaction or a reply of the conversation)
+-- stays until REROLL_SECS, whatever the facts do
+local _shown
+
+-- Latest critter built for each screen -> { pfx, follow }, where `follow` makes it
+-- show the phrase in `_shown`. A critter dropped without being freed gives way to
+-- the next one of its screen.
+local _live = setmetatable({}, { __mode = "k" })
+
+-- Makes every critter but `except` show the phrase in `_shown`.
+local function broadcast(except)
+    for root, entry in pairs(_live) do
+        if root ~= except then entry.follow() end
+    end
+end
 
 -- The phrase last picked, written again for `facts` so its numbers are current;
 -- nil when it no longer fits them. The same table is kept while its text is
@@ -324,23 +321,27 @@ end
 -- Phrase for `facts`: the last one while it still fits, else a new one (nil
 -- when nothing fits). `force` always picks a new one. A phrase picked before
 -- the statistics arrived (`cold`) is kept, rewritten, when it still fits them.
-local function choosePhrase(pfx, facts, opts, signature, force)
+local function choosePhrase(facts, opts, signature, force)
     local key, now = factsKey(facts, signature), os.time()
     -- A sticky phrase on show keeps its place; a waiting reaction takes the next turn.
-    local shown = _picks[pfx]
-    local holding = shown and shown.sticky and now - shown.at < REROLL_SECS
-    if not force and not holding and reactionsOn(pfx) then
-        local reaction = Reactions.take()
-        local line = reaction and ReactionLines.pick(reaction.kind, reaction.data, Mood.tier(Mood.read().score))
+    local holding = _shown and _shown.sticky and now - _shown.at < REROLL_SECS
+    if not force and not holding and CritterSettings.reactionsOn() then
+        local reaction = Reactions.peek()
+        local line = reaction and ReactionLines.pick(
+            reaction.kind, reaction.data, Mood.tier(Mood.read().score), critterId())
         if line then
-            _picks[pfx] = { key = key, signature = signature, phrase = line, at = now, sticky = true }
+            Reactions.take()
+            _shown = { key = key, signature = signature, phrase = line, at = now, sticky = true }
             return line
         end
     end
     local due = celebrationDue(facts)
-    local last = _picks[pfx]
+    local last = _shown
     if not force and last and now - last.at < REROLL_SECS then
         if last.sticky then return last.phrase end
+        -- Without fresh statistics the phrase on show is kept: another critter
+        -- may have picked it with them.
+        if not facts.stats_fresh and last.signature == signature and last.phrase then return last.phrase end
         if last.key == key then return rewritten(last, facts) or last.phrase end
         if last.cold and last.signature == signature and not due then
             local kept = rewritten(last, facts)
@@ -352,7 +353,7 @@ local function choosePhrase(pfx, facts, opts, signature, force)
     end
     local phrase = Phrases.pick(facts, opts, due ~= nil)
     if due and phrase and phrase.source.celebrate then SUISettings:setNoFlush(CELEBRATED_KEY, due) end
-    _picks[pfx] = {
+    _shown = {
         key = key, signature = signature, phrase = phrase, at = now,
         cold = facts.streak == nil,
     }
@@ -382,6 +383,14 @@ function Stage:paintTo(bb, x, y)
     self[1]:paintTo(bb, x, y)
 end
 
+-- The container of a whole critter; it leaves the live ones when freed.
+local Root = Stage:extend{}
+
+function Root:free()
+    _live[self] = nil
+    Stage.free(self)
+end
+
 -- Containers that place the group in the row, by alignment.
 local ALIGN_CONTAINERS = { left = LeftContainer, center = CenterContainer, right = RightContainer }
 
@@ -400,13 +409,13 @@ end
 
 -- The chosen decorations that still exist, the nearest to the centre first and
 -- alternating between the sides: { side = "left" | "right", entry = decoration }.
-local function decorOrder(pfx)
+local function decorOrder()
     local by_id = {}
     for _i, entry in ipairs(Assets.decorList()) do by_id[entry.id] = entry end
-    local ids = { left = decorIds(pfx, "left"), right = decorIds(pfx, "right") }
+    local ids = { left = CritterSettings.decorIds("left"), right = CritterSettings.decorIds("right") }
 
     local order = {}
-    for rank = 1, DECOR_PER_SIDE do
+    for rank = 1, CritterSettings.DECOR_PER_SIDE do
         local left, right = by_id[ids.left[#ids.left + 1 - rank]], by_id[ids.right[rank]]
         if left then order[#order + 1] = { side = "left", entry = left } end
         if right then order[#order + 1] = { side = "right", entry = right } end
@@ -418,10 +427,10 @@ end
 -- cells of each side, the nearest to the centre first, and the width the two
 -- sides take. Every cell is followed, towards the centre, by `gap` and the one
 -- nearest to the centre by `centre_gap[side]`.
-local function decorCells(pfx, height, pixel, budget, gap, centre_gap)
+local function decorCells(height, pixel, budget, gap, centre_gap)
     local cells, used = { left = {}, right = {} }, { left = 0, right = 0 }
     local total, closed = 0, {}
-    for _i, slot in ipairs(decorOrder(pfx)) do
+    for _i, slot in ipairs(decorOrder()) do
         if not closed[slot.side] then
             local side_cells = cells[slot.side]
             local spacing = #side_cells == 0 and centre_gap[slot.side] or gap
@@ -478,8 +487,8 @@ function M.build(w, ctx)
     local bubble_gap = math.floor(Screen:scaleBySize(BUBBLE_GAP_DP) * scale)
     local side   = Config.getAlignment(pfx .. KEY_SIDE, SIDES, "left")
     local align  = Config.getAlignment(pfx .. KEY_ALIGN, ALIGNS, DEFAULT_ALIGN)
-    local critter = Assets.get(SUISettings:get(pfx .. KEY_PICK))
-    local bubble_style = Config.readChoice(pfx .. KEY_STYLE, STYLES, DEFAULT_STYLE)
+    local critter = Assets.get(CritterSettings.pick())
+    local bubble_style = CritterSettings.bubbleStyle()
 
     local styles = Config.resolveTextStyles(ctx, M.id, TEXT_ELEMS)
     local msg_fs = math.max(8, math.floor(SUIStyle.FS_BODY   * scale * styles.message.scale))
@@ -487,11 +496,11 @@ function M.build(w, ctx)
     local msg_face, msg_bold = SUIStyle.getTextFace(styles.message, msg_fs)
     local det_face, det_bold = SUIStyle.getTextFace(styles.detail,  det_fs)
 
-    local opts, signature = phraseOptions(pfx)
+    local opts, signature = phraseOptions()
     local facts  = collectFacts(ctx)
     if not ctx.stats_stale then creditChallenge(facts) end
-    observeReactions(pfx, false)
-    local phrase = choosePhrase(pfx, facts, opts, signature, false)
+    observeReactions(false)
+    local phrase = choosePhrase(facts, opts, signature, false)
 
     -- Sprite of `mood` inside the box of `max_w`, nil when there is none.
     local function sprite(mood, max_w)
@@ -520,7 +529,7 @@ function M.build(w, ctx)
         left  = (critter_right or not neutral) and bubble_gap or gap,
         right = not critter_right and bubble_gap or gap,
     }
-    local cells, used = decorCells(pfx, height, pixel, avail - min_w, gap, centre_gap)
+    local cells, used = decorCells(height, pixel, avail - min_w, gap, centre_gap)
     local left_decor  = #cells.left  > 0 and decorRow(cells.left,  gap, centre_gap.left,  true)  or nil
     local right_decor = #cells.right > 0 and decorRow(cells.right, gap, centre_gap.right, false) or nil
     local bubble_w = math.min(target, avail - used.left - used.right)
@@ -551,7 +560,7 @@ function M.build(w, ctx)
         return Stage:new{ dimen = Geom:new{ w = size.w, h = size.h }, bubble }
     end
 
-    local root = Stage:new{ dimen = Geom:new{ w = w, h = height } }
+    local root = Root:new{ dimen = Geom:new{ w = w, h = height } }
     local holder, cell
 
     if neutral then
@@ -648,18 +657,20 @@ function M.build(w, ctx)
                     end,
                 },
                 on_other = function()
-                    phrase = choosePhrase(pfx, facts, opts, signature, true)
+                    phrase = choosePhrase(facts, opts, signature, true)
                     show(phrase)
                     repaint()
+                    broadcast(root)
                 end,
                 on_reply = function(reply)
                     phrase = { text = reply.text, sub = reply.sub, mood = reply.mood }
-                    _picks[pfx] = {
+                    _shown = {
                         key = factsKey(facts, signature), signature = signature, phrase = phrase,
                         at = os.time(), sticky = true,
                     }
                     show(phrase)
                     repaint()
+                    broadcast(root)
                 end,
             }
             return true
@@ -677,13 +688,27 @@ function M.build(w, ctx)
     root.critter_update = function(new_ctx)
         facts = collectFacts(new_ctx)
         if not new_ctx.stats_stale then creditChallenge(facts) end
-        observeReactions(pfx, true)
-        local current = choosePhrase(pfx, facts, opts, signature, false)
+        observeReactions(true)
+        local current = choosePhrase(facts, opts, signature, false)
         if current == phrase then return false end
         phrase = current
         show(phrase)
+        broadcast(root)
         return true
     end
+
+    -- Follows the phrase another critter picked.
+    for other, entry in pairs(_live) do
+        if entry.pfx == pfx then _live[other] = nil end
+    end
+    _live[root] = { pfx = pfx, follow = function()
+        local current = _shown and _shown.phrase
+        if current == phrase then return end
+        phrase = current
+        show(phrase)
+        repaint()
+    end }
+    broadcast(root)
     return root
 end
 
@@ -701,165 +726,27 @@ end
 -- Menu
 -- ---------------------------------------------------------------------------
 
-local function makeCritterItem(ctx_menu)
-    local pfx, refresh, _lc = ctx_menu.pfx, ctx_menu.refresh, ctx_menu._
-    local function get()
-        local entry = Assets.get(SUISettings:get(pfx .. KEY_PICK))
-        return entry and entry.id
-    end
-    return {
-        text_func  = function() return _lc("Critter") end,
-        value_func = function()
-            local entry = Assets.get(SUISettings:get(pfx .. KEY_PICK))
-            return entry and entry.name or ""
-        end,
-        sub_item_table_func = function()
-            Assets.relist()
-            Assets.ensureUserDir()
-            local options = {}
-            for _i, entry in ipairs(Assets.list()) do
-                options[#options + 1] = { value = entry.id, label = entry.name }
-            end
-            local rows = Config.appendRadioItems({}, {
-                options = options,
-                get     = get,
-                set     = function(id) SUISettings:set(pfx .. KEY_PICK, id) end,
-                refresh = refresh,
-            })
-            rows[#rows + 1] = {
-                text    = T(_lc("Add your own critters in %1"), Assets.userDir()),
-                enabled = false,
-            }
-            return rows
-        end,
-    }
-end
-
--- Arrange row for the decorations of both sides, in one list: those of the left
--- side, then those of the right, each as they stand on the screen.
-local function makeDecorItem(ctx_menu)
-    local pfx, _lc = ctx_menu.pfx, ctx_menu._
-    local title = _lc("Decorations")
-    return Arrange.makeSectionedItem{
-        ctx_menu = ctx_menu,
-        title    = title,
-        labels   = {
-            action  = string.format(_lc("Arrange %s"), title),
-            empty   = _lc("No decorations selected."),
-            too_few = _lc("Add at least 2 decorations to arrange."),
-            full    = function(max)
-                return string.format(N_("The maximum of %d decoration per side has been reached. Remove one first.",
-                    "The maximum of %d decorations per side has been reached. Remove one first.", max), max)
-            end,
-        },
-        sections = {
-            { id = "left",  label = _lc("Left") },
-            { id = "right", label = _lc("Right") },
-        },
-        max    = DECOR_PER_SIDE,
-        pool   = function()
-            local pool = {}
-            for _i, entry in ipairs(Assets.decorList()) do
-                pool[#pool + 1] = { id = entry.id, label = entry.name }
-            end
-            return pool
-        end,
-        getIds = function(side) return decorIds(pfx, side) end,
-        setIds = function(side, ids) SUISettings:set(pfx .. KEY_DECOR .. side, ids) end,
-    }
-end
-
--- Menu row that asks for the name the critter uses for the user; an empty text
--- clears it.
-local function makeNameItem(ctx_menu)
-    local refresh, _lc = ctx_menu.refresh, ctx_menu._
-    return {
-        text_func      = function() return _lc("Your name") end,
-        keep_menu_open = true,
-        value_func     = function() return userName() or _lc("Not set") end,
-        callback       = function()
-            require("features/dialogs/sui_dialogs").prompt{
-                title       = _lc("Your name"),
-                description = _lc("The critter may use it in what it says."),
-                value       = userName() or "",
-                hint        = _lc("Name"),
-                allow_empty = true,
-                validate    = function(text)
-                    if #util.splitToChars(text) > MAX_NAME_CHARS then
-                        return T(_lc("Use at most %1 characters."), tostring(MAX_NAME_CHARS))
-                    end
-                end,
-                on_submit   = function(text)
-                    SUISettings:set(USER_NAME_KEY, text ~= "" and text or nil)
-                    refresh()
-                end,
-            }
-        end,
-    }
-end
-
-local function makeStyleItem(ctx_menu)
-    local pfx, _lc = ctx_menu.pfx, ctx_menu._
-    return Config.makeRadioSubmenuItem{
-        text    = _lc("Bubble style"),
-        options = {
-            { value = "pixel",  label = _lc("Pixel") },
-            { value = "smooth", label = _lc("Smooth") },
-        },
-        get     = function() return Config.readChoice(pfx .. KEY_STYLE, STYLES, DEFAULT_STYLE) end,
-        set     = function(v) SUISettings:set(pfx .. KEY_STYLE, v) end,
-        refresh = ctx_menu.refresh,
-    }
-end
-
-local function makeSourceItem(ctx_menu)
-    local pfx, _lc = ctx_menu.pfx, ctx_menu._
-    return Config.makeRadioSubmenuItem{
-        text    = _lc("Phrases"),
-        options = {
-            { value = "builtin", label = _lc("Included") },
-            { value = "both",    label = _lc("Included and mine") },
-            { value = "custom",  label = _lc("Mine only") },
-        },
-        get     = function() return Config.readChoice(pfx .. KEY_SOURCE, SOURCES, DEFAULT_SOURCE) end,
-        set     = function(v) SUISettings:set(pfx .. KEY_SOURCE, v) end,
-        refresh = ctx_menu.refresh,
-    }
-end
-
-local function makeCategoriesItem(ctx_menu)
+-- Rows that place the critter in the row: the side of the bubble it stands on
+-- and the alignment of the group.
+local function makePlacementItems(ctx_menu)
     local pfx, refresh, _lc = ctx_menu.pfx, ctx_menu.refresh, ctx_menu._
     return {
-        text_func = function() return _lc("Topics") end,
-        sub_item_table_func = function()
-            local rows = {}
-            for _i, cat in ipairs(Phrases.CATEGORIES) do
-                local key = pfx .. KEY_CAT .. cat.id
-                rows[#rows + 1] = {
-                    text           = cat.label(),
-                    checked_func   = function() return SUISettings:nilOrTrue(key) end,
-                    keep_menu_open = true,
-                    callback       = function()
-                        SUISettings:set(key, not SUISettings:nilOrTrue(key))
-                        refresh()
-                    end,
-                }
-            end
-            return rows
-        end,
-    }
-end
-
-local function makeReactionsItem(ctx_menu)
-    local pfx, refresh, _lc = ctx_menu.pfx, ctx_menu.refresh, ctx_menu._
-    return {
-        text           = _lc("React to events"),
-        checked_func   = function() return reactionsOn(pfx) end,
-        keep_menu_open = true,
-        callback       = function()
-            SUISettings:set(pfx .. KEY_REACT, not reactionsOn(pfx))
-            refresh()
-        end,
+        Config.makeAlignmentItem{
+            key     = pfx .. KEY_SIDE,
+            values  = SIDES,
+            default = "left",
+            text    = _lc("Critter position"),
+            refresh = refresh,
+            _lc     = _lc,
+        },
+        Config.makeAlignmentItem{
+            key     = pfx .. KEY_ALIGN,
+            values  = ALIGNS,
+            default = DEFAULT_ALIGN,
+            text    = _lc("Alignment"),
+            refresh = refresh,
+            _lc     = _lc,
+        },
     }
 end
 
@@ -876,41 +763,18 @@ local function makeScaleItem(ctx_menu)
     }
 end
 
+M.makePlacementItems = makePlacementItems
+M.makeScaleItem      = makeScaleItem
+
 function M.getMenuItems(ctx_menu)
     local pfx, refresh, _lc = ctx_menu.pfx, ctx_menu.refresh, ctx_menu._
-    -- Picks up the decorations the user added since the last time.
-    Assets.relist()
-    Assets.ensureUserDir()
+    local content = makePlacementItems(ctx_menu)
+    table.insert(content, 1, {
+        text    = _lc("The critter, its decorations, its bubble and what it says are set in Settings > Tiny Critter."),
+        enabled = false,
+    })
     return Config.buildModuleMenu({
-        content = {
-            makeCritterItem(ctx_menu),
-            Config.makeAlignmentItem{
-                key     = pfx .. KEY_SIDE,
-                values  = SIDES,
-                default = "left",
-                text    = _lc("Critter position"),
-                refresh = refresh,
-                _lc     = _lc,
-            },
-            Config.makeAlignmentItem{
-                key     = pfx .. KEY_ALIGN,
-                values  = ALIGNS,
-                default = DEFAULT_ALIGN,
-                text    = _lc("Alignment"),
-                refresh = refresh,
-                _lc     = _lc,
-            },
-            makeStyleItem(ctx_menu),
-            makeDecorItem(ctx_menu),
-            {
-                text    = T(_lc("Add your own decorations in %1"), Assets.userDecorDir()),
-                enabled = false,
-            },
-            makeNameItem(ctx_menu),
-            makeSourceItem(ctx_menu),
-            makeCategoriesItem(ctx_menu),
-            makeReactionsItem(ctx_menu),
-        },
+        content = content,
         appearance = {
             size = { makeScaleItem(ctx_menu) },
             text = {

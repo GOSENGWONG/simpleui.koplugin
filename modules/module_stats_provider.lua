@@ -1485,4 +1485,12 @@ function SP.getStale()
     return _cache
 end
 
+--- The cached statistics when they were built today, nil otherwise. No DB
+--- access and no disk read: for callers that only show what is already there.
+function SP.getToday()
+    local t = os.date("*t")
+    local today = string.format("%04d-%02d-%02d", t.year, t.month, t.day)
+    return _cache_day == today and _cache or nil
+end
+
 return SP

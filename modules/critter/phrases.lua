@@ -5,10 +5,11 @@
 --   f      facts about the moment: period, weekday (os.date "*t" wday: 1 is
 --          Sunday, 2 Monday ... 7 Saturday), weekday_name, month, day,
 --          streak, streak_record, streak_milestone, books_year, goal,
---          today_secs, today_pages, stats_fresh, daily_goal_secs, user_name
---          (goal and daily_goal_secs are numbers, 0 meaning none; the rest may
---          be nil; stats_fresh is false while the statistics may be from a past
---          day; user_name is the name the user told the critter)
+--          today_secs, today_pages, stats_fresh, daily_goal_secs, user_name,
+--          critter_id (goal and daily_goal_secs are numbers, 0 meaning none;
+--          the rest may be nil; stats_fresh is false while the statistics may
+--          be from a past day; user_name is the name the user told the critter;
+--          critter_id is the critter shown)
 --   when   whether the phrase fits `f`
 --   text   main line;  sub  optional second line
 --   mood   critter state shown with the phrase
@@ -16,7 +17,8 @@
 -- milestone) and is dealt first while the achievement is due (see Phrases.pick).
 -- Phrases are grouped in categories. A category is chosen by weight, then
 -- a phrase of it is dealt from its own shuffle deck, so nothing repeats
--- before the whole category has been seen.
+-- before the whole category has been seen. A critter with phrases of its own
+-- in a category (voice_phrases.lua) deals them three times out of four.
 --
 -- User phrases come from <dir>/phrases.lua, which returns a list of
 --   { text = "...", sub = "...", mood = "happy", period = "morning",
@@ -25,9 +27,10 @@
 -- {pages} {minutes} {goal} {weekday} {name}. A phrase whose placeholder has no
 -- value right now is not offered.
 
-local Deck = require("infra/sui_deck")
-local _    = require("infra/sui_i18n").translate
-local N_   = require("infra/sui_i18n").ngettext
+local Deck   = require("infra/sui_deck")
+local Voices = require("modules/critter/voice_phrases")
+local _      = require("infra/sui_i18n").translate
+local N_     = require("infra/sui_i18n").ngettext
 
 local Phrases = {}
 
@@ -45,6 +48,7 @@ Phrases.CATEGORIES = {
     { id = "greeting", weight = 3, label = function() return _("Greetings") end },
     { id = "streak",   weight = 3, label = function() return _("Reading streak") end },
     { id = "books",    weight = 2, label = function() return _("Books this year") end },
+    { id = "reading",  weight = 2, label = function() return _("Current book") end },
     { id = "today",    weight = 2, label = function() return _("Today's reading") end },
     { id = "special",  weight = 3, label = function() return _("Milestones and goals") end },
     { id = "calendar", weight = 1, label = function() return _("Days and months") end },
@@ -52,6 +56,7 @@ Phrases.CATEGORIES = {
 }
 
 local CUSTOM_WEIGHT = 3
+local VOICE_ODDS    = 0.75   -- chance of a critter's own phrase in a category that has one
 local DECK_KEY      = "simpleui_critter_deck_"
 
 local PERIOD_SET = { morning = true, afternoon = true, evening = true, night = true }
@@ -183,6 +188,38 @@ local BUILTIN = {
       sub  = function(f)
           return string.format(N_("%d of %d book.", "%d of %d books.", f.goal), f.books_year, f.goal)
       end },
+
+    -- The book read last (f.book, see book.lua).
+    { id = "book_start", cat = "reading", mood = "curious",
+      when = function(f) return f.book ~= nil and f.book.percent < 10 and f.book.days < 3 end,
+      text = function(f) return string.format(_("%s is just getting started."), f.book.title) end,
+      sub  = function() return _("Where will it take you?") end },
+    { id = "book_progress", cat = "reading", mood = "happy",
+      when = function(f)
+          return f.book ~= nil and f.book.percent >= 10 and f.book.percent < 45 and f.book.days < 3
+      end,
+      text = function(f) return string.format(_("You're %d%% into %s."), f.book.percent, f.book.title) end,
+      sub  = function() return _("A good pace.") end },
+    { id = "book_half", cat = "reading", mood = "cheer",
+      when = function(f)
+          return f.book ~= nil and f.book.percent >= 45 and f.book.percent <= 55 and f.book.days < 3
+      end,
+      text = function(f) return string.format(_("Halfway through %s!"), f.book.title) end,
+      sub  = function() return _("The best part may be ahead.") end },
+    { id = "book_end", cat = "reading", mood = "party",
+      when = function(f) return f.book ~= nil and f.book.percent >= 90 and f.book.days < 3 end,
+      text = function(f) return string.format(_("Nearly done with %s!"), f.book.title) end,
+      sub  = function() return _("Just a few pages left.") end },
+    { id = "book_waiting", cat = "reading", mood = "sad",
+      when = function(f) return f.book ~= nil and f.book.days >= 3 and f.book.days < 30 end,
+      text = function(f) return string.format(_("%s is waiting for you."), f.book.title) end,
+      sub  = function(f)
+          return string.format(N_("It's been %d day.", "It's been %d days.", f.book.days), f.book.days)
+      end },
+    { id = "book_missed", cat = "reading", mood = "shy",
+      when = function(f) return f.book ~= nil and f.book.days >= 30 end,
+      text = function(f) return string.format(_("Remember %s?"), f.book.title) end,
+      sub  = function(f) return string.format(_("It's been %d days."), f.book.days) end },
 
     -- Today's reading.
     { id = "minutes", cat = "today", mood = "happy",
@@ -360,9 +397,9 @@ local _custom = {}   -- path -> { mtime, list }
 function Phrases.loadCustom(path)
     local lfs = require("libs/libkoreader-lfs")
     local mtime = lfs.attributes(path, "modification")
-    if not mtime then _custom[path] = nil; return {} end
+    if not mtime then _custom[path] = nil; return {}, nil end
     local cached = _custom[path]
-    if cached and cached.mtime == mtime then return cached.list end
+    if cached and cached.mtime == mtime then return cached.list, mtime end
 
     local list = {}
     local chunk, err = loadfile(path, "t", {})
@@ -376,7 +413,7 @@ function Phrases.loadCustom(path)
         require("logger").warn("simpleui: critter: cannot load " .. path .. ": " .. tostring(data))
     end
     _custom[path] = { mtime = mtime, list = list }
-    return list
+    return list, mtime
 end
 
 -- ---------------------------------------------------------------------------
@@ -413,6 +450,38 @@ function Phrases.refresh(previous, f)
     return render(phrase, f)
 end
 
+-- Built-in phrases by category, the achievement ones and the ones of a critter,
+-- listed on first use.
+local _by_cat, _celebrate, _voiced
+
+local function builtinOf(cat)
+    if not _by_cat then
+        _by_cat, _celebrate = {}, {}
+        for _i, phrase in ipairs(BUILTIN) do
+            if phrase.cat then
+                local list = _by_cat[phrase.cat]
+                if not list then list = {}; _by_cat[phrase.cat] = list end
+                list[#list + 1] = phrase
+            end
+            if phrase.celebrate then _celebrate[#_celebrate + 1] = phrase end
+        end
+    end
+    return _by_cat[cat] or {}
+end
+
+local function voicedOf(cat, critter_id)
+    if not _voiced then
+        _voiced = {}
+        for _i, phrase in ipairs(Voices) do
+            local key = phrase.cat .. "|" .. tostring(phrase.critter)
+            local list = _voiced[key]
+            if not list then list = {}; _voiced[key] = list end
+            list[#list + 1] = phrase
+        end
+    end
+    return _voiced[cat .. "|" .. tostring(critter_id)] or {}
+end
+
 -- Picks a phrase for the facts `f`; with `celebrate`, an achievement phrase
 -- that fits comes first.
 --   opts.enabled   set of the category ids to use (built-in phrases)
@@ -422,11 +491,8 @@ end
 -- Returns { text, sub, mood, source } or nil when nothing fits.
 function Phrases.pick(f, opts, celebrate)
     if celebrate and opts.builtin and opts.enabled.special then
-        local members = {}
-        for _i, phrase in ipairs(BUILTIN) do
-            if phrase.celebrate then members[#members + 1] = phrase end
-        end
-        local ids, by_id = eligible(members, f)
+        builtinOf()
+        local ids, by_id = eligible(_celebrate, f)
         if #ids > 0 then return render(by_id[Deck.pick(DECK_KEY .. "celebrate", ids)], f) end
     end
 
@@ -441,12 +507,13 @@ function Phrases.pick(f, opts, celebrate)
     if opts.builtin then
         for _i, cat in ipairs(Phrases.CATEGORIES) do
             if opts.enabled[cat.id] then
-                local members = {}
-                for _j, phrase in ipairs(BUILTIN) do
-                    if phrase.cat == cat.id then members[#members + 1] = phrase end
+                local ids, by_id = eligible(builtinOf(cat.id), f)
+                local voice_ids, voice_by_id = eligible(voicedOf(cat.id, f.critter_id), f)
+                if #voice_ids > 0 and (#ids == 0 or math.random() < VOICE_ODDS) then
+                    addPool(cat.id .. "_voice", cat.weight, voice_ids, voice_by_id)
+                else
+                    addPool(cat.id, cat.weight, ids, by_id)
                 end
-                local ids, by_id = eligible(members, f)
-                addPool(cat.id, cat.weight, ids, by_id)
             end
         end
     end
@@ -457,11 +524,7 @@ function Phrases.pick(f, opts, celebrate)
     -- Without built-in phrases and with no user phrase that fits, the critter
     -- falls back to the general built-in ones instead of staying mute.
     if total == 0 and not opts.builtin then
-        local members = {}
-        for _i, phrase in ipairs(BUILTIN) do
-            if phrase.cat == "generic" then members[#members + 1] = phrase end
-        end
-        local ids, by_id = eligible(members, f)
+        local ids, by_id = eligible(builtinOf("generic"), f)
         addPool("generic", 1, ids, by_id)
     end
     if total == 0 then return nil end

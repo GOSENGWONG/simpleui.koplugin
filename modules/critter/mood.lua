@@ -12,6 +12,7 @@
 -- Every function returns a new table and leaves its argument alone.
 
 local SUISettings = require("infra/sui_store")
+local State       = require("modules/critter/state")
 
 local Mood = {}
 
@@ -47,14 +48,7 @@ local function isDay(value)
     return month ~= nil and month >= 1 and month <= 12 and day >= 1 and day <= 31
 end
 
-local function copy(state, changes)
-    local new = {
-        score = state.score, day = state.day, read_day = state.read_day,
-        read_gain = state.read_gain, chat_gain = state.chat_gain,
-    }
-    for k, v in pairs(changes) do new[k] = v end
-    return new
-end
+local copy = State.copy
 
 -- Whole days from day `a` to day `b`; noon avoids daylight saving shifts.
 local function daysBetween(a, b)
@@ -152,16 +146,11 @@ function Mood.write(state)
     SUISettings:setNoFlush(KEY, state)
 end
 
-local function same(a, b)
-    return a.score == b.score and a.day == b.day and a.read_day == b.read_day
-        and a.read_gain == b.read_gain and a.chat_gain == b.chat_gain
-end
-
 --- Brings the stored state to `today` and credits today's reading; returns it.
 function Mood.update(today, today_secs, goal_secs)
     local stored = Mood.read()
     local state = Mood.creditReading(Mood.rollDay(stored, today), today, today_secs, goal_secs)
-    if not same(state, stored) then Mood.write(state) end
+    if not State.same(state, stored) then Mood.write(state) end
     return state
 end
 

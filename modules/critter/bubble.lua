@@ -117,6 +117,8 @@ local function paintRects(bb, rects, x, y, color)
     for _i, r in ipairs(rects) do bb:paintRect(x + r.x, y + r.y, r.w, r.h, color) end
 end
 
+Bubble.paintRects = paintRects
+
 -- Box with stepped corners (a Shapes.box `shape`) around one widget. The shape
 -- is snapped to whole units and centred in the box_w x box_h it stands for.
 local PixelBody = Widget:extend{
@@ -177,17 +179,20 @@ local function lineHeight(face, bold, width)
     return by_bold[key]
 end
 
--- Text box of at most `lines` lines, ellipsized when the text needs more.
-local function textBox(text, face, bold, width, lines, color)
+-- Text box of at most `lines` lines, ellipsized when the text needs more;
+-- `alpha` draws it without a background.
+local function textBox(text, face, bold, width, lines, color, alpha)
     local args = { text = text, face = face, bold = bold, width = width, fgcolor = color, alignment = "left" }
-    local box = UI.makeTextBox(args)
+    local box = UI.makeTextBox(args, alpha)
     local line_h = lineHeight(face, bold, width)
     if box:getSize().h <= lines * line_h then return box end
     box:free()
     args.height = lines * line_h
     args.height_overflow_show_ellipsis = true
-    return UI.makeTextBox(args)
+    return UI.makeTextBox(args, alpha)
 end
+
+Bubble.textBox = textBox
 
 -- Whether a bubble of `style` and `unit` is drawn in blocks.
 local function isPixel(style, unit)

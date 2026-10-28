@@ -56,10 +56,7 @@ local function ceilTo(value, unit)
     return math.ceil(value / unit) * unit
 end
 
--- Paints `rects` (relative to x, y) in `color`.
-local function paintRects(bb, rects, x, y, color)
-    for _i, r in ipairs(rects) do bb:paintRect(x + r.x, y + r.y, r.w, r.h, color) end
-end
+local paintRects = Bubble.paintRects
 
 -- Paints the frame of the w x h box at x, y: in the pixel style the stepped
 -- `shape` (nil for a box too small for its unit: a plain framed rectangle), in
@@ -97,16 +94,7 @@ end
 -- light or a dark row; text that needs more than `lines` lines is cut with an
 -- ellipsis.
 local function textBox(text, face, bold, width, color, lines)
-    local args = { text = text, face = face, bold = bold, width = width, fgcolor = color, alignment = "left" }
-    local box = UI.makeTextBox(args, true)
-    local probe = UI.makeTextBox({ text = "Xg", face = face, bold = bold, width = width, fgcolor = color }, true)
-    local max_h = lines * probe:getSize().h
-    probe:free()
-    if box:getSize().h <= max_h then return box end
-    box:free()
-    args.height = max_h
-    args.height_overflow_show_ellipsis = true
-    return UI.makeTextBox(args, true)
+    return Bubble.textBox(text, face, bold, width, lines, color, true)
 end
 
 -- Function that paints the tail of the bubble, nil when it has none. The tail

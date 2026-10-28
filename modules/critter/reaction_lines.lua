@@ -9,13 +9,15 @@
 --   data         what reactions.lua records with the reaction
 --   mood         critter state shown with the line (see phrases.lua)
 --   by_tier      lines of the critter in another mood tier (see mood.lua):
---                `by_tier[tier]` replaces the fields it sets; a replaced `text`
---                also leaves out the `sub`, unless it brings its own
+--                `by_tier[tier]` replaces the fields it sets (`sub = false`
+--                drops the second line)
 -- A line deals from its own shuffle deck per kind and group, so nothing repeats
 -- before the whole group has been seen.
+-- A line with a `critter` is only for that critter (see voice_lines.lua).
 
 local DateNames = require("infra/sui_datenames")
 local Deck      = require("infra/sui_deck")
+local Voices    = require("modules/critter/voice_lines")
 local _         = require("infra/sui_i18n").translate
 local N_        = require("infra/sui_i18n").ngettext
 
@@ -63,14 +65,14 @@ add("book_finished", "titled", { id = "bf_t2", mood = "cheer",
     text = function(d) return string.format(_("You finished %s."), d.title) end,
     sub  = function() return _("I'm not crying. It's dust.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function(d) return string.format(_("%s is over. Good for you."), d.title) end },
-        happy  = { mood = "party",  text = function(d) return string.format(_("%s! DONE! Incredible!"), d.title) end },
+        grumpy = { mood = "grumpy", text = function(d) return string.format(_("%s is over. Good for you."), d.title) end, sub = false },
+        happy  = { mood = "party",  text = function(d) return string.format(_("%s! DONE! Incredible!"), d.title) end, sub = false },
     } })
 add("book_finished", "titled", { id = "bf_t3", mood = "love",
     text = function() return _("Another book on the done pile.") end,
     sub  = function(d) return string.format(_("%s was a good one."), d.title) end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("A book finished. I need to lie down.") end },
+        meh     = { mood = "sleepy", text = function() return _("A book finished. I need to lie down.") end, sub = false },
         radiant = { mood = "party",  text = function() return _("A new chapter of your legend is complete!") end,
                     sub = function(d) return string.format(_("%s will be sung about."), d.title) end },
     } })
@@ -85,14 +87,14 @@ add("book_finished", "plain", { id = "bf_p2", mood = "cheer",
     text = function() return _("You finished a book.") end,
     sub  = function() return _("I'm not crying. It's dust.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("A book is over. Good for you.") end },
-        happy  = { mood = "party",  text = function() return _("DONE! Incredible!") end },
+        grumpy = { mood = "grumpy", text = function() return _("A book is over. Good for you.") end, sub = false },
+        happy  = { mood = "party",  text = function() return _("DONE! Incredible!") end, sub = false },
     } })
 add("book_finished", "plain", { id = "bf_p3", mood = "love",
     text = function() return _("Another one for the done pile.") end,
     sub  = function() return _("That was a good one.") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("One more finished. I need to lie down.") end },
+        meh     = { mood = "sleepy", text = function() return _("One more finished. I need to lie down.") end, sub = false },
         radiant = { mood = "party",  text = function() return _("Another chapter of your legend is complete!") end,
                     sub = function() return _("It will be sung about.") end },
     } })
@@ -111,15 +113,15 @@ add("session", "short", { id = "ss_2", mood = "playful",
     text = function() return _("Short and sweet.") end,
     sub  = function() return _("Even a few pages count.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("That was short. I blinked and missed it.") end },
-        happy  = { mood = "cheer",  text = function() return _("Every page counts! Hooray for pages!") end },
+        grumpy = { mood = "grumpy", text = function() return _("That was short. I blinked and missed it.") end, sub = false },
+        happy  = { mood = "cheer",  text = function() return _("Every page counts! Hooray for pages!") end, sub = false },
     } })
 add("session", "short", { id = "ss_3", mood = "shy",
     text = function() return _("Just a little one today.") end,
     sub  = function() return _("Little reads add up.") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("A short one. My kind of effort.") end },
-        radiant = { mood = "cheer",  text = function() return _("A brief, brilliant visit to another world!") end },
+        meh     = { mood = "sleepy", text = function() return _("A short one. My kind of effort.") end, sub = false },
+        radiant = { mood = "cheer",  text = function() return _("A brief, brilliant visit to another world!") end, sub = false },
     } })
 add("session", "short", { id = "ss_4", mood = "happy",
     text = function() return _("A page here, a page there.") end,
@@ -132,15 +134,15 @@ add("session", "medium", { id = "sm_2", mood = "cheer",
     text = function() return _("Nice little session!") end,
     sub  = function() return _("The book is warm now.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("Fine. A decent session. Don't let it go to your head.") end },
-        happy  = { mood = "party",  text = function() return _("What a lovely session! Bravo!") end },
+        grumpy = { mood = "grumpy", text = function() return _("Fine. A decent session. Don't let it go to your head.") end, sub = false },
+        happy  = { mood = "party",  text = function() return _("What a lovely session! Bravo!") end, sub = false },
     } })
 add("session", "medium", { id = "sm_3", mood = "playful",
     text = function() return _("Look who's got staying power.") end,
     sub  = function() return _("Same time tomorrow?") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("A decent session. I almost stayed awake.") end },
-        radiant = { mood = "cheer",  text = function() return _("A session worthy of the great libraries!") end },
+        meh     = { mood = "sleepy", text = function() return _("A decent session. I almost stayed awake.") end, sub = false },
+        radiant = { mood = "cheer",  text = function() return _("A session worthy of the great libraries!") end, sub = false },
     } })
 add("session", "medium", { id = "sm_4", mood = "love",
     text = function() return _("That was cosy.") end,
@@ -153,15 +155,15 @@ add("session", "long", { id = "sl_2", mood = "party",
     text = function() return _("Marathon reader!") end,
     sub  = function(d) return string.format(N_("%d minute without surfacing.", "%d minutes without surfacing.", d.minutes), d.minutes) end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("A marathon. I'm tired just watching.") end },
-        happy  = { mood = "party",  text = function() return _("A MARATHON! You're unstoppable!") end },
+        grumpy = { mood = "grumpy", text = function() return _("A marathon. I'm tired just watching.") end, sub = false },
+        happy  = { mood = "party",  text = function() return _("A MARATHON! You're unstoppable!") end, sub = false },
     } })
 add("session", "long", { id = "sl_3", mood = "love",
     text = function() return _("The world can wait.") end,
     sub  = function() return _("The book clearly deserved it.") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("All that reading. Wake me when it's over.") end },
-        radiant = { mood = "party",  text = function() return _("An epic voyage! The sagas will remember it!") end },
+        meh     = { mood = "sleepy", text = function() return _("All that reading. Wake me when it's over.") end, sub = false },
+        radiant = { mood = "party",  text = function() return _("An epic voyage! The sagas will remember it!") end, sub = false },
     } })
 add("session", "long", { id = "sl_4", mood = "curious",
     text = function() return _("Was it that good?") end,
@@ -178,15 +180,15 @@ add("battery_low", "low", { id = "bl_2", mood = "sad",
     text = function() return _("Running on fumes.") end,
     sub  = function(d) return string.format(_("%d%% left. I'll be brave."), d.capacity) end,
     by_tier = {
-        grumpy = { mood = "grumpy",    text = function() return _("Low battery. Typical.") end },
-        happy  = { mood = "surprised", text = function() return _("Battery low! Quick, adventure's calling!") end },
+        grumpy = { mood = "grumpy",    text = function() return _("Low battery. Typical.") end, sub = false },
+        happy  = { mood = "surprised", text = function() return _("Battery low! Quick, adventure's calling!") end, sub = false },
     } })
 add("battery_low", "low", { id = "bl_3", mood = "sleepy",
     text = function() return _("Feeling a bit faint.") end,
     sub  = function() return _("A charger would be lovely.") end,
     by_tier = {
-        meh     = { mood = "sleepy",    text = function() return _("Low battery. Finally, a reason to nap.") end },
-        radiant = { mood = "surprised", text = function() return _("My light is fading! Fetch the charger, brave soul!") end },
+        meh     = { mood = "sleepy",    text = function() return _("Low battery. Finally, a reason to nap.") end, sub = false },
+        radiant = { mood = "surprised", text = function() return _("My light is fading! Fetch the charger, brave soul!") end, sub = false },
     } })
 add("battery_low", "low", { id = "bl_4", mood = "shy",
     text = function() return _("Psst. The battery is low.") end,
@@ -199,15 +201,15 @@ add("charging", "charging", { id = "ch_2", mood = "sleepy",
     text = function() return _("Charging. Bliss.") end,
     sub  = function() return _("I'll just rest my eyes.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("Charging. About time.") end },
-        happy  = { mood = "cheer",  text = function() return _("Power! Glorious power!") end },
+        grumpy = { mood = "grumpy", text = function() return _("Charging. About time.") end, sub = false },
+        happy  = { mood = "cheer",  text = function() return _("Power! Glorious power!") end, sub = false },
     } })
 add("charging", "charging", { id = "ch_3", mood = "love",
     text = function() return _("You plugged me in.") end,
     sub  = function() return _("You're my favourite human.") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("Charging. Wake me at 100%.") end },
-        radiant = { mood = "love",   text = function() return _("Energy flows! I am reborn!") end },
+        meh     = { mood = "sleepy", text = function() return _("Charging. Wake me at 100%.") end, sub = false },
+        radiant = { mood = "love",   text = function() return _("Energy flows! I am reborn!") end, sub = false },
     } })
 add("charging", "charging", { id = "ch_4", mood = "playful",
     text = function() return _("Snack time!") end,
@@ -224,15 +226,15 @@ add("special_date", "new_year", { id = "ny_2", mood = "cheer",
     text = function() return _("New year, new shelf.") end,
     sub  = function() return _("What shall we read first?") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("Another year. The pile is still there.") end },
-        happy  = { mood = "party",  text = function() return _("HAPPY NEW YEAR! Let's read everything!") end },
+        grumpy = { mood = "grumpy", text = function() return _("Another year. The pile is still there.") end, sub = false },
+        happy  = { mood = "party",  text = function() return _("HAPPY NEW YEAR! Let's read everything!") end, sub = false },
     } })
 add("special_date", "new_year", { id = "ny_3", mood = "curious",
     text = function() return _("Resolutions?") end,
     sub  = function() return _("Mine is to nap more. Yours?") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("A new year. Wake me in January. Oh, wait.") end },
-        radiant = { mood = "party",  text = function() return _("A new year, a new saga! Onward!") end },
+        meh     = { mood = "sleepy", text = function() return _("A new year. Wake me in January. Oh, wait.") end, sub = false },
+        radiant = { mood = "party",  text = function() return _("A new year, a new saga! Onward!") end, sub = false },
     } })
 add("special_date", "new_year", { id = "ny_4", mood = "love",
     text = function() return _("The year turns like a page.") end,
@@ -245,15 +247,15 @@ add("special_date", "book_day", { id = "bd_2", mood = "cheer",
     text = function() return _("It's World Book Day!") end,
     sub  = function() return _("Reading today is practically mandatory.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("World Book Day. Fine. Read something.") end },
-        happy  = { mood = "party",  text = function() return _("WORLD BOOK DAY! The best day of the year!") end },
+        grumpy = { mood = "grumpy", text = function() return _("World Book Day. Fine. Read something.") end, sub = false },
+        happy  = { mood = "party",  text = function() return _("WORLD BOOK DAY! The best day of the year!") end, sub = false },
     } })
 add("special_date", "book_day", { id = "bd_3", mood = "love",
     text = function() return _("A day for books, at last.") end,
     sub  = function() return _("I've been waiting all year.") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("Book Day. A holiday for my favourite thing: sitting.") end },
-        radiant = { mood = "party",  text = function() return _("Today the whole world kneels to the book!") end },
+        meh     = { mood = "sleepy", text = function() return _("Book Day. A holiday for my favourite thing: sitting.") end, sub = false },
+        radiant = { mood = "party",  text = function() return _("Today the whole world kneels to the book!") end, sub = false },
     } })
 add("special_date", "book_day", { id = "bd_4", mood = "playful",
     text = function() return _("Happy Book Day!") end,
@@ -266,15 +268,15 @@ add("special_date", "anniversary", { id = "an_2", mood = "love",
     text = function() return _("Happy anniversary!") end,
     sub  = function(d) return string.format(N_("%d year of pages and snacks.", "%d years of pages and snacks.", d.years), d.years) end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("An anniversary. I suppose I'm fond of you.") end },
-        happy  = { mood = "party",  text = function() return _("HAPPY ANNIVERSARY! I love us!") end },
+        grumpy = { mood = "grumpy", text = function() return _("An anniversary. I suppose I'm fond of you.") end, sub = false },
+        happy  = { mood = "party",  text = function() return _("HAPPY ANNIVERSARY! I love us!") end, sub = false },
     } })
 add("special_date", "anniversary", { id = "an_3", mood = "shy",
     text = function() return _("I remember the day we met.") end,
     sub  = function() return _("You had a book in your hand.") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("An anniversary. Cake? No? Nap, then.") end },
-        radiant = { mood = "love",   text = function() return _("Our story is the finest of all libraries!") end },
+        meh     = { mood = "sleepy", text = function() return _("An anniversary. Cake? No? Nap, then.") end, sub = false },
+        radiant = { mood = "love",   text = function() return _("Our story is the finest of all libraries!") end, sub = false },
     } })
 add("special_date", "anniversary", { id = "an_4", mood = "cheer",
     text = function() return _("Another lap around the sun.") end,
@@ -287,15 +289,15 @@ add("new_month", "month", { id = "nm_2", mood = "curious",
     text = function(d) return string.format(_("%s already?"), monthName(d)) end,
     sub  = function() return _("Time flies when you're reading.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function(d) return string.format(_("%s. Another month of the same pile."), monthName(d)) end },
-        happy  = { mood = "cheer",  text = function(d) return string.format(_("%s! New month, new adventures!"), monthName(d)) end },
+        grumpy = { mood = "grumpy", text = function(d) return string.format(_("%s. Another month of the same pile."), monthName(d)) end, sub = false },
+        happy  = { mood = "cheer",  text = function(d) return string.format(_("%s! New month, new adventures!"), monthName(d)) end, sub = false },
     } })
 add("new_month", "month", { id = "nm_3", mood = "playful",
     text = function() return _("The calendar flipped a page.") end,
     sub  = function(d) return string.format(_("Let's see what %s brings."), monthName(d)) end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function(d) return string.format(_("It's %s. I barely noticed."), monthName(d)) end },
-        radiant = { mood = "party",  text = function(d) return string.format(_("%s arrives! A new act begins!"), monthName(d)) end },
+        meh     = { mood = "sleepy", text = function(d) return string.format(_("It's %s. I barely noticed."), monthName(d)) end, sub = false },
+        radiant = { mood = "party",  text = function(d) return string.format(_("%s arrives! A new act begins!"), monthName(d)) end, sub = false },
     } })
 add("new_month", "month", { id = "nm_4", mood = "happy",
     text = function() return _("New month, new goals.") end,
@@ -312,15 +314,15 @@ add("comeback", "few", { id = "cf_2", mood = "shy",
     text = function() return _("I kept your place.") end,
     sub  = function() return _("Right where you left it.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("Oh, you remember me.") end },
-        happy  = { mood = "cheer",  text = function() return _("You're back! I missed you!") end },
+        grumpy = { mood = "grumpy", text = function() return _("Oh, you remember me.") end, sub = false },
+        happy  = { mood = "cheer",  text = function() return _("You're back! I missed you!") end, sub = false },
     } })
 add("comeback", "few", { id = "cf_3", mood = "playful",
     text = function() return _("A short holiday?") end,
     sub  = function() return _("Hope the books were jealous.") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("You're back. I was napping, honest.") end },
-        radiant = { mood = "love",   text = function() return _("The wanderer returns to the library!") end },
+        meh     = { mood = "sleepy", text = function() return _("You're back. I was napping, honest.") end, sub = false },
+        radiant = { mood = "love",   text = function() return _("The wanderer returns to the library!") end, sub = false },
     } })
 add("comeback", "few", { id = "cf_4", mood = "happy",
     text = function() return _("Welcome back!") end,
@@ -333,15 +335,15 @@ add("comeback", "week", { id = "cw_2", mood = "sad",
     text = function() return _("It's been a while.") end,
     sub  = function() return _("I dusted the shelves twice.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("So you remember where I live.") end },
-        happy  = { mood = "cheer",  text = function() return _("You're back! Best day ever!") end },
+        grumpy = { mood = "grumpy", text = function() return _("So you remember where I live.") end, sub = false },
+        happy  = { mood = "cheer",  text = function() return _("You're back! Best day ever!") end, sub = false },
     } })
 add("comeback", "week", { id = "cw_3", mood = "curious",
     text = function() return _("What did I miss?") end,
     sub  = function() return _("Tell me everything. Slowly.") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("You're back. Finally. I got so bored I napped.") end },
-        radiant = { mood = "love",   text = function() return _("The reader returns! Let the feast begin!") end },
+        meh     = { mood = "sleepy", text = function() return _("You're back. Finally. I got so bored I napped.") end, sub = false },
+        radiant = { mood = "love",   text = function() return _("The reader returns! Let the feast begin!") end, sub = false },
     } })
 add("comeback", "week", { id = "cw_4", mood = "playful",
     text = function() return _("I started talking to the bookcase.") end,
@@ -354,15 +356,15 @@ add("comeback", "month", { id = "cm_2", mood = "love",
     text = function() return _("You came back.") end,
     sub  = function() return _("I never doubted you. Much.") end,
     by_tier = {
-        grumpy = { mood = "grumpy", text = function() return _("A month. I kept busy. Mostly sulking.") end },
-        happy  = { mood = "party",  text = function() return _("YOU'RE BACK! Confetti, everyone!") end },
+        grumpy = { mood = "grumpy", text = function() return _("A month. I kept busy. Mostly sulking.") end, sub = false },
+        happy  = { mood = "party",  text = function() return _("YOU'RE BACK! Confetti, everyone!") end, sub = false },
     } })
 add("comeback", "month", { id = "cm_3", mood = "shy",
     text = function() return _("It's been so long.") end,
     sub  = function() return _("The dust and I have become friends.") end,
     by_tier = {
-        meh     = { mood = "sleepy", text = function() return _("You're back. I slept through half of it.") end },
-        radiant = { mood = "love",   text = function() return _("The hero returns after a long quest!") end },
+        meh     = { mood = "sleepy", text = function() return _("You're back. I slept through half of it.") end, sub = false },
+        radiant = { mood = "love",   text = function() return _("The hero returns after a long quest!") end, sub = false },
     } })
 add("comeback", "month", { id = "cm_4", mood = "cheer",
     text = function() return _("Welcome back, stranger!") end,
@@ -372,26 +374,30 @@ add("comeback", "month", { id = "cm_4", mood = "cheer",
 -- Picking
 -- ---------------------------------------------------------------------------
 
---- A line of the reaction `kind` for its `data`, written for a critter in the
---- mood tier `tier`: { text, sub, mood }; nil when no line fits.
-function Lines.pick(kind, data, tier)
-    local ids, by_id, group = {}, {}, nil
+--- A line of the reaction `kind` for its `data`, written for the critter
+--- `critter_id` in the mood tier `tier`: { text, sub, mood }; nil when no line fits.
+function Lines.pick(kind, data, tier, critter_id)
+    local ids, voice_ids, by_id, group = {}, {}, {}, nil
     for _i, line in ipairs(Lines.LINES) do
-        if line.kind == kind and line.when(data) then
+        if line.kind == kind and line.when(data) and (line.critter == nil or line.critter == critter_id) then
             group = group or line.group
             if line.group == group then
-                ids[#ids + 1] = line.id
+                local list = line.critter and voice_ids or ids
+                list[#list + 1] = line.id
                 by_id[line.id] = line
             end
         end
     end
-    local id = Deck.pick(Lines.DECK_KEY .. kind .. "_" .. tostring(group), ids)
+    -- A critter with a voice for the reaction uses it about half of the time.
+    local voiced = #voice_ids > 0 and (#ids == 0 or math.random(2) == 1)
+    local deck_key = Lines.DECK_KEY .. kind .. "_" .. tostring(group)
+    local id = Deck.pick(voiced and deck_key .. "_voice" or deck_key, voiced and voice_ids or ids)
     if not id then return nil end
 
     local line = by_id[id]
     local override = line.by_tier and line.by_tier[tier] or {}
-    local text, sub = line.text, line.sub
-    if override.text then text, sub = override.text, override.sub end
+    local text, sub = override.text or line.text, line.sub
+    if override.sub ~= nil then sub = override.sub end
     return {
         text = text(data),
         sub  = sub and sub(data) or nil,
@@ -407,8 +413,8 @@ add("challenge_done", "done", { id = "cd_1", mood = "party",
     text = function() return _("Challenge met!") end,
     sub  = function() return _("I never doubted you. Much.") end,
     by_tier = {
-        grumpy  = { mood = "grumpy", text = function() return _("Fine. You did it. Don't expect a parade.") end },
-        radiant = { mood = "cheer",  text = function() return _("Challenge crushed! Take a bow, champion!") end },
+        grumpy  = { mood = "grumpy", text = function() return _("Fine. You did it. Don't expect a parade.") end, sub = false },
+        radiant = { mood = "cheer",  text = function() return _("Challenge crushed! Take a bow, champion!") end, sub = false },
     } })
 add("challenge_done", "done", { id = "cd_2", mood = "cheer",
     text = function() return _("You said you would, and you did.") end,
@@ -417,11 +423,13 @@ add("challenge_done", "done", { id = "cd_3", mood = "happy",
     text = function() return _("Done and dusted.") end,
     sub  = function() return _("Shall I pick a harder one tomorrow?") end,
     by_tier = {
-        meh   = { mood = "sleepy", text = function() return _("Done. Now I need a nap.") end },
-        happy = { mood = "party",  text = function() return _("Done and dusted! Look at you go!") end },
+        meh   = { mood = "sleepy", text = function() return _("Done. Now I need a nap.") end, sub = false },
+        happy = { mood = "party",  text = function() return _("Done and dusted! Look at you go!") end, sub = false },
     } })
 add("challenge_done", "done", { id = "cd_4", mood = "love",
     text = function() return _("A small goal, a big grin.") end,
     sub  = function() return _("I'm keeping count, you know.") end })
+
+for _i, line in ipairs(Voices) do add(line.kind, line.group, line) end
 
 return Lines

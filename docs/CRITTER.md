@@ -1,13 +1,13 @@
 # Tiny Critter
 
-A pixel-art companion for your Home Screen, with a speech bubble that comments on your reading. It is off by default: add it from the layout editor, then choose the critter, its side, the decorations, the topics and where the phrases come from.
+A pixel-art companion for your Home Screen, with a speech bubble that comments on your reading. It is off by default: add it from the layout editor, then choose its side in the module's settings. Which critter it is, its decorations, its bubble style, the topics, where the phrases come from and whether it reacts to events are set once for every screen, in **Settings > Tiny Critter**, so it is the same companion everywhere.
 
 ## What it does
 
-- **Passive phrases** — a greeting for the time of day, your streak, books finished this year, goals and milestones.
-- **Conversation** — tap the critter (or press Enter) to open a chat. The bubble shows a prompt and a panel below it offers 2–3 replies; **Say something else…** draws a new prompt. The window closes on a tap outside, Back, suspend or a screen size change. Without a touch screen, Up/Down move the selection and Press chooses.
+- **Passive phrases** — a greeting for the time of day, your streak, books finished this year, goals, milestones and the book you are reading (its progress, or how long it has waited for you). Each bundled critter also has its own greetings, streak and reading-today lines, mixed in with the general ones (most of the time in those topics) and turned on or off with them.
+- **Conversation** — tap the critter (or press Enter) to open a chat. The bubble shows a prompt and a panel below it offers 2–3 replies; **Say something else…** draws a new prompt. Some prompts ask for affection (a pat, a head scratch, a tickle) and the critter answers with a matching face. The window closes on a tap outside, Back, suspend or a screen size change. Without a touch screen, Up/Down move the selection and Press chooses.
 - **Mood** — the critter has a mood from *grumpy* to *radiant*. It rises with the reading you do each day and with conversation (up to a daily cap), and falls on days you do not read. Mood only shapes the conversation.
-- **Event reactions** — without being tapped, it comments on what happened: finishing a book, a reading session, low battery, a special date, a new month, your return after time away, or the device charging. One pending reaction is shown at a time, and it expires after two days. Toggle with **React to events**.
+- **Event reactions** — without being tapped, it comments on what happened: finishing a book, a reading session, low battery, a special date, a new month, your return after time away, or the device charging. One pending reaction is shown at a time, and it expires after two days. Each bundled critter also reacts in its own voice, mixed in with the general lines (about half of the time); critters of your own use the general ones. Toggle with **React to events**.
 - **Daily challenges** — it can offer one challenge a day (read a number of minutes or pages today, read for a minute to keep your streak, or start a session before a deadline hour). A completed challenge gives a mood bonus and a reaction. Challenges expire at midnight, with no penalty.
 - **Reading suggestions** — ask "Want something new to read?" and it suggests a book from your library that you have not opened yet; you can open it, ask for another or say not now.
 - **Bubble style** — *Pixel* (default, stepped corners and tail) or *Smooth* (anti-aliased).
@@ -16,7 +16,11 @@ A pixel-art companion for your Home Screen, with a speech bubble that comments o
 
 ## Layout
 
-The bubble has a fixed size, so the critter and the decorations never move. You choose which side of the bubble the critter stands on, arrange up to two decorations on each side (in the order they stand on the screen; any that do not fit are left out), and align the whole group left, centre or right on wide screens.
+The bubble has a fixed size, so the critter and the decorations never move. You choose which side of the bubble the critter stands on and align the whole group left, centre or right on wide screens (per module). The decorations, up to two on each side in the order they stand on the screen, are arranged in **Settings > Tiny Critter**; any that do not fit are left out.
+
+## In the Quick Settings panel
+
+The critter can also stand in the Quick Settings panel, in every screen where the panel opens: below the buttons in the classic layout, below the book details in the Book layout. Turn it on in **Bars > Quick Settings Bar > Tiny Critter**, where you also pick its side, alignment and scale. It is the same critter, with the same decorations, mood and conversation. It shows what is already known about today and reads no statistics of its own; opening the suggested book closes the panel.
 
 ## Bundled critters
 
