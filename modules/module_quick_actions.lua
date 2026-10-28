@@ -9,8 +9,11 @@ local FrameContainer  = require("ui/widget/container/framecontainer")
 local Geom            = require("ui/geometry")
 local HorizontalGroup = require("ui/widget/horizontalgroup")
 local HorizontalSpan  = require("ui/widget/horizontalspan")
+local VerticalGroup   = require("ui/widget/verticalgroup")
+local VerticalSpan    = require("ui/widget/verticalspan")
 local TextWidget      = require("ui/widget/textwidget")
 local Screen          = Device.screen
+local T               = require("ffi/util").template
 local _ = require("infra/sui_i18n").translate
 local N_ = require("infra/sui_i18n").ngettext
 local Config          = require("infra/sui_config")
@@ -39,12 +42,21 @@ local _BASE_LBL_FS    = SUIStyle.FS_DETAIL  -- 15: quick-action label text
 -- alignment changes never touch icon/frame sizing — only where the row of
 -- icons (as a whole) sits within the module's width.
 local _BASE_ICON_GAP  = Screen:scaleBySize(24)
+-- Vertical gap between the rows of the grid layout.
+local _BASE_ROW_GAP   = Screen:scaleBySize(12)
 
--- Hard cap on how many actions a single Quick Actions row can hold. Kept in
--- sync with makeInstance's own MAX_QA (the "add action" limit shown in the
--- module's settings menu) so the row's item sizing always leaves room for a
--- fully-populated row, whatever alignment mode is chosen.
+-- Hard cap on how many actions a single Quick Actions row can hold. It is the
+-- "add action" limit of the row layout (see _maxItems) so the row's item sizing
+-- always leaves room for a fully-populated row, whatever alignment mode is chosen.
 local MAX_QA_ITEMS = 6
+
+-- Grid layout: columns x rows of square buttons, whose size is capped by the
+-- module's Scale and shrinks only when a column is narrower than that.
+local GRID_MAX_COLS     = 7
+local GRID_MAX_ROWS     = 4
+local GRID_DEFAULT_COLS = 4
+local GRID_DEFAULT_ROWS = 2
+local LAYOUT_VALUES     = { "row", "grid" }
 
 -- Smallest gap we're willing to fall back to between icons when the "nice"
 -- packed gap (_BASE_ICON_GAP, scaled) doesn't leave enough room for
@@ -103,10 +115,16 @@ end
 -- Scale = 100% guarantees MAX_QA_ITEMS icons fit; omit it (e.g. the Quick
 -- Actions folder-grid preview in sui_quickactions.lua, which sizes its own
 -- rows explicitly per chunk) to get the plain, unconstrained baseline.
-local function _getQADims(scale, inner_w)
+-- grid_cols (grid layout): the button is the Scale size, capped by what a
+-- column of inner_w leaves room for.
+local function _getQADims(scale, inner_w, grid_cols)
     scale = scale or 1.0
-    local base      = _getFitBaseline(inner_w)
-    local cell      = QARenderer.cellDims(math.max(24, math.floor(base.frame_sz * scale)))
+    local base      = grid_cols and _naiveBaseDims() or _getFitBaseline(inner_w)
+    local frame_sz  = math.max(24, math.floor(base.frame_sz * scale))
+    if grid_cols and inner_w and inner_w > 0 then
+        frame_sz = math.max(16, math.min(frame_sz, math.floor(inner_w / grid_cols) - _MIN_ICON_GAP))
+    end
+    local cell      = QARenderer.cellDims(frame_sz)
     local lbl_sp    = math.max(1,  math.floor(_BASE_LBL_SP    * scale))
     local lbl_h     = math.max(8,  math.floor(_BASE_LBL_H     * scale))
     return {
@@ -118,7 +136,33 @@ local function _getQADims(scale, inner_w)
         lbl_h     = lbl_h,
         lbl_fs    = math.max(6, math.floor(_BASE_LBL_FS * scale)),
         icon_gap  = math.max(4, math.floor(base.icon_gap * scale)),
+        row_gap   = math.max(4, math.floor(_BASE_ROW_GAP * scale)),
     }
+end
+
+-- Height of one button with its label.
+local function _cellHeight(d, show_labels)
+    return show_labels and (d.frame_sz + d.lbl_sp + d.lbl_h) or d.frame_sz
+end
+
+-- Height of `rows` rows of buttons in the grid layout.
+local function _gridHeight(d, show_labels, rows)
+    return rows * _cellHeight(d, show_labels) + math.max(0, rows - 1) * d.row_gap
+end
+
+-- Grid of an instance, { cols =, rows = }; nil in the row layout.
+local function _readGrid(inst_id, pfx)
+    if Config.readChoice(pfx .. inst_id .. "_layout", LAYOUT_VALUES, "row") ~= "grid" then return nil end
+    return {
+        cols = Config.readClampedInt(pfx .. inst_id .. "_grid_cols", 1, GRID_MAX_COLS, GRID_DEFAULT_COLS),
+        rows = Config.readClampedInt(pfx .. inst_id .. "_grid_rows", 1, GRID_MAX_ROWS, GRID_DEFAULT_ROWS),
+    }
+end
+
+-- Most actions an instance holds: a full grid, else a row.
+local function _maxItems(inst_id, pfx)
+    local grid = _readGrid(inst_id, pfx)
+    return grid and grid.cols * grid.rows or MAX_QA_ITEMS
 end
 
 -- ---------------------------------------------------------------------------
@@ -133,9 +177,12 @@ end
 -- ---------------------------------------------------------------------------
 -- Core widget builder (shared by all slots)
 -- ---------------------------------------------------------------------------
--- `on_stops(stops)`, when given, receives the buttons as { id, widget } D-pad
--- focus stops, left to right.
-local function buildQAWidget(w, action_ids, show_labels, on_tap_fn, d, shape, surface, colors, align, on_stops)
+-- `on_stops(stops, row)`, when given, receives the buttons as { id, widget }
+-- D-pad focus stops, left to right: all of them in the row layout, one grid
+-- row at a time (with its number) in the grid layout.
+-- `grid` ({ cols =, rows = }) lays the buttons out on a grid instead of a row;
+-- `align` does not apply to it.
+local function buildQAWidget(w, action_ids, show_labels, on_tap_fn, d, shape, surface, colors, align, on_stops, grid)
     local clr_blk = colors and colors.blk or SUIStyle.COLOR.text_primary
     local clr_sub = colors and colors.sub or CLR_TEXT_SUB
     local ph_fs = math.max(8, math.floor(_BASE_PH_FS * (d.frame_sz / _BASE_FRAME_SZ)))
@@ -164,6 +211,55 @@ local function buildQAWidget(w, action_ids, show_labels, on_tap_fn, d, shape, su
     local lbl_h    = show_labels and d.lbl_h or 0
     local lbl_sp   = show_labels and d.lbl_sp or 0
 
+    local function buildCell(aid)
+        return QARenderer.buildCell(aid, {
+            icon_sz        = d.icon_sz,
+            frame_sz       = d.frame_sz,
+            frame_pad      = d.frame_pad,
+            corner_r       = d.corner_r,
+            shape          = shape,
+            surface        = surface,
+            fgcolor        = clr_blk,
+            show_label     = show_labels,
+            lbl_sp         = lbl_sp,
+            lbl_h          = lbl_h,
+            lbl_fs         = d.lbl_fs,
+            lbl_face       = d.lbl_face,
+            lbl_bold       = d.lbl_bold,
+            on_tap_fn      = on_tap_fn,
+            tap_event_name = "TapQA",
+            focusable      = on_stops ~= nil,
+        })
+    end
+
+    if grid then
+        -- Each button is centred in a slot one column wide.
+        local slot_w = math.floor(inner_w / grid.cols)
+        local count  = math.min(n, grid.cols * grid.rows)
+        local rows   = VerticalGroup:new{ align = "left" }
+        local row_n  = 0
+        for first = 1, count, grid.cols do
+            row_n = row_n + 1
+            local row, stops = HorizontalGroup:new{ align = "top" }, {}
+            for i = first, math.min(first + grid.cols - 1, count) do
+                local tappable = buildCell(valid_ids[i])
+                row[#row + 1] = CenterContainer:new{
+                    dimen = Geom:new{ w = slot_w, h = _cellHeight(d, show_labels) },
+                    tappable,
+                }
+                stops[#stops + 1] = { id = i, widget = tappable }
+            end
+            if row_n > 1 then rows[#rows + 1] = VerticalSpan:new{ width = d.row_gap } end
+            rows[#rows + 1] = row
+            if on_stops then on_stops(stops, row_n) end
+        end
+        return FrameContainer:new{
+            bordersize   = 0, padding = 0,
+            padding_left = math.floor((inner_w - grid.cols * slot_w) / 2),
+            rows,
+        }
+    end
+
     align = align or "current"
     local gap, left_off
     if align == "left" or align == "right" then
@@ -185,25 +281,7 @@ local function buildQAWidget(w, action_ids, show_labels, on_tap_fn, d, shape, su
     local stops = {}
 
     for i = 1, n do
-        local aid = valid_ids[i]
-        local tappable = QARenderer.buildCell(aid, {
-            icon_sz        = d.icon_sz,
-            frame_sz       = d.frame_sz,
-            frame_pad      = d.frame_pad,
-            corner_r       = d.corner_r,
-            shape          = shape,
-            surface        = surface,
-            fgcolor        = clr_blk,
-            show_label     = show_labels,
-            lbl_sp         = lbl_sp,
-            lbl_h          = lbl_h,
-            lbl_fs         = d.lbl_fs,
-            lbl_face       = d.lbl_face,
-            lbl_bold       = d.lbl_bold,
-            on_tap_fn      = on_tap_fn,
-            tap_event_name = "TapQA",
-            focusable      = on_stops ~= nil,
-        })
+        local tappable = buildCell(valid_ids[i])
 
         if i > 1 then
             row[#row + 1] = HorizontalSpan:new{ width = gap }
@@ -284,7 +362,7 @@ local function makeInstance(inst_id)
         SUISettings:saveSetting(pfx .. slot_suffix .. "_enabled", on)
     end
 
-    local MAX_QA = MAX_QA_ITEMS
+    local function maxQA(pfx) return _maxItems(inst_id, pfx) end
 
     local _has_fl = nil
     local function actionAvailable(id)
@@ -352,7 +430,7 @@ local function makeInstance(inst_id)
                             "The maximum of %d actions per module has been reached. Remove one first.", max), max)
                     end,
                 },
-                max    = MAX_QA,
+                max    = maxQA(ctx_menu.pfx),
                 pool   = getQAPool,
                 getIds = function() return SUISettings:readSetting(items_key) or {} end,
                 setIds = function(ids) SUISettings:saveSetting(items_key, ids) end,
@@ -362,10 +440,11 @@ local function makeInstance(inst_id)
 
     function S.getCountLabel(pfx)
         local n   = #(SUISettings:readSetting(pfx .. slot_suffix .. "_items") or {})
-        local rem = MAX_QA - n
+        local max = maxQA(pfx)
+        local rem = max - n
         if n == 0   then return nil end
-        if rem <= 0 then return string.format(_("(%d/%d — at limit)"), n, MAX_QA) end
-        return string.format(N_("(%d/%d — %d left)", "(%d/%d — %d left)", rem), n, MAX_QA, rem)
+        if rem <= 0 then return string.format(_("(%d/%d — at limit)"), n, max) end
+        return string.format(N_("(%d/%d — %d left)", "(%d/%d — %d left)", rem), n, max, rem)
     end
 
     function S.build(w, ctx)
@@ -386,13 +465,15 @@ local function makeInstance(inst_id)
         -- in sui_book_grid.lua, which avoids the same double-narrowing for
         -- the same reason).
         -- `w` is already chrome contentWidth (label-aligned).
-        local d           = _getQADims(Config.getModuleScaleRaw(S.id, ctx.pfx), w)
+        local grid        = _readGrid(inst_id, ctx.pfx)
+        local d           = _getQADims(Config.getModuleScaleRaw(S.id, ctx.pfx), w, grid and grid.cols)
         _migrateLabelScale(S.id, ctx.pfx)
         local styles = Config.resolveTextStyles(ctx, S.id, S.text_elems)
         d.lbl_fs = math.max(6, math.floor(d.lbl_fs * lf * (styles.label.scale or 1)))
         d.lbl_face, d.lbl_bold = SUIStyle.getTextFace(styles.label, d.lbl_fs)
         return buildQAWidget(w, qa_ids, show_labels, ctx.on_qa_tap, d, getShape(ctx.pfx), SUIWallpaper.resolveSurface(buttonSurface(ctx.pfx)), nil, getAlign(ctx.pfx),
-            ctx.kbStops and function(stops) ctx.kbStops(S.id, stops) end)
+            ctx.kbStops and function(stops, row) ctx.kbStops(row and (S.id .. ":r" .. row) or S.id, stops) end,
+            grid)
     end
 
     function S.getHeight(ctx)
@@ -403,8 +484,14 @@ local function makeInstance(inst_id)
         -- full column (outer margin = PAD each side).
         local col_w = ctx.col_w or ctx.inner_w or UI.getInnerW()
         local content_w = math.max(1, col_w - PAD * 2)
-        local d = _getQADims(Config.getModuleScaleRaw(S.id, ctx.pfx), content_w)
-        return (show_labels and (d.frame_sz + d.lbl_sp + d.lbl_h) or d.frame_sz)
+        local grid = _readGrid(inst_id, ctx.pfx)
+        local d = _getQADims(Config.getModuleScaleRaw(S.id, ctx.pfx), content_w, grid and grid.cols)
+        if grid then
+            -- Only the rows the actions fill take room.
+            local n = #QA.filterValidIds(SUISettings:readSetting(qa_pfx .. slot_suffix .. "_items") or {})
+            return _gridHeight(d, show_labels, math.max(1, math.min(grid.rows, math.ceil(n / grid.cols))))
+        end
+        return _cellHeight(d, show_labels)
     end
 
     function S.getMenuItems(ctx_menu)
@@ -423,6 +510,34 @@ local function makeInstance(inst_id)
         local item_rows = {}
         if items_node then item_rows[#item_rows + 1] = items_node end
 
+        local function gridValue()
+            local grid = _readGrid(inst_id, pfx)
+            return grid and T(_lc("%1 × %2"), grid.cols, grid.rows) or ""
+        end
+        local grid_item = Config.makeDoubleStepperItem{
+            text_func      = function() return _lc("Grid size") end,
+            value_func     = gridValue,
+            mandatory_func = gridValue,
+            title          = _lc("Grid size"),
+            left = {
+                text          = _lc("Columns"),
+                get           = function() return Config.readClampedInt(pfx .. inst_id .. "_grid_cols", 1, GRID_MAX_COLS, GRID_DEFAULT_COLS) end,
+                set           = function(v) Config.saveClampedInt(pfx .. inst_id .. "_grid_cols", v, 1, GRID_MAX_COLS) end,
+                value_min     = 1,
+                value_max     = GRID_MAX_COLS,
+                default_value = GRID_DEFAULT_COLS,
+            },
+            right = {
+                text          = _lc("Rows"),
+                get           = function() return Config.readClampedInt(pfx .. inst_id .. "_grid_rows", 1, GRID_MAX_ROWS, GRID_DEFAULT_ROWS) end,
+                set           = function(v) Config.saveClampedInt(pfx .. inst_id .. "_grid_rows", v, 1, GRID_MAX_ROWS) end,
+                value_min     = 1,
+                value_max     = GRID_MAX_ROWS,
+                default_value = GRID_DEFAULT_ROWS,
+            },
+            refresh = refresh,
+        }
+        grid_item.enabled_func = function() return _readGrid(inst_id, pfx) ~= nil end
         local size_rows = {
             Config.makeScaleItem({
                 text_func    = function() return _lc("Scale") end,
@@ -433,6 +548,7 @@ local function makeInstance(inst_id)
                 set          = function(v) Config.setModuleScale(v, S.id, pfx) end,
                 refresh      = refresh,
             }),
+            grid_item,
         }
 
         local text_opts = {
@@ -452,6 +568,16 @@ local function makeInstance(inst_id)
         end
 
         appearance_extra[#appearance_extra + 1] = Config.makeRadioSubmenuItem{
+            text    = _lc("Layout"),
+            options = {
+                { value = "row",  label = _lc("Row") },
+                { value = "grid", label = _lc("Grid") },
+            },
+            get     = function() return Config.readChoice(pfx .. inst_id .. "_layout", LAYOUT_VALUES, "row") end,
+            set     = function(v) SUISettings:saveSetting(pfx .. inst_id .. "_layout", v) end,
+            refresh = refresh,
+        }
+        appearance_extra[#appearance_extra + 1] = Config.makeRadioSubmenuItem{
             text    = _lc("Button Type"),
             options = {
                 { value = "round",          label = _lc("Round") },
@@ -469,7 +595,8 @@ local function makeInstance(inst_id)
             _lc          = _lc,
         }
         appearance_extra[#appearance_extra + 1] = Config.makeRadioSubmenuItem{
-            text    = _lc("Alignment"),
+            text         = _lc("Alignment"),
+            enabled_func = function() return _readGrid(inst_id, pfx) == nil end,
             options = {
                 { value = "current", label = _lc("Justified") },
                 { value = "left",    label = _lc("Left") },
@@ -504,7 +631,10 @@ M.instanciable = true
 M.makeInstance = makeInstance
 M.menu_group   = "quick_actions"
 -- Settings of an instance's buttons: opacity, tone and frame of their surface.
-M.setting_suffixes = { "_btn_strength", "_btn_tone", "_btn_show_frame" }
+M.setting_suffixes = { "_btn_strength", "_btn_tone", "_btn_show_frame", "_layout" }
+
+-- Most actions the instance `inst_id` holds under settings prefix `pfx`.
+M.maxItems = _maxItems
 
 -- Layout-editor summary of an instance: the labels of its configured actions.
 function M.getSummary(inst_id, _pfx, pfx_qa)
