@@ -361,7 +361,10 @@ function M.resizePaginationButtons(widget, icon_size)
             if btn then
                 btn.icon_width  = icon_size
                 btn.icon_height = icon_size
+                -- init() rebuilds the label and frame, dropping Button:hide().
+                local was_hidden = btn.hidden
                 btn:init()
+                if was_hidden then btn.hidden = false; btn:hide() end
                 M.patchDimmedIcon(btn)
             end
         end
