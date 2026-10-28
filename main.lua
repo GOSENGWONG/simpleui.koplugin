@@ -80,11 +80,6 @@ local SimpleUIPlugin = WidgetContainer:new{
     _topbar_timer             = nil,
     _power_dialog             = nil,
 
-    _orig_booklist_new        = nil,
-    _orig_menu_new            = nil,
-    _orig_fmcoll_show         = nil,
-    _orig_rc_remove           = nil,
-    _orig_rc_rename           = nil,
     _orig_fc_init             = nil,
 
     _makeNavbarMenu           = nil,
@@ -1472,6 +1467,12 @@ function SimpleUIPlugin:onRestart()
 end
 
 function SimpleUIPlugin:onCloseWidget()
+    -- The host UI is closing: stop this instance's clock, which would
+    -- otherwise keep rescheduling itself and keep the instance alive.
+    if self._topbar_timer then
+        UIManager:unschedule(self._topbar_timer)
+        self._topbar_timer = nil
+    end
     local ScreenEngine = package.loaded["engines/sui_screen_engine"]
     if not ScreenEngine then return end
     local exiting = UIManager._simpleui_exiting or UIManager._exit_code ~= nil

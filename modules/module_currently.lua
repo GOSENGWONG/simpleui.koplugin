@@ -1076,29 +1076,33 @@ end
 -- updateCovers(widget, ctx) — called by the homescreen cover poll instead of
 -- a full build(). Swaps only the cover image(s) inside the existing widget
 -- tree, leaving all text, layout, and gesture handlers untouched.
--- Returns true if all covers are now resolved, false if some are still missing.
+-- Returns all_done (every cover resolved) and changed (a cover was patched
+-- in by this call).
 function M.updateCovers(widget, _ctx)
-    if not widget or not widget._cover_slots then return true end
+    if not widget or not widget._cover_slots then return true, false end
 
     local SH = getSH()
-    if not SH then return true end
+    if not SH then return true, false end
 
     local pfx = (_ctx and _ctx.pfx) or ""
     local show_badge = showProgressBadge(pfx)
-    local all_done = true
+    local all_done, changed = true, false
     for _, slot in ipairs(widget._cover_slots) do
-        local new_cover = SH.getBookCover(slot.fp, slot.w, slot.h)
-        if new_cover then
-            if show_badge then
-                local bd = SH.getBookData(slot.fp, _ctx and _ctx.prefetched and _ctx.prefetched[slot.fp])
-                new_cover = applyProgressBadge(new_cover, bd, slot.w, slot.h, pfx)
+        if not slot.done then
+            local new_cover = SH.getBookCover(slot.fp, slot.w, slot.h)
+            if new_cover then
+                if show_badge then
+                    local bd = SH.getBookData(slot.fp, _ctx and _ctx.prefetched and _ctx.prefetched[slot.fp])
+                    new_cover = applyProgressBadge(new_cover, bd, slot.w, slot.h, pfx)
+                end
+                slot.container[slot.idx] = new_cover
+                slot.done, changed = true, true
+            elseif not Config.isCoverMissing(slot.fp) then
+                all_done = false
             end
-            slot.container[slot.idx] = new_cover
-        elseif not Config.isCoverMissing(slot.fp) then
-            all_done = false
         end
     end
-    return all_done
+    return all_done, changed
 end
 
 -- Returns the total pixel height of the module including the section label.

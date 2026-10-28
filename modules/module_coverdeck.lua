@@ -1304,16 +1304,18 @@ function M.build(w, ctx)
     return result
 end
 
+-- Patches in the covers that arrived since build(). Returns all_done (every
+-- slot resolved) and changed (a cover was patched in by this call).
 function M.updateCovers(widget, ctx)
-    if not widget or not widget._cover_slots then return true end
+    if not widget or not widget._cover_slots then return true, false end
     local SH = getSH()
-    if not SH then return true end
+    if not SH then return true, false end
     local pfx = (ctx and ctx.pfx) or ""
     local show_badge = showProgressBadge(pfx)
     local on_peeks   = showProgressBadgeOnPeeks(pfx)
-    local all_done = true
+    local all_done, changed = true, false
     for _, slot in ipairs(widget._cover_slots) do
-        local new_cover = loadSlotCover(SH, slot)
+        local new_cover = not slot.done and loadSlotCover(SH, slot)
         if new_cover then
             -- Re-apply the progress badge after a late cover load (build()
             -- already did this where it applies; the poll would otherwise
@@ -1326,11 +1328,12 @@ function M.updateCovers(widget, ctx)
             -- OverlapGroup paint cannot leave a mirrored value behind.
             new_cover.overlap_offset = { slot.base_x, slot.base_y }
             slot.container[slot.idx] = new_cover
-        elseif not Config.isCoverMissing(slot.fp) then
+            slot.done, changed = true, true
+        elseif not slot.done and not Config.isCoverMissing(slot.fp) then
             all_done = false
         end
     end
-    return all_done
+    return all_done, changed
 end
 
 function M.updateStats(widget, ctx)

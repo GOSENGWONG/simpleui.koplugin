@@ -13,6 +13,7 @@
 -- ----------
 --   LibraryScan.getFileList(home_dir) -> { fp, ... }              (cached)
 --   LibraryScan.getRaw(home_dir)      -> { {fp,mtime,size}, ... } (cached)
+--   LibraryScan.cachedContains(home_dir, fp) -> bool|nil          (no I/O)
 --   LibraryScan.invalidate(home_dir?) -- forces a re-walk; no arg = all
 --   LibraryScan.resolveHomeDir()      -> current KOReader library home dir
 --
@@ -165,6 +166,20 @@ function LibraryScan.getFileList(home_dir)
     local fps = {}
     for i = 1, #raw do fps[i] = raw[i].fp end
     return fps
+end
+
+--- Whether the last scan of `home_dir` listed `fp`, without validating or
+--- re-walking. Nil when `home_dir` has not been scanned.
+function LibraryScan.cachedContains(home_dir, fp)
+    local entry = _cache[home_dir]
+    if not entry then return nil end
+    local set = entry.set
+    if not set then
+        set = {}
+        for i = 1, #entry.list do set[entry.list[i].fp] = true end
+        entry.set = set
+    end
+    return set[fp] == true
 end
 
 --- Forces the next call to re-walk the filesystem, regardless of the

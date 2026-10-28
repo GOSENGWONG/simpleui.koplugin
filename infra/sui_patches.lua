@@ -83,6 +83,11 @@ local _EMPTY = {}
 -- from firing more than once. Reset in teardownAll so re-enable works cleanly.
 local _hs_boot_done = false
 
+-- True only while a reader closes to a screen that will cover the file
+-- manager: the file manager created meanwhile defers listing its folder
+-- until it is exposed (see _materializeLazyListing).
+local _lazy_listing_pending = false
+
 -- Set when ReaderUI closes with "Start with Homescreen" active.
 -- Makes UIManager.show defer the FM paint until the homescreen is on top,
 -- eliminating the visible flash between reader and homescreen.
@@ -123,10 +128,12 @@ local _live_plugin = nil
 -- Shared hooks
 --
 -- KOReader creates one plugin instance per host UI (file manager, reader) and
--- recreates them on every book open and close. Every instance runs installAll
--- and later teardownAll, in an order the plugin does not control. A hook that
--- wraps a class function must therefore be safe against both repeated installs
--- and out-of-order teardowns.
+-- recreates them on every book open and close. Every instance runs installAll;
+-- teardownAll runs only when the plugin is unloaded, so most instances are
+-- dropped without it. A hook that wraps a class function must therefore be
+-- safe against repeated installs, out-of-order teardowns and no teardown at
+-- all: hook state holds its users weakly and wrappers never capture an
+-- instance.
 --
 -- Rules for any patch of a class or module function:
 --   1. Install through _acquireHooks: it returns nil when the hooks already
@@ -150,14 +157,15 @@ local _live_plugin = nil
 
 -- Registers `owner` as a user of the hooks stored on `target` under
 -- `state_key`. Returns a new state ({ users, hooks }) when the caller must
--- install the hooks, nil when they are already installed.
+-- install the hooks, nil when they are already installed. Users are weak
+-- keys, so a dropped instance does not keep its UI alive.
 local function _acquireHooks(target, state_key, owner)
     local state = rawget(target, state_key)
     if state then
         state.users[owner] = true
         return nil
     end
-    state = { users = { [owner] = true }, hooks = {} }
+    state = { users = setmetatable({ [owner] = true }, { __mode = "k" }), hooks = {} }
     target[state_key] = state
     return state
 end
@@ -323,6 +331,25 @@ local function liveHS()
     return package.loaded["screens/sui_homescreen"]
 end
 
+-- Lists the live file manager's folder when its listing was deferred.
+local function _materializeLazyListing()
+    local fm = liveFM()
+    local fc = fm and fm.file_chooser
+    if not (fc and fc._sui_lazy_listing) then return end
+    fc._sui_lazy_listing = nil
+    fc:refreshPath()
+end
+
+M.materializeLazyListing = _materializeLazyListing
+
+-- Runs `fn` with the listing of any file manager it creates deferred.
+local function _withLazyListing(fn, ...)
+    _lazy_listing_pending = true
+    local ok, err = pcall(fn, ...)
+    _lazy_listing_pending = false
+    if not ok then error(err, 0) end
+end
+
 -- True when the file manager main menu is open above the stack entry at index
 -- `from`. The menu belongs to the screen beneath it, so that screen has to
 -- stay alive for as long as the menu is open.
@@ -427,10 +454,10 @@ function M.patchFileManagerClass(plugin)
         FileManager._simpleui_home_patched = true
         local orig_onHome = FileManager.onHome
         FileManager.onHome = function(fm_self, ...)
-            if SUISettings:isTrue("simpleui_home_key_opens_hs") then
-                local plugin_now = _live_plugin or plugin
+            local live = _live_plugin
+            if live and SUISettings:isTrue("simpleui_home_key_opens_hs") then
                 local tabs = Config.loadTabConfig()
-                plugin_now:_navigate("homescreen", fm_self, tabs, false)
+                live:_navigate("homescreen", fm_self, tabs, false)
                 return true
             end
             return orig_onHome(fm_self, ...)
@@ -439,16 +466,10 @@ function M.patchFileManagerClass(plugin)
 
     if not setup_already_patched then
     FileManager.setupLayout = function(fm_self)
-        -- Resolve the live plugin instance rather than relying on the
-        -- `plugin` upvalue captured when this closure was installed (which
-        -- only happens once per session -- see setup_already_patched above).
-        -- Without this, a FM recreated later in the session (e.g. returning
-        -- from the reader, a rotation reinit, or after a suspend/resume
-        -- cycle) would read/write active_action on a stale, disconnected
-        -- plugin instance -- the visible symptom being the navbar indicator
-        -- not following actual navigation (e.g. staying lit on "Homescreen"
-        -- after tapping into the Library).
-        local plugin = _live_plugin or plugin
+        -- Resolve the live plugin instance: this closure is installed once
+        -- per session and outlives the instance that installed it, so it
+        -- must never capture `plugin`.
+        local plugin = _live_plugin
         -- Reset the "first show" guard so onShow reinitialises on the next open.
         fm_self._navbar_already_shown = nil
 
@@ -484,11 +505,22 @@ function M.patchFileManagerClass(plugin)
             plugin._orig_fc_init       = orig_fc_init
             FileChooser._navbar_patched = true
 
-            -- Shrink the file chooser to leave room for the navbar.
+            -- Shrink the file chooser to leave room for the navbar. While a
+            -- reader closes to a covering screen, the file manager's chooser
+            -- is built without listing its folder.
             FileChooser.init = function(fc_self)
                 if fc_self.height == nil and fc_self.width == nil then
                     fc_self.height = UI.getContentHeight()
                     fc_self.y      = UI.getContentTop()
+                end
+                if _lazy_listing_pending and fc_self.name == "filemanager" then
+                    _lazy_listing_pending = false
+                    fc_self._sui_lazy_listing = true
+                    fc_self.refreshPath = function() end
+                    local ok, err = pcall(orig_fc_init, fc_self)
+                    fc_self.refreshPath = nil
+                    if not ok then error(err, 0) end
+                    return
                 end
                 orig_fc_init(fc_self)
             end
@@ -498,6 +530,7 @@ function M.patchFileManagerClass(plugin)
             -- SimpleUI's own path changes raise _navbar_suppress_path_change
             -- before calling, so they never trigger this flag.
             FileChooser.changeToPath = function(fc_self, path, focused_path)
+                fc_self._sui_lazy_listing = nil
                 local fm_ref = liveFM()
                 if fm_ref and fc_self.ui == fm_ref
                         and not fm_ref._navbar_suppress_path_change then
@@ -759,20 +792,23 @@ function M.patchFileManagerClass(plugin)
 
             if this._navbar_container then
                 local t = Config.loadTabConfig()
-                -- The book-close target only applies to native reader closes
-                -- (KOReader onClose → showFileManager without an explicit SimpleUI
-                -- destination). Explicit paths (Homescreen, Library, …) never set
-                -- the pending flag and always force their own landing path.
-                local pending_folder = this._sui_return_to_book_folder_pending
-                this._sui_return_to_book_folder_pending = nil
-                local return_to_folder = pending_folder or Config.returnsToBookFolder()
+                -- The book-close target decides the landing folder: the book's
+                -- own folder, or the home folder. Explicit SimpleUI paths
+                -- (Homescreen, Library, …) force their own landing path after this.
+                local return_to_folder = Config.returnsToBookFolder()
                 if not return_to_folder then
                     plugin.active_action = "home"
                     local home = G_reader_settings:readSetting("home_dir")
                     if home and this.file_chooser then
                         -- Suppress onPathChanged: replaceBar below handles the bar.
                         this._navbar_suppress_path_change = true
-                        this.file_chooser:changeToPath(home)
+                        if this.file_chooser._sui_lazy_listing then
+                            -- Listed once the covering screen exposes it.
+                            this.file_chooser.path = require("ffi/util").realpath(home) or home
+                            this.file_chooser.focused_path = nil
+                        else
+                            this.file_chooser:changeToPath(home)
+                        end
                         this._navbar_suppress_path_change = nil
                         -- Explicitly clear the subtitle since onPathChanged was skipped.
                         if this.updateTitleBarPath then
@@ -1063,17 +1099,27 @@ end
 -- restore it.
 -- ---------------------------------------------------------------------------
 
+local BOOKLIST_STATE = "_simpleui_booklist"
+
 function M.patchBookList(plugin)
-    local BookList    = require("ui/widget/booklist")
+    local BookList = require("ui/widget/booklist")
+    local state = _acquireHooks(BookList, BOOKLIST_STATE, plugin)
+    if not state then return end
     local orig_bl_new = BookList.new
-    plugin._orig_booklist_new = orig_bl_new
-    BookList.new = function(class, attrs, ...)
+    _addHook(state, BookList, "new", function(class, attrs, ...)
         attrs = attrs or {}
         if not attrs.height and not attrs._navbar_height_reduced then
             UI.fitToContentArea(attrs)
         end
         return orig_bl_new(class, attrs, ...)
-    end
+    end)
+end
+
+local COLLECTIONS_STATE = "_simpleui_collections"
+
+-- Asks the live plugin instance to rebuild its screens.
+local function _scheduleLiveRebuild()
+    if _live_plugin then _live_plugin:_scheduleRebuild() end
 end
 
 -- Patches the collections list menu (coll_list) height, and keeps the
@@ -1081,26 +1127,26 @@ end
 function M.patchCollections(plugin)
     local ok, FMColl = pcall(require, "apps/filemanager/filemanagercollection")
     if not (ok and FMColl) then return end
+    local state = _acquireHooks(FMColl, COLLECTIONS_STATE, plugin)
+    if not state then return end
 
     local Menu          = require("ui/widget/menu")
     local orig_menu_new = Menu.new
-    plugin._orig_menu_new    = orig_menu_new
-    plugin._orig_fmcoll_show = FMColl.onShowCollList
 
     -- patch_depth gates Menu.new so only menus created during onShowCollList
     -- have their height reduced.
     local patch_depth = 0
 
     local orig_onShowCollList = FMColl.onShowCollList
-    FMColl.onShowCollList = function(fmc_self, ...)
+    _addHook(state, FMColl, "onShowCollList", function(fmc_self, ...)
         patch_depth = patch_depth + 1
         local ok2, result = pcall(orig_onShowCollList, fmc_self, ...)
         patch_depth = patch_depth - 1
         if not ok2 then error(result) end
         return result
-    end
+    end)
 
-    Menu.new = function(class, attrs, ...)
+    _addHook(state, Menu, "new", function(class, attrs, ...)
         attrs = attrs or {}
         if patch_depth > 0
                 and attrs.covers_fullscreen and attrs.is_borderless
@@ -1110,7 +1156,7 @@ function M.patchCollections(plugin)
             attrs.name = attrs.name or "coll_list"
         end
         return orig_menu_new(class, attrs, ...)
-    end
+    end)
 
     local ok_rc, RC = pcall(require, "readcollection")
     if not (ok_rc and RC) then return end
@@ -1159,8 +1205,7 @@ function M.patchCollections(plugin)
 
     if type(RC.removeCollection) == "function" then
         local orig_remove = RC.removeCollection
-        plugin._orig_rc_remove = orig_remove
-        RC.removeCollection = function(rc_self, coll_name, ...)
+        _addHook(state, RC, "removeCollection", function(rc_self, coll_name, ...)
             local TBR = package.loaded["modules/module_tbr"]
             -- The TBR collection cannot be permanently deleted.
             -- Let RC delete it (so the KOReader UI gets its confirmation flow),
@@ -1176,17 +1221,16 @@ function M.patchCollections(plugin)
                     Config.purgeQACollection(coll_name)
                     Config.invalidateTabsCache()
                 end
-                plugin:_scheduleRebuild()
+                _scheduleLiveRebuild()
             end)
             if not ok2 then logger.warn("simpleui: removeCollection hook:", tostring(err)) end
             return result
-        end
+        end)
     end
 
     if type(RC.renameCollection) == "function" then
         local orig_rename = RC.renameCollection
-        plugin._orig_rc_rename = orig_rename
-        RC.renameCollection = function(rc_self, old_name, new_name, ...)
+        _addHook(state, RC, "renameCollection", function(rc_self, old_name, new_name, ...)
             -- Prevent renaming the TBR collection — its name is the plugin's key.
             local TBR = package.loaded["modules/module_tbr"]
             if TBR and old_name == TBR.TBR_COLL_NAME then
@@ -1197,11 +1241,11 @@ function M.patchCollections(plugin)
             local ok2, err = pcall(function()
                 _renameInPool(old_name, new_name)
                 Config.renameQACollection(old_name, new_name)
-                plugin:_scheduleRebuild()
+                _scheduleLiveRebuild()
             end)
             if not ok2 then logger.warn("simpleui: renameCollection hook:", tostring(err)) end
             return result
-        end
+        end)
     end
 
     -- ---------------------------------------------------------------------------
@@ -1224,35 +1268,33 @@ function M.patchCollections(plugin)
 
     if type(RC.addItem) == "function" then
         local orig_add = RC.addItem
-        plugin._orig_rc_additem = orig_add
-        RC.addItem = function(rc_self, file, coll_name, attr, ...)
+        _addHook(state, RC, "addItem", function(rc_self, file, coll_name, attr, ...)
             local TBR = _getTBR()
             orig_add(rc_self, file, coll_name, attr, ...)
             if TBR and coll_name == TBR.TBR_COLL_NAME then
                 local ok2, err = pcall(function()
                     _syncTBRSettings(TBR)
-                    plugin:_scheduleRebuild()
+                    _scheduleLiveRebuild()
                 end)
                 if not ok2 then logger.warn("simpleui: RC.addItem TBR hook:", tostring(err)) end
             end
-        end
+        end)
     end
 
     if type(RC.removeItem) == "function" then
         local orig_remove_item = RC.removeItem
-        plugin._orig_rc_removeitem = orig_remove_item
-        RC.removeItem = function(rc_self, file, coll_name, no_write, ...)
+        _addHook(state, RC, "removeItem", function(rc_self, file, coll_name, no_write, ...)
             orig_remove_item(rc_self, file, coll_name, no_write, ...)
             local TBR = _getTBR()
             -- coll_name == nil means "remove from all collections".
             if TBR and (coll_name == TBR.TBR_COLL_NAME or coll_name == nil) then
                 local ok2, err = pcall(function()
                     _syncTBRSettings(TBR)
-                    plugin:_scheduleRebuild()
+                    _scheduleLiveRebuild()
                 end)
                 if not ok2 then logger.warn("simpleui: RC.removeItem TBR hook:", tostring(err)) end
             end
-        end
+        end)
     end
 
     -- Patch FMColl.updateCollListItemTable to:
@@ -1260,8 +1302,7 @@ function M.patchCollections(plugin)
     --   2. Show the localised display name instead of the raw RC key.
     if type(FMColl.updateCollListItemTable) == "function" then
         local orig_update = FMColl.updateCollListItemTable
-        plugin._orig_fmcoll_update_coll_list = orig_update
-        FMColl.updateCollListItemTable = function(fmc_self, do_init, item_number)
+        _addHook(state, FMColl, "updateCollListItemTable", function(fmc_self, do_init, item_number)
             orig_update(fmc_self, do_init, item_number)
             local TBR = package.loaded["modules/module_tbr"]
             if not TBR then return end
@@ -1299,23 +1340,25 @@ function M.patchCollections(plugin)
                 end
                 coll_list:switchItemTable(new_title, filtered, -1)
             end
-        end
+        end)
     end
 
     -- Patch FMColl.getCollectionTitle so the TBR collection shows its
     -- localised name whenever KOReader renders it (e.g. inside a book list).
     if type(FMColl.getCollectionTitle) == "function" then
         local orig_title = FMColl.getCollectionTitle
-        plugin._orig_fmcoll_get_coll_title = orig_title
-        FMColl.getCollectionTitle = function(fmc_self, collection_name)
+        _addHook(state, FMColl, "getCollectionTitle", function(fmc_self, collection_name)
             local TBR = package.loaded["modules/module_tbr"]
             if TBR and collection_name == TBR.TBR_COLL_NAME then
                 return TBR.getDisplayName()
             end
             return orig_title(fmc_self, collection_name)
-        end
+        end)
     end
 end
+
+local SORTWIDGET_STATE  = "_simpleui_sortwidget"
+local PATHCHOOSER_STATE = "_simpleui_pathchooser"
 
 -- Patches SortWidget and PathChooser to fit inside the content area.
 -- SortWidget also gets a title padding fix and a repaint hook after each sort.
@@ -1323,12 +1366,12 @@ function M.patchFullscreenWidgets(plugin)
     local ok_sw, SortWidget  = pcall(require, "ui/widget/sortwidget")
     local ok_pc, PathChooser = pcall(require, "ui/widget/pathchooser")
 
-    if ok_sw and SortWidget then
+    local sw_state = ok_sw and SortWidget and _acquireHooks(SortWidget, SORTWIDGET_STATE, plugin)
+    if sw_state then
         local ok_tb, TitleBar = pcall(require, "ui/widget/titlebar")
         local orig_sw_new     = SortWidget.new
-        plugin._orig_sortwidget_new = orig_sw_new
 
-        SortWidget.new = function(class, attrs, ...)
+        _addHook(sw_state, SortWidget, "new", function(class, attrs, ...)
             attrs = attrs or {}
             if attrs.covers_fullscreen and not attrs._navbar_height_reduced then
                 UI.fitToContentArea(attrs)
@@ -1366,19 +1409,19 @@ function M.patchFullscreenWidgets(plugin)
                 end
             end
             return sw
-        end
+        end)
     end
 
-    if ok_pc and PathChooser then
+    local pc_state = ok_pc and PathChooser and _acquireHooks(PathChooser, PATHCHOOSER_STATE, plugin)
+    if pc_state then
         local orig_pc_new = PathChooser.new
-        plugin._orig_pathchooser_new = orig_pc_new
-        PathChooser.new = function(class, attrs, ...)
+        _addHook(pc_state, PathChooser, "new", function(class, attrs, ...)
             attrs = attrs or {}
             if attrs.covers_fullscreen and not attrs._navbar_height_reduced then
                 UI.fitToContentArea(attrs)
             end
             return orig_pc_new(class, attrs, ...)
-        end
+        end)
     end
 end
 
@@ -1742,7 +1785,10 @@ end
 -- Refreshes the folder listing of the live file manager, if any.
 local function _refreshLiveFileChooser()
     local fm = liveFM()
-    if fm and fm.file_chooser then fm.file_chooser:refreshPath() end
+    if fm and fm.file_chooser then
+        fm.file_chooser._sui_lazy_listing = nil
+        fm.file_chooser:refreshPath()
+    end
 end
 
 -- ── show: cover transition ──────────────────────────────────────────────────
@@ -2220,18 +2266,27 @@ local function _pushReloadBlocker(ctx)
     end
 end
 
-local function _closedScreenExposesFileManager(widget)
-    return widget.name == "homescreen" and not widget._navbar_closing_intentionally
+-- True while the live file manager's folder listing is deferred and the
+-- closing widget is not making way for a reader.
+local function _fileManagerListingDeferred(widget)
+    if widget._sui_closing_for_reader then return false end
+    local fm = liveFM()
+    return fm and fm.file_chooser and fm.file_chooser._sui_lazy_listing and true or false
 end
 
--- Consumes the lazy refresh request left when the reader closed without
--- returning to its folder: the closing screen is about to expose the file
--- list, which is refreshed on the next tick once the teardown is complete.
-local function _refreshExposedFileManager()
+-- Lists the deferred folder as soon as no fullscreen widget covers the file
+-- manager any more, before the exposed list is painted.
+local function _listExposedFileManager()
     local fm = liveFM()
-    if not (fm and fm._sui_lazy_refresh_path) then return end
-    fm._sui_lazy_refresh_path = nil
-    UIManager:scheduleIn(0, _refreshLiveFileChooser)
+    local stack = UI.getWindowStack()
+    for i = #stack, 1, -1 do
+        local w = stack[i].widget
+        if w == fm then
+            _materializeLazyListing()
+            return
+        end
+        if w and w.covers_fullscreen then return end
+    end
 end
 
 -- A closing screen exposes whatever fullscreen widget lies beneath it, and
@@ -2304,7 +2359,8 @@ local function _reopensScreen(widget, ctx)
     return (_isReader(widget) or isStartWithHS() or widget._sui_displaced_screen)
         and (widget.title_bar or widget.name)
         and widget.name ~= "homescreen"
-        and widget ~= ctx.plugin.ui
+        -- While a book is open the hooks' plugin is the reader's own instance.
+        and (_isReader(widget) or widget ~= ctx.plugin.ui)
         and not widget._navbar_closing_intentionally
         and not widget._navbar_hs_scheduled
         and not (widget._manager and widget._manager.folder_shortcuts)
@@ -2343,21 +2399,27 @@ local function _reopenAfterReaderClose(plugin, reader)
     if plugin.active_action == nil or not NON_TAB_ACTIONS[plugin.active_action] then
         plugin.active_action = "homescreen"
     end
-    local fm = liveFM()
-    if fm then fm._sui_lazy_refresh_path = true end
+    -- The reader creates its file manager right after this step returns; that
+    -- file manager lists its folder only once the screen exposes it.
+    _lazy_listing_pending = true
     UIManager:nextTick(function()
+        _lazy_listing_pending = false
         if isAppExiting() then return end
         -- The file manager is gone when the app is exiting from the reader.
         if not liveFM() then return end
         local reader_module = package.loaded["apps/reader/readerui"]
         if reader_module and reader_module.instance then return end
+        -- The file manager's instance, not the closed reader's.
+        local live = _live_plugin or plugin
+        live.active_action = plugin.active_action
         local HS = liveHS()
-        if not HS then return end
-        if HS._instance and HS._instance._parked then
-            _raiseParkedScreen(plugin, HS, prev_action)
-        elseif not HS._instance then
-            _showHSCold(plugin, HS, prev_action)
+        if HS and HS._instance and HS._instance._parked then
+            _raiseParkedScreen(live, HS, prev_action)
+        elseif HS and not HS._instance then
+            _showHSCold(live, HS, prev_action)
         end
+        -- No screen ended up covering the file manager: list it now.
+        if not (HS and HS._instance) then _materializeLazyListing() end
     end)
 end
 
@@ -2490,7 +2552,7 @@ local function registerWindowSteps()
     }
     WindowHooks.register{
         id = "lazy_refresh", point = CLOSE, order = close.LAZY_REFRESH,
-        match = _closedScreenExposesFileManager, after = _refreshExposedFileManager,
+        match = _fileManagerListingDeferred, after = _listExposedFileManager,
     }
     WindowHooks.register{
         id = "exposed_refresh", point = CLOSE, order = close.EXPOSED_REFRESH,
@@ -2944,14 +3006,10 @@ function M.patchMenuForNavpager(plugin)
         UIManager:scheduleIn(0, function()
             _navpager_rebuild_pending = false
             if not SUISettings:isTrue("simpleui_bar_navpager_enabled") then return end
-            -- Resolve the live plugin instance: the shared navpager hook state
-            -- guards this whole patch to a single installation per session, so
-            -- the `plugin` upvalue captured above can go stale once the FM is
-            -- recreated (reader return, rotation, suspend/resume). Falling back
-            -- to plugin.ui/.active_action on a stale instance here would build
-            -- the navpager-arrow bar against the wrong active tab.
-            local plugin = _live_plugin or plugin
-            local fm = plugin.ui
+            -- Resolve the live plugin instance: this hook is installed once per
+            -- session and outlives the instance that installed it.
+            local live = _live_plugin
+            local fm = live and live.ui
             if not (fm and fm._navbar_container) then return end
             -- Re-read page state from the live widget at execution time.
             -- This is the same source of truth the native bar uses and guarantees
@@ -2962,7 +3020,7 @@ function M.patchMenuForNavpager(plugin)
             local live_page_num = menu_self.page_num or 0
             local has_prev = live_page > 1
             local has_next = live_page < live_page_num
-            Bottombar.syncNavpagerArrows(_getNavbarTarget(fm), plugin.active_action, has_prev, has_next)
+            Bottombar.syncNavpagerArrows(_getNavbarTarget(fm), live.active_action, has_prev, has_next)
         end)
     end
     _addHook(state, Menu, "updatePageInfo", updatePageInfo)
@@ -3911,13 +3969,6 @@ end
 -- ---------------------------------------------------------------------------
 local function _prepareReaderClose(plugin, readerui, via_gesture)
     local file = readerui.document and readerui.document.file
-    local fm_pre = liveFM()
-
-    -- Defer FM file-list scan until HS closes (I/O optimisation).
-    if fm_pre then
-        fm_pre._sui_lazy_refresh_path = true
-    end
-
     local prev_action = plugin.active_action
     plugin._closing_via_gesture = via_gesture
     -- Mark tearing_down so the screen reopen step does not try
@@ -4083,23 +4134,25 @@ local function _closeReaderToHomescreenSync(plugin, readerui, file, prev_action)
             local RUI2 = package.loaded["apps/reader/readerui"]
             if not (RUI2 and RUI2.instance == readerui) then return end
 
-            _teardownReader(readerui, file)
+            _withLazyListing(_teardownReader, readerui, file)
             if not _raiseParkedScreen(plugin, HS, prev_action) then
                 if not HS._instance then
                     _showHSCold(plugin, HS, prev_action)
                 end
             end
+            if not HS._instance then _materializeLazyListing() end
         end)
         return
     end
 
     -- Close-first: book (and optional cover) visible, then raise/show HS.
-    _teardownReader(readerui, file)
+    _withLazyListing(_teardownReader, readerui, file)
     if not _raiseParkedScreen(plugin, HS, prev_action) then
         if not HS._instance then
             _showHSCold(plugin, HS, prev_action)
         end
     end
+    if not HS._instance then _materializeLazyListing() end
     -- HS raise in the same tick would bury the cover; keep cover on top.
     if CoverTransition.isShowing() then
         CoverTransition.ensureOnTop()
@@ -4264,10 +4317,6 @@ function M.wireReaderMenuFMTab(plugin, readerui)
         end
         if target == Config.BOOK_CLOSE_TARGET.BOOK_FOLDER then
             local file = readerui.document and readerui.document.file
-            local fm_pre = liveFM()
-            if fm_pre then
-                fm_pre._sui_return_to_book_folder_pending = true
-            end
             plugin._closing_via_gesture = false
             readerui.tearing_down = true
             readerui:onClose(false)
@@ -5219,17 +5268,13 @@ function M.teardownAll(plugin)
 
     -- Restore widget class patches via package.loaded.
     local BookList = package.loaded["ui/widget/booklist"]
-    if BookList and plugin._orig_booklist_new then
-        BookList.new              = plugin._orig_booklist_new
-        plugin._orig_booklist_new = nil
-    end
+    if BookList then _releaseHooks(BookList, BOOKLIST_STATE, plugin) end
+
+    local FMColl = package.loaded["apps/filemanager/filemanagercollection"]
+    if FMColl then _releaseHooks(FMColl, COLLECTIONS_STATE, plugin) end
 
     local Menu = package.loaded["ui/widget/menu"]
     if Menu then
-        if plugin._orig_menu_new then
-            Menu.new              = plugin._orig_menu_new
-            plugin._orig_menu_new = nil
-        end
         _releaseHooks(Menu, MENU_INIT_STATE, plugin)
         _releaseHooks(Menu, NAVPAGER_STATE, plugin)
     end
@@ -5244,53 +5289,11 @@ function M.teardownAll(plugin)
         end
     end
 
-    local FMColl = package.loaded["apps/filemanager/filemanagercollection"]
-    if FMColl then
-        if plugin._orig_fmcoll_show then
-            FMColl.onShowCollList    = plugin._orig_fmcoll_show
-            plugin._orig_fmcoll_show = nil
-        end
-        if plugin._orig_fmcoll_update_coll_list then
-            FMColl.updateCollListItemTable       = plugin._orig_fmcoll_update_coll_list
-            plugin._orig_fmcoll_update_coll_list = nil
-        end
-        if plugin._orig_fmcoll_get_coll_title then
-            FMColl.getCollectionTitle           = plugin._orig_fmcoll_get_coll_title
-            plugin._orig_fmcoll_get_coll_title  = nil
-        end
-    end
-
-    local RC = package.loaded["readcollection"]
-    if RC then
-        if plugin._orig_rc_remove then
-            RC.removeCollection    = plugin._orig_rc_remove
-            plugin._orig_rc_remove = nil
-        end
-        if plugin._orig_rc_rename then
-            RC.renameCollection    = plugin._orig_rc_rename
-            plugin._orig_rc_rename = nil
-        end
-        if plugin._orig_rc_additem then
-            RC.addItem              = plugin._orig_rc_additem
-            plugin._orig_rc_additem = nil
-        end
-        if plugin._orig_rc_removeitem then
-            RC.removeItem              = plugin._orig_rc_removeitem
-            plugin._orig_rc_removeitem = nil
-        end
-    end
-
     local SortWidget = package.loaded["ui/widget/sortwidget"]
-    if SortWidget and plugin._orig_sortwidget_new then
-        SortWidget.new              = plugin._orig_sortwidget_new
-        plugin._orig_sortwidget_new = nil
-    end
+    if SortWidget then _releaseHooks(SortWidget, SORTWIDGET_STATE, plugin) end
 
     local PathChooser = package.loaded["ui/widget/pathchooser"]
-    if PathChooser and plugin._orig_pathchooser_new then
-        PathChooser.new              = plugin._orig_pathchooser_new
-        plugin._orig_pathchooser_new = nil
-    end
+    if PathChooser then _releaseHooks(PathChooser, PATHCHOOSER_STATE, plugin) end
 
     local FileChooser = package.loaded["ui/widget/filechooser"]
     if FileChooser and plugin._orig_fc_init then
@@ -5353,9 +5356,9 @@ function M.teardownAll(plugin)
     _hs_pending_after_reader  = false
     _navpager_rebuild_pending = false
 
-    -- Clear lazy-refresh flag on the FM instance, if any.
-    local fm_td = liveFM()
-    if fm_td then fm_td._sui_lazy_refresh_path = nil end
+    -- List a folder whose listing is still deferred.
+    _lazy_listing_pending = false
+    _materializeLazyListing()
 
     if _navbar_kb_capture then
         UIManager:close(_navbar_kb_capture)
@@ -5415,6 +5418,8 @@ do
                 if entry.widget == hs_inst then hs_idx = i; break end
             end
             if hs_idx and hs_idx > 1 then
+                -- The action may act on the file list.
+                _materializeLazyListing()
                 local entry = table.remove(stack, hs_idx)
                 table.insert(stack, 1, entry)
             end

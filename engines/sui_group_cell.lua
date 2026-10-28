@@ -536,13 +536,15 @@ end
 
 -- Fills in the covers that were not ready when the cells were built. Single
 -- covers are stretched to a fixed ratio, mosaic quadrants are cropped to fill.
+-- Returns all_done (every slot resolved) and changed (a cover was patched in
+-- by this call).
 function GroupCell.updateCovers(widget, _ctx)
-    if not widget or not widget._cover_slots then return true end
-    local all_done = true
+    if not widget or not widget._cover_slots then return true, false end
+    local all_done, changed = true, false
     for _i, slot in ipairs(widget._cover_slots) do
         local is_quad = slot.kind == "quad"
-        local bb = is_quad and Config.getCroppedCoverBB(slot.fp, slot.w, slot.h)
-            or Config.getStretchedCoverBB(slot.fp, slot.w, slot.h)
+        local bb = not slot.done and (is_quad and Config.getCroppedCoverBB(slot.fp, slot.w, slot.h)
+            or Config.getStretchedCoverBB(slot.fp, slot.w, slot.h))
         if bb then
             local ok, img = pcall(ImageWidget.new, ImageWidget, {
                 image            = bb,
@@ -556,12 +558,13 @@ function GroupCell.updateCovers(widget, _ctx)
                     padding    = 0, margin = 0,
                     img,
                 }
+                slot.done, changed = true, true
             end
-        elseif not Config.isCoverMissing(slot.fp) then
+        elseif not slot.done and not Config.isCoverMissing(slot.fp) then
             all_done = false
         end
     end
-    return all_done
+    return all_done, changed
 end
 
 -- ---------------------------------------------------------------------------

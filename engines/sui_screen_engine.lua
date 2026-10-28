@@ -2880,8 +2880,6 @@ function ScreenWidget:_scheduleDataRefresh(stats_only)
         -- Read live rather than the closed-over parameter: a later
         -- caller may have upgraded this pending refresh (see above).
         local pending_stats_only = self._refresh_pending_stats_only
-        local books_fresh = self._books_fresh
-        self._books_fresh = nil
 
         Perf.mark("data refresh start")
         if not self._db_conn then
@@ -2892,9 +2890,8 @@ function ScreenWidget:_scheduleDataRefresh(stats_only)
         if self._ctx_cache then
             -- A deferred first paint built the ctx without a connection.
             self._ctx_cache.db_conn = self._db_conn
-            -- 1. Get new book metadata (prefetchBooks). Skipped when
-            -- onShow() already resolved it for this open.
-            if not pending_stats_only and not (books_fresh and self._cached_books_state) then
+            -- 1. Get new book metadata (prefetchBooks).
+            if not pending_stats_only then
                 local new_bs = self:_prefetchBooks()
                 if new_bs then
                     self._cached_books_state = new_bs
@@ -3390,11 +3387,12 @@ function ScreenWidget:_scheduleCoverPoll()
 
         for mod_id, slot in pairs(slots) do
             if type(slot.mod.updateCovers) == "function" then
-                local ok, all_done = pcall(slot.mod.updateCovers, slot.widget, ctx)
+                local ok, all_done, changed = pcall(slot.mod.updateCovers, slot.widget, ctx)
                 if ok then
                     local wrapper = self_ref._wrapper_pool and self_ref._wrapper_pool[mod_id]
                     local dimen   = (wrapper and wrapper.dimen) or (slot.widget and slot.widget.dimen)
-                    if dimen then
+                    -- Repaint only when a cover was actually patched in.
+                    if dimen and changed then
                         self_ref.dithered = true
                         UIManager:setDirty(self_ref, function()
                             return "ui", dimen, true
@@ -3475,16 +3473,11 @@ function ScreenWidget:onShow()
     end
 
     if not self._cached_books_state then
-        -- App startup, or a screen flagged stale by a reading session: resolve
-        -- the book list synchronously so the first paint already has
-        -- authoritative data. Only the sidecar that changed misses the cache,
-        -- so this stays cheap, and the deferred pass below skips repeating it.
-        local books = (is_app_cold_boot or need_async) and self:_prefetchBooks()
-        if books then
-            self._cached_books_state = books
-            self._books_fresh = need_async and not is_app_cold_boot
-        elseif is_app_cold_boot then
-            self._cached_books_state = { current_fp = nil, recent_fps = {}, prefetched_data = {} }
+        if is_app_cold_boot then
+            -- App startup: resolve the book list synchronously so the very
+            -- first paint already has authoritative data.
+            self._cached_books_state = self:_prefetchBooks()
+                or { current_fp = nil, recent_fps = {}, prefetched_data = {} }
         else
             -- Cold-open path: _cached_books_state is nil, so _buildCtx would
             -- otherwise call prefetchBooks() (sidecar I/O for every recent
@@ -3986,6 +3979,8 @@ function ScreenWidget:onShowingReader()
     end
 
     self._navbar_closing_intentionally = true
+    -- The file manager beneath closes for the reader too: nothing is exposed.
+    self._sui_closing_for_reader = true
     self:onClose()
 end
 ScreenWidget.onSetupShowReader = ScreenWidget.onShowingReader

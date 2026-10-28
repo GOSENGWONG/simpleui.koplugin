@@ -1351,6 +1351,8 @@ local function _executeInPlace(action_id, plugin, fm)
             if entry.widget == hs_inst then hs_idx = i; break end
         end
         if hs_idx and hs_idx > 1 then
+            -- The action may act on the file list.
+            require("infra/sui_patches").materializeLazyListing()
             local entry = table.remove(stack, hs_idx)
             table.insert(stack, 1, entry)
         end

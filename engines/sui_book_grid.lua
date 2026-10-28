@@ -587,7 +587,7 @@ end
 --
 -- opts:
 --   id          string    settings namespace (e.g. "tbr" or inst_id)
---   getFileList function  () -> { fp, ... } (ordered list of files)
+--   getFileList function  (ctx) -> { fp, ... } (ordered list of files)
 --   max_items   number?   max covers shown per page (default 5)
 --   cache_key   string?   cache key in ctx (default "_row_fps_" .. id)
 --   paged       bool?     if true and #fps > max_items, enables pagination via
@@ -689,7 +689,7 @@ function GridRenderer.build(w, ctx, opts)
 
     local fps = ctx[cache_key]
     if not fps then
-        fps = _filterFileList(opts.getFileList() or {}, opts, ctx)
+        fps = _filterFileList(opts.getFileList(ctx) or {}, opts, ctx)
         ctx[cache_key] = fps
     end
     if #fps == 0 then
@@ -1088,23 +1088,27 @@ end
 
 -- ---------------------------------------------------------------------------
 -- updateCovers(widget, ctx) — patches every cover slot recorded by build()
--- in place, calling SH.getBookCover for each. Returns true once every slot
--- either has its final cover or is confirmed missing.
+-- in place, calling SH.getBookCover for each slot not yet filled. Returns
+-- all_done (every slot has its final cover or is confirmed missing) and
+-- changed (a cover was patched in by this call).
 -- ---------------------------------------------------------------------------
 function GridRenderer.updateCovers(widget, _ctx)
-    if not widget or not widget._cover_slots then return true end
+    if not widget or not widget._cover_slots then return true, false end
     local SH = getSH()
-    if not SH then return true end
-    local all_done = true
+    if not SH then return true, false end
+    local all_done, changed = true, false
     for _, slot in ipairs(widget._cover_slots) do
-        local new_cover = SH.getBookCover(slot.fp, slot.w, slot.h)
-        if new_cover then
-            slot.container[slot.idx] = new_cover
-        elseif not Config.isCoverMissing(slot.fp) then
-            all_done = false
+        if not slot.done then
+            local new_cover = SH.getBookCover(slot.fp, slot.w, slot.h)
+            if new_cover then
+                slot.container[slot.idx] = new_cover
+                slot.done, changed = true, true
+            elseif not Config.isCoverMissing(slot.fp) then
+                all_done = false
+            end
         end
     end
-    return all_done
+    return all_done, changed
 end
 
 -- ---------------------------------------------------------------------------
@@ -1176,7 +1180,7 @@ function GridRenderer.updateStats(widget, ctx, opts)
     -- Re-derive the filtered file list exactly like build()'s cold-cache
     -- path.
     local cache_key = opts.cache_key or ("_row_fps_" .. id)
-    local fps = ctx[cache_key] or _filterFileList(opts.getFileList() or {}, opts, ctx)
+    local fps = ctx[cache_key] or _filterFileList(opts.getFileList(ctx) or {}, opts, ctx)
 
     -- Re-derive which page/slice is on screen right now, same math as
     -- build(). grid_rows/grid_cols come from `opts` (kept current by
@@ -1777,7 +1781,8 @@ function GridRenderer.makeModule(spec)
 
     function M.build(w, ctx)
         local source = spec.getSource and spec.getSource(ctx) or spec
-        row_opts.getFileList  = function() return source.getFileList(ctx) end
+        -- Takes ctx per call: row_opts outlives the screen it was built for.
+        row_opts.getFileList  = source.getFileList
         row_opts.filterItem   = source.filterItem
         row_opts.labelForItem = source.labelForItem
         -- A source may bring its own kind of cell.
