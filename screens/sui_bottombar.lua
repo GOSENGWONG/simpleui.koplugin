@@ -317,6 +317,8 @@ function M.patchDimmedIcon(btn)
     local orig_lw_pt = lw.paintTo
     local UI_core    = require("infra/sui_core")
     lw.paintTo = function(self_lw, bb, x, y)
+        -- Set by Button:hide(); the disabled path below paints on its own.
+        if self_lw.hide then return end
         if not btn.enabled then
             local sz = self_lw:getSize()
             local w, h = sz.w, sz.h

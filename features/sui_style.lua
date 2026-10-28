@@ -586,6 +586,9 @@ end
 local function _placeInSlot(widget, w, h, edge)
     local paint = widget.paintTo
     widget.paintTo = function(self, bb, x, y)
+        -- Button:hide() only sets .hide, which ImageWidget honours but a
+        -- symbol glyph's TextWidget does not.
+        if self.hide then return end
         local sz = self:getSize()
         local dx = math.floor((w - sz.w) / 2)
         local side = edge and edge()
