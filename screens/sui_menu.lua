@@ -2637,6 +2637,19 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
             })
         end
 
+        table.insert(interaction_items, {
+            text           = _("Flash on every page turn"),
+            help_text      = _("Use a flashing refresh on every page turn of the home screen, with or without book covers, to reduce ghosting."),
+            checked_func   = function()
+                return SUISettings:isTrue("simpleui_hs_flash_all_pages")
+            end,
+            keep_menu_open = true,
+            callback       = function()
+                SUISettings:saveSetting("simpleui_hs_flash_all_pages",
+                    not SUISettings:isTrue("simpleui_hs_flash_all_pages"))
+            end,
+        })
+
         local items = {
             { text = _("Start & Wake"), sub_item_table = start_items },
             { text = _("Books"),        sub_item_table = book_items },

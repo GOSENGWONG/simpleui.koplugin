@@ -3074,6 +3074,11 @@ local function _flashCoverImages()
     return ok and bim:getSetting("flash_ui_cover_images") and true or false
 end
 
+-- True when every home screen page turn should flash, covers or not.
+local function _flashAllPages()
+    return SUISettings:isTrue("simpleui_hs_flash_all_pages")
+end
+
 function ScreenWidget:_refresh(keep_cache, books_only, stats_only, page_turn)
     local defer_async = false
     if not keep_cache and self._body and self._ctx_cache then
@@ -3084,7 +3089,8 @@ function ScreenWidget:_refresh(keep_cache, books_only, stats_only, page_turn)
     if keep_cache and self._body then
         local had_covers = self._page_has_covers
         self:_updatePage(true)
-        local flash = page_turn and (had_covers or self._page_has_covers) and _flashCoverImages()
+        local flash = page_turn and (_flashAllPages()
+            or ((had_covers or self._page_has_covers) and _flashCoverImages()))
         UIManager:setDirty(self, flash and "flashui" or "ui")
 
         if defer_async then self:_scheduleDataRefresh(stats_only) end
