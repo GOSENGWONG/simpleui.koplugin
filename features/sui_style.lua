@@ -551,6 +551,13 @@ end
 -- Setting btn[w_key] alone is not enough: the render tree still points at
 -- the old widget until these slots are patched too.
 local function _syncButtonRenderSlot(btn, w_key, new_w)
+    -- Button:hide() may already have run (Menu:init hides the chevrons before
+    -- they are restyled). Button.hidden stays set, so later hide() calls are
+    -- no-ops: carry the flag over or the new widget paints anyway.
+    local old_w = btn[w_key]
+    if old_w and old_w.hide ~= nil and new_w.hide == nil then
+        new_w.hide = old_w.hide
+    end
     btn[w_key] = new_w
 
     local hg = btn.horizontal_group
