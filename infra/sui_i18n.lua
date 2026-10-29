@@ -53,15 +53,21 @@ local function parsePluralExpression(expr)
 
         local depth = 0
         local colon = nil
+        local nested = 0 -- unmatched '?' inside the true branch
         for i = q + 1, #s do
             local c = s:sub(i, i)
             if c == "(" then
                 depth = depth + 1
             elseif c == ")" then
                 depth = depth - 1
-            elseif c == ":" and depth == 0 then
-                colon = i
-                break
+            elseif depth == 0 and c == "?" then
+                nested = nested + 1
+            elseif depth == 0 and c == ":" then
+                if nested == 0 then
+                    colon = i
+                    break
+                end
+                nested = nested - 1
             end
         end
 
@@ -75,6 +81,7 @@ local function parsePluralExpression(expr)
         return "(" .. translateTernary(cond) .. " and (" .. translateTernary(truthy) .. ") or (" .. translateTernary(falsy) .. "))"
     end
 
+    expr = expr:match("plural%s*=%s*(.-)%s*;?%s*$") or expr
     expr = expr:gsub("!=",   "~=")
     expr = expr:gsub("&&",   " and ")
     expr = expr:gsub("%|%|", " or ")
@@ -87,7 +94,13 @@ local function parsePluralExpression(expr)
 
     local ok, pluralFn = pcall(fn)
     if not ok or type(pluralFn) ~= "function" then return nil end
-    return pluralFn
+    -- Comparisons yield booleans in Lua; plural indices are numbers.
+    return function(n)
+        local r = pluralFn(n)
+        if r == true then return 1 end
+        if r == false then return 0 end
+        return r
+    end
 end
 
 local function parsePO(path)
