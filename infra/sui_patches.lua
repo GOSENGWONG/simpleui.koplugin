@@ -342,11 +342,30 @@ end
 
 M.materializeLazyListing = _materializeLazyListing
 
+-- Lists the folders behind the folder covers of the live file manager's page.
+local function _warmFolderCovers()
+    local fm = liveFM()
+    local fc = fm and fm.file_chooser
+    local FolderCovers = package.loaded["features/library/sui_foldercovers"]
+    if fc and not fc._sui_lazy_listing and FolderCovers then
+        FolderCovers.warmFolderListings(fc)
+    end
+end
+
 -- Runs `fn` with the listing of any file manager it creates deferred.
 local function _withLazyListing(fn, ...)
     _lazy_listing_pending = true
     local ok, err = pcall(fn, ...)
     _lazy_listing_pending = false
+    if not ok then error(err, 0) end
+end
+
+-- Runs `open`, which raises or shows the homescreen. When no screen covers
+-- the file manager afterwards, or `open` failed, its deferred listing is
+-- materialized before the error propagates.
+local function _openScreenOrList(HS, open)
+    local ok, err = pcall(open)
+    if not (HS and HS._instance) then _materializeLazyListing() end
     if not ok then error(err, 0) end
 end
 
@@ -654,7 +673,13 @@ function M.patchFileManagerClass(plugin)
 
         -- The title bar is built inside setupLayout and sizes the file chooser, so
         -- its style metrics have to apply during the build.
-        Titlebar().runWithStyleMetrics(orig_setupLayout, fm_self)
+        -- On boot with the homescreen as start screen, the file manager is
+        -- covered before its first paint, so its folder is listed only once exposed.
+        if not _hs_boot_done and isStartWithHS() then
+            _withLazyListing(Titlebar().runWithStyleMetrics, orig_setupLayout, fm_self)
+        else
+            Titlebar().runWithStyleMetrics(orig_setupLayout, fm_self)
+        end
 
         -- Current screen geometry, compared below with the values stored by
         -- the previous call.
@@ -775,12 +800,20 @@ function M.patchFileManagerClass(plugin)
                     local HS = liveHS() or (function()
                         local ok, m = pcall(require, "screens/sui_homescreen"); return ok and m
                     end)()
-                    if HS then
+                    _openScreenOrList(HS, function()
+                        if not HS then return end
                         _ensureGoalCallback(plugin)
                         local qa_tap   = rot_qa_tap   or _makeQaTap(plugin)
                         local goal_tap = rot_goal_tap or plugin._goalTapCallback
                         HS.show(qa_tap, goal_tap)
-                    end
+                    end)
+                    -- The homescreen is up: list the deferred folder, then the
+                    -- folders behind its covers, while idle (one step per tick),
+                    -- so the first visit to the library does not wait for them.
+                    UIManager:scheduleIn(1, function()
+                        _materializeLazyListing()
+                        UIManager:nextTick(_warmFolderCovers)
+                    end)
                 end)
                 return
             end
@@ -2413,13 +2446,13 @@ local function _reopenAfterReaderClose(plugin, reader)
         local live = _live_plugin or plugin
         live.active_action = plugin.active_action
         local HS = liveHS()
-        if HS and HS._instance and HS._instance._parked then
-            _raiseParkedScreen(live, HS, prev_action)
-        elseif HS and not HS._instance then
-            _showHSCold(live, HS, prev_action)
-        end
-        -- No screen ended up covering the file manager: list it now.
-        if not (HS and HS._instance) then _materializeLazyListing() end
+        _openScreenOrList(HS, function()
+            if HS and HS._instance and HS._instance._parked then
+                _raiseParkedScreen(live, HS, prev_action)
+            elseif HS and not HS._instance then
+                _showHSCold(live, HS, prev_action)
+            end
+        end)
     end)
 end
 
@@ -4135,24 +4168,26 @@ local function _closeReaderToHomescreenSync(plugin, readerui, file, prev_action)
             if not (RUI2 and RUI2.instance == readerui) then return end
 
             _withLazyListing(_teardownReader, readerui, file)
-            if not _raiseParkedScreen(plugin, HS, prev_action) then
-                if not HS._instance then
-                    _showHSCold(plugin, HS, prev_action)
+            _openScreenOrList(HS, function()
+                if not _raiseParkedScreen(plugin, HS, prev_action) then
+                    if not HS._instance then
+                        _showHSCold(plugin, HS, prev_action)
+                    end
                 end
-            end
-            if not HS._instance then _materializeLazyListing() end
+            end)
         end)
         return
     end
 
     -- Close-first: book (and optional cover) visible, then raise/show HS.
     _withLazyListing(_teardownReader, readerui, file)
-    if not _raiseParkedScreen(plugin, HS, prev_action) then
-        if not HS._instance then
-            _showHSCold(plugin, HS, prev_action)
+    _openScreenOrList(HS, function()
+        if not _raiseParkedScreen(plugin, HS, prev_action) then
+            if not HS._instance then
+                _showHSCold(plugin, HS, prev_action)
+            end
         end
-    end
-    if not HS._instance then _materializeLazyListing() end
+    end)
     -- HS raise in the same tick would bury the cover; keep cover on top.
     if CoverTransition.isShowing() then
         CoverTransition.ensureOnTop()
