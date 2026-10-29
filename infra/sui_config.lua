@@ -1554,8 +1554,9 @@ end
 -- there, plus
 --   enabled_func — optional enabled state of the submenu
 function M.makeSurfaceMenu(opts)
+    local _lc = opts._lc or _
     return {
-        text           = (opts._lc or _)("Background"),
+        text                = _lc("Background"),
         enabled_func        = opts.enabled_func,
         sub_item_table_func = function() return M.makeSurfaceItems(opts) end,
     }
