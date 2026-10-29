@@ -1439,18 +1439,9 @@ _showQSBarSettingsWindow = function(touch_menu)
         }
     end
 
-    local function titleFn(ctx)
-        local cur = ctx.current()
-        local id  = cur and cur.id or "__root__"
-        if id == "nested_menu" then return cur.params.title or "" end
-        if id == "arrange"     then return cur.params.title or _("Arrange Items") end
-        if id == "item_picker" then return cur.params and cur.params.title or _("Add Item") end
-        return _("Quick Settings Bar")
-    end
-
     local win = SUIWindow:new{
         name           = "sui_win_context",
-        title          = titleFn,
+        title          = SUIWindow.makeSettingsTitle(_("Quick Settings Bar")),
         screens        = SUIWindow.makeSettingsScreens(buildRoot),
         navpager_mode  = _Config().isNavpagerEnabled(),
         position       = "bottom",
@@ -1649,7 +1640,7 @@ function QSBar.makeMenuItems(ctx_menu)
         }),
         {
             text                = _("Tiny Critter"),
-            sub_item_table_func = function() return _CritterRow().getMenuItems(refresh) end,
+            sub_item_table_func = function() return _CritterRow().getMenuItems(refresh, ctx_menu) end,
         },
     }
 

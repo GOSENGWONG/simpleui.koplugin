@@ -4464,6 +4464,34 @@ function SUIWindow.showArrange(opts)
     return win
 end
 
+--- Title function of a screen titled by its `params.title`, `default` when it
+--- has none.
+--- @param default string
+--- @return function(ctx)→string
+function SUIWindow.paramsTitle(default)
+    return function(ctx)
+        local cur = ctx.current()
+        return cur and cur.params and cur.params.title or default
+    end
+end
+
+--- Title function of a settings window: the title of the sub-menu, arrange or
+--- item picker on top, `root_title` on the entry screen.
+--- @param root_title string
+--- @return function(ctx)→string
+function SUIWindow.makeSettingsTitle(root_title)
+    local by_screen = {
+        nested_menu = SUIWindow.paramsTitle(""),
+        arrange     = SUIWindow.paramsTitle(_("Arrange Items")),
+        item_picker = SUIWindow.paramsTitle(_("Add Item")),
+    }
+    return function(ctx)
+        local cur   = ctx.current()
+        local title = by_screen[cur and cur.id]
+        return title and title(ctx) or root_title
+    end
+end
+
 -- ===========================================================================
 -- Shared helper: SUIWindow.makeSettingsScreens
 -- ===========================================================================
