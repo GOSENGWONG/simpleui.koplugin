@@ -98,23 +98,26 @@ function M.prune(tabs, hidden, log)
     end
 end
 
+-- Label of an entry and whether it came from a `text_func` (its value changes
+-- with the state of the menu).
 local function entryText(node)
-    if type(node.text) == "string" then return node.text end
+    if type(node.text) == "string" then return node.text, false end
     if type(node.text_func) == "function" then
         local ok, text = pcall(node.text_func)
-        if ok and type(text) == "string" then return text end
+        if ok and type(text) == "string" then return text, true end
     end
 end
 
---- Returns the menu as plain data: an array of { id, text, children? }.
+--- Returns the menu as plain data: an array of { id, text, dynamic?, children? }.
 --- Entries without an id are skipped; dynamic submenus are not expanded.
 function M.extractTree(tabs, tabLabel)
     local function walk(list, is_tabs)
         local out = {}
         for _i, node in ipairs(list) do
             if type(node) == "table" and type(node.id) == "string" then
-                local text = is_tabs and tabLabel and tabLabel(node.id) or entryText(node)
-                local entry = { id = node.id, text = text or node.id }
+                local text, dynamic = is_tabs and tabLabel and tabLabel(node.id)
+                if not text then text, dynamic = entryText(node) end
+                local entry = { id = node.id, text = text or node.id, dynamic = dynamic or nil }
                 local children = walk(childrenOf(node), false)
                 if #children > 0 then entry.children = children end
                 out[#out + 1] = entry
@@ -137,6 +140,21 @@ function M.getHidden(target)
     return type(stored) == "table" and stored or {}
 end
 
+-- The menu object of the running File Manager / Reader of a target, if any.
+local function liveMenu(target)
+    local class_path = target == MenuHooks.TARGET.FM
+        and "apps/filemanager/filemanager" or "apps/reader/readerui"
+    local class = package.loaded[class_path]
+    return class and class.instance and class.instance.menu
+end
+
+-- Re-applies the hidden set to the menu table of a running context, so the
+-- table is already current before the menu is next opened or looked up.
+local function applyLive(target)
+    local menu = liveMenu(target)
+    if menu and menu.tab_item_table ~= nil then MenuHooks.refresh(menu, target) end
+end
+
 --- Hides or shows one id of a target.
 function M.setHidden(target, id, hidden)
     local set = {}
@@ -147,12 +165,14 @@ function M.setHidden(target, id, hidden)
     else
         SUISettings:del(settingKey(target))
     end
+    applyLive(target)
 end
 
 --- Shows every hidden entry again, in both menus.
 function M.clearAll()
     for _i, target in pairs(MenuHooks.TARGET) do
         SUISettings:del(settingKey(target))
+        applyLive(target)
     end
 end
 
@@ -160,8 +180,11 @@ end
 -- Menu tree snapshot
 -- ---------------------------------------------------------------------------
 
-local _trees  = {} -- target -> tree captured in this session
-local _dumped = {} -- target -> serialized tree last written to / read from disk
+local SAVE_DELAY = 2 -- seconds between a menu build and the snapshot write
+
+local _trees   = {} -- target -> tree captured in this session
+local _written = {} -- target -> signature of the tree last written to / read from disk
+local _pending = {} -- target -> tree waiting to be written
 
 local function treePath(target)
     return require("datastorage"):getSettingsDir() .. "/simpleui/menu_tree_" .. target .. ".lua"
@@ -174,24 +197,52 @@ local function readTreeFile(target)
     return ok and type(tree) == "table" and tree or nil
 end
 
-local function saveTree(target, tree)
-    local dump = require("dump")
-    if _dumped[target] == nil then
-        local stored = readTreeFile(target)
-        _dumped[target] = stored and dump(stored, nil, true) or false
+-- Identifies a tree by its ids and stable labels; labels that come from a
+-- `text_func` are left out, as their value changes without the menu changing.
+local function signature(tree)
+    local out = {}
+    local function walk(nodes)
+        for _i, entry in ipairs(nodes) do
+            out[#out + 1] = entry.id
+            if not entry.dynamic then out[#out + 1] = entry.text end
+            if entry.children then
+                out[#out + 1] = "{"
+                walk(entry.children)
+                out[#out + 1] = "}"
+            end
+        end
     end
-    local serialized = dump(tree, nil, true)
-    if serialized == _dumped[target] then return end
+    walk(tree)
+    return table.concat(out, "\0")
+end
+
+local function flushTree(target)
+    local tree = _pending[target]
+    _pending[target] = nil
+    if not tree then return end
+    if _written[target] == nil then
+        local stored = readTreeFile(target)
+        _written[target] = stored and signature(stored) or false
+    end
+    local sig = signature(tree)
+    if sig == _written[target] then return end
     local ok, err = pcall(function()
         local file = require("luasettings"):open(treePath(target))
         file:saveSetting("tree", tree)
         file:flush()
     end)
     if ok then
-        _dumped[target] = serialized
+        _written[target] = sig
     else
         require("logger").warn("simpleui/menu_hide: could not save menu tree:", err)
     end
+end
+
+-- Queues the snapshot for writing shortly after the menu has been built.
+local function saveTree(target, tree)
+    local queued = _pending[target] ~= nil
+    _pending[target] = tree
+    if not queued then require("ui/uimanager"):scheduleIn(SAVE_DELAY, flushTree, target) end
 end
 
 --- Label of a native tab, from the slot that describes its icon.
@@ -209,10 +260,7 @@ end
 -- keeps an open menu untouched.
 local function buildLiveMenus()
     for _i, target in pairs(MenuHooks.TARGET) do
-        local class_path = target == MenuHooks.TARGET.FM
-            and "apps/filemanager/filemanager" or "apps/reader/readerui"
-        local class = package.loaded[class_path]
-        local menu = class and class.instance and class.instance.menu
+        local menu = liveMenu(target)
         if menu and menu.tab_item_table == nil and menu.setUpdateItemTable then
             local ok, err = pcall(menu.setUpdateItemTable, menu)
             if not ok then
@@ -224,7 +272,8 @@ end
 
 --- Menu tree of a target: the one captured in this session, else the saved copy.
 function M.loadTree(target)
-    return _trees[target] or readTreeFile(target)
+    if not _trees[target] then _trees[target] = readTreeFile(target) end
+    return _trees[target]
 end
 
 -- ---------------------------------------------------------------------------
@@ -261,16 +310,57 @@ function M.findHiddenTab(tabs, id)
     end
 end
 
+-- The tab the menu opens on is remembered by position. When the tab layout
+-- changes (a tab hidden or shown), that position is moved to the same tab.
+local LAYOUT = "_sui_menu_hide_layout"
+
+local function savedTabIndex(menu, target)
+    if target == MenuHooks.TARGET.FM then
+        return G_reader_settings:readSetting("filemanagermenu_tab_index")
+    end
+    return menu.last_tab_index
+end
+
+local function saveTabIndex(menu, target, index)
+    if target == MenuHooks.TARGET.FM then
+        G_reader_settings:saveSetting("filemanagermenu_tab_index", index)
+    else
+        menu.last_tab_index = index
+    end
+end
+
+local function keepLastTab(menu, target)
+    local tabs = menu.tab_item_table
+    if type(tabs) ~= "table" then return end
+    local after = {}
+    for i, tab in ipairs(tabs) do after[i] = tab.id or false end
+    local before = tabs[LAYOUT]
+    tabs[LAYOUT] = after
+    local index = savedTabIndex(menu, target)
+    local id = before and index and before[index]
+    if not id then return end
+    local new_index = 1
+    for i, tab_id in ipairs(after) do
+        if tab_id == id then new_index = i; break end
+    end
+    if new_index ~= index then saveTabIndex(menu, target, new_index) end
+end
+
 function M.install()
     MenuHooks.register{
         id      = "menu_hide",
         order   = MenuHooks.ORDER.MENU_HIDE,
         prepare = prepare,
     }
+    MenuHooks.register{
+        id      = "menu_hide_last_tab",
+        order   = MenuHooks.ORDER.TAB_LAYOUT,
+        prepare = keepLastTab,
+    }
 end
 
 -- ---------------------------------------------------------------------------
--- Editor (Style > Hidden Menu Items)
+-- Editor (Style > Hide Menu Items)
 -- ---------------------------------------------------------------------------
 
 local function showProtectedNotice()
@@ -304,6 +394,25 @@ local function treeHoldsProtected(node)
     return false
 end
 
+-- Number of hidden entries in `nodes`; the entries inside a hidden submenu are
+-- not counted on top of it, and ids that are not in the menu are ignored.
+local function countHidden(nodes, hidden)
+    local n = 0
+    for _i, node in ipairs(nodes) do
+        if hidden[node.id] == true and not treeHoldsProtected(node) then
+            n = n + 1
+        elseif node.children then
+            n = n + countHidden(node.children, hidden)
+        end
+    end
+    return n
+end
+
+local function hiddenLabel(n)
+    if n == 0 then return "" end
+    return string.format(N_("%d hidden", "%d hidden", n), n)
+end
+
 -- Greys out `row` and makes it inert while `locked()` is true. The settings
 -- window drops rows with `enabled_func` false, so it gets `dim` instead.
 local function applyLock(row, locked, is_sui)
@@ -326,8 +435,15 @@ local function makeTreeRows(target, nodes, locked, is_sui)
             local function children_locked()
                 return locked() or M.getHidden(target)[node.id] == true
             end
+            local function state()
+                local hidden = M.getHidden(target)
+                if hidden[node.id] == true and not protected then return _("Hidden") end
+                return hiddenLabel(countHidden(node.children, hidden))
+            end
             rows[#rows + 1] = applyLock({
                 text                = node.text,
+                value_func          = state,
+                mandatory_func      = state,
                 sub_item_table_func = function()
                     local sub = { show }
                     for _j, row in ipairs(makeTreeRows(target, node.children, children_locked, is_sui)) do
@@ -347,10 +463,15 @@ local function notLocked() return false end
 
 local function makeContextRow(target, label, missing, is_sui)
     local function hiddenCount()
+        local hidden = M.getHidden(target)
+        local tree = M.loadTree(target)
         local n = 0
-        for _id in pairs(M.getHidden(target)) do n = n + 1 end
-        if n == 0 then return "" end
-        return string.format(N_("%d hidden", "%d hidden", n), n)
+        if tree then
+            n = countHidden(tree, hidden)
+        else
+            for _id in pairs(hidden) do n = n + 1 end
+        end
+        return hiddenLabel(n)
     end
     return {
         text           = label,
@@ -431,7 +552,7 @@ local function makeNoteWidget(ctx, text)
     }
 end
 
---- Menu items of Style > Hidden Menu Items. `ctx_menu` is the caller's menu
+--- Menu items of Style > Hide Menu Items. `ctx_menu` is the caller's menu
 --- context; inside the settings window it has `is_sui` set.
 function M.makeMenuItems(ctx_menu)
     local is_sui = ctx_menu and ctx_menu.is_sui or false

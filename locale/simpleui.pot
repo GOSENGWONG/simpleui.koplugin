@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: simpleui\n"
-"POT-Creation-Date: 2026-10-29 19:25+0000\n"
+"POT-Creation-Date: 2026-10-29 20:05+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -642,7 +642,7 @@ msgstr ""
 msgid "Activity"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1530
+#: screens/sui_quicksettings_bar.lua:1531
 msgid "Add Action"
 msgstr ""
 
@@ -694,7 +694,7 @@ msgstr ""
 #: modules/module_action_list.lua:299
 #: modules/module_quick_actions.lua:427
 #: screens/sui_menu.lua:1916
-#: screens/sui_quicksettings_bar.lua:1529
+#: screens/sui_quicksettings_bar.lua:1530
 msgid "Add at least 2 actions to arrange."
 msgstr ""
 
@@ -977,7 +977,7 @@ msgstr ""
 msgid "Arrange %s"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1601
+#: screens/sui_quicksettings_bar.lua:1602
 msgid "Arrange Book Details"
 msgstr ""
 
@@ -1003,7 +1003,7 @@ msgstr ""
 msgid "Arrange Items"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1527
+#: screens/sui_quicksettings_bar.lua:1528
 msgid "Arrange Quick Settings"
 msgstr ""
 
@@ -1013,7 +1013,7 @@ msgstr ""
 
 #: modules/module_coverdeck.lua:1592
 #: modules/module_currently.lua:1341
-#: screens/sui_quicksettings_bar.lua:1588
+#: screens/sui_quicksettings_bar.lua:1589
 msgid "Arrange Statistics"
 msgstr ""
 
@@ -1208,7 +1208,7 @@ msgid "Bar Size"
 msgstr ""
 
 #: modules/module_quick_actions.lua:585
-#: screens/sui_quicksettings_bar.lua:1683
+#: screens/sui_quicksettings_bar.lua:1684
 msgid "Bare"
 msgstr ""
 
@@ -1281,7 +1281,7 @@ msgstr ""
 msgid "Bold. You like to know who makes it."
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1623
+#: screens/sui_quicksettings_bar.lua:1624
 msgid "Book"
 msgstr ""
 
@@ -1293,7 +1293,7 @@ msgstr ""
 msgid "Book Day. A holiday for my favourite thing: sitting."
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1600
+#: screens/sui_quicksettings_bar.lua:1601
 msgid "Book Details"
 msgstr ""
 
@@ -1475,7 +1475,7 @@ msgid "Bubble style"
 msgstr ""
 
 #: modules/module_quick_actions.lua:581
-#: screens/sui_quicksettings_bar.lua:1679
+#: screens/sui_quicksettings_bar.lua:1680
 msgid "Button Type"
 msgstr ""
 
@@ -1722,7 +1722,7 @@ msgstr ""
 msgid "Choose the folder where you will place all your books. Simple UI uses it to show your books in the Library."
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1715
+#: screens/sui_quicksettings_bar.lua:1716
 msgid "Choose the menus that open directly on the Quick Settings tab instead of the last used tab."
 msgstr ""
 
@@ -1740,8 +1740,8 @@ msgstr ""
 #: screens/sui_menu.lua:2995
 #: screens/sui_menu.lua:3393
 #: screens/sui_menu.lua:4070
-#: screens/sui_quicksettings_bar.lua:1622
-#: screens/sui_quicksettings_bar.lua:1634
+#: screens/sui_quicksettings_bar.lua:1623
+#: screens/sui_quicksettings_bar.lua:1635
 msgid "Classic"
 msgstr ""
 
@@ -2622,7 +2622,7 @@ msgstr ""
 msgid "Enable Navigation Bar"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1504
+#: screens/sui_quicksettings_bar.lua:1505
 msgid "Enable Quick Settings Bar"
 msgstr ""
 
@@ -2821,7 +2821,7 @@ msgstr ""
 msgid "Excluded"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1023
+#: screens/sui_quicksettings_bar.lua:1024
 msgid "Exit"
 msgstr ""
 
@@ -2959,11 +2959,11 @@ msgstr ""
 msgid "Fifty"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1702
+#: screens/sui_quicksettings_bar.lua:1703
 msgid "File Browser"
 msgstr ""
 
-#: features/sui_menu_hide.lua:439
+#: features/sui_menu_hide.lua:560
 msgid "File Manager"
 msgstr ""
 
@@ -3137,7 +3137,7 @@ msgid "Follows accent"
 msgstr ""
 
 #: infra/sui_config.lua:1045
-#: screens/sui_quicksettings_bar.lua:1670
+#: screens/sui_quicksettings_bar.lua:1671
 msgid "Font"
 msgstr ""
 
@@ -3203,7 +3203,7 @@ msgstr ""
 msgid "Frontlight"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1641
+#: screens/sui_quicksettings_bar.lua:1642
 msgid "Frontlight Slider"
 msgstr ""
 
@@ -3571,14 +3571,11 @@ msgid "Hey! I was resting."
 msgstr ""
 
 #: engines/sui_group_cell.lua:285
+#: features/sui_menu_hide.lua:440
 #: modules/module_tab_grid.lua:588
 #: screens/sui_menu.lua:461
 #: screens/sui_menu.lua:520
 msgid "Hidden"
-msgstr ""
-
-#: screens/sui_menu.lua:4127
-msgid "Hidden Menu Items"
 msgstr ""
 
 #: features/library/sui_finished_books.lua:66
@@ -3596,8 +3593,12 @@ msgstr ""
 #: modules/module_quick_actions.lua:412
 #: modules/module_quick_actions.lua:507
 #: screens/sui_menu.lua:1943
-#: screens/sui_quicksettings_bar.lua:1674
+#: screens/sui_quicksettings_bar.lua:1675
 msgid "Hide Label"
+msgstr ""
+
+#: screens/sui_menu.lua:4127
+msgid "Hide Menu Items"
 msgstr ""
 
 #: screens/sui_menu.lua:3122
@@ -4540,7 +4541,7 @@ msgstr ""
 #: modules/module_quick_actions.lua:557
 #: modules/module_reading_goals.lua:1150
 #: modules/reading_stats/module_reading_stats.lua:1611
-#: screens/sui_quicksettings_bar.lua:1658
+#: screens/sui_quicksettings_bar.lua:1659
 msgid "Label"
 msgstr ""
 
@@ -4617,7 +4618,7 @@ msgstr ""
 msgid "Layout Editor"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1620
+#: screens/sui_quicksettings_bar.lua:1621
 msgid "Layout of the Quick Settings panel in the reader. The file browser always uses the classic layout."
 msgstr ""
 
@@ -4823,7 +4824,7 @@ msgstr ""
 msgid "Look at us."
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1631
+#: screens/sui_quicksettings_bar.lua:1632
 msgid "Look of the frontlight and warmth sliders."
 msgstr ""
 
@@ -4900,7 +4901,7 @@ msgstr ""
 msgid "Make it yours"
 msgstr ""
 
-#: features/sui_menu_hide.lua:444
+#: features/sui_menu_hide.lua:565
 msgid "Make sure you can still open Simple UI settings, e.g. with a quick action."
 msgstr ""
 
@@ -5004,7 +5005,7 @@ msgstr ""
 msgid "Mine's mostly recipes."
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1635
+#: screens/sui_quicksettings_bar.lua:1636
 msgid "Minimal"
 msgstr ""
 
@@ -5503,7 +5504,7 @@ msgstr ""
 msgid "No .zip files found.\nPlace .zip files in:\n%1"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1528
+#: screens/sui_quicksettings_bar.lua:1529
 msgid "No actions active yet."
 msgstr ""
 
@@ -5752,7 +5753,7 @@ msgstr ""
 
 #: modules/module_coverdeck.lua:1593
 #: modules/module_currently.lua:1342
-#: screens/sui_quicksettings_bar.lua:1589
+#: screens/sui_quicksettings_bar.lua:1590
 msgid "No statistics selected."
 msgstr ""
 
@@ -6097,7 +6098,7 @@ msgstr ""
 msgid "Open"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1714
+#: screens/sui_quicksettings_bar.lua:1715
 msgid "Open Menu on Quick Settings"
 msgstr ""
 
@@ -6105,7 +6106,7 @@ msgstr ""
 msgid "Open Module Settings"
 msgstr ""
 
-#: features/sui_menu_hide.lua:442
+#: features/sui_menu_hide.lua:563
 msgid "Open a book once to list the Reader menu"
 msgstr ""
 
@@ -6125,7 +6126,7 @@ msgstr ""
 msgid "Open module settings"
 msgstr ""
 
-#: features/sui_menu_hide.lua:440
+#: features/sui_menu_hide.lua:561
 msgid "Open the File Manager once to list its menu"
 msgstr ""
 
@@ -6669,7 +6670,7 @@ msgstr ""
 #: modules/module_quick_actions.lua:506
 #: screens/sui_menu.lua:2146
 #: screens/sui_menu.lua:4327
-#: screens/sui_quicksettings_bar.lua:1525
+#: screens/sui_quicksettings_bar.lua:1526
 #: screens/sui_settings_window.lua:197
 msgid "Quick Actions"
 msgstr ""
@@ -6700,7 +6701,7 @@ msgid "Quick Settings"
 msgstr ""
 
 #: screens/sui_menu.lua:2739
-#: screens/sui_quicksettings_bar.lua:1452
+#: screens/sui_quicksettings_bar.lua:1453
 msgid "Quick Settings Bar"
 msgstr ""
 
@@ -6838,12 +6839,12 @@ msgstr ""
 msgid "Read, then walk?"
 msgstr ""
 
-#: features/sui_menu_hide.lua:441
-#: screens/sui_quicksettings_bar.lua:1701
+#: features/sui_menu_hide.lua:562
+#: screens/sui_quicksettings_bar.lua:1702
 msgid "Reader"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1619
+#: screens/sui_quicksettings_bar.lua:1620
 msgid "Reader Layout"
 msgstr ""
 
@@ -7165,7 +7166,7 @@ msgid "Rock, paper, scissors. Go."
 msgstr ""
 
 #: modules/module_quick_actions.lua:583
-#: screens/sui_quicksettings_bar.lua:1681
+#: screens/sui_quicksettings_bar.lua:1682
 msgid "Round"
 msgstr ""
 
@@ -7178,7 +7179,7 @@ msgid "Round Pill"
 msgstr ""
 
 #: modules/module_quick_actions.lua:584
-#: screens/sui_quicksettings_bar.lua:1682
+#: screens/sui_quicksettings_bar.lua:1683
 msgid "Rounded Square"
 msgstr ""
 
@@ -7320,7 +7321,7 @@ msgstr ""
 msgid "Scale for the group count badge."
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1663
+#: screens/sui_quicksettings_bar.lua:1664
 msgid "Scale for the label text.\n100% is the default size."
 msgstr ""
 
@@ -7524,7 +7525,7 @@ msgstr ""
 #: screens/sui_menu.lua:1035
 #: screens/sui_menu.lua:1177
 #: screens/sui_menu.lua:2608
-#: screens/sui_quicksettings_bar.lua:1709
+#: screens/sui_quicksettings_bar.lua:1710
 msgid "Settings on Long Tap"
 msgstr ""
 
@@ -7586,7 +7587,7 @@ msgstr ""
 msgid "Show"
 msgstr ""
 
-#: features/sui_menu_hide.lua:449
+#: features/sui_menu_hide.lua:570
 msgid "Show All Items"
 msgstr ""
 
@@ -7627,7 +7628,7 @@ msgstr ""
 msgid "Show a brief \"Loading statistics…\" notice when opening a statistics window, preventing accidental double-taps while e-ink refreshes."
 msgstr ""
 
-#: features/sui_menu_hide.lua:453
+#: features/sui_menu_hide.lua:574
 msgid "Show all hidden menu items again?"
 msgstr ""
 
@@ -7657,11 +7658,11 @@ msgstr ""
 msgid "Show section label"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1646
+#: screens/sui_quicksettings_bar.lua:1647
 msgid "Show the frontlight and warmth sliders below the book details in the Book layout."
 msgstr ""
 
-#: features/sui_menu_hide.lua:324
+#: features/sui_menu_hide.lua:433
 msgid "Show this menu"
 msgstr ""
 
@@ -7773,8 +7774,8 @@ msgstr ""
 #: modules/module_action_list.lua:346
 #: screens/sui_menu.lua:964
 #: screens/sui_menu.lua:1722
-#: screens/sui_quicksettings_bar.lua:1661
 #: screens/sui_quicksettings_bar.lua:1662
+#: screens/sui_quicksettings_bar.lua:1663
 msgid "Size"
 msgstr ""
 
@@ -7820,11 +7821,11 @@ msgstr ""
 msgid "Sleep well. The book will keep."
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1630
+#: screens/sui_quicksettings_bar.lua:1631
 msgid "Slider Style"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1645
+#: screens/sui_quicksettings_bar.lua:1646
 msgid "Sliders in Book Layout"
 msgstr ""
 
@@ -7995,7 +7996,7 @@ msgstr ""
 #: modules/module_currently.lua:1359
 #: modules/moduleregistry.lua:242
 #: screens/sui_quicksettings_bar.lua:222
-#: screens/sui_quicksettings_bar.lua:1587
+#: screens/sui_quicksettings_bar.lua:1588
 msgid "Statistics"
 msgstr ""
 
@@ -8404,7 +8405,7 @@ msgstr ""
 msgid "That's the spirit. I'll keep count."
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1513
+#: screens/sui_quicksettings_bar.lua:1514
 msgid "The Quick Settings Bar will be %s after restart.\n\nRestart now?"
 msgstr ""
 
@@ -8626,7 +8627,7 @@ msgstr ""
 msgid "This group is empty.\nAdd actions to it from Settings → Quick Actions."
 msgstr ""
 
-#: features/sui_menu_hide.lua:279
+#: features/sui_menu_hide.lua:369
 msgid "This item can't be hidden"
 msgstr ""
 
@@ -8723,7 +8724,7 @@ msgstr ""
 #: modules/critter/module_critter.lua:475
 #: modules/critter/panel_row.lua:62
 #: screens/sui_menu.lua:4318
-#: screens/sui_quicksettings_bar.lua:1650
+#: screens/sui_quicksettings_bar.lua:1651
 #: screens/sui_settings_window.lua:189
 #: screens/sui_settings_window.lua:914
 msgid "Tiny Critter"
@@ -9069,7 +9070,7 @@ msgstr ""
 msgid "Warmth"
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1643
+#: screens/sui_quicksettings_bar.lua:1644
 msgid "Warmth Slider"
 msgstr ""
 
@@ -9240,7 +9241,7 @@ msgstr ""
 msgid "When enabled, long-pressing a module on the home screen opens its settings menu.\nDisable this to prevent settings from appearing on long tap."
 msgstr ""
 
-#: screens/sui_quicksettings_bar.lua:1712
+#: screens/sui_quicksettings_bar.lua:1713
 msgid "When enabled, long-pressing the Quick Settings Bar opens its settings menu.\nDisable this to prevent the settings menu from appearing on long tap."
 msgstr ""
 
@@ -9759,7 +9760,7 @@ msgstr ""
 #: screens/sui_menu.lua:1086
 #: screens/sui_menu.lua:1753
 #: screens/sui_menu.lua:4290
-#: screens/sui_quicksettings_bar.lua:1514
+#: screens/sui_quicksettings_bar.lua:1515
 msgid "disabled"
 msgstr ""
 
@@ -9771,7 +9772,7 @@ msgstr ""
 #: screens/sui_menu.lua:1086
 #: screens/sui_menu.lua:1753
 #: screens/sui_menu.lua:4290
-#: screens/sui_quicksettings_bar.lua:1514
+#: screens/sui_quicksettings_bar.lua:1515
 msgid "enabled"
 msgstr ""
 
@@ -10198,7 +10199,7 @@ msgid_plural "%d days. I'd have quit on day one."
 msgstr[0] ""
 msgstr[1] ""
 
-#: features/sui_menu_hide.lua:353
+#: features/sui_menu_hide.lua:413
 msgid "%d hidden"
 msgid_plural "%d hidden"
 msgstr[0] ""
@@ -10380,7 +10381,7 @@ msgid_plural "It's been %d days."
 msgstr[0] ""
 msgstr[1] ""
 
-#: screens/sui_quicksettings_bar.lua:1532
+#: screens/sui_quicksettings_bar.lua:1533
 msgid "Maximum of %d slot reached. Remove one first."
 msgid_plural "Maximum of %d slots reached. Remove one first."
 msgstr[0] ""

@@ -4124,7 +4124,7 @@ SimpleUIPlugin.addToMainMenu = function(self, menu_items)
             },
         }
         items[#items + 1] = {
-            text                = _("Hidden Menu Items"),
+            text                = _("Hide Menu Items"),
             sub_item_table_func = function() return require("features/sui_menu_hide").makeMenuItems(ctx_menu) end,
         }
         if Accent.isSupported() then
