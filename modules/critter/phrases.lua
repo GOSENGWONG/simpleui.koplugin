@@ -17,8 +17,10 @@
 -- milestone) and is dealt first while the achievement is due (see Phrases.pick).
 -- Phrases are grouped in categories. A category is chosen by weight, then
 -- a phrase of it is dealt from its own shuffle deck, so nothing repeats
--- before the whole category has been seen. A critter with phrases of its own
--- in a category (voice_phrases.lua) deals them three times out of four.
+-- before the whole category has been seen. The phrases of a critter of its own
+-- (voice_phrases.lua) are dealt in two ways: before the category is chosen, at
+-- random from all the ones that fit, and within a category, where each counts
+-- as one general phrase.
 --
 -- User phrases come from <dir>/phrases.lua, which returns a list of
 --   { text = "...", sub = "...", mood = "happy", period = "morning",
@@ -56,7 +58,7 @@ Phrases.CATEGORIES = {
 }
 
 local CUSTOM_WEIGHT = 3
-local VOICE_ODDS    = 0.75   -- chance of a critter's own phrase in a category that has one
+local VOICE_FLOOR   = 0.2    -- chance of a critter's own phrase, whatever the category drawn
 local DECK_KEY      = "simpleui_critter_deck_"
 
 local PERIOD_SET = { morning = true, afternoon = true, evening = true, night = true }
@@ -497,6 +499,7 @@ function Phrases.pick(f, opts, celebrate)
     end
 
     local pools, total = {}, 0
+    local voice_pool, voice_map = {}, {}
 
     local function addPool(cat, weight, ids, by_id)
         if #ids == 0 then return end
@@ -509,7 +512,11 @@ function Phrases.pick(f, opts, celebrate)
             if opts.enabled[cat.id] then
                 local ids, by_id = eligible(builtinOf(cat.id), f)
                 local voice_ids, voice_by_id = eligible(voicedOf(cat.id, f.critter_id), f)
-                if #voice_ids > 0 and (#ids == 0 or math.random() < VOICE_ODDS) then
+                for _j, id in ipairs(voice_ids) do
+                    voice_pool[#voice_pool + 1] = id
+                    voice_map[id] = voice_by_id[id]
+                end
+                if #voice_ids > 0 and math.random(#voice_ids + #ids) <= #voice_ids then
                     addPool(cat.id .. "_voice", cat.weight, voice_ids, voice_by_id)
                 else
                     addPool(cat.id, cat.weight, ids, by_id)
@@ -528,6 +535,10 @@ function Phrases.pick(f, opts, celebrate)
         addPool("generic", 1, ids, by_id)
     end
     if total == 0 then return nil end
+
+    if #voice_pool > 0 and math.random() < VOICE_FLOOR then
+        return render(voice_map[Deck.pick(DECK_KEY .. "voice", voice_pool)], f)
+    end
 
     local roll = math.random(total)
     for _i, pool in ipairs(pools) do
