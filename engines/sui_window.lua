@@ -2380,14 +2380,22 @@ function SUIWindow.ListRow(opts)
         end
 
         if opts.checked ~= nil then
-            -- Both states take the accent colour.
+            -- Both states take the accent colour, or the inactive grey on a
+            -- disabled row.
+            local mark = {
+                text      = SUIStyle.selectionIcon(opts.radio == true, opts.checked),
+                face      = _faceIcon(),
+                alignment = "right",
+            }
+            if is_disabled then
+                mark.fgcolor = _clrInactive()
+                mark = UI.makeColoredText(mark)
+            else
+                mark = UI.makeAccentText(mark, _clrPrimary())
+            end
             table.insert(right_hg, RightContainer:new{
                 dimen = Geom:new{ w = _CHEVRON_W(), h = left_h },
-                UI.makeAccentText({
-                    text      = SUIStyle.selectionIcon(opts.radio == true, opts.checked),
-                    face      = _faceIcon(),
-                    alignment = "right",
-                }, _clrPrimary()),
+                mark,
             })
         elseif opts.right_icon and opts.right_icon ~= "" then
             table.insert(right_hg, RightContainer:new{

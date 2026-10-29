@@ -28,7 +28,7 @@ local M = {}
 M.TARGET = { READER = "reader", FM = "fm" }
 
 -- Execution order of the steps (lower runs first).
-M.ORDER = { PANEL_TAB = 10, TAB_ICONS = 20 }
+M.ORDER = { MENU_HIDE = 5, PANEL_TAB = 10, TAB_ICONS = 20 }
 
 local MENU_MODULES = {
     [M.TARGET.READER] = "apps/reader/modules/readermenu",
