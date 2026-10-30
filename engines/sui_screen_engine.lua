@@ -1743,9 +1743,6 @@ function ScreenWidget:_buildCtx()
     -- same way.
     local needs_year = Registry.wantsData(self._pfx, "year")
 
-    -- Year activity (books finished and pages read per month): gated the same way.
-    local needs_year_activity = Registry.wantsData(self._pfx, "year_activity")
-
     -- Chart data (this week per day, reading per hour of the day): one more
     -- on-demand query, gated the same way.
     local needs_charts = Registry.wantsData(self._pfx, "charts")
@@ -1794,12 +1791,6 @@ function ScreenWidget:_buildCtx()
     if needs_year and not self._defer_stats then
         local SP = _getStatsProvider()
         if SP and SP.getYearData then year_data = SP.getYearData(self._db_conn) end
-    end
-
-    local year_activity = nil
-    if needs_year_activity and not self._defer_stats then
-        local SP = _getStatsProvider()
-        if SP and SP.getYearActivity then year_activity = SP.getYearActivity(self._db_conn) end
     end
 
     local stat_charts = nil
@@ -1857,7 +1848,6 @@ function ScreenWidget:_buildCtx()
         _needs_status           = needs_status,
         _needs_records         = needs_records,
         _needs_year            = needs_year,
-        _needs_year_activity   = needs_year_activity,
         _needs_charts          = needs_charts,
         year_str               = year_str,   -- cached once per render; re-used by async tick
         landscape_factor       = landscape_factor,
@@ -1882,7 +1872,6 @@ function ScreenWidget:_buildCtx()
         status_counts           = status_counts,
         session_records        = session_records,
         year_data              = year_data,
-        year_activity          = year_activity,
         stat_charts            = stat_charts,
         coverdeck_center_stats = coverdeck_center_stats,
         currently_book_stats   = currently_book_stats,
@@ -2979,9 +2968,6 @@ function ScreenWidget:_scheduleDataRefresh(stats_only)
                     self._ctx_cache.year_data = SP.getYearData(self._db_conn)
                 end
                 Perf.mark("data refresh: year data done")
-                if self._ctx_cache._needs_year_activity and SP.getYearActivity then
-                    self._ctx_cache.year_activity = SP.getYearActivity(self._db_conn)
-                end
                 if self._ctx_cache._needs_charts and SP.getChartData then
                     self._ctx_cache.stat_charts = SP.getChartData(self._db_conn)
                 end

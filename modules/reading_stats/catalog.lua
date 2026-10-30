@@ -19,7 +19,7 @@ local Catalog = {}
 Catalog.GROUPS = {
     { key = "time",   ids = { "today_time", "week_time", "month_time", "year_time", "avg_time", "total_time" } },
     { key = "pages",  ids = { "today_pages", "week_pages", "month_pages", "avg_pages", "pages_total" } },
-    { key = "books",  ids = { "total_books", "books_pages", "status_reading", "status_unread", "status_abandoned" } },
+    { key = "books",  ids = { "total_books", "status_reading", "status_unread", "status_abandoned" } },
     { key = "habits", ids = { "streak", "activity_map", "hours_chart", "peak_weekday", "day_parts",
                               "week_compare", "sessions", "session_longest", "session_avg",
                               "pages_per_hour" } },
@@ -36,7 +36,6 @@ Catalog.CHART = {
     week_compare = "week_vs",
     pages_total = "odometer",
     day_parts   = "dayparts",
-    books_pages = "year_lines",
 }
 
 -- Stats whose value is drawn from the chart data in every card style.

@@ -319,8 +319,6 @@ local function detailNaturalHeight(stat_id, m, card_h)
         body = m.dot_max
     elseif kind == "dayparts" then
         body = Charts.shareHeight(m.dot_max, m.lbl_h)
-    elseif kind == "year_lines" then
-        body = m.chart_h + m.lbl_h
     else
         body = m.chart_h
     end
@@ -456,15 +454,6 @@ local STAT_MAP = {
                     detail_value = function(s) return "+" .. s.today_turns end, unit_fn = function() return _("today") end },
     total_time  = { title = _("All time"), icon = "clock", display_label = _("Total reading time"),   value = function(s) return fmtTime(s.total_secs) end,   label = _("of reading, all time"), detail_label = _("of reading") },
     total_books = { title = _("All time"), icon = "book", display_label = _("Books finished"),  value = function(s) return tostring(s.total_books) end, label = _("books finished") },
-    books_pages = { title = _("This year"), icon = "book", display_label = _("Books and pages this year"),
-                    value = function(s) return s.year_activity and tostring(s.year_activity.total_books) or "—" end,
-                    label = _("books finished this year"), detail_title = _("Books and pages"),
-                    unit_fn = function(s)
-                        local y = s.year_activity
-                        if not y then return nil end
-                        return N_("book", "books", y.total_books) .. " · "
-                            .. string.format(N_("%d page", "%d pages", y.total_pages), y.total_pages)
-                    end },
     streak      = { title = _("Streak"), icon = "streak", display_label = _("Reading streak"),            value = function(s) return s.streak > 0 and tostring(s.streak) or "—" end,
                     label_fn = function(s)
                         if s.streak == 0 then return _("no streak") end
@@ -533,9 +522,6 @@ local RECORD_STAT_IDS = { session_longest = true, session_avg = true, pages_per_
 -- Stat ids backed by the finished-books ledger (SP.get() with needs_books).
 local BOOK_STAT_IDS = { total_books = true }
 
--- Stat ids backed by SP.getYearActivity().
-local YEAR_ACTIVITY_STAT_IDS = { books_pages = true }
-
 -- True if one of the stat ids `ids` is in `set`.
 local function anyIn(ids, set)
     for _, id in ipairs(ids) do
@@ -582,7 +568,6 @@ local NEED_USES = {
     records = usesSet(RECORD_STAT_IDS),
     charts  = usesChartData,
     year    = usesYearData,
-    year_activity = usesSet(YEAR_ACTIVITY_STAT_IDS),
 }
 
 local function makeNeeds(id)
@@ -605,8 +590,6 @@ local DATA_SETS = {
       fetch = function(SP, ctx) return SP.getChartData(ctx.db_conn) end },
     { uses = NEED_USES.year,    field = "year_data",       flag = "_needs_year",
       fetch = function(SP, ctx) return SP.getYearData(ctx.db_conn) end },
-    { uses = NEED_USES.year_activity, field = "year_activity", flag = "_needs_year_activity",
-      fetch = function(SP, ctx) return SP.getYearActivity(ctx.db_conn) end },
 }
 
 -- Loads what the stats `ids` need, drawn in the card style `mode`, and the ctx
@@ -633,8 +616,7 @@ end
 -- so updateStats() can skip rebuilding cards whose data did not change.
 -- Categories: "timeseries" (fetchTimeSeries fields), "streak" (fetchStreak),
 -- "books" (sidecar scan), "records" (SP.getSessionRecords) and "charts"
--- (SP.getChartData), "year" (SP.getYearData) and "year_activity"
--- (SP.getYearActivity), which are not part of SP.get():
+-- (SP.getChartData) and "year" (SP.getYearData), which are not part of SP.get():
 -- see updateStats. A stat drawing a chart (see changedCats) also depends on its
 -- chart data. Ids not listed here are always rebuilt.
 local STAT_CHANGED_CAT = {
@@ -654,7 +636,6 @@ local STAT_CHANGED_CAT = {
     status_reading   = "status",
     status_abandoned = "status",
     total_books = "books",
-    books_pages = "year_activity",
     session_longest = "records",
     session_avg     = "records",
     pages_per_hour  = "records",
@@ -764,7 +745,6 @@ local function _collectStats(ctx)
         chart_weekdays     = charts.weekdays,
         chart_weekday_peak = charts.peak_weekday,
         year_data        = ctx.year_data,
-        year_activity    = ctx.year_activity,
         chart_days       = charts.days,
     }
     return setmetatable(stats, DERIVED_META)
@@ -920,22 +900,6 @@ local function _buildDayParts(stats, d, max_w, free_h, clr_blk, clr_sub)
     }
 end
 
--- Lines of the books finished (top) and the pages read, month by month up to
--- the current one, with the initial of each month under them.
-local function _buildYearLines(stats, d, max_w, free_h, clr_head, clr_sub)
-    local year = stats.year_activity
-    if not year then return nil end
-    return Charts.lines{
-        series = {
-            { values = year.pages, color = Charts.fade(clr_head) },
-            { values = year.books, color = clr_head },
-        },
-        n = 12, count = year.month, w = max_w, avail_h = free_h,
-        line_w = math.max(2, math.floor(d.dot_max / 4)), dot_r = math.max(2, math.floor(d.dot_max / 4)),
-        labels = DateNames.monthInitials(), label_face = d.face_lbl, label_color = clr_sub,
-    }
-end
-
 -- Drums showing the page turns of all time (at least six digits), the last one
 -- turning when pages were turned today. The drums take `clr_fill`, the digits the
 -- colour that reads on it.
@@ -961,8 +925,6 @@ local function _buildCardExtra(stat_id, stats, d, max_w, free_h, clr_blk, clr_su
         return _buildWeekCompare(stats, d, max_w, free_h, clr_blk)
     elseif kind == "dayparts" then
         return _buildDayParts(stats, d, max_w, free_h, clr_blk, clr_sub)
-    elseif kind == "year_lines" then
-        return _buildYearLines(stats, d, max_w, free_h, clr_blk, clr_sub)
     elseif kind == "odometer" then
         return _buildOdometer(stats, d, max_w, free_h, clr_blk, on_accent)
     elseif kind == "streak_dots" then
@@ -1587,7 +1549,6 @@ local function build(id, w, ctx)
     result._rs_status  = ctx.status_counts
     result._rs_charts  = ctx.stat_charts
     result._rs_year    = ctx.year_data
-    result._rs_year_activity = ctx.year_activity
     return result
 end
 
@@ -1605,13 +1566,11 @@ local function updateStats(widget, ctx)
         status  = widget._rs_status  == ctx.status_counts,
         charts  = widget._rs_charts  == ctx.stat_charts,
         year    = widget._rs_year    == ctx.year_data,
-        year_activity = widget._rs_year_activity == ctx.year_activity,
     }
     widget._rs_records = ctx.session_records
     widget._rs_status  = ctx.status_counts
     widget._rs_charts  = ctx.stat_charts
     widget._rs_year    = ctx.year_data
-    widget._rs_year_activity = ctx.year_activity
     local stats = _collectStats(ctx)
     -- True when the data of category `cat` is known to be unchanged.
     local function unchanged(cat)

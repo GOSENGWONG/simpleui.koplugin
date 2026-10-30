@@ -6,7 +6,7 @@ A grid of cards that you compose yourself. Pick the stats you want, grouped into
 
 - **Time** — today, week, month, year, daily average, all time.
 - **Pages**.
-- **Books** — finished, books and pages (a line chart by month of the year), in progress, not started, abandoned.
+- **Books** — finished, in progress, not started, abandoned.
 - **Habits** — streak, peak reading hour, most-read weekday, sessions, longest and average session, pages per hour.
 
 You can add several instances of the module, each with its own selection.
@@ -28,7 +28,7 @@ A highlighted card is drawn with a solid background in the module's **Highlight 
 
 ## Statistics windows
 
-- **Reading Insights** — a stack of categories: Today, Day streak, Week streak, This week, This month, When you read, All time By year and Books and pages. Charts compare this week with the previous one, show reading per day of the month, an activity calendar, when in the day and week you read, and the books finished and pages read month by month. Books and pages has its own year picker, which also lists the years books were finished in.
+- **Reading Insights** — a stack of categories: Today, Day streak, Week streak, This week, This month, When you read, All time, By year and Books and pages. Charts compare this week with the previous one, show reading per day of the month, an activity calendar, when in the day and week you read, and the books finished and pages read month by month. Books and pages has its own year picker, which also lists the years books were finished in.
 - **Streak Manager** — a month calendar of your reading activity, followed by Last N days, Day streak, Week streak and Freezes. Freezes work like this: you bank freezes automatically as you read, then spend one to cover a single missed day right after an active one, so a one-off gap does not reset your streak.
 - **Reading Heatmap** — the full-screen calendar and time-of-day grids; page back through earlier blocks.
 - **Finished Books** — every book you finished this year, with the date range you spent reading each one.

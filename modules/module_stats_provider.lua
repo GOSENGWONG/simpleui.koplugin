@@ -1205,7 +1205,7 @@ end
 
 -- ---------------------------------------------------------------------------
 -- Year activity — books finished and pages read per month of a year. Computed
--- on demand, only when a card or window drawing it is open. Cached per year and
+-- on demand, only when the Reading Insights window is open. Cached per year and
 -- per day; dropped by SP.invalidate() / SP.invalidateTimeSeries() /
 -- SP.invalidateBooks().
 -- ---------------------------------------------------------------------------
