@@ -5206,6 +5206,10 @@ function M.installAll(plugin)
     if ok_ss and SUIStyle then
         pcall(SUIStyle.installTabIconPatch)
     end
+    local ok_mh, MenuHide = pcall(require, "features/sui_menu_hide")
+    if ok_mh and MenuHide then
+        pcall(MenuHide.install)
+    end
     -- Install button-bounds overlay when the debug setting is on at startup.
     if SUISettings:isTrue("simpleui_debug_button_bounds") then
         M.installButtonBoundsDebug(plugin)

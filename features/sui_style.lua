@@ -1833,6 +1833,7 @@ M.ICON = {
     show       = "\u{E907}", -- eye / show (NerdFonts)
 
     -- State / Content
+    warning  = "\u{F071}",   -- nf-fa-warning (triangle)
     goal     = "\u{E153}",   -- flag (reading goals)
     clock    = "\u{E385}",
     page     = "\u{F40E}",
