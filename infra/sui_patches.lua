@@ -2365,7 +2365,7 @@ local function _doShowHS(fm, plugin, screen_id)
                 w._sui_displaced_screen = w._sui_displaced_screen or screen_id or "hs"
                 return
             end
-            if not _isTransientToast(w) then return end
+            if not (w.toast or _isTransientToast(w)) then return end
         end
     end
 
