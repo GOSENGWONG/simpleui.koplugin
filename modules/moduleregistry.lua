@@ -40,13 +40,13 @@
 --   M.needs          table?   data the screen engine prepares while the module is enabled:
 --                             recent = n | function(pfx) -> n   n recent books in
 --                                      ctx.recent_fps (see Registry.getRecentDemand)
---                             db, stats, books, status, records, charts, year
+--                             db, stats, books, status, records, charts, year, year_activity
 --                                      = true | function(pfx) -> bool
 --                                      the DB connection, StatsProvider's stats,
 --                                      the finished-books ledger, the library
 --                                      status counts, the session records, the
---                                      chart data and the year data (see
---                                      Registry.wantsData)
+--                                      chart data, the year data and the year
+--                                      activity (see Registry.wantsData)
 --   M.text_elems     string[]?  ids of the text elements with a user-selectable
 --                             font family, size scale and variant (regular, bold,
 --                             italic, bold italic; see Config.makeTextStyleMenu).
