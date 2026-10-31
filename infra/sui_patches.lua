@@ -3763,6 +3763,14 @@ function M.patchFontGetFace(plugin)
         if face and face.orig_size ~= requested then
             face.orig_size = requested
         end
+        -- Cached bold clones keep their own orig_size, and sizes that scale to
+        -- the same pixel size share one clone: keep it in step with the face.
+        if face and face.hash then
+            for _i, suffix in ipairs({ "synthbold", "realbold" }) do
+                local clone = self.faces[face.hash .. suffix]
+                if clone then clone.orig_size = face.orig_size end
+            end
+        end
         return face
     end
 
