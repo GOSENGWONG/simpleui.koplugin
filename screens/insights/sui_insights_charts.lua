@@ -10,7 +10,7 @@
 -- Usage:
 --   local sections = InsightsCharts.sections{
 --       inner_w = w, avail_h = h, SZ = ctx.SZ, charts = SP.getChartData(conn),
---       fmt_time = function(secs) return "1h 20m" end,
+--       fmt_time = function(secs) return "1.5h" end,
 --   }
 --   -- sections.week / .month / .activity / .hours / .weekdays / .dayparts:
 --   -- { title =, icon =, content = } or nil; `inner_w` is the width of a card's content

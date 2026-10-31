@@ -27,6 +27,7 @@ local logger          = require("logger")
 local Config          = require("infra/sui_config")
 local SectionLabel    = require("engines/sui_section_label")
 local AAPaint         = require("infra/sui_aa_paint")
+local Text            = require("infra/sui_text")
 
 local UI           = require("infra/sui_core")
 local SUISettings  = require("infra/sui_store")
@@ -176,13 +177,7 @@ end
 
 -- Formats seconds as "Xh Ym" / "Xh" / "Ym"
 local function formatDuration(secs)
-    secs = math.floor(secs or 0)
-    if secs <= 0 then return "0m" end
-    local h = math.floor(secs / 3600)
-    local m = math.floor((secs % 3600) / 60)
-    if h > 0 and m > 0 then return string.format("%dh %dm", h, m)
-    elseif h > 0        then return string.format("%dh", h)
-    else                     return string.format("%dm", m) end
+    return Text.formatDurationInteger(secs)
 end
 
 -- Stats cache and per-module fetch logic have been moved to

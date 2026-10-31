@@ -864,9 +864,9 @@ end
 
 -- Reading progress of the open document: the current page and page count
 -- (following the page map when the book has one), the progress as a 0–1
--- fraction, and two functions evaluated on demand: `time_left()`, the
--- estimated time left (nil when reading statistics cannot estimate it), and
--- `book()`, the book's totals from the statistics database (nil when
+-- fraction, and two functions evaluated on demand: `time_left()`, the seconds
+-- left at the current page (nil when reading statistics cannot estimate it),
+-- and `book()`, the book's totals from the statistics database (nil when
 -- unavailable), read once.
 local function readingProgress(ui)
     local doc    = ui.document
@@ -892,8 +892,16 @@ local function readingProgress(ui)
         pages     = pages,
         fraction  = fraction,
         time_left = function()
-            return ui.statistics
-                and ui.statistics:getTimeForPages(doc:getTotalPagesLeft(pageno))
+            local stats = ui.statistics
+            -- Estimated here rather than through statistics:getTimeForPages();
+            -- that function returns, depending on the settings, values styled like a
+            -- timestamp ("233:40"), which is clearly not a valid duration format.
+            if not (stats and stats.settings and stats.settings.is_enabled) then return nil end
+            local avg = stats.avg_time
+            if not (avg and avg > 0) then return nil end
+            local left = doc:getTotalPagesLeft(pageno)
+            if not (left and left > 0) then return nil end
+            return avg * left
         end,
         book      = function()
             if not book_read then
@@ -922,8 +930,8 @@ local STAT_TEXT = {
         return BookStats.textFor("book_time", progress.book())
     end,
     book_remaining = function(progress)
-        local time_left = progress.time_left()
-        return time_left and BookStats.text.left(time_left) or nil
+        local secs = progress.time_left()
+        return secs and BookStats.text.left(BookStats.formatDuration(secs)) or nil
     end,
 }
 

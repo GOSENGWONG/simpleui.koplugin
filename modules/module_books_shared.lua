@@ -17,6 +17,7 @@ local Config          = require("infra/sui_config")
 local SUIStyle        = require("features/sui_style")
 local CoverPlaceholder = require("engines/sui_cover_placeholder")
 local VirtualPaths     = require("infra/sui_virtual_paths")
+local Text             = require("infra/sui_text")
 
 local math_floor = math.floor
 local math_max   = math.max
@@ -385,11 +386,7 @@ function SH.formatTimeLeft(pct, pages, avg_time)
     if remaining <= 0 then return nil end
     local secs = math_floor(remaining * avg_time)
     if secs <= 0 then return nil end
-    local h = math_floor(secs / 3600)
-    local m = math_floor((secs % 3600) / 60)
-    if h > 0 and m > 0 then return string.format("%dh %dm", h, m)
-    elseif h > 0        then return string.format("%dh", h)
-    else                     return string.format("%dm", m) end
+    return Text.formatDuration(secs)
 end
 
 -- ---------------------------------------------------------------------------

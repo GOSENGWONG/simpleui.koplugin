@@ -14,6 +14,8 @@
 --       newline-separated field, trimmed; nil when there is none
 --   Text.formatAuthors(s)            -> nil when the field holds no name, the
 --       name when it holds one, "Name et al." when it holds several
+--   Text.formatDuration(secs)        -> time with decimals combined: "Xs" / "Xm" / "Xh"
+--   Text.formatDurationInteger(secs) -> time in whole split units: "Xh Ym" / "Xh" / "Ym"
 --
 -- Nil and empty strings are returned unchanged by the length helpers.
 
@@ -96,6 +98,37 @@ function Text.formatAuthors(s)
     local first = nextName()
     if first and nextName() then return first .. _(" et al.") end
     return first
+end
+
+-- One decimal when it carries information, none when it rounds to a whole number.
+local function oneDecimal(value, whole_fmt, frac_fmt)
+    local rounded = math.floor(value * 10 + 0.5) / 10
+    if rounded == math.floor(rounded) then return string.format(whole_fmt, rounded) end
+    return string.format(frac_fmt, rounded)
+end
+
+-- Reading time in single-unit form: seconds up to a minute, whole minutes up
+-- to an hour, then hours. Only one unit is shown, so long totals stay short
+-- in any locale.
+function Text.formatDuration(secs)
+    if secs ~= secs then secs = 0 end -- NaN never equals itself, so this catches it
+    secs = math.max(0, math.floor(secs or 0))
+    if secs <= 60   then return string.format(_("%ds"), secs) end
+    if secs <= 3600 then return string.format(_("%dm"), math.floor(secs / 60)) end
+    return            oneDecimal(secs / 3600, _("%dh"), _("%.1fh"))
+end
+
+-- Same reading time kept whole in hours and minutes: surfaces with room for
+-- two units read better than the single-unit form above.
+function Text.formatDurationInteger(secs)
+    if secs ~= secs then secs = 0 end -- NaN never equals itself, so this catches it
+    secs = math.floor(secs or 0)
+    if secs <= 0 then return string.format(_("%dm"), 0) end
+    local hours   = math.floor(secs / 3600)
+    local minutes = math.floor((secs % 3600) / 60)
+    if hours > 0 and minutes > 0 then return string.format(_("%dh %dm"), hours, minutes)
+    elseif hours > 0             then return string.format(_("%dh"), hours)
+    else                              return string.format(_("%dm"), minutes) end
 end
 
 return Text

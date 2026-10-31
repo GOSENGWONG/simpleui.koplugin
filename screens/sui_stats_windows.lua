@@ -30,6 +30,7 @@ local DateNames       = require("infra/sui_datenames")
 local Charts          = require("engines/sui_stats_charts")
 local Frames          = require("screens/insights/sui_insights_frames")
 local InsightsCharts  = require("screens/insights/sui_insights_charts")
+local Text            = require("infra/sui_text")
 
 -- Landscape-aware size multiplier for the few call sites in this file that
 -- run BEFORE any SUIWindow ctx exists — e.g. shared fonts computed once in
@@ -347,18 +348,8 @@ local function _fmtDateRange(start_ts, finish_str)
 end
 
 local function _fmtDuration(secs)
-    secs = math.floor(secs or 0)
-    if secs <= 0 then return "0s" end
-    local h = math.floor(secs / 3600)
-    local m = math.floor((secs % 3600) / 60)
-    local s = secs % 60
-    if h > 0 then
-        return string.format("%dh %02dm", h, m)
-    elseif m > 0 then
-        return string.format("%dm %02ds", m, s)
-    else
-        return string.format("%ds", s)
-    end
+    if not (secs and secs >= 1) then return _("0s") end
+    return Text.formatDuration(secs)
 end
 
 -- Formats a "YYYY-MM-DD" stamp as a short date, and a "YYYY" stamp as is.
@@ -1637,15 +1628,12 @@ end
 -- UI helpers (insights window)
 -- ---------------------------------------------------------------------------
 
--- Returns a formatted string for a duration in seconds: "Xh Ym" / "Xm" / "0h"
+-- Returns a formatted string for a duration in seconds: "0h" under a minute,
+-- otherwise deferred to a shared function - "Xs" / "Xm" / "Xh"; note that
+-- exactly 60 seconds still falls in the seconds band.
 local function _riFmtHours(secs)
-    secs = math.floor(secs or 0)
-    if secs < 60 then return "0h" end
-    local h = math.floor(secs / 3600)
-    local m = math.floor((secs % 3600) / 60)
-    if h > 0 and m > 0 then return string.format("%dh %dm", h, m)
-    elseif h > 0          then return string.format("%dh", h)
-    else                       return string.format("%dm", m) end
+    if not (secs and secs >= 60) then return _("0h") end
+    return Text.formatDuration(secs)
 end
 
 -- Formats a timestamp (unix) into a short locale-independent date string.
@@ -1850,8 +1838,10 @@ function StatsWindows.showReadingInsightsWindow(opts)
         local card_w    = Frames.cardWidth(inner_w)
         local content_w = Frames.contentWidth(inner_w, SZ)
 
+        -- Same as _riFmtHours but with minutes as its zero.
         local function timeStr(secs)
-            return secs < 60 and "0m" or _riFmtHours(secs)
+            if not (secs and secs >= 60) then return _("0m") end
+            return Text.formatDuration(secs)
         end
 
         local function setYear(year)

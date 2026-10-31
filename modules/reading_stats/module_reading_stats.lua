@@ -38,6 +38,7 @@ local Backdrop    = require("infra/sui_backdrop")
 local SUIWallpaper = require("features/sui_wallpaper")
 local SUIStyle    = require("features/sui_style")
 local Charts      = require("engines/sui_stats_charts")
+local Text        = require("infra/sui_text")
 local HD          = require("engines/sui_heatmap_data")
 local SpanGrid    = require("infra/sui_span_grid")
 local DateNames   = require("infra/sui_datenames")
@@ -405,12 +406,7 @@ end
 -- Stat map
 -- ---------------------------------------------------------------------------
 local function fmtTime(secs)
-    secs = math.floor(secs or 0)
-    if secs <= 0 then return string.format(_("%dm"), 0) end
-    local h = math.floor(secs / 3600); local m = math.floor((secs % 3600) / 60)
-    if h > 0 and m > 0 then return string.format(_("%dh %dm"), h, m)
-    elseif h > 0        then return string.format(_("%dh"), h)
-    else                     return string.format(_("%dm"), m) end
+    return Text.formatDuration(secs)
 end
 
 -- Hour of the day (0-23) as the clock range it covers, following the device's
