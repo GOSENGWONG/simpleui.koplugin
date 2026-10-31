@@ -58,6 +58,10 @@ local function catalog()
             },
         },
         {
+            reason = _("Replaces the folder covers"),
+            files  = { "2-rounded-folder-covers.lua" },
+        },
+        {
             reason = _("Hides Wi-Fi dialogs, and any other dialog that mentions Wi-Fi"),
             files  = { "2-disable-wifi-notifications.lua", "2-non-blocking-wifi.lua" },
         },
